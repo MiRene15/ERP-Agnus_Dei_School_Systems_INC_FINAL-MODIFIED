@@ -101,12 +101,12 @@
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
-            opacity: 0.15;
+            opacity: 0.05; /* Made much lighter for readability */
             animation: float 20s infinite alternate ease-in-out;
         }
         
-        .blob-1 { width: 600px; height: 600px; background: var(--primary-navy); top: -100px; left: -100px; }
-        .blob-2 { width: 500px; height: 500px; background: var(--lilac-glow); bottom: -100px; right: 10%; animation-delay: -5s; }
+        .blob-1 { width: 300px; height: 300px; background: var(--primary-navy); top: -50px; left: -50px; }
+        .blob-2 { width: 300px; height: 300px; background: var(--lilac-glow); bottom: -50px; right: 5%; animation-delay: -5s; }
 
         @keyframes float {
             0% { transform: translateY(0) scale(1.0); }
@@ -119,69 +119,160 @@
             margin: 0 auto;
         }
 
-        /* Glassmorphism Navigation */
+        /* Minimalist Floating Rectangle Navigation (Reference Match) */
         nav {
             position: fixed;
-            top: 20px;
+            top: 24px;
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
             max-width: 1200px;
-            background: var(--glass-bg);
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-full);
-            padding: 12px 30px;
+            background: var(--surface-white);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Clean minimalist shadow */
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .nav-container {
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 1000;
-            box-shadow: var(--shadow-soft);
+            padding: 0 20px; /* Reduced for smaller footprint */
         }
 
         .nav-brand {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px; /* Tighter gap */
             text-decoration: none;
         }
 
         .nav-logo {
-            width: 45px;
-            height: 45px;
+            width: 28px; /* Scaled down logo */
+            height: 28px;
             border-radius: 50%;
             background-image: url("{{ asset('images/agnus_logo.png') }}");
             background-size: cover;
             background-color: var(--primary-navy);
             background-position: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .nav-title {
-            font-size: 1.1rem;
+            font-size: 0.95rem; /* Smaller minimalist title */
             font-weight: 700;
             color: var(--primary-navy);
-            letter-spacing: -0.5px;
+            letter-spacing: -0.2px;
         }
 
         .nav-links {
             display: flex;
-            gap: 30px;
+            gap: 24px; /* Tighter spacing */
             list-style: none;
+            align-items: center;
+            height: 100%;
+        }
+
+        .nav-links li {
+            height: 100%;
         }
 
         .nav-links a {
             text-decoration: none;
             color: var(--text-muted);
-            font-weight: 600;
-            font-size: 0.95rem;
+            font-weight: 500;
+            font-size: 0.85rem; /* Sleeker typography */
             transition: var(--transition);
+            display: flex;
+            align-items: center;
+            padding: 16px 0; /* Creates less height for the floating bar */
+            position: relative;
         }
 
-        .nav-links a:hover,
+        .nav-links a:hover {
+            color: var(--primary-navy);
+        }
+
         .nav-links a.active {
             color: var(--primary-navy);
+        }
+        
+        .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary-navy);
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+        }
+
+        .nav-links .dropdown {
+            position: relative;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links .caret {
+            font-size: 0.75rem;
+            margin-left: 6px;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-links .dropdown:hover .caret {
+            transform: rotate(180deg);
+        }
+
+        .nav-links .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: var(--surface-white); /* Clean white minimalist box */
+            min-width: 220px; /* Slimmer dropdown width */
+            list-style: none;
+            padding: 6px 0; /* Minimalist padding */
+            margin: 0;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Clean minimalist shadow */
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            overflow: hidden; /* Constrain hover background */
+        }
+
+        .nav-links .dropdown:hover .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .nav-links .dropdown-menu a {
+            display: block;
+            padding: 10px 20px; /* Scaled down padding */
+            height: auto;
+            color: var(--primary-navy); /* Match the blue text from reference */
+            font-weight: 500;
+            font-size: 0.82rem; /* Clean, small typography */
+            transition: all 0.2s ease;
+        }
+
+        .nav-links .dropdown-menu a::after {
+            display: none !important; /* Block inner link underline */
+        }
+
+        .nav-links .dropdown-menu a:hover,
+        .nav-links .dropdown-menu a.active-dropdown {
+            color: var(--surface-white); /* White text on hover */
+            background-color: var(--primary-navy); /* Blue highlight hover state */
+            padding-left: 24px; /* Subtle minimalist hover animation */
         }
 
         .btn-primary {
@@ -206,20 +297,21 @@
 
         .btn-outline {
             background: transparent;
-            border: 1px solid var(--primary-navy);
+            border: 1px solid rgba(36, 34, 92, 0.2); 
             color: var(--primary-navy);
-            padding: 12px 28px;
-            border-radius: var(--radius-full);
+            padding: 6px 14px; /* Scaled down perfectly */
+            border-radius: 6px; 
             text-decoration: none;
-            font-weight: 700;
-            font-size: 0.95rem;
+            font-weight: 500;
+            font-size: 0.85rem; /* Match other typography */
             transition: var(--transition);
             display: inline-block;
         }
 
         .btn-outline:hover {
             background: rgba(36, 34, 92, 0.05);
-            transform: translateY(-2px);
+            border-color: var(--primary-navy);
+            transform: translateY(-1px);
         }
 
         /* Generic Section Headers */
@@ -325,19 +417,35 @@
         <div class="blob blob-2"></div>
     </div>
 
-    <!-- Glassmorphism Nav -->
+    <!-- Minimalist Nav -->
     <nav>
-        <a href="/" class="nav-brand">
-            <div class="nav-logo"></div>
-            <span class="nav-title">Agnus Dei</span>
-        </a>
-        <ul class="nav-links">
-            <li><a href="/vision" class="{{ request()->is('vision') ? 'active' : '' }}">School Vision</a></li>
-            <li><a href="/mission" class="{{ request()->is('mission') ? 'active' : '' }}">Mission</a></li>
-            <li><a href="/admissions" class="{{ request()->is('admissions') ? 'active' : '' }}">Admission Process</a></li>
-            <li><a href="/academics" class="{{ request()->is('academics') ? 'active' : '' }}">Academic Offerings</a></li>
-        </ul>
-        <a href="/login" class="btn-primary">Access Portal</a>
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <div class="nav-logo"></div>
+                <span class="nav-title">Agnus Dei</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="/" class="{{ request()->is('/') ? 'active' : '' }}">Home</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle {{ (request()->is('educational-philosophy') || request()->is('institutional-background') || request()->is('contact-information')) ? 'active' : '' }}">About Us <span class="caret">&#9662;</span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/educational-philosophy" class="{{ request()->is('educational-philosophy') ? 'active-dropdown' : '' }}">Educational Philosophy</a></li>
+                        <li><a href="/institutional-background" class="{{ request()->is('institutional-background') ? 'active-dropdown' : '' }}">Institutional Background</a></li>
+                        <li><a href="/contact-information" class="{{ request()->is('contact-information') ? 'active-dropdown' : '' }}">Contact Information</a></li>
+                    </ul>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle {{ (request()->is('program-offerings') || request()->is('requirements-procedures') || request()->is('discounts-privileges')) ? 'active' : '' }}">Admissions <span class="caret">&#9662;</span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/program-offerings" class="{{ request()->is('program-offerings') ? 'active-dropdown' : '' }}">Program Offerings</a></li>
+                        <li><a href="/requirements-procedures" class="{{ request()->is('requirements-procedures') ? 'active-dropdown' : '' }}">Requirements and Procedures</a></li>
+                        <li><a href="/discounts-privileges" class="{{ request()->is('discounts-privileges') ? 'active-dropdown' : '' }}">Discounts and Privileges</a></li>
+                    </ul>
+                </li>
+                <li><a href="/inquiry" class="{{ request()->is('inquiry') ? 'active' : '' }}">Inquiry</a></li>
+            </ul>
+            <a href="/login" class="btn-outline">Account Portal</a>
+        </div>
     </nav>
 
     <!-- PAGE INJECTION PORTAL -->

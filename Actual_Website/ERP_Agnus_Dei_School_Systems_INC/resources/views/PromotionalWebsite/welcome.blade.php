@@ -50,10 +50,11 @@
             <h1>Empowering the Future, <br><span>One Student at a Time.</span></h1>
             <p>Agnus Dei School Systems, Inc. fuses intellectual integrity with deep character formation, preparing youth across Kinder, JHS, and SHS to lead and excel in the 21st century.</p>
             <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px; animation: slideUp 1.2s ease forwards; opacity: 0;">
-                <a href="/admissions" class="btn-primary" style="padding: 16px 36px; font-size: 1.1rem;">Enroll for 2026</a>
+                <a href="/inquiry" class="btn-primary" style="padding: 16px 36px; font-size: 1.1rem;">Enroll for 2026</a>
                 <a href="/identity" class="btn-outline">Our Core Values</a>
             </div>
         </section>
     </main>
 
 @endsection
+
