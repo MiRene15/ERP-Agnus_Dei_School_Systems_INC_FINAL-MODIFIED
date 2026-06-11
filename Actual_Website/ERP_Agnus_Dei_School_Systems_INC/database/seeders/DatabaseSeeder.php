@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             SystemRolesAndStaffSeeder::class,
             TeachersClassesSchedulesSeeder::class,
             FeeSchedulesSeeder::class,
+            AnnouncementsTableSeeder::class,
         ]);
     }
 }

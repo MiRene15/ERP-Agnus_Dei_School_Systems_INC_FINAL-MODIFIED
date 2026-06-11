@@ -219,6 +219,8 @@ return new class extends Migration
             $table->foreignId('admin_id')->constrained('users')->onDelete('cascade');
             $table->string('title');
             $table->text('content');
+            $table->enum('type', ['announcement', 'event'])->default('announcement');
+            $table->dateTime('date')->nullable();
             $table->boolean('is_published')->default(true);
             $table->timestamps();
         });

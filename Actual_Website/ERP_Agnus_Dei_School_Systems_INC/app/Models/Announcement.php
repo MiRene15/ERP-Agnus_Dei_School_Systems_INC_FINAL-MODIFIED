@@ -13,7 +13,14 @@ class Announcement extends Model
         'admin_id',
         'title',
         'content',
+        'type',
+        'date',
         'is_published',
+    ];
+
+    protected $casts = [
+        'date' => 'datetime',
+        'is_published' => 'boolean',
     ];
 
     public function admin()
