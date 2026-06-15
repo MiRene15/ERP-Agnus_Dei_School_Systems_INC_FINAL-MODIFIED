@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Agnus Dei School Systems, Inc.</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/agnus_logo.png') }}">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +14,6 @@
     <!-- Premium Vanilla CSS Architecture -->
     <style>
         :root {
-            /* Extracted from the Agnus Dei Logo */
             --primary-navy: #24225C;
             --primary-dark: #121034;
             --lilac-glow: #A39FE9;
@@ -21,17 +21,14 @@
             --surface-white: #FFFFFF;
             --surface-off-white: #F8F9FA;
             
-            /* Glassmorphism Variables */
             --glass-bg: rgba(255, 255, 255, 0.7);
             --glass-border: rgba(255, 255, 255, 0.4);
             --glass-blur: blur(12px);
             
-            /* Typography */
             --font-main: 'Outfit', sans-serif;
             --text-dark: #1E293B;
             --text-muted: #64748B;
             
-            /* Spacing & Transitions */
             --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             --radius-lg: 20px;
             --radius-full: 9999px;
@@ -53,9 +50,6 @@
             overflow-x: hidden;
         }
 
-        /* -------------------------------------------
-           SKELETON PRELOADER LOGIC (Requested UX Feature)
-           ------------------------------------------- */
         #global-skeleton {
             position: fixed;
             top: 0; left: 0;
@@ -87,7 +81,6 @@
             100% { background-position: 200% 0; }
         }
 
-        /* Ambient Background Blobs */
         .ambient-bg {
             position: fixed;
             top: 0; left: 0;
@@ -101,7 +94,7 @@
             position: absolute;
             border-radius: 50%;
             filter: blur(80px);
-            opacity: 0.05; /* Made much lighter for readability */
+            opacity: 0.05;
             animation: float 20s infinite alternate ease-in-out;
         }
         
@@ -119,7 +112,6 @@
             margin: 0 auto;
         }
 
-        /* Minimalist Floating Rectangle Navigation (Reference Match) */
         nav {
             position: fixed;
             top: 24px;
@@ -129,7 +121,7 @@
             max-width: 1200px;
             background: var(--surface-white);
             border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Clean minimalist shadow */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             z-index: 1000;
             display: flex;
             justify-content: center;
@@ -141,18 +133,18 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px; /* Reduced for smaller footprint */
+            padding: 0 20px;
         }
 
         .nav-brand {
             display: flex;
             align-items: center;
-            gap: 10px; /* Tighter gap */
+            gap: 10px;
             text-decoration: none;
         }
 
         .nav-logo {
-            width: 28px; /* Scaled down logo */
+            width: 28px;
             height: 28px;
             border-radius: 50%;
             background-image: url("{{ asset('images/agnus_logo.png') }}");
@@ -162,7 +154,7 @@
         }
 
         .nav-title {
-            font-size: 0.95rem; /* Smaller minimalist title */
+            font-size: 0.95rem;
             font-weight: 700;
             color: var(--primary-navy);
             letter-spacing: -0.2px;
@@ -170,7 +162,7 @@
 
         .nav-links {
             display: flex;
-            gap: 24px; /* Tighter spacing */
+            gap: 24px;
             list-style: none;
             align-items: center;
             height: 100%;
@@ -184,11 +176,11 @@
             text-decoration: none;
             color: var(--text-muted);
             font-weight: 500;
-            font-size: 0.85rem; /* Sleeker typography */
+            font-size: 0.85rem;
             transition: var(--transition);
             display: flex;
             align-items: center;
-            padding: 16px 0; /* Creates less height for the floating bar */
+            padding: 16px 0;
             position: relative;
         }
 
@@ -233,19 +225,19 @@
             position: absolute;
             top: 100%;
             left: 0;
-            background-color: var(--surface-white); /* Clean white minimalist box */
-            min-width: 220px; /* Slimmer dropdown width */
+            background-color: var(--surface-white);
+            min-width: 220px;
             list-style: none;
-            padding: 6px 0; /* Minimalist padding */
+            padding: 6px 0;
             margin: 0;
             opacity: 0;
             visibility: hidden;
             transform: translateY(10px);
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Clean minimalist shadow */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
             border-radius: 6px;
             border: 1px solid rgba(0, 0, 0, 0.04);
-            overflow: hidden; /* Constrain hover background */
+            overflow: hidden;
         }
 
         .nav-links .dropdown:hover .dropdown-menu {
@@ -256,23 +248,23 @@
 
         .nav-links .dropdown-menu a {
             display: block;
-            padding: 10px 20px; /* Scaled down padding */
+            padding: 10px 20px;
             height: auto;
-            color: var(--primary-navy); /* Match the blue text from reference */
+            color: var(--primary-navy);
             font-weight: 500;
-            font-size: 0.82rem; /* Clean, small typography */
+            font-size: 0.82rem;
             transition: all 0.2s ease;
         }
 
         .nav-links .dropdown-menu a::after {
-            display: none !important; /* Block inner link underline */
+            display: none !important;
         }
 
         .nav-links .dropdown-menu a:hover,
         .nav-links .dropdown-menu a.active-dropdown {
-            color: var(--surface-white); /* White text on hover */
-            background-color: var(--primary-navy); /* Blue highlight hover state */
-            padding-left: 24px; /* Subtle minimalist hover animation */
+            color: var(--surface-white);
+            background-color: var(--primary-navy);
+            padding-left: 24px;
         }
 
         .btn-primary {
@@ -299,11 +291,11 @@
             background: transparent;
             border: 1px solid rgba(36, 34, 92, 0.2); 
             color: var(--primary-navy);
-            padding: 6px 14px; /* Scaled down perfectly */
+            padding: 6px 14px;
             border-radius: 6px; 
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.85rem; /* Match other typography */
+            font-size: 0.85rem;
             transition: var(--transition);
             display: inline-block;
         }
@@ -314,7 +306,6 @@
             transform: translateY(-1px);
         }
 
-        /* Generic Section Headers */
         .page-header {
             padding: 150px 0 60px;
             text-align: center;
@@ -335,7 +326,6 @@
             margin: 0 auto;
         }
 
-        /* Footer */
         footer {
             background: var(--primary-dark);
             color: var(--surface-off-white);
@@ -344,7 +334,6 @@
             margin-top: 100px;
         }
 
-        /* Components (Shared Across Pages) */
         .card {
             background: var(--surface-white);
             border-radius: var(--radius-lg);
@@ -392,7 +381,6 @@
 </head>
 <body>
 
-    <!-- 🌟 THE ANIMATED SKELETON LOADER 🌟 -->
     <div id="global-skeleton">
         <div class="skeleton-block skel-nav"></div>
         <div class="skeleton-block skel-title"></div>
@@ -400,24 +388,21 @@
         <div class="skeleton-block skel-text-2"></div>
     </div>
 
-    <!-- Script to kill the skeleton preloader exactly when DOM completes mounting -->
     <script>
         window.addEventListener('load', () => {
             const skeleton = document.getElementById('global-skeleton');
             skeleton.style.opacity = '0';
             setTimeout(() => {
                 skeleton.style.display = 'none';
-            }, 600); // Wait for CSS fade out to complete before display none
+            }, 600);
         });
     </script>
 
-    <!-- Dynamic Canvas Background -->
     <div class="ambient-bg">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
     </div>
 
-    <!-- Minimalist Nav -->
     <nav>
         <div class="nav-container">
             <a href="/" class="nav-brand">
@@ -444,14 +429,145 @@
                 </li>
                 <li><a href="/inquiry" class="{{ request()->is('inquiry') ? 'active' : '' }}">Inquiry</a></li>
             </ul>
-            <a href="/login" class="btn-outline">Account Portal</a>
+            <button onclick="document.getElementById('portal-modal').classList.remove('hidden')" class="btn-outline" id="portal-btn" style="border: none; cursor: pointer; font-family: var(--font-main);">Account Portal</button>
         </div>
     </nav>
 
-    <!-- PAGE INJECTION PORTAL -->
+    <!-- Account Portal Modal -->
+    <div id="portal-modal" class="portal-modal hidden">
+        <div class="portal-backdrop" onclick="document.getElementById('portal-modal').classList.add('hidden')"></div>
+        <div class="portal-card">
+            <button onclick="document.getElementById('portal-modal').classList.add('hidden')" class="portal-close">&times;</button>
+            <div class="portal-header">
+                <span class="portal-title">Agnus Dei ERP</span>
+                <span class="portal-sub">Secure Account Portal</span>
+            </div>
+            <div class="portal-body">
+                @auth
+                <a href="/dashboard" onclick="document.getElementById('portal-modal').classList.add('hidden')" class="portal-option">
+                    <div class="portal-option-icon" style="background: rgba(36,34,92,0.08);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary-navy);"><path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                    </div>
+                    <div class="portal-option-text">
+                        <span class="portal-option-title">Go to My Dashboard</span>
+                        <span class="portal-option-desc">You're already logged in. Access your portal here.</span>
+                    </div>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+                </a>
+                @else
+                <a href="/login" class="portal-option">
+                    <div class="portal-option-icon" style="background: rgba(36,34,92,0.08);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--primary-navy);"><path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                    </div>
+                    <div class="portal-option-text">
+                        <span class="portal-option-title">Log In to My Account</span>
+                        <span class="portal-option-desc">Already have your school credentials? Access your portal here.</span>
+                    </div>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+                </a>
+                @endauth
+                <div class="portal-divider">
+                    <span>Don't have an account yet?</span>
+                </div>
+                <a href="/inquiry" onclick="document.getElementById('portal-modal').classList.add('hidden')" class="portal-option">
+                    <div class="portal-option-icon" style="background: rgba(229,192,106,0.15);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#B38F3B;"><path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                    </div>
+                    <div class="portal-option-text">
+                        <span class="portal-option-title">Request an Account</span>
+                        <span class="portal-option-desc">Submit an inquiry to receive your institutional credentials.</span>
+                    </div>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+                </a>
+                <p class="portal-footer-text">Access is controlled by School Administration.</p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .portal-modal {
+            position: fixed; inset: 0; z-index: 9000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .portal-modal.hidden { display: none; }
+        .portal-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(4px);
+        }
+        .portal-card {
+            position: relative; z-index: 10;
+            background: var(--surface-white);
+            border-radius: 20px;
+            width: 90%; max-width: 440px;
+            overflow: hidden;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+            animation: portalIn 0.35s cubic-bezier(0.16,1,0.3,1);
+        }
+        @keyframes portalIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .portal-close {
+            position: absolute; top: 16px; right: 16px;
+            background: none; border: none;
+            font-size: 1.6rem; color: rgba(255,255,255,0.5); cursor: pointer;
+            transition: color 0.2s; line-height: 1;
+        }
+        .portal-close:hover { color: #fff; }
+        .portal-header {
+            background: var(--primary-navy);
+            padding: 32px 32px 28px;
+            color: #fff;
+        }
+        .portal-title {
+            display: block; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.3px;
+        }
+        .portal-sub {
+            display: block; font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 4px;
+        }
+        .portal-body { padding: 24px 28px 28px; }
+        .portal-option {
+            display: flex; align-items: center; gap: 14px;
+            padding: 16px; border-radius: 12px;
+            border: 1.5px solid #f1f5f9;
+            text-decoration: none; color: inherit;
+            transition: all 0.2s ease;
+        }
+        .portal-option:hover {
+            border-color: var(--lilac-glow);
+            background: rgba(163,159,233,0.04);
+        }
+        .portal-option-icon {
+            width: 44px; height: 44px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .portal-option-text { flex: 1; min-width: 0; }
+        .portal-option-title {
+            display: block; font-weight: 700; font-size: 0.95rem;
+            color: var(--text-dark); margin-bottom: 2px;
+        }
+        .portal-option-desc {
+            display: block; font-size: 0.8rem; color: var(--text-muted);
+        }
+        .portal-divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 16px 0;
+        }
+        .portal-divider::before,
+        .portal-divider::after {
+            content: ''; flex: 1; height: 1px; background: #f1f5f9;
+        }
+        .portal-divider span {
+            font-size: 0.75rem; color: #94a3b8; white-space: nowrap;
+        }
+        .portal-footer-text {
+            text-align: center; font-size: 0.75rem; color: #94a3b8;
+            margin-top: 18px; margin-bottom: 0;
+        }
+    </style>
+
     @yield('content')
 
-    <!-- Footer -->
     <footer>
         <p><strong>Agnus Dei School Systems, Inc.</strong> &copy; 1987 - {{ date('Y') }}. All Rights Reserved.</p>
         <p style="font-size: 0.85rem; color: #7c77c6; margin-top: 10px;">Powered by Laravel x Agile Tech</p>

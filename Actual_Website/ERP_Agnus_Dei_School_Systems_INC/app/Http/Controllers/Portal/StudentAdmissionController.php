@@ -1,0 +1,139 @@
+<?php
+
+namespace App\Http\Controllers\Portal;
+
+use App\Http\Controllers\Controller;
+use App\Models\Student;
+use App\Models\Admission;
+use App\Models\Requirement;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+
+class StudentAdmissionController extends Controller
+{
+    public function create()
+    {
+        $student = auth()->user()->student;
+
+        if ($student->student_number) {
+            return redirect()->route('student.dashboard')
+                ->with('error', 'You already have a student number and cannot submit a new student application.');
+        }
+
+        $pendingAdmission = $student->admissions()->where('status', 'Pending')->latest()->first();
+
+        return view('portal.student.admission-apply', compact('student', 'pendingAdmission'));
+    }
+
+    public function store(Request $request)
+    {
+        $student = auth()->user()->student;
+
+        if ($student->student_number) {
+            return back()->with('error', 'You already have a student number.');
+        }
+
+        $data = $request->validate([
+            'application_type' => 'required|in:New,Transferee',
+            'grade_level' => 'required|string|max:20',
+            'strand' => 'nullable|required_if:grade_level,Grade 11,Grade 12|in:STEM,ABM,HUMSS,GAS',
+            'school_year' => 'required|string|max:20',
+
+            'first_name' => 'required|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'date_of_birth' => 'required|date',
+            'place_of_birth' => 'nullable|string|max:255',
+            'citizenship' => 'nullable|string|max:100',
+            'religion' => 'nullable|string|max:100',
+            'legacy_lrn' => 'nullable|string|max:20',
+            'contact_number' => 'nullable|string|max:20',
+
+            'permanent_address' => 'nullable|string|max:500',
+            'same_as_permanent' => 'nullable|boolean',
+            'current_address' => 'nullable|string|max:500',
+
+            'father_name' => 'nullable|string|max:255',
+            'father_occupation' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'mother_occupation' => 'nullable|string|max:255',
+            'guardian_name' => 'nullable|string|max:255',
+            'guardian_contact' => 'nullable|string|max:20',
+
+            'emergency_contact_name' => 'nullable|string|max:255',
+            'emergency_contact_number' => 'nullable|string|max:20',
+            'emergency_contact_relationship' => 'nullable|string|max:100',
+
+            'previous_school' => 'nullable|string|max:255',
+            'previous_school_address' => 'nullable|string|max:500',
+        ]);
+
+        $student->update([
+            'first_name' => $data['first_name'],
+            'middle_name' => $data['middle_name'] ?? null,
+            'last_name' => $data['last_name'],
+            'date_of_birth' => $data['date_of_birth'],
+            'place_of_birth' => $data['place_of_birth'],
+            'citizenship' => $data['citizenship'],
+            'religion' => $data['religion'],
+            'legacy_lrn' => $data['legacy_lrn'],
+            'contact_number' => $data['contact_number'],
+            'permanent_address' => $data['permanent_address'],
+            'current_address' => ($data['same_as_permanent'] ?? false) ? $data['permanent_address'] : $data['current_address'],
+            'father_name' => $data['father_name'],
+            'father_occupation' => $data['father_occupation'],
+            'mother_name' => $data['mother_name'],
+            'mother_occupation' => $data['mother_occupation'],
+            'guardian_name' => $data['guardian_name'],
+            'guardian_contact' => $data['guardian_contact'],
+            'emergency_contact_name' => $data['emergency_contact_name'],
+            'emergency_contact_number' => $data['emergency_contact_number'],
+            'emergency_contact_relationship' => $data['emergency_contact_relationship'],
+            'previous_school' => $data['previous_school'],
+            'previous_school_address' => $data['previous_school_address'],
+        ]);
+
+        $admission = Admission::create([
+            'student_id' => $student->id,
+            'application_type' => $data['application_type'],
+            'grade_level' => $data['grade_level'],
+            'strand' => $data['strand'] ?? null,
+            'school_year' => $data['school_year'],
+            'status' => 'Pending',
+        ]);
+
+        return redirect()->route('student.admission.status')
+            ->with('success', 'Application submitted! Your application number is ' . $admission->application_number);
+    }
+
+    public function status()
+    {
+        $student = auth()->user()->student;
+        $admission = $student->admissions()->latest()->first();
+        $requirements = $admission ? $admission->requirements()->get() : collect();
+
+        return view('portal.student.admission-status', compact('student', 'admission', 'requirements'));
+    }
+
+    public function uploadRequirements(Request $request)
+    {
+        $student = auth()->user()->student;
+        $admission = $student->admissions()->where('status', 'Pending')->latest()->firstOrFail();
+
+        $data = $request->validate([
+            'document_type' => 'required|string|max:100',
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $path = $request->file('file')->store('requirements/' . $admission->id, 'public');
+
+        Requirement::create([
+            'admission_id' => $admission->id,
+            'document_type' => $data['document_type'],
+            'file_path' => $path,
+            'status' => 'Under Review',
+        ]);
+
+        return back()->with('success', 'Document uploaded successfully.');
+    }
+}

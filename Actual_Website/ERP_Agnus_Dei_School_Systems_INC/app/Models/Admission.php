@@ -13,6 +13,8 @@ class Admission extends Model
         'student_id',
         'application_number',
         'application_type',
+        'grade_level',
+        'strand',
         'school_year',
         'status',
     ];
@@ -37,6 +39,11 @@ class Admission extends Model
     public function student()
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function requirements()
+    {
+        return $this->hasMany(Requirement::class);
     }
 }
 

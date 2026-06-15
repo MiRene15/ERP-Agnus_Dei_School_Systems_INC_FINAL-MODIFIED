@@ -23,7 +23,18 @@ class InquiryController extends Controller
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'personal_email' => 'required|email|max:255',
+            'personal_email' => [
+                'required',
+                'email',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    $allowed = ['gmail.com', 'yahoo.com', 'proton.me', 'protonmail.com', 'outlook.com', 'hotmail.com'];
+                    $domain = substr(strrchr($value, '@'), 1);
+                    if (!in_array(strtolower($domain), $allowed)) {
+                        $fail('Please use a verified email provider (Gmail, Yahoo, Proton, or Outlook).');
+                    }
+                },
+            ],
         ]);
 
         $firstName = $request->first_name;
@@ -64,6 +75,6 @@ class InquiryController extends Controller
         // Dispatch the email Notification
         Mail::to($personalEmail)->send(new InquiryCredentialsMail($firstName, $institutionalEmail, $password));
 
-        return redirect('/inquiry')->with('success', 'Your inquiry has been submitted! Check your personal email for your institutional login credentials.');
+        return redirect('/inquiry')->with('success', true);
     }
 }
