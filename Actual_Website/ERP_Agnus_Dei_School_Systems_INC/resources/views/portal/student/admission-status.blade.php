@@ -76,30 +76,100 @@
             </div>
 
             @if($admission->status === 'Pending')
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+                 x-data="{ docs: @js($requirements->pluck('document_type')) }">
                 <h3 class="font-semibold text-gray-900 mb-4">Upload Requirements</h3>
+
                 <form method="POST" action="{{ route('student.admission.requirements') }}" enctype="multipart/form-data">
                     @csrf
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
-                        <select name="document_type" required
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                            <option value="">Select document...</option>
-                            <option value="PSA Birth Certificate">PSA Birth Certificate</option>
-                            <option value="Form 138 (Report Card)">Form 138 (Report Card)</option>
-                            <option value="Good Moral Certificate">Good Moral Certificate</option>
-                            <option value="ESC Grant Certificate">ESC Grant Certificate</option>
-                            <option value="Other">Other</option>
-                        </select>
+                    @php
+                        $requiredTypes = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
+                        $optionalTypes = ['ESC Grant Certificate', 'Other'];
+                    @endphp
+                    <div class="space-y-3">
+                        @foreach($requiredTypes as $dt)
+                        <div class="flex items-center gap-3 p-3 rounded-lg border transition"
+                             :class="docs.includes('{{ $dt }}') ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'">
+                            <div class="w-5 h-5 rounded-full flex items-center justify-center transition"
+                                 :class="docs.includes('{{ $dt }}') ? 'bg-green-500' : 'bg-gray-200'">
+                                <svg x-show="docs.includes('{{ $dt }}')" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <label class="text-sm font-medium text-gray-700 min-w-[180px]">{{ $dt }}</label>
+                            <input type="file" name="documents[{{ $dt }}]" accept=".pdf,.jpg,.jpeg,.png"
+                                   class="flex-1 text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                   @change="if($event.target.files.length) { if(!docs.includes('{{ $dt }}')) docs.push('{{ $dt }}') } else { docs = docs.filter(d => d !== '{{ $dt }}') }">
+                            @error('documents.' . $dt) <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                        </div>
+                        @endforeach
+
+                        <hr class="border-gray-200 my-2">
+
+                        <p class="text-xs text-gray-400 font-medium">Optional Documents</p>
+                        @foreach($optionalTypes as $dt)
+                        <div class="flex items-center gap-3 p-3 rounded-lg border transition"
+                             :class="docs.includes('{{ $dt }}') ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'">
+                            <div class="w-5 h-5 rounded-full flex items-center justify-center transition"
+                                 :class="docs.includes('{{ $dt }}') ? 'bg-green-500' : 'bg-gray-200'">
+                                <svg x-show="docs.includes('{{ $dt }}')" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <label class="text-sm font-medium text-gray-700 min-w-[180px]">{{ $dt }} <span class="text-gray-400 font-normal">(optional)</span></label>
+                            <input type="file" name="documents[{{ $dt }}]" accept=".pdf,.jpg,.jpeg,.png"
+                                   class="flex-1 text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                   @change="if($event.target.files.length) { if(!docs.includes('{{ $dt }}')) docs.push('{{ $dt }}') } else { docs = docs.filter(d => d !== '{{ $dt }}') }">
+                            @error('documents.' . $dt) <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                        </div>
+                        @endforeach
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">File (PDF, JPG, PNG — max 5MB)</label>
-                        <input type="file" name="file" required accept=".pdf,.jpg,.jpeg,.png"
-                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        @error('file') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    <div class="mt-6 flex items-center justify-between">
+                        <p class="text-xs text-gray-400">Accepted: PDF, JPG, PNG — max 5MB each</p>
+                        <div class="flex gap-2">
+                            <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Upload Selected</button>
+                            <button type="button"
+                                    onclick="{{ $allRequiredUploaded ? "document.getElementById('proceed-timer-modal').classList.remove('hidden'); startProceedTimer();" : '' }}"
+                                    class="px-5 py-2 rounded-lg text-sm font-semibold transition"
+                                    style="background: {{ $allRequiredUploaded ? 'var(--navy)' : '#e5e7eb' }}; color: {{ $allRequiredUploaded ? 'white' : '#9ca3af' }}; cursor: {{ $allRequiredUploaded ? 'pointer' : 'default' }};"
+                                    onmouseover="this.style.opacity='{{ $allRequiredUploaded ? '0.9' : '1' }}'"
+                                    onmouseout="this.style.opacity='1'">Proceed</button>
+                        </div>
                     </div>
-                    <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Upload</button>
                 </form>
+
+                {{-- Timer Proceed Modal --}}
+                <div id="proceed-timer-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" style="transition: opacity 0.3s ease;">
+                    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-4 w-full text-center relative overflow-hidden">
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: #ede9fe;">
+                            <svg class="w-8 h-8" style="color: #7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">Proceed to School</h3>
+                        <p class="text-sm text-gray-600 leading-relaxed mb-4">
+                            Please proceed to the school's Registrar Office on-site to complete your payment and finalize your full enrollment. Bring all original copies of your requirements for verification.
+                        </p>
+                        <p class="text-xs text-gray-400">Redirecting to dashboard in <span id="proceed-timer-count" class="font-bold text-gray-700">5</span> seconds...</p>
+                        <div class="mt-3 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div id="proceed-timer-bar" class="h-full rounded-full" style="background: var(--navy); width: 100%; animation: proceedShrink 5s linear forwards;"></div>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    @keyframes proceedShrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+                    #proceed-timer-bar { transform-origin: left; }
+                </style>
+                <script>
+                function startProceedTimer() {
+                    var count = 5, el = document.getElementById('proceed-timer-count');
+                    var interval = setInterval(function() {
+                        count--;
+                        el.textContent = count;
+                        if (count <= 0) {
+                            clearInterval(interval);
+                            var modal = document.getElementById('proceed-timer-modal');
+                            modal.style.transition = 'opacity 0.5s ease';
+                            modal.style.opacity = '0';
+                            setTimeout(function() { window.location.href = '{{ route("student.dashboard") }}'; }, 500);
+                        }
+                    }, 1000);
+                }
+                </script>
             </div>
             @endif
 

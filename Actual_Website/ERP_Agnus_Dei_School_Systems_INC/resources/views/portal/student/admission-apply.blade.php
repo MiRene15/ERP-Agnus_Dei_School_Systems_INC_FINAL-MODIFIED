@@ -164,13 +164,13 @@
                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Place of Birth</label>
-                    <input type="text" name="place_of_birth" value="{{ old('place_of_birth', $student->place_of_birth) }}" maxlength="255"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Place of Birth *</label>
+                    <input type="text" name="place_of_birth" value="{{ old('place_of_birth', $student->place_of_birth) }}" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Citizenship</label>
-                    <input type="text" name="citizenship" value="{{ old('citizenship', $student->citizenship) }}" maxlength="100"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Citizenship *</label>
+                    <input type="text" name="citizenship" value="{{ old('citizenship', $student->citizenship) }}" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
@@ -184,8 +184,8 @@
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                    <input type="text" name="contact_number" value="{{ old('contact_number', $student->contact_number) }}" maxlength="20" placeholder="09XX-XXX-XXXX"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
+                    <input type="text" name="contact_number" value="{{ old('contact_number', $student->contact_number) }}" required maxlength="20" placeholder="09XX-XXX-XXXX"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
             </div>
@@ -206,8 +206,8 @@
             <h3 class="font-semibold text-gray-900 mb-4">Address</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Permanent Address</label>
-                    <textarea name="permanent_address" rows="2" maxlength="500"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Permanent Address *</label>
+                    <textarea name="permanent_address" rows="2" required maxlength="500"
                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">{{ old('permanent_address', $student->permanent_address) }}</textarea>
                 </div>
                 <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -285,18 +285,18 @@
             <h3 class="font-semibold text-gray-900 mb-4">Emergency Contact</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input type="text" name="emergency_contact_name" value="{{ old('emergency_contact_name', $student->emergency_contact_name) }}" maxlength="255"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input type="text" name="emergency_contact_name" value="{{ old('emergency_contact_name', $student->emergency_contact_name) }}" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number</label>
-                    <input type="text" name="emergency_contact_number" value="{{ old('emergency_contact_number', $student->emergency_contact_number) }}" maxlength="20"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
+                    <input type="text" name="emergency_contact_number" value="{{ old('emergency_contact_number', $student->emergency_contact_number) }}" required maxlength="20"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
-                    <input type="text" name="emergency_contact_relationship" value="{{ old('emergency_contact_relationship', $student->emergency_contact_relationship) }}" maxlength="100"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Relationship *</label>
+                    <input type="text" name="emergency_contact_relationship" value="{{ old('emergency_contact_relationship', $student->emergency_contact_relationship) }}" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
             </div>
@@ -318,8 +318,8 @@
             <p class="text-sm text-gray-500 mb-4">If you are a new student or transferee, please provide your previous school details.</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">School Name</label>
-                    <input type="text" name="previous_school" value="{{ old('previous_school', $student->previous_school) }}" maxlength="255"
+                    <label class="block text-sm font-medium text-gray-700 mb-1">School Name *</label>
+                    <input type="text" name="previous_school" value="{{ old('previous_school', $student->previous_school) }}" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>

@@ -112,7 +112,11 @@ class StudentAdmissionController extends Controller
         $admission = $student->admissions()->latest()->first();
         $requirements = $admission ? $admission->requirements()->get() : collect();
 
-        return view('portal.student.admission-status', compact('student', 'admission', 'requirements'));
+        $requiredDocs = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
+        $uploadedTypes = $requirements->pluck('document_type')->toArray();
+        $allRequiredUploaded = empty(array_diff($requiredDocs, $uploadedTypes));
+
+        return view('portal.student.admission-status', compact('student', 'admission', 'requirements', 'allRequiredUploaded'));
     }
 
     public function uploadRequirements(Request $request)
@@ -121,19 +125,25 @@ class StudentAdmissionController extends Controller
         $admission = $student->admissions()->where('status', 'Pending')->latest()->firstOrFail();
 
         $data = $request->validate([
-            'document_type' => 'required|string|max:100',
-            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'documents' => 'required|array',
+            'documents.*' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
-        $path = $request->file('file')->store('requirements/' . $admission->id, 'public');
+        $count = 0;
 
-        Requirement::create([
-            'admission_id' => $admission->id,
-            'document_type' => $data['document_type'],
-            'file_path' => $path,
-            'status' => 'Under Review',
-        ]);
+        foreach ($request->file('documents') as $documentType => $file) {
+            $path = $file->store('requirements/' . $admission->id, 'public');
 
-        return back()->with('success', 'Document uploaded successfully.');
+            Requirement::create([
+                'admission_id' => $admission->id,
+                'document_type' => $documentType,
+                'file_path' => $path,
+                'status' => 'Under Review',
+            ]);
+
+            $count++;
+        }
+
+        return back()->with('success', $count . ' document(s) uploaded successfully.');
     }
 }

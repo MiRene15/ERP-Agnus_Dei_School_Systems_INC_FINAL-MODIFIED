@@ -83,6 +83,10 @@
                 <div class="flex-1">
                     <h3 class="text-lg font-bold text-gray-900">Application Submitted</h3>
                     <p class="text-sm text-gray-600 mt-1">#{{ $pendingAdmission->application_number }} — {{ $pendingAdmission->application_type }} Student for {{ $pendingAdmission->school_year }}. Upload your requirements while waiting.</p>
+                    <p class="text-sm text-gray-600 mt-2 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        After uploading all required documents, please proceed to the school's Registrar Office on-site to complete your payment and full enrollment.
+                    </p>
                 </div>
                 <a href="{{ route('student.admission.status') }}" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition flex-shrink-0" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">View Status</a>
             </div>
