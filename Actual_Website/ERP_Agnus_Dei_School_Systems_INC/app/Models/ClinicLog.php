@@ -13,8 +13,13 @@ class ClinicLog extends Model
         'student_id',
         'nurse_id',
         'symptoms',
+        'complaint',
+        'diagnosis',
         'treatment',
+        'notes',
+        'referred_to',
         'incident_date',
+        'visit_date',
     ];
 
     public function student()

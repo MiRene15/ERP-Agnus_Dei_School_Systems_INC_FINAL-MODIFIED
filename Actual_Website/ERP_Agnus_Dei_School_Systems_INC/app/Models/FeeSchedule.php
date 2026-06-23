@@ -11,6 +11,7 @@ class FeeSchedule extends Model
 
     protected $fillable = [
         'grade_level',
+        'semester',
         'tuition_fee',
         'misc_fee',
         'school_year',

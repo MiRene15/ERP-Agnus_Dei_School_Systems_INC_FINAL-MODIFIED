@@ -16,7 +16,9 @@ class StudentLedger extends Model
         'discount_applied',
         'total_paid',
         'balance',
+        'carried_over_balance',
         'clearance_status',
+        'it_confirmed_at',
     ];
 
     public function student()

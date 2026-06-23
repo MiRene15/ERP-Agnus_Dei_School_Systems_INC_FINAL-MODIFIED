@@ -16,6 +16,7 @@ class Assessment extends Model
         'title',
         'raw_score',
         'max_score',
+        'grading_period',
     ];
 
     public function enrollment()

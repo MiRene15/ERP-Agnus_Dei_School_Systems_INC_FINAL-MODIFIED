@@ -13,7 +13,9 @@ class Enrollment extends Model
         'student_id',
         'section_id',
         'school_year',
+        'strand',
         'status',
+        'promoted_to_enrollment_id',
     ];
 
     public function student()
@@ -24,5 +26,15 @@ class Enrollment extends Model
     public function section()
     {
         return $this->belongsTo(Section::class);
+    }
+
+    public function subjects()
+    {
+        return $this->belongsToMany(Classes::class, 'enrollment_subject', 'enrollment_id', 'class_id');
+    }
+
+    public function promotedToEnrollment()
+    {
+        return $this->belongsTo(Enrollment::class, 'promoted_to_enrollment_id');
     }
 }

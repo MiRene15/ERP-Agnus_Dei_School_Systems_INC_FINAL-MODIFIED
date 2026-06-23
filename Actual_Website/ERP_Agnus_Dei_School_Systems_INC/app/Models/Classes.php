@@ -36,4 +36,14 @@ class Classes extends Model
     {
         return $this->hasMany(Schedule::class, 'class_id');
     }
+
+    public function enrollments()
+    {
+        return $this->belongsToMany(Enrollment::class, 'enrollment_subject', 'class_id', 'enrollment_id');
+    }
+
+    public function grades()
+    {
+        return $this->hasMany(Grade::class, 'class_id');
+    }
 }
