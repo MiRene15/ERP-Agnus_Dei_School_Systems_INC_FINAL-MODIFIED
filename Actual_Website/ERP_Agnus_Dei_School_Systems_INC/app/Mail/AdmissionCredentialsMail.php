@@ -32,14 +32,9 @@ class AdmissionCredentialsMail extends Mailable
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
+    public function build(): void
     {
-        return new Content(
-            view: 'view.name',
-        );
+        $this->text('emails.admission-credentials-mail');
     }
 
     /**

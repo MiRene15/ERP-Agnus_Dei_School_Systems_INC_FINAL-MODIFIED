@@ -18,38 +18,38 @@ class FeeSchedulesSeeder extends Seeder
         // 1. Seed Tuition Fees (from the image)
         $paymentScheme = [
             // SET A
-            ['grade_level' => 'Kinder', 'tuition_fee' => 21000.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
+            ['grade_level' => 'Kinder', 'semester' => '1st Semester', 'tuition_fee' => 21000.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
             
             // SET B
-            ['grade_level' => 'Grade 1', 'tuition_fee' => 24748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
+            ['grade_level' => 'Grade 1', 'semester' => '1st Semester', 'tuition_fee' => 24748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
             
             // SET C
-            ['grade_level' => 'Grade 2', 'tuition_fee' => 24748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
+            ['grade_level' => 'Grade 2', 'semester' => '1st Semester', 'tuition_fee' => 24748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
             
             // SET D
-            ['grade_level' => 'Grade 3', 'tuition_fee' => 25748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
+            ['grade_level' => 'Grade 3', 'semester' => '1st Semester', 'tuition_fee' => 25748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
             
             // SET E
-            ['grade_level' => 'Grade 4', 'tuition_fee' => 26748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 5', 'tuition_fee' => 26748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 6', 'tuition_fee' => 26748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
+            ['grade_level' => 'Grade 4', 'semester' => '1st Semester', 'tuition_fee' => 26748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 5', 'semester' => '1st Semester', 'tuition_fee' => 26748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 6', 'semester' => '1st Semester', 'tuition_fee' => 26748.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
             
             // SET F (Standard JHS) -> Adding Grade 7 default as it belongs to JHS
-            ['grade_level' => 'Grade 7', 'tuition_fee' => 31700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 8', 'tuition_fee' => 31700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 9', 'tuition_fee' => 31700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 10', 'tuition_fee' => 31700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
+            ['grade_level' => 'Grade 7', 'semester' => '1st Semester', 'tuition_fee' => 31700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 8', 'semester' => '1st Semester', 'tuition_fee' => 31700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 9', 'semester' => '1st Semester', 'tuition_fee' => 31700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 10', 'semester' => '1st Semester', 'tuition_fee' => 31700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
 
             // SET G (JHS with ESC applied immediately per image)
             // Storing these slightly differently so the Cashier dropdown can target them
-            ['grade_level' => 'Grade 7 - ESC', 'tuition_fee' => 22700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 8 - ESC', 'tuition_fee' => 22700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 9 - ESC', 'tuition_fee' => 22700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 10 - ESC', 'tuition_fee' => 22700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
+            ['grade_level' => 'Grade 7 - ESC', 'semester' => '1st Semester', 'tuition_fee' => 22700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 8 - ESC', 'semester' => '1st Semester', 'tuition_fee' => 22700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 9 - ESC', 'semester' => '1st Semester', 'tuition_fee' => 22700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 10 - ESC', 'semester' => '1st Semester', 'tuition_fee' => 22700.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
 
             // SET H (SHS - Handled by Voucher completely)
-            ['grade_level' => 'Grade 11', 'tuition_fee' => 0.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
-            ['grade_level' => 'Grade 12', 'tuition_fee' => 0.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear],
+            ['grade_level' => 'Grade 11', 'semester' => '1st Semester', 'tuition_fee' => 0.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
+            ['grade_level' => 'Grade 12', 'semester' => '1st Semester', 'tuition_fee' => 0.00, 'misc_fee' => 0.00, 'school_year' => $schoolYear, 'created_at' => now(), 'updated_at' => now()],
         ];
 
         DB::table('fee_schedules')->insert($paymentScheme);
