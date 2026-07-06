@@ -3,12 +3,69 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClinicLog;
+use App\Models\Student;
 use Illuminate\Http\Request;
 
 class NurseController extends Controller
 {
     public function index()
     {
-        return view('portal.nurse.dashboard');
+        $todayVisits = ClinicLog::whereDate('incident_date', today())->count();
+        $thisWeekVisits = ClinicLog::whereBetween('incident_date', [now()->startOfWeek(), now()->endOfWeek()])->count();
+        $referralsCount = ClinicLog::whereNotNull('referred_to')->count();
+        $followUps = ClinicLog::whereDate('incident_date', '>=', now()->subDays(7))->count();
+
+        $recentLogs = ClinicLog::with('student')
+            ->latest('incident_date')
+            ->take(5)
+            ->get();
+
+        return view('portal.nurse.dashboard', compact('todayVisits', 'thisWeekVisits', 'referralsCount', 'followUps', 'recentLogs'));
+    }
+
+    public function logs()
+    {
+        $logs = ClinicLog::with('student')
+            ->when(request('search'), function ($q) {
+                $q->whereHas('student', function ($sq) {
+                    $sq->where('first_name', 'like', '%' . request('search') . '%')
+                        ->orWhere('last_name', 'like', '%' . request('search') . '%');
+                });
+            })
+            ->latest('incident_date')
+            ->paginate(20);
+
+        return view('portal.nurse.logs', compact('logs'));
+    }
+
+    public function createLog()
+    {
+        $students = Student::where('status', 'enrolled')
+            ->orderBy('last_name')
+            ->get();
+
+        return view('portal.nurse.create-log', compact('students'));
+    }
+
+    public function storeLog(Request $request)
+    {
+        $data = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'incident_date' => 'required|date',
+            'complaint' => 'nullable|string',
+            'diagnosis' => 'nullable|string',
+            'treatment' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'referred_to' => 'nullable|string|max:255',
+        ]);
+
+        $data['nurse_id'] = auth()->id();
+        $data['symptoms'] = $data['complaint'] ?? '';
+        $data['visit_date'] = $data['incident_date'];
+
+        ClinicLog::create($data);
+
+        return redirect()->route('nurse.logs')->with('success', 'Clinic log created successfully.');
     }
 }
