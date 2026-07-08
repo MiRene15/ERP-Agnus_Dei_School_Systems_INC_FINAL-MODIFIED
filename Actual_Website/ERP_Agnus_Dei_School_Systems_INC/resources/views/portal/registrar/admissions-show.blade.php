@@ -66,21 +66,39 @@
             </dl>
         </div>
 
+        {{-- Requirements Checklist --}}
         @if($admission->requirements->isNotEmpty())
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-semibold text-gray-900 mb-4">Submitted Requirements</h3>
+            <h3 class="font-semibold text-gray-900 mb-4">Requirements Checklist</h3>
+            <p class="text-xs text-gray-500 mb-3">Verify each document after reviewing it. All required documents must be verified before approving.</p>
             <ul class="divide-y divide-gray-100">
                 @foreach($admission->requirements as $req)
                 <li class="py-3 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                             style="background: {{ $req->status === 'Verified' ? '#22c55e' : '#e5e7eb' }};">
+                            @if($req->status === 'Verified')
+                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                            @endif
+                        </div>
                         <div>
                             <p class="text-sm font-medium text-gray-900">{{ $req->document_type }}</p>
-                            <p class="text-xs text-gray-500">{{ $req->status }}</p>
+                            <p class="text-xs {{ $req->status === 'Verified' ? 'text-green-600' : 'text-gray-500' }}">{{ $req->status }}</p>
                         </div>
                     </div>
-                    <a href="{{ asset('storage/' . $req->file_path) }}" target="_blank"
-                       class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ asset('storage/' . $req->file_path) }}" target="_blank"
+                           class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
+                        <form method="POST" action="{{ route('registrar.admissions.verify-requirement', $req) }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="verify" value="{{ $req->status === 'Verified' ? '0' : '1' }}">
+                            <button type="submit"
+                                    class="text-sm font-medium px-3 py-1 rounded-lg transition"
+                                    style="background: {{ $req->status === 'Verified' ? '#fee2e2' : '#dcfce7' }}; color: {{ $req->status === 'Verified' ? '#dc2626' : '#16a34a' }};">
+                                {{ $req->status === 'Verified' ? 'Unverify' : 'Verify' }}
+                            </button>
+                        </form>
+                    </div>
                 </li>
                 @endforeach
             </ul>
@@ -110,14 +128,14 @@
             </div>
 
             @if($admission->status === 'Pending')
-            <form method="POST" action="{{ route('registrar.admissions.approve', $admission) }}" class="space-y-3">
+            <form method="POST" action="{{ route('registrar.admissions.approve', $admission) }}" class="space-y-3" x-data="{ selectedSection: '', selectedSectionGrade: '' }">
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Assign Section</label>
                     @if($sections->isEmpty())
                         <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">No sections available for {{ $admission->grade_level }}. Please create one first.</div>
                     @else
-                    <select name="section_id" required
+                    <select name="section_id" required x-model="selectedSection"
                             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                         <option value="">Select section...</option>
                         @foreach($sections as $section)
@@ -126,6 +144,26 @@
                     </select>
                     @endif
                 </div>
+
+                {{-- Subject Assignment --}}
+                <div x-show="selectedSection !== ''" x-cloak>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign Subjects</label>
+                    @if($classes->isEmpty())
+                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">No classes available for {{ $admission->grade_level }}. Please create subjects and classes first.</div>
+                    @else
+                    <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                        @foreach($classes as $class)
+                        <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm">
+                            <input type="checkbox" name="subject_ids[]" value="{{ $class->id }}"
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="font-medium text-gray-700">{{ $class->subject->name ?? 'N/A' }}</span>
+                            <span class="text-xs text-gray-400 ml-auto">{{ $class->teacher->name ?? 'No teacher' }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                    @endif
+                </div>
+
                 <button type="submit"
                         class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition">
                     Approve & Enroll
