@@ -58,7 +58,7 @@
             <tfoot>
                 <tr class="bg-gray-50 font-semibold">
                     <td class="py-3 px-3 text-gray-900 border border-gray-200">General Average</td>
-                    <td colspan="3" class="py-3 px-2 text-center text-gray-900 border border-gray-200"></td>
+                    <td colspan="{{ count($gradingPeriods) }}" class="py-3 px-2 text-center text-gray-900 border border-gray-200"></td>
                     <td class="py-3 px-2 text-center text-gray-900 border border-gray-200">{{ $overallAverage ? number_format($overallAverage, 2) : '—' }}</td>
                     <td class="py-3 px-2 text-center border border-gray-200">
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ ($overallAverage ?? 0) >= 75 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
