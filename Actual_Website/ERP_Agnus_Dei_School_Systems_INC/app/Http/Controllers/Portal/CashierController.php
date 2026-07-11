@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\StudentLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CashierController extends Controller
 {
@@ -70,41 +71,50 @@ class CashierController extends Controller
         $totalAssessed = $feeSchedule ? ($feeSchedule->tuition_fee + $feeSchedule->misc_fee) : 0;
         $discountAmount = $data['discount_amount'] ?? 0;
 
-        DB::transaction(function () use ($student, $data, $totalAssessed, $discountAmount) {
-            $ledger = $student->ledger;
+        try {
+            DB::transaction(function () use ($student, $data, $totalAssessed, $discountAmount) {
+                $ledger = $student->ledger;
 
-            if (!$ledger) {
-                $ledger = StudentLedger::create([
-                    'student_id' => $student->id,
-                    'payment_plan' => $data['payment_plan'],
-                    'total_assessed' => $totalAssessed,
-                    'discount_applied' => $discountAmount,
-                    'total_paid' => $data['amount_paid'],
-                    'balance' => $totalAssessed - $data['amount_paid'] - $discountAmount,
-                    'clearance_status' => ($data['payment_plan'] === 'full' && $data['amount_paid'] >= $totalAssessed - $discountAmount) ? 'Cleared' : 'Pending',
-                ]);
-            } else {
-                $ledger->payment_plan = $data['payment_plan'];
-                $ledger->total_assessed = $totalAssessed;
-                $ledger->discount_applied = $discountAmount;
-                $ledger->total_paid += $data['amount_paid'];
-                $ledger->balance = $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied;
-                if ($data['payment_plan'] === 'full' && $ledger->balance <= 0) {
-                    $ledger->clearance_status = 'Cleared';
+                if (!$ledger) {
+                    $ledger = StudentLedger::create([
+                        'student_id' => $student->id,
+                        'payment_plan' => $data['payment_plan'],
+                        'total_assessed' => $totalAssessed,
+                        'discount_applied' => $discountAmount,
+                        'total_paid' => $data['amount_paid'],
+                        'balance' => $totalAssessed - $data['amount_paid'] - $discountAmount,
+                        'clearance_status' => ($data['payment_plan'] === 'full' && $data['amount_paid'] >= $totalAssessed - $discountAmount) ? 'Cleared' : 'Pending',
+                    ]);
+                } else {
+                    $ledger->payment_plan = $data['payment_plan'];
+                    $ledger->total_assessed = $totalAssessed;
+                    $ledger->discount_applied = $discountAmount;
+                    $ledger->total_paid += $data['amount_paid'];
+                    $ledger->balance = $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied;
+                    if ($data['payment_plan'] === 'full' && $ledger->balance <= 0) {
+                        $ledger->clearance_status = 'Cleared';
+                    }
+                    $ledger->save();
                 }
-                $ledger->save();
-            }
 
-            $receiptNumber = 'RCP-' . now()->format('Ymd') . '-' . str_pad(Payment::whereDate('payment_date', today())->count() + 1, 4, '0', STR_PAD_LEFT);
+                $receiptNumber = 'RCP-' . now()->format('Ymd') . '-' . str_pad(Payment::whereDate('payment_date', today())->count() + 1, 4, '0', STR_PAD_LEFT);
 
-            Payment::create([
-                'ledger_id' => $ledger->id,
-                'cashier_id' => auth()->id(),
-                'amount_paid' => $data['amount_paid'],
-                'receipt_number' => $receiptNumber,
-                'payment_date' => now(),
+                Payment::create([
+                    'ledger_id' => $ledger->id,
+                    'cashier_id' => auth()->id(),
+                    'amount_paid' => $data['amount_paid'],
+                    'receipt_number' => $receiptNumber,
+                    'payment_date' => now(),
+                ]);
+            });
+        } catch (\Exception $e) {
+            Log::error('Payment processing failed: ' . $e->getMessage(), [
+                'student_id' => $student->id,
+                'amount' => $data['amount_paid'],
             ]);
-        });
+            return redirect()->route('cashier.payment', $student)
+                ->with('error', 'Payment processing failed. Please try again.');
+        }
 
         return redirect()->route('cashier.dashboard')
             ->with('success', 'Payment of ₱' . number_format($data['amount_paid'], 2) . ' processed for ' . $student->first_name . ' ' . $student->last_name . '.');
