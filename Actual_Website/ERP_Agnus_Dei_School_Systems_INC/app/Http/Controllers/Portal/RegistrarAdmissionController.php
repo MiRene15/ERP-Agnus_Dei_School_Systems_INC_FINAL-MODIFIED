@@ -10,6 +10,8 @@ use App\Models\Requirement;
 use App\Models\Section;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RegistrarAdmissionController extends Controller
 {
@@ -76,28 +78,40 @@ class RegistrarAdmissionController extends Controller
 
         $student = $admission->student;
 
-        if ($admission->application_type !== 'Old') {
-            $student->student_number = Student::generateStudentNumber();
+        try {
+            DB::transaction(function () use ($admission, $student, $data) {
+                if ($admission->application_type !== 'Old') {
+                    $student->student_number = Student::generateStudentNumber();
+                }
+
+                $student->status = 'enrolled';
+                $student->save();
+
+                $enrollment = Enrollment::create([
+                    'student_id' => $student->id,
+                    'section_id' => $data['section_id'],
+                    'school_year' => $admission->school_year,
+                    'strand' => $admission->strand,
+                    'status' => 'Active',
+                ]);
+
+                $enrollment->subjects()->attach($data['subject_ids']);
+
+                $admission->status = 'Approved By Registrar';
+                $admission->save();
+            });
+
+            log_activity('Admission Approved', $admission, auth()->id(), 'Approved admission for ' . $student->first_name . ' ' . $student->last_name);
+
+            return redirect()->route('registrar.admissions.index')
+                ->with('success', 'Admission approved for ' . $student->first_name . ' ' . $student->last_name . '. Student has been enrolled with ' . count($data['subject_ids']) . ' subject(s).');
+        } catch (\Exception $e) {
+            Log::error('Admission approval failed: ' . $e->getMessage(), [
+                'admission_id' => $admission->id,
+                'student_id' => $student->id,
+            ]);
+            return back()->with('error', 'Failed to approve admission. Please try again.');
         }
-
-        $student->status = 'enrolled';
-        $student->save();
-
-        $enrollment = Enrollment::create([
-            'student_id' => $student->id,
-            'section_id' => $data['section_id'],
-            'school_year' => $admission->school_year,
-            'strand' => $admission->strand,
-            'status' => 'Active',
-        ]);
-
-        $enrollment->subjects()->attach($data['subject_ids']);
-
-        $admission->status = 'Approved By Registrar';
-        $admission->save();
-
-        return redirect()->route('registrar.admissions.index')
-            ->with('success', 'Admission approved for ' . $student->first_name . ' ' . $student->last_name . '. Student has been enrolled with ' . count($data['subject_ids']) . ' subject(s).');
     }
 
     public function reject(Admission $admission)
