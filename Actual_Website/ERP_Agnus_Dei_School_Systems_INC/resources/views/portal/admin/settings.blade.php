@@ -31,7 +31,7 @@
             <p class="text-xs text-gray-500 mb-2">This controls which school year data is shown across the system (admissions, enrollments, classes, fees).</p>
             <input type="text" name="active_school_year" value="{{ $activeSY }}" required maxlength="20" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
         </div>
-        <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Save</button>
+        <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition hover:opacity-90 cursor-pointer" style="background: var(--navy);">Save Setting</button>
     </form>
 </div>
 @endsection

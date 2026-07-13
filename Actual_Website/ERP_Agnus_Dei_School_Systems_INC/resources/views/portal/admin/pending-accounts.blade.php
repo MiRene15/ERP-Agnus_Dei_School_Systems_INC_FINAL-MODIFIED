@@ -67,7 +67,7 @@
                         <form method="POST" action="{{ route('admin.confirm-account', $ledger) }}">
                             @csrf
                             <button type="submit"
-                                    class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition"
+                                    class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition cursor-pointer"
                                     style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                                 Confirm Account
                             </button>
