@@ -2,36 +2,37 @@
 
 namespace App\Mail;
 
-use App\Models\Student;
+use App\Models\Classes;
+use App\Models\Enrollment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class AdmissionCredentialsMail extends Mailable
+class GradesSubmittedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $student;
-    public $password;
+    public $class;
+    public $gradingPeriod;
 
-    public function __construct(Student $student, string $password)
+    public function __construct(Classes $class, string $gradingPeriod)
     {
-        $this->student = $student;
-        $this->password = $password;
+        $this->class = $class;
+        $this->gradingPeriod = $gradingPeriod;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Admission Approved - Your Account Credentials',
+            subject: 'Grades Submitted - ' . $this->class->subject?->name . ' (' . $this->gradingPeriod . ')',
         );
     }
 
     public function build(): void
     {
-        $this->text('emails.admission-credentials-mail');
+        $this->text('emails.grades-submitted');
     }
 
     public function attachments(): array

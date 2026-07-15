@@ -9,9 +9,12 @@ use App\Models\Enrollment;
 use App\Models\Requirement;
 use App\Models\Section;
 use App\Models\Student;
+use App\Models\User;
+use App\Mail\AdmissionCredentialsMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class RegistrarAdmissionController extends Controller
 {
@@ -102,6 +105,10 @@ class RegistrarAdmissionController extends Controller
             });
 
             log_activity('Admission Approved', $admission, auth()->id(), 'Approved admission for ' . $student->first_name . ' ' . $student->last_name);
+
+            if ($student->user?->email) {
+                Mail::to($student->user->email)->queue(new AdmissionCredentialsMail($student, ''));
+            }
 
             return redirect()->route('registrar.admissions.index')
                 ->with('success', 'Admission approved for ' . $student->first_name . ' ' . $student->last_name . '. Student has been enrolled with ' . count($data['subject_ids']) . ' subject(s).');

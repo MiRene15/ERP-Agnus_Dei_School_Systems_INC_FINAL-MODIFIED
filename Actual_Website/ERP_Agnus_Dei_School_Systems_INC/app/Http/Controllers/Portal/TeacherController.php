@@ -8,6 +8,9 @@ use App\Models\Classes;
 use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\Schedule;
+use App\Models\User;
+use App\Mail\GradesSubmittedMail;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 
 class TeacherController extends Controller
@@ -115,6 +118,11 @@ class TeacherController extends Controller
             ->where('grading_period', $data['grading_period'])
             ->where('status', 'Pending')
             ->update(['status' => 'Submitted']);
+
+        $recipients = User::whereIn('role_id', [1, 2])->pluck('email')->filter();
+        foreach ($recipients as $email) {
+            Mail::to($email)->queue(new GradesSubmittedMail($class, $data['grading_period']));
+        }
 
         return back()->with('success', 'Grades submitted for ' . $data['grading_period'] . '. ' . $gradeCount . ' grade(s) submitted.');
     }
