@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -28,7 +29,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $role = $request->user()->role_id;
+        $user = $request->user();
+        if (!$user->first_login_at) {
+            $user->first_login_at = Carbon::now();
+        }
+        $user->last_login_at = Carbon::now();
+        $user->save();
+
+        $role = $user->role_id;
         $url = match($role) {
             1 => '/admin/dashboard',
             2 => '/registrar/dashboard',
