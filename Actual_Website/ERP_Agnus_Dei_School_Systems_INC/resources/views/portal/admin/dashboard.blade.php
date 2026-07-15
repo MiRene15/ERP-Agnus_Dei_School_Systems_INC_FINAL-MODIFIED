@@ -93,4 +93,13 @@
     </div>
     @endif
 </div>
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+    <h3 class="font-semibold text-gray-900 mb-4">Exports</h3>
+    <div class="flex flex-wrap gap-3">
+        <a href="{{ route('admin.exports.enrollments') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">Enrollments CSV</a>
+        <a href="{{ route('admin.exports.grades') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">Grades CSV</a>
+        <a href="{{ route('admin.exports.collections') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg">Collections CSV</a>
+    </div>
+</div>
 @endsection

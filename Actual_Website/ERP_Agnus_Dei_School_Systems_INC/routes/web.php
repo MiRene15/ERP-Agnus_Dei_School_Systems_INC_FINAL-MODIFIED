@@ -17,6 +17,7 @@ use App\Http\Controllers\Portal\RegistrarAdmissionController;
 use App\Http\Controllers\Portal\LibrarianController;
 use App\Http\Controllers\Portal\NurseController;
 use App\Http\Controllers\Portal\ReportCardController;
+use App\Http\Controllers\Portal\ExportController;
 use App\Http\Controllers\Admin\UserController;
 
 /*
@@ -130,6 +131,10 @@ Route::middleware('auth')->group(function () {
         // School Settings
         Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
         Route::post('/admin/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
+        // Exports
+        Route::get('/admin/exports/enrollments', [ExportController::class, 'enrollments'])->name('admin.exports.enrollments');
+        Route::get('/admin/exports/grades', [ExportController::class, 'grades'])->name('admin.exports.grades');
+        Route::get('/admin/exports/collections', [ExportController::class, 'collections'])->name('admin.exports.collections');
     });
 
     Route::middleware(['role:2'])->group(function() {
