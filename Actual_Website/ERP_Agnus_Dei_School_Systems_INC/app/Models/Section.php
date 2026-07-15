@@ -13,7 +13,13 @@ class Section extends Model
         'grade_level',
         'section_name',
         'is_active',
+        'adviser_id',
     ];
+
+    public function adviser()
+    {
+        return $this->belongsTo(User::class, 'adviser_id');
+    }
 
     public function enrollments()
     {

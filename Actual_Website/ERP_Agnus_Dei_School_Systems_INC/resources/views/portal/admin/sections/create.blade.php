@@ -30,6 +30,16 @@
                 <span class="text-sm text-gray-700">Active</span>
             </label>
         </div>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Class Adviser</label>
+            <select name="adviser_id" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">— None —</option>
+                @foreach($teachers as $t)
+                <option value="{{ $t->id }}" {{ old('adviser_id') == $t->id ? 'selected' : '' }}>{{ $t->name }} ({{ $t->email }})</option>
+                @endforeach
+            </select>
+            @error('adviser_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
         <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Create Section</button>
     </form>
 </div>

@@ -27,6 +27,7 @@
     <div class="mb-4">
         <p class="text-sm text-gray-500">School Year: <span class="font-medium text-gray-900">{{ $enrollment->school_year }}</span></p>
         <p class="text-sm text-gray-500">LRN: <span class="font-medium text-gray-900">{{ $enrollment->student->student_number ?? 'N/A' }}</span></p>
+        <p class="text-sm text-gray-500">Adviser: <span class="font-medium text-gray-900">{{ $enrollment->section?->adviser?->name ?? 'N/A' }}</span></p>
         @if($enrollment->strand)
         <p class="text-sm text-gray-500">Strand: <span class="font-medium text-gray-900">{{ $enrollment->strand }}</span></p>
         @endif

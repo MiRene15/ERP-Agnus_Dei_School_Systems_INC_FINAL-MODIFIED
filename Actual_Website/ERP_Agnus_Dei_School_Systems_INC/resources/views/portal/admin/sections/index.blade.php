@@ -37,11 +37,12 @@
         @else
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
-                <thead><tr><th class="text-left py-3 px-2 font-medium text-gray-600">Section</th><th class="text-left py-3 px-2 font-medium text-gray-600">Status</th><th class="text-left py-3 px-2 font-medium text-gray-600">Actions</th></tr></thead>
+                <thead><tr><th class="text-left py-3 px-2 font-medium text-gray-600">Section</th><th class="text-left py-3 px-2 font-medium text-gray-600">Adviser</th><th class="text-left py-3 px-2 font-medium text-gray-600">Status</th><th class="text-left py-3 px-2 font-medium text-gray-600">Actions</th></tr></thead>
                 <tbody>
                     @foreach($glSections as $section)
                     <tr class="border-b border-gray-100">
                         <td class="py-3 px-2 font-medium text-gray-900">{{ $section->section_name }}</td>
+                        <td class="py-3 px-2 text-gray-600 text-xs">{{ $section->adviser?->name ?? '—' }}</td>
                         <td class="py-3 px-2">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $section->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
                                 {{ $section->is_active ? 'Active' : 'Inactive' }}

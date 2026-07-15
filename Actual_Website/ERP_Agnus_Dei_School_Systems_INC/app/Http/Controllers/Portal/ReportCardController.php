@@ -23,7 +23,7 @@ class ReportCardController extends Controller
 
     public function show(Enrollment $enrollment)
     {
-        $enrollment->load('student', 'section', 'subjects.subject');
+        $enrollment->load('student', 'section.adviser', 'subjects.subject');
 
         $gradingPeriods = ['1st Semester', '2nd Semester', '3rd Semester'];
 
@@ -56,7 +56,7 @@ class ReportCardController extends Controller
 
     public function print(Enrollment $enrollment)
     {
-        $enrollment->load('student', 'section', 'subjects.subject');
+        $enrollment->load('student', 'section.adviser', 'subjects.subject');
 
         $gradingPeriods = ['1st Semester', '2nd Semester', '3rd Semester'];
 
@@ -95,7 +95,7 @@ class ReportCardController extends Controller
         $student = auth()->user()->student;
 
         $enrollment = $student->enrollments()
-            ->with('section', 'subjects.subject')
+            ->with('section.adviser', 'subjects.subject')
             ->where('status', 'Active')
             ->where('school_year', active_school_year())
             ->latest()

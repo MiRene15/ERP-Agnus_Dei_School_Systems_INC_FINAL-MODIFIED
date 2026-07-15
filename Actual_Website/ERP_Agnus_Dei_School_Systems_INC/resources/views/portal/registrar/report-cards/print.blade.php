@@ -40,6 +40,7 @@
         @if($enrollment->strand)
         <tr><td>Strand:</td><td>{{ $enrollment->strand }}</td></tr>
         @endif
+        <tr><td>Adviser:</td><td>{{ $enrollment->section?->adviser?->name ?? 'N/A' }}</td></tr>
     </table>
 
     <table class="grades-table">
