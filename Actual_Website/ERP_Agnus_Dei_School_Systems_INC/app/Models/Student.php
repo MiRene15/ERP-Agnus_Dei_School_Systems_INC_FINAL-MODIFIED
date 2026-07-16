@@ -36,6 +36,7 @@ class Student extends Model
         'emergency_contact_number',
         'emergency_contact_relationship',
         'status',
+        'scholarship',
     ];
 
     /**

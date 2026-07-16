@@ -17,6 +17,10 @@ class Payment extends Model
         'payment_date',
     ];
 
+    protected $casts = [
+        'payment_date' => 'datetime',
+    ];
+
     public function ledger()
     {
         return $this->belongsTo(StudentLedger::class);

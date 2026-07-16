@@ -9,14 +9,14 @@ return new class extends Migration
     public function up()
     {
         Schema::table('fee_schedules', function (Blueprint $table) {
-            $table->enum('semester', ['1st Semester', '2nd Semester', '3rd Semester'])->after('grade_level');
+            $table->string('term', 20)->after('grade_level');
         });
     }
 
     public function down()
     {
         Schema::table('fee_schedules', function (Blueprint $table) {
-            $table->dropColumn('semester');
+            $table->dropColumn('term');
         });
     }
 };

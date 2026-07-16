@@ -11,6 +11,25 @@ use Illuminate\Support\Facades\Storage;
 
 class StudentAdmissionController extends Controller
 {
+    protected function normalizePhone(?string $raw): ?string
+    {
+        if (!$raw || trim($raw) === '') return null;
+        $digits = preg_replace('/[^0-9]/', '', $raw);
+        if (strlen($digits) === 11 && str_starts_with($digits, '0')) {
+            return '+63' . substr($digits, 1);
+        }
+        if (strlen($digits) === 10 && str_starts_with($digits, '9')) {
+            return '+63' . $digits;
+        }
+        if (strlen($digits) === 12 && str_starts_with($digits, '63')) {
+            return '+' . $digits;
+        }
+        if (strlen($digits) === 13 && str_starts_with($digits, '63')) {
+            return '+' . $digits;
+        }
+        return $raw;
+    }
+
     public function create()
     {
         $student = auth()->user()->student;
@@ -21,8 +40,84 @@ class StudentAdmissionController extends Controller
         }
 
         $pendingAdmission = $student->admissions()->where('status', 'Pending')->latest()->first();
+        $draftAdmission = $pendingAdmission ? null : $student->admissions()->where('status', 'Draft')->latest()->first();
 
-        return view('portal.student.admission-apply', compact('student', 'pendingAdmission'));
+        $draftData = null;
+        $draftStep = 1;
+        if ($draftAdmission) {
+            $draftData = $draftAdmission->draft_data;
+            $draftStep = $draftAdmission->draft_data['_step'] ?? 1;
+        }
+
+        return view('portal.student.admission-apply', compact('student', 'pendingAdmission', 'draftAdmission', 'draftData', 'draftStep'));
+    }
+
+    public function saveDraft(Request $request)
+    {
+        $student = auth()->user()->student;
+
+        if ($student->student_number) {
+            return response()->json(['error' => 'Already admitted'], 422);
+        }
+
+        $data = $request->validate([
+            '_step' => 'required|integer|min:1|max:6',
+            'application_type' => 'nullable|in:New,Transferee',
+            'grade_level' => 'nullable|string|max:20',
+            'strand' => 'nullable|in:STEM,ABM,HUMSS,GAS',
+            'school_year' => 'nullable|string|max:20',
+            'first_name' => 'nullable|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'date_of_birth' => 'nullable|date',
+            'place_of_birth' => 'nullable|string|max:255',
+            'citizenship' => 'nullable|string|max:100',
+            'religion' => 'nullable|string|max:100',
+            'legacy_lrn' => 'nullable|digits:12',
+            'contact_number' => 'nullable|string|max:15',
+            'permanent_address' => 'nullable|string|max:500',
+            'same_as_permanent' => 'nullable|boolean',
+            'current_address' => 'nullable|string|max:500',
+            'father_name' => 'nullable|string|max:255',
+            'father_occupation' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'mother_occupation' => 'nullable|string|max:255',
+            'guardian_name' => 'nullable|string|max:255',
+            'guardian_contact' => 'nullable|string|max:15',
+            'emergency_contact_name' => 'nullable|string|max:255',
+            'emergency_contact_number' => 'nullable|string|max:15',
+            'emergency_contact_relationship' => 'nullable|string|max:100',
+            'previous_school' => 'nullable|string|max:255',
+            'previous_school_address' => 'nullable|string|max:500',
+        ]);
+
+        $data['contact_number'] = $this->normalizePhone($data['contact_number'] ?? null);
+        $data['guardian_contact'] = $this->normalizePhone($data['guardian_contact'] ?? null);
+        $data['emergency_contact_number'] = $this->normalizePhone($data['emergency_contact_number'] ?? null);
+
+        $admission = $student->admissions()->where('status', 'Draft')->latest()->first();
+
+        if ($admission) {
+            $admission->update([
+                'application_type' => $data['application_type'] ?? $admission->application_type,
+                'grade_level' => $data['grade_level'] ?? $admission->grade_level,
+                'strand' => $data['strand'] ?? $admission->strand,
+                'school_year' => $data['school_year'] ?? $admission->school_year,
+                'draft_data' => $data,
+            ]);
+        } else {
+            $admission = Admission::create([
+                'student_id' => $student->id,
+                'application_type' => $data['application_type'] ?? 'New',
+                'grade_level' => $data['grade_level'] ?? '',
+                'strand' => $data['strand'] ?? null,
+                'school_year' => $data['school_year'] ?? active_school_year(),
+                'status' => 'Draft',
+                'draft_data' => $data,
+            ]);
+        }
+
+        return response()->json(['success' => true, 'step' => $data['_step']]);
     }
 
     public function store(Request $request)
@@ -46,8 +141,8 @@ class StudentAdmissionController extends Controller
             'place_of_birth' => 'nullable|string|max:255',
             'citizenship' => 'nullable|string|max:100',
             'religion' => 'nullable|string|max:100',
-            'legacy_lrn' => 'nullable|string|max:20',
-            'contact_number' => 'nullable|string|max:20',
+            'legacy_lrn' => 'nullable|digits:12',
+            'contact_number' => 'nullable|string|max:15',
 
             'permanent_address' => 'nullable|string|max:500',
             'same_as_permanent' => 'nullable|boolean',
@@ -58,15 +153,19 @@ class StudentAdmissionController extends Controller
             'mother_name' => 'nullable|string|max:255',
             'mother_occupation' => 'nullable|string|max:255',
             'guardian_name' => 'nullable|string|max:255',
-            'guardian_contact' => 'nullable|string|max:20',
+            'guardian_contact' => 'nullable|string|max:15',
 
             'emergency_contact_name' => 'nullable|string|max:255',
-            'emergency_contact_number' => 'nullable|string|max:20',
+            'emergency_contact_number' => 'nullable|string|max:15',
             'emergency_contact_relationship' => 'nullable|string|max:100',
 
             'previous_school' => 'nullable|string|max:255',
             'previous_school_address' => 'nullable|string|max:500',
         ]);
+
+        $data['contact_number'] = $this->normalizePhone($data['contact_number'] ?? null);
+        $data['guardian_contact'] = $this->normalizePhone($data['guardian_contact'] ?? null);
+        $data['emergency_contact_number'] = $this->normalizePhone($data['emergency_contact_number'] ?? null);
 
         $student->update([
             'first_name' => $data['first_name'],
@@ -93,14 +192,28 @@ class StudentAdmissionController extends Controller
             'previous_school_address' => $data['previous_school_address'],
         ]);
 
-        $admission = Admission::create([
-            'student_id' => $student->id,
-            'application_type' => $data['application_type'],
-            'grade_level' => $data['grade_level'],
-            'strand' => $data['strand'] ?? null,
-            'school_year' => $data['school_year'],
-            'status' => 'Pending',
-        ]);
+        $draft = $student->admissions()->where('status', 'Draft')->latest()->first();
+
+        if ($draft) {
+            $draft->update([
+                'application_type' => $data['application_type'],
+                'grade_level' => $data['grade_level'],
+                'strand' => $data['strand'] ?? null,
+                'school_year' => $data['school_year'],
+                'status' => 'Pending',
+                'draft_data' => null,
+            ]);
+            $admission = $draft;
+        } else {
+            $admission = Admission::create([
+                'student_id' => $student->id,
+                'application_type' => $data['application_type'],
+                'grade_level' => $data['grade_level'],
+                'strand' => $data['strand'] ?? null,
+                'school_year' => $data['school_year'],
+                'status' => 'Pending',
+            ]);
+        }
 
         return redirect()->route('student.admission.status')
             ->with('success', 'Application submitted! Your application number is ' . $admission->application_number);
@@ -132,14 +245,26 @@ class StudentAdmissionController extends Controller
         $count = 0;
 
         foreach ($request->file('documents') as $documentType => $file) {
+            $existing = Requirement::where('admission_id', $admission->id)
+                ->where('document_type', $documentType)
+                ->first();
+
             $path = $file->store('requirements/' . $admission->id, 'public');
 
-            Requirement::create([
-                'admission_id' => $admission->id,
-                'document_type' => $documentType,
-                'file_path' => $path,
-                'status' => 'Under Review',
-            ]);
+            if ($existing) {
+                Storage::disk('public')->delete($existing->file_path);
+                $existing->update([
+                    'file_path' => $path,
+                    'status' => 'Under Review',
+                ]);
+            } else {
+                Requirement::create([
+                    'admission_id' => $admission->id,
+                    'document_type' => $documentType,
+                    'file_path' => $path,
+                    'status' => 'Under Review',
+                ]);
+            }
 
             $count++;
         }

@@ -15,7 +15,7 @@ class Classes extends Model
         'section',
         'grade_level',
         'school_year',
-        'semester',
+        'term',
         'room',
         'capacity',
         'is_advisory',

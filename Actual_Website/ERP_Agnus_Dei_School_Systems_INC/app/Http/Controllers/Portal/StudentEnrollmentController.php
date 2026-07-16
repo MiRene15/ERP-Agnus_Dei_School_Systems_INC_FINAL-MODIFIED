@@ -23,7 +23,7 @@ class StudentEnrollmentController extends Controller
             ->latest()
             ->first();
 
-        if ($activeEnrollment && $activeEnrollment->school_year === date('Y') . '-' . (date('Y') + 1)) {
+        if ($activeEnrollment && $activeEnrollment->school_year === active_school_year()) {
             return redirect()->route('student.dashboard')
                 ->with('info', 'You are already enrolled for the current school year.');
         }

@@ -45,6 +45,7 @@ return new class extends Migration
             $table->date('date_of_birth')->nullable();
             $table->string('legacy_lrn')->nullable(); // For Old Students claiming records
             $table->string('status')->default('pre-admission'); // pre-admission, enrolled, archived, graduated
+            $table->boolean('scholarship')->default(false);
             $table->timestamps();
         });
 
@@ -74,7 +75,7 @@ return new class extends Migration
             $table->string('section');
             $table->string('grade_level');
             $table->string('school_year');
-            $table->string('semester')->nullable();
+            $table->string('term')->nullable();
             $table->string('room')->nullable();
             $table->integer('capacity')->default(30);
             $table->boolean('is_advisory')->default(false);

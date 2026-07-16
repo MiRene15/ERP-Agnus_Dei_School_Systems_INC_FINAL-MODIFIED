@@ -17,7 +17,15 @@ class Admission extends Model
         'strand',
         'school_year',
         'status',
+        'draft_data',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'draft_data' => 'array',
+        ];
+    }
 
     /**
      * Auto-generate a unique Application Number (ADM-YYYY-XXXXX)

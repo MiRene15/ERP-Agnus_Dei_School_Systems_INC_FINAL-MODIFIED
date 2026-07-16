@@ -22,7 +22,7 @@ class Grade extends Model
         return $this->belongsTo(Enrollment::class);
     }
 
-    public function classes()
+    public function schoolClass()
     {
         return $this->belongsTo(Classes::class, 'class_id');
     }

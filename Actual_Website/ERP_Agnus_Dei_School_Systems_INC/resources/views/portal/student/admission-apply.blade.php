@@ -6,13 +6,6 @@
     <span class="current">Admission Application</span>
 @endsection
 
-@section('sidebar-links')
-    <a href="{{ route('student.admission.status') }}" class="sidebar-link">
-        <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span class="sidebar-label">Application Status</span>
-    </a>
-@endsection
-
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">Admission Application</h2>
@@ -36,9 +29,22 @@
         </div>
         <a href="{{ route('student.admission.status') }}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition">View Application Status &rarr;</a>
     </div>
-@else
+@elseif($draftAdmission)
+    <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm flex items-center justify-between">
+        <span>You have a saved draft from a previous session. Resume where you left off.</span>
+        <form method="POST" action="{{ route('student.admission.draft') }}" class="inline">
+            @csrf
+            <input type="hidden" name="_step" value="0">
+            <button type="submit" name="action" value="discard" formaction="{{ route('student.admission.draft') }}" class="text-xs font-medium text-red-600 hover:text-red-800 ml-3"
+                    onclick="return confirm('Discard your saved draft and start fresh?')">Discard Draft</button>
+        </form>
+    </div>
+@endif
+
+@if(!$pendingAdmission)
     <form method="POST" action="{{ route('student.admission.store') }}" x-ref="form"
-          x-data="admissionForm()">
+          x-data="admissionForm()"
+          x-init="initForm()">
         @csrf
 
         {{-- Step Indicator --}}
@@ -67,17 +73,17 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Application Type *</label>
-                    <select name="application_type" required
+                    <select name="application_type" required x-model="f.application_type"
                             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                         <option value="">Select one...</option>
-                        <option value="New" {{ old('application_type') === 'New' ? 'selected' : '' }}>New Student</option>
-                        <option value="Transferee" {{ old('application_type') === 'Transferee' ? 'selected' : '' }}>Transferee</option>
+                        <option value="New">New Student</option>
+                        <option value="Transferee">Transferee</option>
                     </select>
                     @error('application_type') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Grade Level *</label>
-                    <select name="grade_level" x-model="selectedGrade" required
+                    <select name="grade_level" x-model="f.grade_level" required
                             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                         <option value="">Select grade...</option>
                         <optgroup label="Kindergarten">
@@ -101,25 +107,25 @@
                     </select>
                     @error('grade_level') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
-                <div x-show="isSHS()" x-cloak>
+                <div x-show="f.grade_level === 'Grade 11' || f.grade_level === 'Grade 12'" x-cloak>
                     <label class="block text-sm font-medium text-gray-700 mb-1">SHS Strand *</label>
-                    <select name="strand" x-bind:required="isSHS()"
+                    <select name="strand" x-model="f.strand" x-bind:required="f.grade_level === 'Grade 11' || f.grade_level === 'Grade 12'"
                             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                         <option value="">Select strand...</option>
-                        <option value="STEM" {{ old('strand') === 'STEM' ? 'selected' : '' }}>STEM</option>
-                        <option value="ABM" {{ old('strand') === 'ABM' ? 'selected' : '' }}>ABM</option>
-                        <option value="HUMSS" {{ old('strand') === 'HUMSS' ? 'selected' : '' }}>HUMSS</option>
-                        <option value="GAS" {{ old('strand') === 'GAS' ? 'selected' : '' }}>GAS</option>
+                        <option value="STEM">STEM</option>
+                        <option value="ABM">ABM</option>
+                        <option value="HUMSS">HUMSS</option>
+                        <option value="GAS">GAS</option>
                     </select>
                     @error('strand') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">School Year *</label>
-                    <select name="school_year" required
+                    <select name="school_year" required x-model="f.school_year"
                             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                         <option value="">Select year...</option>
-                        <option value="2026-2027" {{ old('school_year') === '2026-2027' ? 'selected' : '' }}>2026-2027</option>
-                        <option value="2027-2028" {{ old('school_year') === '2027-2028' ? 'selected' : '' }}>2027-2028</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
                     </select>
                     @error('school_year') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -140,53 +146,58 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                    <input type="text" name="first_name" value="{{ old('first_name', $student->first_name) }}" required maxlength="100"
+                    <input type="text" name="first_name" x-model="f.first_name" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-                    <input type="text" name="middle_name" value="{{ old('middle_name', $student->middle_name) }}" maxlength="100"
+                    <input type="text" name="middle_name" x-model="f.middle_name" maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                    <input type="text" name="last_name" value="{{ old('last_name', $student->last_name) }}" required maxlength="100"
+                    <input type="text" name="last_name" x-model="f.last_name" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
-                    <input type="date" name="date_of_birth" x-model="dob" required
+                    <input type="date" name="date_of_birth" x-model="f.date_of_birth" required
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
-                    <input type="text" readonly disabled x-bind:value="age()"
+                    <input type="text" readonly disabled x-bind:value="computedAge"
                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Place of Birth *</label>
-                    <input type="text" name="place_of_birth" value="{{ old('place_of_birth', $student->place_of_birth) }}" required maxlength="255"
+                    <input type="text" name="place_of_birth" x-model="f.place_of_birth" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Citizenship *</label>
-                    <input type="text" name="citizenship" value="{{ old('citizenship', $student->citizenship) }}" required maxlength="100"
+                    <input type="text" name="citizenship" x-model="f.citizenship" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Religion</label>
-                    <input type="text" name="religion" value="{{ old('religion', $student->religion) }}" maxlength="100"
+                    <input type="text" name="religion" x-model="f.religion" maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">LRN (Learner Reference Number)</label>
-                    <input type="text" name="legacy_lrn" value="{{ old('legacy_lrn', $student->legacy_lrn) }}" maxlength="20" placeholder="12-digit LRN"
+                    <input type="tel" name="legacy_lrn" x-model="f.legacy_lrn" maxlength="12" pattern="[0-9]{12}" inputmode="numeric" placeholder="123456789012"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 12)"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
-                    <input type="text" name="contact_number" value="{{ old('contact_number', $student->contact_number) }}" required maxlength="20" placeholder="09XX-XXX-XXXX"
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <div class="flex">
+                        <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-sm text-gray-600 font-medium">+63</span>
+                        <input type="tel" name="contact_number" x-model="f.contact_number" required maxlength="11" inputmode="numeric" placeholder="09XX-XXX-XXXX"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 11)"
+                               class="w-full rounded-r-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
                 </div>
             </div>
             <div class="flex items-center justify-between mt-6">
@@ -207,18 +218,17 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Permanent Address *</label>
-                    <textarea name="permanent_address" rows="2" required maxlength="500"
-                              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">{{ old('permanent_address', $student->permanent_address) }}</textarea>
+                    <textarea name="permanent_address" rows="2" required maxlength="500" x-model="f.permanent_address"
+                              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
                 </div>
                 <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                    <input type="checkbox" name="same_as_permanent" x-model="samePerm" value="1">
+                    <input type="checkbox" name="same_as_permanent" x-model="f.same_as_permanent" value="1">
                     Same as permanent address
                 </label>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Current Address</label>
-                    <textarea name="current_address" rows="2" maxlength="500" x-bind:disabled="samePerm"
-                              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    >{{ old('current_address', $student->current_address) }}</textarea>
+                    <textarea name="current_address" rows="2" maxlength="500" x-model="f.current_address" x-bind:disabled="f.same_as_permanent"
+                              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
                 </div>
             </div>
             <div class="flex items-center justify-between mt-6">
@@ -239,33 +249,37 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Father's Name</label>
-                    <input type="text" name="father_name" value="{{ old('father_name', $student->father_name) }}" maxlength="255"
+                    <input type="text" name="father_name" x-model="f.father_name" maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Father's Occupation</label>
-                    <input type="text" name="father_occupation" value="{{ old('father_occupation', $student->father_occupation) }}" maxlength="255"
+                    <input type="text" name="father_occupation" x-model="f.father_occupation" maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Mother's Name</label>
-                    <input type="text" name="mother_name" value="{{ old('mother_name', $student->mother_name) }}" maxlength="255"
+                    <input type="text" name="mother_name" x-model="f.mother_name" maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Mother's Occupation</label>
-                    <input type="text" name="mother_occupation" value="{{ old('mother_occupation', $student->mother_occupation) }}" maxlength="255"
+                    <input type="text" name="mother_occupation" x-model="f.mother_occupation" maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Guardian's Name (if not parent)</label>
-                    <input type="text" name="guardian_name" value="{{ old('guardian_name', $student->guardian_name) }}" maxlength="255"
+                    <input type="text" name="guardian_name" x-model="f.guardian_name" maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Guardian's Contact</label>
-                    <input type="text" name="guardian_contact" value="{{ old('guardian_contact', $student->guardian_contact) }}" maxlength="20"
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <div class="flex">
+                        <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-sm text-gray-600 font-medium">+63</span>
+                        <input type="tel" name="guardian_contact" x-model="f.guardian_contact" maxlength="11" inputmode="numeric" placeholder="09XX-XXX-XXXX"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 11)"
+                               class="w-full rounded-r-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
                 </div>
             </div>
             <div class="flex items-center justify-between mt-6">
@@ -286,17 +300,21 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                    <input type="text" name="emergency_contact_name" value="{{ old('emergency_contact_name', $student->emergency_contact_name) }}" required maxlength="255"
+                    <input type="text" name="emergency_contact_name" x-model="f.emergency_contact_name" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
-                    <input type="text" name="emergency_contact_number" value="{{ old('emergency_contact_number', $student->emergency_contact_number) }}" required maxlength="20"
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <div class="flex">
+                        <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-sm text-gray-600 font-medium">+63</span>
+                        <input type="tel" name="emergency_contact_number" x-model="f.emergency_contact_number" required maxlength="11" inputmode="numeric" placeholder="09XX-XXX-XXXX"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 11)"
+                               class="w-full rounded-r-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Relationship *</label>
-                    <input type="text" name="emergency_contact_relationship" value="{{ old('emergency_contact_relationship', $student->emergency_contact_relationship) }}" required maxlength="100"
+                    <input type="text" name="emergency_contact_relationship" x-model="f.emergency_contact_relationship" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
             </div>
@@ -319,12 +337,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">School Name *</label>
-                    <input type="text" name="previous_school" value="{{ old('previous_school', $student->previous_school) }}" required maxlength="255"
+                    <input type="text" name="previous_school" x-model="f.previous_school" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">School Address</label>
-                    <input type="text" name="previous_school_address" value="{{ old('previous_school_address', $student->previous_school_address) }}" maxlength="500"
+                    <input type="text" name="previous_school_address" x-model="f.previous_school_address" maxlength="500"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
             </div>
@@ -343,25 +361,51 @@
     <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('admissionForm', () => ({
-            step: 1,
-            dob: '{{ $student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->format('Y-m-d') : '' }}',
-            samePerm: false,
-            selectedGrade: '{{ old('grade_level') }}',
+            step: {{ $draftStep ?? 1 }},
+            saving: false,
+            f: {
+                application_type: '{{ $draftData['application_type'] ?? '' }}',
+                grade_level: '{{ $draftData['grade_level'] ?? '' }}',
+                strand: '{{ $draftData['strand'] ?? '' }}',
+                school_year: '{{ $draftData['school_year'] ?? '' }}',
+                first_name: '{{ $draftData['first_name'] ?? $student->first_name }}',
+                middle_name: '{{ $draftData['middle_name'] ?? $student->middle_name }}',
+                last_name: '{{ $draftData['last_name'] ?? $student->last_name }}',
+                date_of_birth: '{{ $draftData['date_of_birth'] ?? ($student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->format('Y-m-d') : '') }}',
+                place_of_birth: '{{ $draftData['place_of_birth'] ?? $student->place_of_birth }}',
+                citizenship: '{{ $draftData['citizenship'] ?? $student->citizenship }}',
+                religion: '{{ $draftData['religion'] ?? $student->religion }}',
+                legacy_lrn: '{{ $draftData['legacy_lrn'] ?? $student->legacy_lrn }}',
+                contact_number: '{{ $draftData['contact_number'] ?? $student->contact_number }}',
+                permanent_address: '{{ $draftData['permanent_address'] ?? $student->permanent_address }}',
+                same_as_permanent: {{ ($draftData['same_as_permanent'] ?? $student->same_as_permanent) ? 'true' : 'false' }},
+                current_address: '{{ $draftData['current_address'] ?? $student->current_address }}',
+                father_name: '{{ $draftData['father_name'] ?? $student->father_name }}',
+                father_occupation: '{{ $draftData['father_occupation'] ?? $student->father_occupation }}',
+                mother_name: '{{ $draftData['mother_name'] ?? $student->mother_name }}',
+                mother_occupation: '{{ $draftData['mother_occupation'] ?? $student->mother_occupation }}',
+                guardian_name: '{{ $draftData['guardian_name'] ?? $student->guardian_name }}',
+                guardian_contact: '{{ $draftData['guardian_contact'] ?? $student->guardian_contact }}',
+                emergency_contact_name: '{{ $draftData['emergency_contact_name'] ?? $student->emergency_contact_name }}',
+                emergency_contact_number: '{{ $draftData['emergency_contact_number'] ?? $student->emergency_contact_number }}',
+                emergency_contact_relationship: '{{ $draftData['emergency_contact_relationship'] ?? $student->emergency_contact_relationship }}',
+                previous_school: '{{ $draftData['previous_school'] ?? $student->previous_school }}',
+                previous_school_address: '{{ $draftData['previous_school_address'] ?? $student->previous_school_address }}',
+            },
             steps: [
                 'Application Details', 'Personal Information', 'Address',
                 'Family Background', 'Emergency Contact', 'Previous School'
             ],
-            age() {
-                if (!this.dob) return '';
-                const b = new Date(this.dob), t = new Date();
+
+            get computedAge() {
+                if (!this.f.date_of_birth) return '';
+                const b = new Date(this.f.date_of_birth), t = new Date();
                 let a = t.getFullYear() - b.getFullYear();
                 const m = t.getMonth() - b.getMonth();
                 if (m < 0 || (m === 0 && t.getDate() < b.getDate())) a--;
                 return a;
             },
-            isSHS() {
-                return this.selectedGrade === 'Grade 11' || this.selectedGrade === 'Grade 12';
-            },
+
             goTo(n) {
                 if (n < this.step) { this.step = n; return; }
                 const box = this.$el.querySelector('[data-step="' + this.step + '"]');
@@ -375,10 +419,27 @@
                         ok = false;
                     }
                 });
-                if (ok) this.step = n;
+                if (ok) { this.step = n; this.autoSave(); }
             },
+
             next() { this.goTo(this.step + 1); },
-            prev() { if (this.step > 1) this.step--; },
+
+            prev() { if (this.step > 1) { this.step--; this.autoSave(); } },
+
+            autoSave() {
+                if (this.saving) return;
+                this.saving = true;
+                const payload = { _step: this.step, ...this.f };
+                payload.same_as_permanent = payload.same_as_permanent ? 1 : 0;
+                fetch('{{ route('student.admission.draft') }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') },
+                    body: JSON.stringify(payload)
+                }).then(r => r.json()).then(d => {
+                    this.saving = false;
+                }).catch(() => { this.saving = false; });
+            },
+
             submitAll() {
                 const last = this.$el.querySelector('[data-step="6"]');
                 const reqs = last.querySelectorAll('[required]');
@@ -391,6 +452,12 @@
                     }
                 });
                 if (ok) this.$refs.form.submit();
+            },
+
+            initForm() {
+                if (this.step > 1) {
+                    this.autoSave();
+                }
             }
         }));
     });

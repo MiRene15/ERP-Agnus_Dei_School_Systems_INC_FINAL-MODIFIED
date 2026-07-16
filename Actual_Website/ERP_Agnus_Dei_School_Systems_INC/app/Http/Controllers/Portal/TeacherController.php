@@ -60,7 +60,7 @@ class TeacherController extends Controller
             return $e->status === 'Active';
         });
 
-        $gradingPeriods = ['1st Semester', '2nd Semester', '3rd Semester'];
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $selectedPeriod = request('grading_period', $gradingPeriods[0]);
 
         $existingGrades = Grade::where('class_id', $class->id)
@@ -78,7 +78,7 @@ class TeacherController extends Controller
         }
 
         $data = $request->validate([
-            'grading_period' => 'required|string|in:1st Semester,2nd Semester,3rd Semester',
+            'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
             'grades' => 'required|array',
             'grades.*' => 'nullable|numeric|min:0|max:100',
         ]);
@@ -111,7 +111,7 @@ class TeacherController extends Controller
         }
 
         $data = $request->validate([
-            'grading_period' => 'required|string|in:1st Semester,2nd Semester,3rd Semester',
+            'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
         ]);
 
         $gradeCount = Grade::where('class_id', $class->id)
@@ -139,7 +139,7 @@ class TeacherController extends Controller
             return $e->status === 'Active';
         });
 
-        $gradingPeriods = ['1st Semester', '2nd Semester', '3rd Semester'];
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $selectedPeriod = request('grading_period', $gradingPeriods[0]);
 
         $assessmentTypes = ['Written Work', 'Performance Task', 'Semestral Assessment'];
@@ -159,13 +159,13 @@ class TeacherController extends Controller
         }
 
         $data = $request->validate([
-            'grading_period' => 'required|string|in:1st Semester,2nd Semester,3rd Semester',
+            'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
             'assessments' => 'required|array',
             'assessments.*' => 'required|array',
             'assessments.*.*.type' => 'required|string|in:Written Work,Performance Task,Semestral Assessment',
-            'assessments.*.*.title' => 'required|string|max:255',
-            'assessments.*.*.raw_score' => 'required|numeric|min:0',
-            'assessments.*.*.max_score' => 'required|numeric|min:0',
+            'assessments.*.*.title' => 'nullable|string|max:255',
+            'assessments.*.*.raw_score' => 'nullable|numeric|min:0',
+            'assessments.*.*.max_score' => 'nullable|numeric|min:0',
         ]);
 
         Assessment::where('class_id', $class->id)
@@ -175,13 +175,16 @@ class TeacherController extends Controller
         $inserts = [];
         foreach ($data['assessments'] as $enrollmentId => $items) {
             foreach ($items as $item) {
+                if (empty($item['title']) && empty($item['raw_score'])) {
+                    continue;
+                }
                 $inserts[] = [
                     'enrollment_id' => $enrollmentId,
                     'class_id' => $class->id,
                     'type' => $item['type'],
-                    'title' => $item['title'],
-                    'raw_score' => $item['raw_score'],
-                    'max_score' => $item['max_score'],
+                    'title' => $item['title'] ?? '',
+                    'raw_score' => $item['raw_score'] ?? 0,
+                    'max_score' => $item['max_score'] ?? 0,
                     'grading_period' => $data['grading_period'],
                     'created_at' => now(),
                     'updated_at' => now(),

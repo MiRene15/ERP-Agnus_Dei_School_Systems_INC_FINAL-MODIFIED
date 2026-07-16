@@ -12,6 +12,7 @@ class Subject extends Model
     protected $fillable = [
         'subject_code',
         'name',
+        'grade_level',
         'category', // Core, Contextualized, Specialized, TVL
     ];
 
