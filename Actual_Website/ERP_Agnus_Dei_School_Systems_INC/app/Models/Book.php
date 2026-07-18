@@ -17,10 +17,11 @@ class Book extends Model
         'year_published',
         'quantity',
         'available_quantity',
+        'price',
     ];
 
     public function borrowings()
     {
-        return $this->hasMany(LibraryTransaction::class, 'book_id');
+        return $this->hasMany(LibraryTransaction::class, 'book_title', 'title');
     }
 }
