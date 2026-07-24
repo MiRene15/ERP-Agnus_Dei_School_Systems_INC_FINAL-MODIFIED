@@ -5,16 +5,36 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
 use App\Models\Grade;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 
 class ReportCardController extends Controller
 {
     public function index()
     {
-        $enrollments = Enrollment::with('student', 'section')
+        $query = Enrollment::with('student', 'section')
             ->where('status', 'Active')
-            ->where('school_year', active_school_year())
-            ->get()
+            ->where('school_year', active_school_year());
+
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('student', function ($sq) use ($search) {
+                    $sq->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%");
+                })->orWhereHas('section', function ($sq) use ($search) {
+                    $sq->where('section_name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        if (request('grade_level') && request('grade_level') !== 'All') {
+            $query->whereHas('section', function ($q) {
+                $q->where('grade_level', request('grade_level'));
+            });
+        }
+
+        $enrollments = $query->get()
             ->sortBy(fn($e) => $e->student?->last_name . ', ' . $e->student?->first_name)
             ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown');
 
@@ -25,11 +45,11 @@ class ReportCardController extends Controller
     {
         $enrollment->load('student', 'section.adviser', 'subjects.subject');
 
-        $gradingPeriods = ['1st Semester', '2nd Semester', '3rd Semester'];
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
 
         $grades = Grade::where('enrollment_id', $enrollment->id)
             ->whereIn('grading_period', $gradingPeriods)
-            ->with('classes.subject')
+            ->with('schoolClass.subject')
             ->get()
             ->groupBy('class_id');
 
@@ -58,11 +78,11 @@ class ReportCardController extends Controller
     {
         $enrollment->load('student', 'section.adviser', 'subjects.subject');
 
-        $gradingPeriods = ['1st Semester', '2nd Semester', '3rd Semester'];
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
 
         $grades = Grade::where('enrollment_id', $enrollment->id)
             ->whereIn('grading_period', $gradingPeriods)
-            ->with('classes.subject')
+            ->with('schoolClass.subject')
             ->get()
             ->groupBy('class_id');
 
@@ -84,7 +104,10 @@ class ReportCardController extends Controller
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.registrar.report-cards.print', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage'));
+        $directressName = Setting::getValue('directress_name', '');
+        $principalName = Setting::getValue('principal_name', '');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.registrar.report-cards.print', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage', 'directressName', 'principalName'));
         $pdf->setPaper('A4', 'portrait');
 
         return $pdf->stream("report-card-{$enrollment->student->student_number}.pdf");
@@ -105,11 +128,11 @@ class ReportCardController extends Controller
             return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
         }
 
-        $gradingPeriods = ['1st Semester', '2nd Semester', '3rd Semester'];
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
 
         $grades = Grade::where('enrollment_id', $enrollment->id)
             ->whereIn('grading_period', $gradingPeriods)
-            ->with('classes.subject')
+            ->with('schoolClass.subject')
             ->get()
             ->groupBy('class_id');
 

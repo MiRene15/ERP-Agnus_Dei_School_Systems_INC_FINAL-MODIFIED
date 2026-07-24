@@ -20,11 +20,31 @@ class RegistrarAdmissionController extends Controller
 {
     public function index()
     {
-        $admissions = Admission::with('student.user')
-            ->where('school_year', active_school_year())
-            ->orderByRaw("FIELD(status, 'Pending') DESC")
+        $query = Admission::with('student.user')
+            ->where('school_year', active_school_year());
+
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('student.user', function ($sq) use ($search) {
+                    $sq->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                })->orWhere('application_number', 'like', "%{$search}%");
+            });
+        }
+
+        if (request('status') && request('status') !== 'All') {
+            $query->where('status', request('status'));
+        }
+
+        if (request('grade_level') && request('grade_level') !== 'All') {
+            $query->where('grade_level', request('grade_level'));
+        }
+
+        $admissions = $query->orderByRaw("FIELD(status, 'Pending') DESC")
             ->latest()
-            ->get();
+            ->paginate(20)
+            ->withQueryString();
 
         $pendingCount = $admissions->where('status', 'Pending')->count();
         $approvedCount = $admissions->where('status', 'Approved By Registrar')->count();
@@ -52,13 +72,43 @@ class RegistrarAdmissionController extends Controller
         $requirement->status = $request->input('verify') ? 'Verified' : 'Under Review';
         $requirement->save();
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'status' => $requirement->status,
+                'message' => 'Requirement ' . ($requirement->status === 'Verified' ? 'verified' : 'unverified') . '.',
+            ]);
+        }
+
         return back()->with('success', 'Requirement ' . ($requirement->status === 'Verified' ? 'verified' : 'unverified') . '.');
+    }
+
+    public function verifyAll(Admission $admission)
+    {
+        $updated = $admission->requirements()
+            ->where('status', 'Under Review')
+            ->update(['status' => 'Verified']);
+
+        if (request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'updated' => $updated,
+                'message' => $updated . ' requirement(s) verified successfully.',
+            ]);
+        }
+
+        return back()->with('success', $updated . ' requirement(s) verified successfully.');
     }
 
     public function approve(Request $request, Admission $admission)
     {
         if ($admission->status !== 'Pending') {
             return back()->with('error', 'This admission has already been processed.');
+        }
+
+        $unverifiedCount = $admission->requirements()->where('status', '!=', 'Verified')->count();
+        if ($unverifiedCount > 0) {
+            return back()->with('error', 'All requirements must be verified before approving. ' . $unverifiedCount . ' requirement(s) still pending.');
         }
 
         $data = $request->validate([
@@ -104,7 +154,7 @@ class RegistrarAdmissionController extends Controller
                 $admission->save();
             });
 
-            log_activity('Admission Approved', $admission, auth()->id(), 'Approved admission for ' . $student->first_name . ' ' . $student->last_name);
+            log_activity($admission, 'Approved', 'Approved admission for ' . $student->first_name . ' ' . $student->last_name);
 
             if ($student->user?->email) {
                 Mail::to($student->user->email)->queue(new AdmissionCredentialsMail($student, ''));

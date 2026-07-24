@@ -33,6 +33,11 @@ class Enrollment extends Model
         return $this->belongsToMany(Classes::class, 'enrollment_subject', 'enrollment_id', 'class_id');
     }
 
+    public function grades()
+    {
+        return $this->hasMany(Grade::class);
+    }
+
     public function promotedToEnrollment()
     {
         return $this->belongsTo(Enrollment::class, 'promoted_to_enrollment_id');
