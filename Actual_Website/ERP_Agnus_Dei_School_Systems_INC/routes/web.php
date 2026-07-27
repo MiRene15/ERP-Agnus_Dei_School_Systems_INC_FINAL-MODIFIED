@@ -18,6 +18,9 @@ use App\Http\Controllers\Portal\LibrarianController;
 use App\Http\Controllers\Portal\NurseController;
 use App\Http\Controllers\Portal\ReportCardController;
 use App\Http\Controllers\Portal\ExportController;
+use App\Http\Controllers\Portal\WithdrawalController;
+use App\Http\Controllers\Portal\DirectressController;
+use App\Http\Controllers\Portal\PrincipalController;
 use App\Http\Controllers\Admin\UserController;
 
 /*
@@ -91,6 +94,8 @@ Route::middleware('auth')->group(function () {
             5 => '/librarian/dashboard',
             6 => '/nurse/dashboard',
             7 => '/student/dashboard',
+            8 => '/directress/dashboard',
+            9 => '/principal/dashboard',
             default => '/',
         };
         return redirect($url);
@@ -100,41 +105,24 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::get('/admin/pending-accounts', [AdminController::class, 'pendingAccounts'])->name('admin.pending-accounts');
         Route::post('/admin/confirm-account/{ledger}', [AdminController::class, 'confirmAccount'])->name('admin.confirm-account');
-        // Staff Account Management
-        Route::resource('admin/users', UserController::class)->names('admin.users');
-        Route::post('admin/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
-        Route::post('admin/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('admin.users.reset-password');
-        // Schedule Management
-        Route::get('/admin/schedules', [\App\Http\Controllers\Admin\ScheduleController::class, 'index'])->name('admin.schedules.index');
-        Route::get('/admin/schedules/create', [\App\Http\Controllers\Admin\ScheduleController::class, 'create'])->name('admin.schedules.create');
-        Route::post('/admin/schedules', [\App\Http\Controllers\Admin\ScheduleController::class, 'store'])->name('admin.schedules.store');
-        Route::get('/admin/schedules/{class}/slots', [\App\Http\Controllers\Admin\ScheduleController::class, 'manageSlots'])->name('admin.schedules.slots');
-        Route::post('/admin/schedules/{class}/slots', [\App\Http\Controllers\Admin\ScheduleController::class, 'storeSlot'])->name('admin.schedules.slots.store');
-        Route::delete('/admin/schedules/slots/{schedule}', [\App\Http\Controllers\Admin\ScheduleController::class, 'destroySlot'])->name('admin.schedules.slots.destroy');
-        Route::get('/admin/schedules/{class}/edit', [\App\Http\Controllers\Admin\ScheduleController::class, 'edit'])->name('admin.schedules.edit');
-        Route::patch('/admin/schedules/{class}', [\App\Http\Controllers\Admin\ScheduleController::class, 'update'])->name('admin.schedules.update');
-        Route::delete('/admin/schedules/{class}', [\App\Http\Controllers\Admin\ScheduleController::class, 'destroy'])->name('admin.schedules.destroy');
-        // Subjects Management
-        Route::resource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class)->names('admin.subjects');
-        // Sections Management
-        Route::resource('admin/sections', \App\Http\Controllers\Admin\SectionController::class)->names('admin.sections');
-        // Fee Schedule Management
-        Route::get('/admin/fees', [\App\Http\Controllers\Admin\FeeScheduleController::class, 'index'])->name('admin.fees.index');
-        Route::get('/admin/fees/create', [\App\Http\Controllers\Admin\FeeScheduleController::class, 'create'])->name('admin.fees.create');
-        Route::post('/admin/fees', [\App\Http\Controllers\Admin\FeeScheduleController::class, 'store'])->name('admin.fees.store');
-        Route::get('/admin/fees/{fee}/edit', [\App\Http\Controllers\Admin\FeeScheduleController::class, 'edit'])->name('admin.fees.edit');
-        Route::patch('/admin/fees/{fee}', [\App\Http\Controllers\Admin\FeeScheduleController::class, 'update'])->name('admin.fees.update');
-        Route::delete('/admin/fees/{fee}', [\App\Http\Controllers\Admin\FeeScheduleController::class, 'destroy'])->name('admin.fees.destroy');
-        // Promotion / End-of-Year
-        Route::get('/admin/promotion', [\App\Http\Controllers\Admin\PromotionController::class, 'index'])->name('admin.promotion.index');
-        Route::post('/admin/promotion/process', [\App\Http\Controllers\Admin\PromotionController::class, 'process'])->name('admin.promotion.process');
-        // School Settings
-        Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
-        Route::post('/admin/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
-        // Exports
+// Staff Account Management
+         Route::resource('admin/users', UserController::class)->except(['show', 'destroy'])->names('admin.users');
+         Route::post('admin/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
+         Route::post('admin/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('admin.users.reset-password');
+         // Subjects Management
+         Route::resource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class)->except(['show'])->names('admin.subjects');
+         // Sections Management
+         Route::resource('admin/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('admin.sections');
+         // School Settings
+         Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
+         Route::post('/admin/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
+         // Exports
         Route::get('/admin/exports/enrollments', [ExportController::class, 'enrollments'])->name('admin.exports.enrollments');
         Route::get('/admin/exports/grades', [ExportController::class, 'grades'])->name('admin.exports.grades');
         Route::get('/admin/exports/collections', [ExportController::class, 'collections'])->name('admin.exports.collections');
+        // Promotion / End-of-Year
+        Route::get('/admin/promotion', [\App\Http\Controllers\Admin\PromotionController::class, 'index'])->name('admin.promotion.index');
+        Route::post('/admin/promotion/process', [\App\Http\Controllers\Admin\PromotionController::class, 'process'])->name('admin.promotion.process');
     });
 
     Route::middleware(['role:2'])->group(function() {
@@ -143,10 +131,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/registrar/admissions/{admission}', [RegistrarAdmissionController::class, 'show'])->name('registrar.admissions.show');
         Route::post('/registrar/admissions/{admission}/approve', [RegistrarAdmissionController::class, 'approve'])->name('registrar.admissions.approve');
         Route::post('/registrar/admissions/{admission}/reject', [RegistrarAdmissionController::class, 'reject'])->name('registrar.admissions.reject');
+        Route::post('/registrar/admissions/{admission}/verify-all', [RegistrarAdmissionController::class, 'verifyAll'])->name('registrar.admissions.verify-all');
         Route::post('/registrar/requirements/{requirement}/verify', [RegistrarAdmissionController::class, 'verifyRequirement'])->name('registrar.admissions.verify-requirement');
-        Route::get('/registrar/withdrawals', [\App\Http\Controllers\Portal\WithdrawalController::class, 'index'])->name('registrar.withdrawals.index');
-        Route::post('/registrar/withdrawals/{withdrawal}/approve', [\App\Http\Controllers\Portal\WithdrawalController::class, 'approve'])->name('registrar.withdrawals.approve');
-        Route::post('/registrar/withdrawals/{withdrawal}/reject', [\App\Http\Controllers\Portal\WithdrawalController::class, 'reject'])->name('registrar.withdrawals.reject');
+        Route::get('/registrar/withdrawals', [WithdrawalController::class, 'index'])->name('registrar.withdrawals.index');
+        Route::post('/registrar/withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('registrar.withdrawals.approve');
+        Route::post('/registrar/withdrawals/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('registrar.withdrawals.reject');
         // Report Cards
         Route::get('/registrar/report-cards', [ReportCardController::class, 'index'])->name('registrar.report-cards.index');
         Route::get('/registrar/report-cards/{enrollment}', [ReportCardController::class, 'show'])->name('registrar.report-cards.show');
@@ -175,6 +164,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/librarian/books', [LibrarianController::class, 'books'])->name('librarian.books');
         Route::get('/librarian/books/create', [LibrarianController::class, 'createBook'])->name('librarian.books.create');
         Route::post('/librarian/books', [LibrarianController::class, 'storeBook'])->name('librarian.books.store');
+        Route::get('/librarian/books/{book}/edit', [LibrarianController::class, 'editBook'])->name('librarian.books.edit');
+        Route::patch('/librarian/books/{book}', [LibrarianController::class, 'updateBook'])->name('librarian.books.update');
+        Route::delete('/librarian/books/{book}', [LibrarianController::class, 'destroyBook'])->name('librarian.books.destroy');
+        // Loan Management
+        Route::get('/librarian/loans', [LibrarianController::class, 'loans'])->name('librarian.loans');
+        Route::get('/librarian/loans/borrow', [LibrarianController::class, 'borrowForm'])->name('librarian.loans.borrow');
+        Route::post('/librarian/loans/borrow', [LibrarianController::class, 'storeBorrow'])->name('librarian.loans.store');
+        Route::post('/librarian/loans/{transaction}/return', [LibrarianController::class, 'returnBook'])->name('librarian.loans.return');
     });
 
     Route::middleware(['role:6'])->group(function() {
@@ -189,14 +186,64 @@ Route::middleware('auth')->group(function () {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
         Route::get('/student/admission/apply', [StudentAdmissionController::class, 'create'])->name('student.admission.create');
         Route::post('/student/admission/apply', [StudentAdmissionController::class, 'store'])->name('student.admission.store');
+        Route::post('/student/admission/draft', [StudentAdmissionController::class, 'saveDraft'])->name('student.admission.draft');
         Route::get('/student/admission/status', [StudentAdmissionController::class, 'status'])->name('student.admission.status');
         Route::post('/student/admission/requirements', [StudentAdmissionController::class, 'uploadRequirements'])->name('student.admission.requirements');
         Route::get('/student/enrollment/apply', [StudentEnrollmentController::class, 'create'])->name('student.enrollment.create');
         Route::post('/student/enrollment/apply', [StudentEnrollmentController::class, 'store'])->name('student.enrollment.store');
-        Route::get('/student/withdrawal', [\App\Http\Controllers\Portal\WithdrawalController::class, 'create'])->name('student.withdrawal.create');
-        Route::post('/student/withdrawal', [\App\Http\Controllers\Portal\WithdrawalController::class, 'store'])->name('student.withdrawal.store');
+        Route::get('/student/withdrawal', [WithdrawalController::class, 'create'])->name('student.withdrawal.create');
+        Route::post('/student/withdrawal', [WithdrawalController::class, 'store'])->name('student.withdrawal.store');
         // Report Card
         Route::get('/student/report-card', [ReportCardController::class, 'studentShow'])->name('student.report-card');
+        Route::get('/student/cor', [StudentController::class, 'cor'])->name('student.cor');
+    });
+
+    // ─── School Directress (role 8) ────────────────────────────
+    Route::middleware(['role:8'])->group(function() {
+        Route::get('/directress/dashboard', [DirectressController::class, 'index'])->name('directress.dashboard');
+        // Fee Schedule
+        Route::get('/directress/fees', [DirectressController::class, 'fees'])->name('directress.fees');
+        Route::get('/directress/fees/create', [DirectressController::class, 'feesCreate'])->name('directress.fees.create');
+        Route::post('/directress/fees', [DirectressController::class, 'feesStore'])->name('directress.fees.store');
+        Route::get('/directress/fees/{fee}/edit', [DirectressController::class, 'feesEdit'])->name('directress.fees.edit');
+        Route::patch('/directress/fees/{fee}', [DirectressController::class, 'feesUpdate'])->name('directress.fees.update');
+        Route::delete('/directress/fees/{fee}', [DirectressController::class, 'feesDestroy'])->name('directress.fees.destroy');
+        // Graduation Fees
+        Route::get('/directress/graduation-fees', [DirectressController::class, 'graduationFees'])->name('directress.graduation-fees');
+        Route::get('/directress/graduation-fees/create', [DirectressController::class, 'graduationFeesCreate'])->name('directress.graduation-fees.create');
+        Route::post('/directress/graduation-fees', [DirectressController::class, 'graduationFeesStore'])->name('directress.graduation-fees.store');
+        Route::get('/directress/graduation-fees/{graduationFee}/edit', [DirectressController::class, 'graduationFeesEdit'])->name('directress.graduation-fees.edit');
+        Route::patch('/directress/graduation-fees/{graduationFee}', [DirectressController::class, 'graduationFeesUpdate'])->name('directress.graduation-fees.update');
+        Route::delete('/directress/graduation-fees/{graduationFee}', [DirectressController::class, 'graduationFeesDestroy'])->name('directress.graduation-fees.destroy');
+        Route::get('/directress/graduation-fees/{graduationFee}/assign', [DirectressController::class, 'graduationFeesAssign'])->name('directress.graduation-fees.assign');
+        Route::post('/directress/graduation-fees/{graduationFee}/assign', [DirectressController::class, 'graduationFeesAssignStore'])->name('directress.graduation-fees.assign.store');
+        Route::get('/directress/graduation-fees/{graduationFee}/assigned', [DirectressController::class, 'graduationFeesAssigned'])->name('directress.graduation-fees.assigned');
+        Route::post('/directress/graduation-fees/{assignment}/toggle-paid', [DirectressController::class, 'graduationFeesTogglePaid'])->name('directress.graduation-fees.toggle-paid');
+        // Teachers
+        Route::get('/directress/teachers', [DirectressController::class, 'teachers'])->name('directress.teachers');
+        Route::get('/directress/teachers/create', [DirectressController::class, 'teachersCreate'])->name('directress.teachers.create');
+        Route::post('/directress/teachers', [DirectressController::class, 'teachersStore'])->name('directress.teachers.store');
+        Route::get('/directress/teachers/{teacher}/edit', [DirectressController::class, 'teachersEdit'])->name('directress.teachers.edit');
+        Route::patch('/directress/teachers/{teacher}', [DirectressController::class, 'teachersUpdate'])->name('directress.teachers.update');
+        Route::post('/directress/teachers/{teacher}/reset-password', [DirectressController::class, 'teachersResetPassword'])->name('directress.teachers.reset-password');
+    });
+
+    // ─── School Principal (role 9) ─────────────────────────────
+    Route::middleware(['role:9'])->group(function() {
+        Route::get('/principal/dashboard', [PrincipalController::class, 'index'])->name('principal.dashboard');
+        // Schedules
+        Route::get('/principal/schedules', [PrincipalController::class, 'schedules'])->name('principal.schedules');
+        Route::post('/principal/schedules', [PrincipalController::class, 'schedulesStore'])->name('principal.schedules.store');
+        Route::delete('/principal/schedules/{schedule}', [PrincipalController::class, 'schedulesDestroy'])->name('principal.schedules.destroy');
+        // Grades
+        Route::get('/principal/grades', [PrincipalController::class, 'grades'])->name('principal.grades');
+        // Announcements
+        Route::get('/principal/announcements', [PrincipalController::class, 'announcements'])->name('principal.announcements');
+        Route::get('/principal/announcements/create', [PrincipalController::class, 'announcementsCreate'])->name('principal.announcements.create');
+        Route::post('/principal/announcements', [PrincipalController::class, 'announcementsStore'])->name('principal.announcements.store');
+        Route::get('/principal/announcements/{announcement}/edit', [PrincipalController::class, 'announcementsEdit'])->name('principal.announcements.edit');
+        Route::patch('/principal/announcements/{announcement}', [PrincipalController::class, 'announcementsUpdate'])->name('principal.announcements.update');
+        Route::delete('/principal/announcements/{announcement}', [PrincipalController::class, 'announcementsDestroy'])->name('principal.announcements.destroy');
     });
 
     // Profile Management (Provided by Breeze)

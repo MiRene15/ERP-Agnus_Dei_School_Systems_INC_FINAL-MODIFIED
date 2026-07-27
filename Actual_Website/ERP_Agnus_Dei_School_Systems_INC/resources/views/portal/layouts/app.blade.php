@@ -179,7 +179,12 @@
                     </svg>
                     <span class="sidebar-label">Dashboard</span>
                 </a>
-                @yield('sidebar-links')
+                @include('portal.partials.sidebar-' . match(Auth::user()->role_id) {
+                    1 => 'admin', 2 => 'registrar', 3 => 'cashier',
+                    4 => 'teacher', 5 => 'librarian', 6 => 'nurse',
+                    7 => 'student', 8 => 'directress', 9 => 'principal',
+                    default => 'admin',
+                })
             </nav>
 
             <div class="px-2.5 py-2.5 border-t border-gray-50 flex-shrink-0">
@@ -227,7 +232,12 @@
                     </svg>
                     <span class="sidebar-label">Dashboard</span>
                 </a>
-                @yield('sidebar-links')
+                @include('portal.partials.sidebar-' . match(Auth::user()->role_id) {
+                    1 => 'admin', 2 => 'registrar', 3 => 'cashier',
+                    4 => 'teacher', 5 => 'librarian', 6 => 'nurse',
+                    7 => 'student', 8 => 'directress', 9 => 'principal',
+                    default => 'admin',
+                })
             </nav>
 
             <div class="px-3 py-2.5 border-t border-gray-50 flex-shrink-0">
@@ -272,6 +282,8 @@
                         5 => 'Librarian',
                         6 => 'Nurse',
                         7 => 'Student',
+                        8 => 'Directress',
+                        9 => 'Principal',
                         default => 'User'
                     };
                 @endphp
