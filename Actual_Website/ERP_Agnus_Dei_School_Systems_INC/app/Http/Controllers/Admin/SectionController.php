@@ -9,10 +9,23 @@ use Illuminate\Http\Request;
 
 class SectionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $sections = Section::with('adviser')->orderBy('grade_level')->orderBy('section_name')->get()->groupBy('grade_level');
-        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+        $query = Section::with('adviser');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('section_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('grade_level') && $request->grade_level !== 'All') {
+            $query->where('grade_level', $request->grade_level);
+        }
+
+        $sections = $query->orderBy('grade_level')->orderBy('section_name')->get()->groupBy('grade_level');
+        $gradeLevels = ['All', 'Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         return view('portal.admin.sections.index', compact('sections', 'gradeLevels'));
     }
 

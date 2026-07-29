@@ -40,7 +40,7 @@ class ExportController extends Controller
             ->where('school_year', active_school_year())
             ->get();
 
-        $periods = ['1st Semester', '2nd Semester', '3rd Semester'];
+        $periods = ['1st Term', '2nd Term', '3rd Term'];
 
         return $this->streamCsv('grades-' . active_school_year() . '.csv', function ($fh) use ($enrollments, $periods) {
             fputcsv($fh, array_merge(['LRN', 'Name', 'Grade', 'Section', 'Subject'], $periods, ['Final', 'Remarks']));

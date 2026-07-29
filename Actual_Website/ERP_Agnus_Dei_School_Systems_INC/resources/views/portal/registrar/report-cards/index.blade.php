@@ -4,12 +4,7 @@
     <span class="opacity-40">/</span>
     <span class="current">Report Cards</span>
 @endsection
-@section('sidebar-links')
-    <a href="{{ route('registrar.dashboard') }}" class="sidebar-link"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="sidebar-label">Dashboard</span></a>
-    <a href="{{ route('registrar.admissions.index') }}" class="sidebar-link"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span class="sidebar-label">Admissions Queue</span></a>
-    <a href="{{ route('registrar.withdrawals.index') }}" class="sidebar-link"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg><span class="sidebar-label">Withdrawals</span></a>
-    <a href="{{ route('registrar.report-cards.index') }}" class="sidebar-link active"><svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><span class="sidebar-label">Report Cards</span></a>
-@endsection
+
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">Report Cards</h2>
@@ -18,6 +13,23 @@
 @if(session('success'))
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
+<div class="mb-4 flex gap-2 flex-wrap items-center">
+    <form method="GET" class="flex gap-2 flex-1 flex-wrap">
+        <input type="text" name="search" value="{{ request('search') }}"
+               placeholder="Search by student name or section..."
+               class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+        <select name="grade_level" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="All" {{ request('grade_level') === 'All' || !request('grade_level') ? 'selected' : '' }}>All Grade Levels</option>
+            @foreach(['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] as $gl)
+                <option value="{{ $gl }}" {{ request('grade_level') === $gl ? 'selected' : '' }}>{{ $gl }}</option>
+            @endforeach
+        </select>
+        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
+        @if(request()->anyFilled(['search', 'grade_level']))
+            <a href="{{ url()->current() }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</a>
+        @endif
+    </form>
+</div>
 @if($enrollments->isEmpty())
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <p class="text-sm text-gray-500 text-center py-4">No active enrollments found for this school year.</p>

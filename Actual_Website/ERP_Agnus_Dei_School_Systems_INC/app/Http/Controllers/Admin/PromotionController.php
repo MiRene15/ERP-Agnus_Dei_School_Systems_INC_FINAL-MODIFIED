@@ -10,6 +10,8 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentLedger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PromotionController extends Controller
 {
@@ -55,13 +57,25 @@ class PromotionController extends Controller
                 continue;
             }
 
+            $existing = Enrollment::where('student_id', $enrollment->student_id)
+                ->where('school_year', $data['school_year'])
+                ->where('status', 'Active')
+                ->exists();
+
+            if ($existing && in_array($action, ['promote', 'retain'])) {
+                $results['errors'][] = "{$enrollment->student->first_name} {$enrollment->student->last_name}: Already has an active enrollment for {$data['school_year']}.";
+                continue;
+            }
+
             try {
-                match ($action) {
-                    'promote' => $this->promote($enrollment, $data['school_year']),
-                    'retain' => $this->retain($enrollment, $data['school_year']),
-                    'graduate' => $this->graduate($enrollment),
-                    'transfer' => $this->transfer($enrollment),
-                };
+                DB::transaction(function () use ($enrollment, $action, $data) {
+                    match ($action) {
+                        'promote' => $this->promote($enrollment, $data['school_year']),
+                        'retain' => $this->retain($enrollment, $data['school_year']),
+                        'graduate' => $this->graduate($enrollment),
+                        'transfer' => $this->transfer($enrollment),
+                    };
+                });
                 $results[$action === 'promote' ? 'promoted' : ($action === 'retain' ? 'retained' : ($action === 'graduate' ? 'graduated' : 'transferred'))]++;
             } catch (\Exception $e) {
                 $results['errors'][] = "{$enrollment->student?->first_name} {$enrollment->student?->last_name}: {$e->getMessage()}";
@@ -115,13 +129,15 @@ class PromotionController extends Controller
         $enrollment->status = 'Promoted';
         $enrollment->promoted_to_enrollment_id = $newEnrollment->id;
         $enrollment->save();
+
+        log_activity($enrollment, 'Promoted', "Promoted {$student->first_name} {$student->last_name} from {$currentGrade} to {$nextGrade}");
     }
 
     private function retain(Enrollment $enrollment, string $newSchoolYear)
     {
         $currentGrade = $enrollment->section?->grade_level;
 
-        $section = Section::where('grade_level', $currentGrade)->where('is_active', true)->first();
+        $section = Section::find($enrollment->section_id);
         if (!$section) {
             throw new \Exception("No active section found for {$currentGrade}.");
         }
@@ -148,9 +164,11 @@ class PromotionController extends Controller
 
         $this->carryFees($student, $currentGrade, $newSchoolYear);
 
-        $enrollment->status = 'Promoted';
+        $enrollment->status = 'Retained';
         $enrollment->promoted_to_enrollment_id = $newEnrollment->id;
         $enrollment->save();
+
+        log_activity($enrollment, 'Retained', "Retained {$student->first_name} {$student->last_name} in {$currentGrade}");
     }
 
     private function graduate(Enrollment $enrollment)
@@ -160,6 +178,8 @@ class PromotionController extends Controller
 
         $enrollment->student->status = 'graduated';
         $enrollment->student->save();
+
+        log_activity($enrollment, 'Graduated', "Graduated {$enrollment->student->first_name} {$enrollment->student->last_name}");
     }
 
     private function transfer(Enrollment $enrollment)
@@ -169,6 +189,8 @@ class PromotionController extends Controller
 
         $enrollment->student->status = 'archived';
         $enrollment->student->save();
+
+        log_activity($enrollment, 'Transferred', "Transferred out {$enrollment->student->first_name} {$enrollment->student->last_name}");
     }
 
     private function carryFees(Student $student, string $gradeLevel, string $schoolYear)
@@ -181,11 +203,11 @@ class PromotionController extends Controller
 
         $oldBalance = $ledger->balance;
 
-        $semesterFees = FeeSchedule::where('grade_level', $gradeLevel)
+        $termFees = FeeSchedule::where('grade_level', $gradeLevel)
             ->where('school_year', $schoolYear)
             ->get();
 
-        $newFeesTotal = $semesterFees->sum(fn($f) => $f->tuition_fee + $f->misc_fee);
+        $newFeesTotal = $termFees->sum(fn($f) => $f->tuition_fee + $f->misc_fee);
 
         if ($newFeesTotal > 0 || $oldBalance > 0) {
             $ledger->carried_over_balance = $oldBalance;
@@ -199,14 +221,22 @@ class PromotionController extends Controller
 
     private function getNextGradeLevel(?string $current): ?string
     {
-        return match ($current) {
+        $grades = [
+            'Kinder'  => 'Grade 1',
+            'Grade 1' => 'Grade 2',
+            'Grade 2' => 'Grade 3',
+            'Grade 3' => 'Grade 4',
+            'Grade 4' => 'Grade 5',
+            'Grade 5' => 'Grade 6',
+            'Grade 6' => 'Grade 7',
             'Grade 7' => 'Grade 8',
             'Grade 8' => 'Grade 9',
             'Grade 9' => 'Grade 10',
             'Grade 10' => 'Grade 11',
             'Grade 11' => 'Grade 12',
             'Grade 12' => null,
-            default => null,
-        };
+        ];
+
+        return $grades[$current] ?? null;
     }
 }

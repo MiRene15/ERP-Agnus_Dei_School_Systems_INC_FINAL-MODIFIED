@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
             TeachersClassesSchedulesSeeder::class,
             FeeSchedulesSeeder::class,
             AnnouncementsTableSeeder::class,
+            StudentsAndFeesSeeder::class,
+            GradesAssessmentsSeeder::class,
+            LibraryAndClinicSeeder::class,
         ]);
     }
 }

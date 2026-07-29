@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\Setting;
 
 class SystemRolesAndStaffSeeder extends Seeder
 {
@@ -14,7 +15,8 @@ class SystemRolesAndStaffSeeder extends Seeder
         // 1. Seed Roles
         $roles = [
             1 => 'Admin', 2 => 'Registrar', 3 => 'Cashier', 
-            4 => 'Teacher', 5 => 'Librarian', 6 => 'Nurse', 7 => 'Student'
+            4 => 'Teacher', 5 => 'Librarian', 6 => 'Nurse', 7 => 'Student',
+            8 => 'Directress', 9 => 'Principal'
         ];
         
         foreach ($roles as $id => $name) {
@@ -52,5 +54,18 @@ class SystemRolesAndStaffSeeder extends Seeder
             ['email' => 'clinic@agnusdei.local'], 
             ['name' => 'School Nurse', 'password' => $password, 'role_id' => 6]
         );
+
+        // 5. School Leadership
+        $directress = User::updateOrCreate(
+            ['email' => 'directress@agnusdei.local'], 
+            ['name' => 'School Directress', 'password' => $password, 'role_id' => 8]
+        );
+        $principal = User::updateOrCreate(
+            ['email' => 'principal@agnusdei.local'], 
+            ['name' => 'School Principal', 'password' => $password, 'role_id' => 9]
+        );
+
+        Setting::setValue('directress_name', $directress->name);
+        Setting::setValue('principal_name', $principal->name);
     }
 }

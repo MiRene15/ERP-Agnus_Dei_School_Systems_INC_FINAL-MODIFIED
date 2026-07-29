@@ -26,15 +26,34 @@ class NurseController extends Controller
 
     public function logs()
     {
-        $logs = ClinicLog::with('student')
-            ->when(request('search'), function ($q) {
-                $q->whereHas('student', function ($sq) {
-                    $sq->where('first_name', 'like', '%' . request('search') . '%')
-                        ->orWhere('last_name', 'like', '%' . request('search') . '%');
-                });
-            })
-            ->latest('incident_date')
-            ->paginate(20);
+        $query = ClinicLog::with('student');
+
+        if (request('search')) {
+            $query->whereHas('student', function ($q) {
+                $q->where('first_name', 'like', '%' . request('search') . '%')
+                    ->orWhere('last_name', 'like', '%' . request('search') . '%');
+            });
+        }
+
+        if (request('incident_type') && request('incident_type') !== 'All') {
+            $type = request('incident_type');
+            $query->where(function ($q) use ($type) {
+                $q->where('complaint', 'like', "%{$type}%")
+                    ->orWhere('symptoms', 'like', "%{$type}%")
+                    ->orWhere('diagnosis', 'like', "%{$type}%");
+            });
+        }
+
+        if (request('date_from')) {
+            $query->whereDate('incident_date', '>=', request('date_from'));
+        }
+
+        if (request('date_to')) {
+            $query->whereDate('incident_date', '<=', request('date_to'));
+        }
+
+        $logs = $query->latest('incident_date')->paginate(20)->withQueryString();
+        $logs->appends(request()->query());
 
         return view('portal.nurse.logs', compact('logs'));
     }

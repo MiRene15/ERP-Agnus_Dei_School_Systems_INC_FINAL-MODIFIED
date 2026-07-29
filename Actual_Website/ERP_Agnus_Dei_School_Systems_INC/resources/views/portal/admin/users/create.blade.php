@@ -1,22 +1,11 @@
 @extends('portal.layouts.app')
 
 @section('breadcrumbs')
-    <a href="{{ route('admin.dashboard') }}">Dashboard</a>
-    <span class="sep">›</span>
-    <a href="{{ route('admin.users.index') }}">Staff Accounts</a>
-    <span class="sep">›</span>
+    <a href="{{ route('admin.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
+    <span class="opacity-40">/</span>
+    <a href="{{ route('admin.users.index') }}" class="no-underline" style="color: var(--muted);">Staff Accounts</a>
+    <span class="opacity-40">/</span>
     <span class="current">New Account</span>
-@endsection
-
-@section('sidebar-links')
-    <a href="{{ route('admin.dashboard') }}" class="sidebar-link">
-        <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        <span class="sidebar-label">Dashboard</span>
-    </a>
-    <a href="{{ route('admin.users.index') }}" class="sidebar-link active">
-        <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-        <span class="sidebar-label">Staff Accounts</span>
-    </a>
 @endsection
 
 @section('content')
@@ -65,9 +54,12 @@
             {{-- Contact Number --}}
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Contact Number <span class="text-gray-400 font-normal">(Optional)</span></label>
-                <input type="text" name="contact_number" value="{{ old('contact_number') }}"
-                    class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-                    placeholder="e.g. 09XX-XXX-XXXX">
+                <div class="flex">
+                    <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-sm text-gray-600 font-medium">+63</span>
+                    <input type="tel" name="contact_number" value="{{ old('contact_number') }}" maxlength="11" inputmode="numeric" placeholder="09XX-XXX-XXXX"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 11)"
+                           class="w-full rounded-r-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                </div>
             </div>
 
             {{-- Password Info --}}

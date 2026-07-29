@@ -8,17 +8,6 @@
     <span class="current">{{ $admission->application_number }}</span>
 @endsection
 
-@section('sidebar-links')
-    <a href="{{ route('registrar.dashboard') }}" class="sidebar-link">
-        <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        <span class="sidebar-label">Dashboard</span>
-    </a>
-    <a href="{{ route('registrar.admissions.index') }}" class="sidebar-link">
-        <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span class="sidebar-label">Admissions Queue</span>
-    </a>
-@endsection
-
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">Application Review</h2>
@@ -57,7 +46,7 @@
                 </div>
                 <div>
                     <dt class="text-gray-500">Institutional Email</dt>
-                    <dd class="font-medium text-gray-900">{{ $admission->student->user->email }}</dd>
+                    <dd class="font-medium text-gray-900">{{ $admission->student?->user?->email ?? 'N/A' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Student No.</dt>
@@ -68,36 +57,88 @@
 
         {{-- Requirements Checklist --}}
         @if($admission->requirements->isNotEmpty())
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-semibold text-gray-900 mb-4">Requirements Checklist</h3>
-            <p class="text-xs text-gray-500 mb-3">Verify each document after reviewing it. All required documents must be verified before approving.</p>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+             x-data="{
+                requirements: @js($admission->requirements->map(fn($r) => ['id' => $r->id, 'document_type' => $r->document_type, 'status' => $r->status])),
+                get verifiedCount() { return this.requirements.filter(r => r.status === 'Verified').length },
+                get totalCount() { return this.requirements.length },
+                get allVerified() { return this.verifiedCount === this.totalCount },
+                toggleVerify(reqId, currentStatus) {
+                    const form = document.getElementById('verify-form-' + reqId);
+                    const hiddenInput = form.querySelector('input[name=verify]');
+                    const newVal = currentStatus === 'Verified' ? '0' : '1';
+                    hiddenInput.value = newVal;
+                    const formData = new FormData(form);
+                    fetch(form.action, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                const req = this.requirements.find(r => r.id === reqId);
+                                if (req) req.status = data.status;
+                            }
+                        });
+                },
+                verifyAll() {
+                    const form = document.getElementById('verify-all-form');
+                    const formData = new FormData(form);
+                    fetch(form.action, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                this.requirements.forEach(r => r.status = 'Verified');
+                            }
+                        });
+                }
+             }">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-900">Requirements Checklist</h3>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-gray-500" x-text="verifiedCount + ' / ' + totalCount + ' verified'"></span>
+                    @if($admission->status === 'Pending')
+                    <form id="verify-all-form" method="POST" action="{{ route('registrar.admissions.verify-all', $admission) }}">
+                        @csrf
+                        <button type="button" @click="verifyAll()"
+                                class="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+                            Verify All
+                        </button>
+                    </form>
+                    @endif
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mb-3">Click <strong>Verify All</strong> to approve all documents at once, or toggle individually.</p>
             <ul class="divide-y divide-gray-100">
                 @foreach($admission->requirements as $req)
                 <li class="py-3 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                             style="background: {{ $req->status === 'Verified' ? '#22c55e' : '#e5e7eb' }};">
-                            @if($req->status === 'Verified')
-                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                            @endif
+                             :style="'background: ' + (requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? '#22c55e' : '#e5e7eb')">
+                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 x-show="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified'">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-900">{{ $req->document_type }}</p>
-                            <p class="text-xs {{ $req->status === 'Verified' ? 'text-green-600' : 'text-gray-500' }}">{{ $req->status }}</p>
+                            <p class="text-xs"
+                               :class="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'text-green-600' : 'text-gray-500'"
+                               x-text="requirements.find(r => r.id === {{ $req->id }}).status"></p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
                         <a href="{{ asset('storage/' . $req->file_path) }}" target="_blank"
                            class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
-                        <form method="POST" action="{{ route('registrar.admissions.verify-requirement', $req) }}" class="inline">
+                        @if($admission->status === 'Pending')
+                        <form id="verify-form-{{ $req->id }}" method="POST"
+                              action="{{ route('registrar.admissions.verify-requirement', $req) }}" class="inline">
                             @csrf
                             <input type="hidden" name="verify" value="{{ $req->status === 'Verified' ? '0' : '1' }}">
-                            <button type="submit"
+                            <button type="button" @click="toggleVerify({{ $req->id }}, requirements.find(r => r.id === {{ $req->id }}).status)"
                                     class="text-sm font-medium px-3 py-1 rounded-lg transition"
-                                    style="background: {{ $req->status === 'Verified' ? '#fee2e2' : '#dcfce7' }}; color: {{ $req->status === 'Verified' ? '#dc2626' : '#16a34a' }};">
-                                {{ $req->status === 'Verified' ? 'Unverify' : 'Verify' }}
+                                    :style="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'background: #fee2e2; color: #dc2626;' : 'background: #dcfce7; color: #16a34a;'"
+                                    x-text="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'Unverify' : 'Verify'">
                             </button>
                         </form>
+                        @endif
                     </div>
                 </li>
                 @endforeach

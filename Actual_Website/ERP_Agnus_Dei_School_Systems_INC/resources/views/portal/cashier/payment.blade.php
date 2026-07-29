@@ -6,17 +6,6 @@
     <span class="current">{{ $student->first_name }} {{ $student->last_name }}</span>
 @endsection
 
-@section('sidebar-links')
-    <a href="{{ route('cashier.dashboard') }}" class="sidebar-link">
-        <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span class="sidebar-label">Process Payments</span>
-    </a>
-    {{-- <a href="#" class="sidebar-link">
-        <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span class="sidebar-label">Financial Reports</span>
-    </a> --}}
-@endsection
-
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">Process Payment</h2>
@@ -60,24 +49,42 @@
                         </span>
                     </dd>
                 </div>
+                @if($hasScholarship && $isSHS)
+                <div>
+                    <dt class="text-gray-500">Scholarship</dt>
+                    <dd class="font-medium">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Tuition Waived</span>
+                    </dd>
+                </div>
+                @endif
             </dl>
         </div>
 
-        @if($feeSchedule)
+        @if($feeSchedules->isNotEmpty())
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-semibold text-gray-900 mb-4">Fee Assessment</h3>
             <div class="space-y-3 text-sm">
-                <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span class="text-gray-600">Tuition Fee</span>
-                    <span class="font-medium text-gray-900">₱ {{ number_format($feeSchedule->tuition_fee, 2) }}</span>
+                @foreach($feeSchedules as $fs)
+                <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                    <span class="text-gray-600">{{ $fs->term }} Tuition</span>
+                    <span class="font-medium text-gray-900">₱ {{ number_format($fs->tuition_fee, 2) }}</span>
                 </div>
-                <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span class="text-gray-600">Miscellaneous Fee</span>
-                    <span class="font-medium text-gray-900">₱ {{ number_format($feeSchedule->misc_fee, 2) }}</span>
+                <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                    <span class="text-gray-600">{{ $fs->term }} Misc. Fee</span>
+                    <span class="font-medium text-gray-900">₱ {{ number_format($fs->misc_fee, 2) }}</span>
+                </div>
+                @endforeach
+                <div class="flex justify-between items-center py-2 border-b border-gray-100 font-semibold">
+                    <span class="text-gray-800">Total Tuition</span>
+                    <span class="text-gray-900">₱ {{ number_format($totalTuition, 2) }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-gray-100 font-semibold">
+                    <span class="text-gray-800">Total Miscellaneous</span>
+                    <span class="text-gray-900">₱ {{ number_format($totalMisc, 2) }}</span>
                 </div>
                 <div class="flex justify-between items-center py-2 text-base font-bold">
                     <span class="text-gray-900">Total Assessed</span>
-                    <span class="text-gray-900">₱ {{ number_format($feeSchedule->tuition_fee + $feeSchedule->misc_fee, 2) }}</span>
+                    <span class="text-gray-900">₱ {{ number_format($totalAssessed, 2) }}</span>
                 </div>
                 @if($student->ledger)
                 <div class="flex justify-between items-center py-2">
@@ -100,7 +107,7 @@
 
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-semibold text-gray-900 mb-4">Discounts</h3>
-            <div class="space-y-4" x-data="{ discountType: '{{ $student?->ledger?->discount_applied > 0 ? 'other' : '' }}', totalAssessed: {{ $feeSchedule ? ($feeSchedule->tuition_fee + $feeSchedule->misc_fee) : 0 }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountApplied }} }">
+            <div class="space-y-4" x-data="{ discountType: '{{ $student?->ledger?->discount_applied > 0 ? 'other' : '' }}', totalAssessed: {{ $totalAssessed }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountApplied }} }">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
                     <select name="discount_type" x-model="discountType"
@@ -137,6 +144,12 @@
                     </div>
                 </div>
             </div>
+        </div>
+        @endif
+
+        @if($feeSchedules->isEmpty())
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <p class="text-sm text-gray-500 text-center py-4">No fee schedule found for this grade level and school year.</p>
         </div>
         @endif
     </div>

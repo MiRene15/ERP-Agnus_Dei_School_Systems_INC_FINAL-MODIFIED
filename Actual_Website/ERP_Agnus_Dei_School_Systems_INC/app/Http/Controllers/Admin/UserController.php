@@ -11,15 +11,50 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
-    // List all staff accounts (excludes student role 7)
-    public function index()
+    protected function normalizePhone(?string $raw): ?string
     {
-        $users = User::with('role')
-            ->whereNotIn('role_id', [7])
-            ->orderBy('role_id')
-            ->get();
+        if (!$raw || trim($raw) === '') return null;
+        $digits = preg_replace('/[^0-9]/', '', $raw);
+        if (strlen($digits) === 11 && str_starts_with($digits, '0')) {
+            return '+63' . substr($digits, 1);
+        }
+        if (strlen($digits) === 10 && str_starts_with($digits, '9')) {
+            return '+63' . $digits;
+        }
+        if (strlen($digits) === 12 && str_starts_with($digits, '63')) {
+            return '+' . $digits;
+        }
+        if (strlen($digits) === 13 && str_starts_with($digits, '63')) {
+            return '+' . $digits;
+        }
+        return $raw;
+    }
 
-        return view('portal.admin.users.index', compact('users'));
+    // List all staff accounts (excludes student role 7)
+    public function index(Request $request)
+    {
+        $query = User::with('role')->whereNotIn('role_id', [7]);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->role_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $users = $query->orderBy('role_id')->paginate(20)->withQueryString();
+        $roles = Role::whereNotIn('id', [7])->get();
+
+        return view('portal.admin.users.index', compact('users', 'roles'));
     }
 
     // Show create form
@@ -36,7 +71,7 @@ class UserController extends Controller
             'name'         => 'required|string|max:255',
             'email'        => 'required|email|unique:users,email',
             'role_id'      => 'required|exists:roles,id',
-            'contact_number' => 'nullable|string|max:20',
+            'contact_number' => 'nullable|string|max:15',
         ]);
 
         // Generate a strong randomized password
@@ -46,7 +81,7 @@ class UserController extends Controller
             'name'           => $request->name,
             'email'          => $request->email,
             'role_id'        => $request->role_id,
-            'contact_number' => $request->contact_number,
+            'contact_number' => $this->normalizePhone($request->contact_number),
             'password'       => Hash::make($rawPassword),
             'status'         => 'active',
         ]);
@@ -69,10 +104,15 @@ class UserController extends Controller
             'name'           => 'required|string|max:255',
             'email'          => 'required|email|unique:users,email,' . $user->id,
             'role_id'        => 'required|exists:roles,id',
-            'contact_number' => 'nullable|string|max:20',
+            'contact_number' => 'nullable|string|max:15',
         ]);
 
-        $user->update($request->only('name', 'email', 'role_id', 'contact_number'));
+        $user->update([
+            'name'           => $request->name,
+            'email'          => $request->email,
+            'role_id'        => $request->role_id,
+            'contact_number' => $this->normalizePhone($request->contact_number),
+        ]);
 
         return redirect()->route('admin.users.index')
             ->with('success', "Account for {$user->name} has been updated.");

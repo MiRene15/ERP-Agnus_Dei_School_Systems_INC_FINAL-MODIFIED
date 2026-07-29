@@ -38,9 +38,24 @@ class CashierController extends Controller
     {
         $student->load('user', 'enrollments.section', 'ledger');
         $enrollment = $student->enrollments()->where('status', 'Active')->latest()->first();
-        $feeSchedule = $enrollment ? FeeSchedule::where('grade_level', $enrollment->section->grade_level)
+        $feeSchedules = $enrollment ? FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
-            ->first() : null;
+            ->orderBy('term')
+            ->get() : collect();
+
+        $hasScholarship = $student->scholarship ?? false;
+        $isSHS = $enrollment && in_array($enrollment->section->grade_level, ['Grade 11', 'Grade 12']);
+
+        if ($hasScholarship && $isSHS) {
+            $feeSchedules = $feeSchedules->map(function ($fs) {
+                $fs->tuition_fee = 0;
+                return $fs;
+            });
+        }
+
+        $totalTuition = $feeSchedules->sum('tuition_fee');
+        $totalMisc = $feeSchedules->sum('misc_fee');
+        $totalAssessed = $totalTuition + $totalMisc;
 
         $discountTypes = [
             'honor' => 'Honor',
@@ -51,7 +66,7 @@ class CashierController extends Controller
 
         $discountApplied = $student->ledger?->discount_applied ?? 0;
 
-        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedule', 'discountTypes', 'discountApplied'));
+        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS'));
     }
 
     public function processPayment(Request $request, Student $student)
@@ -63,12 +78,19 @@ class CashierController extends Controller
             'discount_amount' => 'nullable|numeric|min:0',
         ]);
 
-        $enrollment = $student->enrollments()->where('status', 'Active')->latest()->firstOrFail();
-        $feeSchedule = FeeSchedule::where('grade_level', $enrollment->section->grade_level)
+        $enrollment = $student->enrollments()->with('section')->where('status', 'Active')->latest()->firstOrFail();
+        $feeSchedules = FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
-            ->first();
+            ->get();
 
-        $totalAssessed = $feeSchedule ? ($feeSchedule->tuition_fee + $feeSchedule->misc_fee) : 0;
+        $hasScholarship = $student->scholarship ?? false;
+        $isSHS = in_array($enrollment->section->grade_level, ['Grade 11', 'Grade 12']);
+
+        if ($hasScholarship && $isSHS) {
+            $totalAssessed = $feeSchedules->sum('misc_fee');
+        } else {
+            $totalAssessed = $feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee');
+        }
         $discountAmount = $data['discount_amount'] ?? 0;
 
         try {
@@ -82,7 +104,7 @@ class CashierController extends Controller
                         'total_assessed' => $totalAssessed,
                         'discount_applied' => $discountAmount,
                         'total_paid' => $data['amount_paid'],
-                        'balance' => $totalAssessed - $data['amount_paid'] - $discountAmount,
+                        'balance' => max(0, $totalAssessed - $data['amount_paid'] - $discountAmount),
                         'clearance_status' => ($data['payment_plan'] === 'full' && $data['amount_paid'] >= $totalAssessed - $discountAmount) ? 'Cleared' : 'Pending',
                     ]);
                 } else {
@@ -90,8 +112,8 @@ class CashierController extends Controller
                     $ledger->total_assessed = $totalAssessed;
                     $ledger->discount_applied = $discountAmount;
                     $ledger->total_paid += $data['amount_paid'];
-                    $ledger->balance = $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied;
-                    if ($data['payment_plan'] === 'full' && $ledger->balance <= 0) {
+                    $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
+                    if ($data['payment_plan'] === 'full' && $ledger->balance == 0) {
                         $ledger->clearance_status = 'Cleared';
                     }
                     $ledger->save();

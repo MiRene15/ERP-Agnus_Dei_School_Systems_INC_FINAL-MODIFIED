@@ -18,10 +18,12 @@ class AdminController extends Controller
             ->get();
 
         $confirmedCount = StudentLedger::whereNotNull('it_confirmed_at')->count();
+        $totalUsers = \App\Models\User::count();
+        $activeRoles = \App\Models\Role::count();
 
         $recentActivity = \App\Models\ActivityLog::with('causer')->latest()->take(5)->get();
 
-        return view('portal.admin.dashboard', compact('pendingConfirmations', 'confirmedCount', 'recentActivity'));
+        return view('portal.admin.dashboard', compact('pendingConfirmations', 'confirmedCount', 'totalUsers', 'activeRoles', 'recentActivity'));
     }
 
     public function pendingAccounts()
@@ -49,17 +51,23 @@ class AdminController extends Controller
     public function settings()
     {
         $activeSY = active_school_year();
-        return view('portal.admin.settings', compact('activeSY'));
+        $directressName = Setting::getValue('directress_name', '');
+        $principalName = Setting::getValue('principal_name', '');
+        return view('portal.admin.settings', compact('activeSY', 'directressName', 'principalName'));
     }
 
     public function updateSettings(Request $request)
     {
         $data = $request->validate([
             'active_school_year' => 'required|string|max:20',
+            'directress_name'    => 'nullable|string|max:100',
+            'principal_name'     => 'nullable|string|max:100',
         ]);
 
         Setting::setValue('active_school_year', $data['active_school_year']);
+        Setting::setValue('directress_name', $data['directress_name'] ?? '');
+        Setting::setValue('principal_name', $data['principal_name'] ?? '');
 
-        return back()->with('success', 'Active school year updated to ' . $data['active_school_year'] . '.');
+        return back()->with('success', 'Settings saved successfully.');
     }
 }

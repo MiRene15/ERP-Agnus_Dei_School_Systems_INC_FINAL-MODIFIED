@@ -113,7 +113,7 @@
                 </td>
                 <td style="text-align:center;">
                     <hr style="width:70%;">
-                    <strong>Adviser</strong><br>
+                    <strong>{{ $enrollment->section?->adviser?->name ?? 'Adviser' }}</strong><br>
                     Class Adviser
                 </td>
                 <td style="text-align:center;">
@@ -121,6 +121,27 @@
                     <strong>Registrar</strong><br>
                     Registrar's Office
                 </td>
+            </tr>
+            <tr>
+                @if($principalName)
+                <td style="text-align:center;">
+                    <hr style="width:70%;">
+                    <strong>{{ $principalName }}</strong><br>
+                    Noted by: School Principal
+                </td>
+                @else
+                <td></td>
+                @endif
+                @if($directressName)
+                <td style="text-align:center;">
+                    <hr style="width:70%;">
+                    <strong>{{ $directressName }}</strong><br>
+                    Approved by: School Directress
+                </td>
+                @else
+                <td></td>
+                @endif
+                <td></td>
             </tr>
         </table>
     </div>
