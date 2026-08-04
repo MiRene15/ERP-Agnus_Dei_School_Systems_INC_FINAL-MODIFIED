@@ -16,6 +16,9 @@ class CheckRole
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (! $request->user() || ! in_array($request->user()->role_id, $roles)) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json(['status' => 'error', 'message' => 'Unauthorized Access.'], 403);
+            }
             abort(403, 'Unauthorized Access.');
         }
 

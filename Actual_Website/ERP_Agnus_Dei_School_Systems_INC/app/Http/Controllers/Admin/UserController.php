@@ -33,6 +33,8 @@ class UserController extends Controller
     // List all staff accounts (excludes student role 7)
     public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = User::with('role')->whereNotIn('role_id', [7]);
 
         if ($request->filled('search')) {
@@ -53,6 +55,12 @@ class UserController extends Controller
 
         $users = $query->orderBy('role_id')->paginate(20)->withQueryString();
         $roles = Role::whereNotIn('id', [7])->get();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.admin.partials.users-index-results', compact('users'))->render(),
+            ]);
+        }
 
         return view('portal.admin.users.index', compact('users', 'roles'));
     }
@@ -77,7 +85,7 @@ class UserController extends Controller
         // Generate a strong randomized password
         $rawPassword = Str::upper(Str::random(4)) . rand(100, 999) . '!' . Str::random(3);
 
-        User::create([
+        $newUser = User::create([
             'name'           => $request->name,
             'email'          => $request->email,
             'role_id'        => $request->role_id,
@@ -85,6 +93,8 @@ class UserController extends Controller
             'password'       => Hash::make($rawPassword),
             'status'         => 'active',
         ]);
+
+        log_activity($newUser, 'Created', "Created staff account: {$request->name}");
 
         return redirect()->route('admin.users.index')
             ->with('success', "Account created! Temporary password: <strong>{$rawPassword}</strong>. Please share this securely with the staff member.");
@@ -114,6 +124,8 @@ class UserController extends Controller
             'contact_number' => $this->normalizePhone($request->contact_number),
         ]);
 
+        log_activity($user, 'Updated', "Updated staff account: {$user->name}");
+
         return redirect()->route('admin.users.index')
             ->with('success', "Account for {$user->name} has been updated.");
     }
@@ -125,6 +137,7 @@ class UserController extends Controller
         $user->save();
 
         $label = $user->status === 'active' ? 'activated' : 'deactivated';
+        log_activity($user, 'Status Changed', "Account status changed to {$label} for {$user->name}");
         return redirect()->route('admin.users.index')
             ->with('success', "Account for {$user->name} has been {$label}.");
     }
@@ -135,6 +148,7 @@ class UserController extends Controller
         $rawPassword = Str::upper(Str::random(4)) . rand(100, 999) . '!' . Str::random(3);
         $user->update(['password' => Hash::make($rawPassword)]);
 
+        log_activity($user, 'Password Reset', "Password reset for {$user->name}");
         return redirect()->route('admin.users.index')
             ->with('success', "Password reset for {$user->name}. New temporary password: <strong>{$rawPassword}</strong>");
     }

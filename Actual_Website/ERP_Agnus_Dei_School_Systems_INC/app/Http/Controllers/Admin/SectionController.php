@@ -11,6 +11,8 @@ class SectionController extends Controller
 {
     public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = Section::with('adviser');
 
         if ($request->filled('search')) {
@@ -26,6 +28,13 @@ class SectionController extends Controller
 
         $sections = $query->orderBy('grade_level')->orderBy('section_name')->get()->groupBy('grade_level');
         $gradeLevels = ['All', 'Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.admin.partials.sections-index-results', compact('sections', 'gradeLevels'))->render(),
+            ]);
+        }
+
         return view('portal.admin.sections.index', compact('sections', 'gradeLevels'));
     }
 
@@ -59,6 +68,8 @@ class SectionController extends Controller
             'adviser_id' => $data['adviser_id'] ?? null,
         ]);
 
+        log_activity(new \App\Models\Section, 'Created', "Created section: {$data['section_name']} ({$data['grade_level']})");
+
         return redirect()->route('admin.sections.index')
             ->with('success', "Section {$data['section_name']} created for {$data['grade_level']}.");
     }
@@ -86,6 +97,8 @@ class SectionController extends Controller
             'adviser_id' => $data['adviser_id'] ?? null,
         ]);
 
+        log_activity($section, 'Updated', "Updated section: {$section->section_name}");
+
         return redirect()->route('admin.sections.index')
             ->with('success', "Section {$data['section_name']} updated.");
     }
@@ -96,6 +109,7 @@ class SectionController extends Controller
             return back()->with('error', 'Cannot delete — section has active enrollments. Deactivate it instead.');
         }
         $section->delete();
+        log_activity($section, 'Deleted', "Deleted section: {$section->section_name} ({$section->grade_level})");
         return back()->with('success', 'Section deleted.');
     }
 }

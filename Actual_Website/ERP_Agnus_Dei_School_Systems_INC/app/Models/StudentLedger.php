@@ -13,6 +13,7 @@ class StudentLedger extends Model
         'student_id',
         'payment_plan',
         'total_assessed',
+        'discount_type',
         'discount_applied',
         'total_paid',
         'balance',
