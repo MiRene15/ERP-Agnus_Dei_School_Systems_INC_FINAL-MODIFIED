@@ -37,7 +37,17 @@ class Student extends Model
         'emergency_contact_relationship',
         'status',
         'scholarship',
+        'archive_action',
+        'archive_reason',
+        'archived_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'archived_at' => 'datetime',
+        ];
+    }
 
     /**
      * Generate a unique Student Number (YYYY-XXXXX).
@@ -46,12 +56,20 @@ class Student extends Model
      */
     public static function generateStudentNumber(): string
     {
-        $year = date('Y');
-        // Count students who already have a student number this year
-        $count = static::whereYear('created_at', $year)
-                        ->whereNotNull('student_number')
-                        ->count() + 1;
-        return $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+        return \Illuminate\Support\Facades\DB::transaction(function () {
+            $year = date('Y');
+            if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+                \Illuminate\Support\Facades\DB::statement(
+                    'SELECT pg_advisory_xact_lock(?)',
+                    [intval(hash('crc32', 'student_number_' . $year))]
+                );
+            }
+            $count = static::whereYear('created_at', $year)
+                            ->whereNotNull('student_number')
+                            ->when(\Illuminate\Support\Facades\DB::getDriverName() !== 'pgsql', fn ($q) => $q->lockForUpdate())
+                            ->count() + 1;
+            return $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+        });
     }
 
     public function user()

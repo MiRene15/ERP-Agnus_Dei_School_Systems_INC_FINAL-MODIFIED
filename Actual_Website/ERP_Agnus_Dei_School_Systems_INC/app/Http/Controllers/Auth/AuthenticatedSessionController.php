@@ -30,11 +30,14 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $user = $request->user();
-        if (!$user->first_login_at) {
-            $user->first_login_at = Carbon::now();
-        }
         $user->last_login_at = Carbon::now();
         $user->save();
+
+        log_activity($user, 'Login', 'User logged in successfully.');
+
+        if (!$user->first_login_at) {
+            return redirect()->route('password.force');
+        }
 
         $role = $user->role_id;
         $url = match($role) {
@@ -56,6 +59,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        log_activity($user, 'Logout', 'User logged out.');
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

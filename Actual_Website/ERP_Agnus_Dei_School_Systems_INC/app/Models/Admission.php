@@ -37,10 +37,19 @@ class Admission extends Model
         parent::boot();
 
         static::creating(function ($admission) {
-            $year = date('Y');
-            // Count existing applications this year and pad to 5 digits
-            $count = static::whereYear('created_at', $year)->count() + 1;
-            $admission->application_number = 'ADM-' . $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+            $admission->application_number = \Illuminate\Support\Facades\DB::transaction(function () {
+                $year = date('Y');
+                if (\Illuminate\Support\Facades\DB::getDriverName() === 'pgsql') {
+                    \Illuminate\Support\Facades\DB::statement(
+                        'SELECT pg_advisory_xact_lock(?)',
+                        [intval(hash('crc32', 'application_number_' . $year))]
+                    );
+                }
+                $count = static::whereYear('created_at', $year)
+                    ->when(\Illuminate\Support\Facades\DB::getDriverName() !== 'pgsql', fn ($q) => $q->lockForUpdate())
+                    ->count() + 1;
+                return 'ADM-' . $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+            });
         });
     }
 
