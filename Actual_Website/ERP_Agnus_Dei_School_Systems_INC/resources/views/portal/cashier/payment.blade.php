@@ -16,6 +16,18 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
+@php
+    $isFirstPayment = !$student->ledger || $student->ledger->payments()->count() === 0;
+    $isPlanLocked = $student->ledger && $student->ledger->payments()->count() > 0;
+    $discountAlreadyApplied = $student->ledger && $student->ledger->discount_applied > 0;
+    $effectiveAutoType = $autoDiscountType;
+    $effectiveAutoAmount = $autoDiscountAmount;
+    if ($discountAlreadyApplied) {
+        $effectiveAutoType = $student->ledger->discount_type ?? '';
+        $effectiveAutoAmount = $student->ledger->discount_applied;
+    }
+@endphp
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -53,7 +65,21 @@
                 <div>
                     <dt class="text-gray-500">Scholarship</dt>
                     <dd class="font-medium">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Tuition Waived</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Tuition Waived (ESC)</span>
+                    </dd>
+                </div>
+                @elseif($autoDiscountType === 'honor')
+                <div>
+                    <dt class="text-gray-500">Admission Type</dt>
+                    <dd class="font-medium">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Honor — 10% Discount</span>
+                    </dd>
+                </div>
+                @elseif($autoDiscountType === 'sibling')
+                <div>
+                    <dt class="text-gray-500">Admission Type</dt>
+                    <dd class="font-medium">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">Sibling — 5% Discount</span>
                     </dd>
                 </div>
                 @endif
@@ -64,16 +90,27 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-semibold text-gray-900 mb-4">Fee Assessment</h3>
             <div class="space-y-3 text-sm">
-                @foreach($feeSchedules as $fs)
-                <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                    <span class="text-gray-600">{{ $fs->term }} Tuition</span>
-                    <span class="font-medium text-gray-900">₱ {{ number_format($fs->tuition_fee, 2) }}</span>
-                </div>
-                <div class="flex justify-between items-center py-1 border-b border-gray-50">
-                    <span class="text-gray-600">{{ $fs->term }} Misc. Fee</span>
-                    <span class="font-medium text-gray-900">₱ {{ number_format($fs->misc_fee, 2) }}</span>
-                </div>
-                @endforeach
+                @if($isSHS)
+                    @foreach($feeSchedules as $fs)
+                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                        <span class="text-gray-600">{{ $fs->term }} Tuition</span>
+                        <span class="font-medium text-gray-900">₱ {{ number_format($fs->tuition_fee, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                        <span class="text-gray-600">{{ $fs->term }} Misc. Fee</span>
+                        <span class="font-medium text-gray-900">₱ {{ number_format($fs->misc_fee, 2) }}</span>
+                    </div>
+                    @endforeach
+                @else
+                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                        <span class="text-gray-600">Tuition (Full Year)</span>
+                        <span class="font-medium text-gray-900">₱ {{ number_format($totalTuition, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-gray-50">
+                        <span class="text-gray-600">Misc. Fee (Full Year)</span>
+                        <span class="font-medium text-gray-900">₱ {{ number_format($totalMisc, 2) }}</span>
+                    </div>
+                @endif
                 <div class="flex justify-between items-center py-2 border-b border-gray-100 font-semibold">
                     <span class="text-gray-800">Total Tuition</span>
                     <span class="text-gray-900">₱ {{ number_format($totalTuition, 2) }}</span>
@@ -104,47 +141,6 @@
                 @endif
             </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-semibold text-gray-900 mb-4">Discounts</h3>
-            <div class="space-y-4" x-data="{ discountType: '{{ $student?->ledger?->discount_applied > 0 ? 'other' : '' }}', totalAssessed: {{ $totalAssessed }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountApplied }} }">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
-                    <select name="discount_type" x-model="discountType"
-                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="">None</option>
-                        @foreach($discountTypes as $val => $label)
-                        <option value="{{ $val }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Discount Amount (₱)</label>
-                    <input type="number" name="discount_amount" step="0.01" min="0" x-model="discountAmount"
-                           placeholder="0.00"
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    @error('discount_amount') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div class="text-sm bg-gray-50 rounded-lg p-3">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">Total Assessed</span>
-                        <span class="font-medium" x-text="'₱ ' + totalAssessed.toFixed(2)"></span>
-                    </div>
-                    <div class="flex justify-between mt-1">
-                        <span class="text-gray-600">Total Paid</span>
-                        <span class="font-medium text-green-600" x-text="'₱ ' + totalPaid.toFixed(2)"></span>
-                    </div>
-                    <div class="flex justify-between mt-1">
-                        <span class="text-gray-600">Discount</span>
-                        <span class="font-medium text-blue-600" x-text="'-₱ ' + parseFloat(discountAmount || 0).toFixed(2)"></span>
-                    </div>
-                    <div class="flex justify-between mt-1 pt-2 border-t border-gray-200 font-bold">
-                        <span>New Balance</span>
-                        <span :class="(totalAssessed - totalPaid - parseFloat(discountAmount || 0)) > 0 ? 'text-red-600' : 'text-green-600'" x-text="'₱ ' + Math.max(0, totalAssessed - totalPaid - parseFloat(discountAmount || 0)).toFixed(2)"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
         @endif
 
         @if($feeSchedules->isEmpty())
@@ -157,17 +153,26 @@
     <div class="lg:col-span-1">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-semibold text-gray-900 mb-4">Process Payment</h3>
-            <form method="POST" action="{{ route('cashier.payment.process', $student) }}">
+            <form method="POST" action="{{ route('cashier.payment.process', $student) }}" enctype="multipart/form-data"
+                  x-data="{ discountType: '{{ $discountAlreadyApplied ? ($student->ledger->discount_type ?? 'other') : ($autoDiscountType ?? '') }}', totalAssessed: {{ $totalAssessed }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountAlreadyApplied ? $student->ledger->discount_applied : $autoDiscountAmount }}, isAutoDiscount: {{ ($autoDiscountType && !$discountAlreadyApplied) ? 'true' : 'false' }}, autoDiscountLabel: '{{ $autoDiscountType === 'esc' ? 'ESC Grant (Tuition Waived)' : ($autoDiscountType === 'honor' ? 'Honor Discount (10%)' : ($autoDiscountType === 'sibling' ? 'Sibling Discount (5%)' : '')) }}' }">
                 @csrf
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Payment Plan</label>
-                        <select name="payment_plan" required
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                            <option value="">Select plan...</option>
-                            <option value="full" {{ $student?->ledger?->payment_plan === 'full' ? 'selected' : '' }}>Full Payment</option>
-                            <option value="installment" {{ $student?->ledger?->payment_plan === 'installment' ? 'selected' : '' }}>Installment</option>
-                        </select>
+                        @if($isPlanLocked)
+                            <div class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+                                {{ $student->ledger->payment_plan === 'full' ? 'Full Payment' : 'Installment' }} (locked)
+                            </div>
+                            <input type="hidden" name="payment_plan" value="{{ $student->ledger->payment_plan }}">
+                        @else
+                            <select name="payment_plan" required
+                                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <option value="">Select plan...</option>
+                                <option value="full" {{ $student?->ledger?->payment_plan === 'full' ? 'selected' : '' }}>Full Payment</option>
+                                <option value="installment" {{ $student?->ledger?->payment_plan === 'installment' ? 'selected' : '' }}>Installment</option>
+                            </select>
+                        @endif
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Amount Paid (₱)</label>
@@ -175,6 +180,89 @@
                                placeholder="0.00"
                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                         @error('amount_paid') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">AR Number</label>
+                        <input type="text" name="ar_number" value="{{ $nextArNumber }}"
+                               placeholder="Auto-generated if empty"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <p class="text-xs text-gray-400 mt-1">Leave blank to auto-generate. Sequential from AR-{{ date('Y') }}-0500.</p>
+                        @error('ar_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Attached Receipt (Optional)</label>
+                        <input type="file" name="receipt_file" accept=".pdf,.jpg,.jpeg,.png"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <p class="text-xs text-gray-400 mt-1">Upload external receipt (PDF, JPG, PNG — max 10MB).</p>
+                        @error('receipt_file') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    @if($discountAlreadyApplied)
+                    <div class="bg-blue-50 rounded-lg p-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <span class="text-sm font-medium text-blue-800">
+                                {{ ucfirst($student->ledger->discount_type ?? 'Discount') }}: -₱ {{ number_format($student->ledger->discount_applied, 2) }} (locked)
+                            </span>
+                        </div>
+                        <input type="hidden" name="discount_type" value="{{ $student->ledger->discount_type }}">
+                        <input type="hidden" name="discount_amount" value="{{ $student->ledger->discount_applied }}">
+                    </div>
+                    @elseif($autoDiscountType && $autoDiscountAmount > 0)
+                    <div class="bg-blue-50 rounded-lg p-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <span class="text-sm font-medium text-blue-800">
+                                Auto-Applied ({{ $autoDiscountType === 'esc' ? 'ESC Grant' : ($autoDiscountType === 'honor' ? 'Honor 10%' : 'Sibling 5%') }}): -₱ {{ number_format($autoDiscountAmount, 2) }}
+                            </span>
+                        </div>
+                        <input type="hidden" name="discount_type" value="{{ $autoDiscountType }}">
+                        <input type="hidden" name="discount_amount" value="{{ $autoDiscountAmount }}">
+                    </div>
+                    @elseif($autoDiscountType && $autoDiscountAmount <= 0 && $autoDiscountType === 'esc')
+                    <div class="bg-blue-50 rounded-lg p-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <span class="text-sm font-medium text-blue-800">ESC Grant — Tuition Waived</span>
+                        </div>
+                        <input type="hidden" name="discount_type" value="esc">
+                        <input type="hidden" name="discount_amount" value="{{ $totalTuition }}">
+                    </div>
+                    @else
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
+                        <select name="discount_type" x-model="discountType"
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="">None</option>
+                            @foreach($discountTypes as $val => $label)
+                            <option value="{{ $val }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount Amount (₱)</label>
+                        <input type="number" name="discount_amount" step="0.01" min="0" x-model="discountAmount"
+                               placeholder="0.00"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        @error('discount_amount') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    @endif
+                    <div class="text-sm bg-gray-50 rounded-lg p-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total Assessed</span>
+                            <span class="font-medium" x-text="'₱ ' + totalAssessed.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between mt-1">
+                            <span class="text-gray-600">Total Paid</span>
+                            <span class="font-medium text-green-600" x-text="'₱ ' + totalPaid.toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between mt-1">
+                            <span class="text-gray-600">Discount</span>
+                            <span class="font-medium text-blue-600" x-text="'-₱ ' + parseFloat(discountAmount || 0).toFixed(2)"></span>
+                        </div>
+                        <div class="flex justify-between mt-1 pt-2 border-t border-gray-200 font-bold">
+                            <span>New Balance</span>
+                            <span :class="(totalAssessed - totalPaid - parseFloat(discountAmount || 0)) > 0 ? 'text-red-600' : 'text-green-600'" x-text="'₱ ' + Math.max(0, totalAssessed - totalPaid - parseFloat(discountAmount || 0)).toFixed(2)"></span>
+                        </div>
                     </div>
                     <button type="submit"
                             class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition"
@@ -190,12 +278,18 @@
             <h3 class="font-semibold text-gray-900 mb-3">Payment History</h3>
             <ul class="divide-y divide-gray-100 text-sm">
                 @foreach($student->ledger->payments->sortByDesc('created_at') as $payment)
-                <li class="py-2 flex justify-between">
+                <li class="py-2 flex justify-between items-center">
                     <div>
                         <p class="font-medium text-gray-900">₱ {{ number_format($payment->amount_paid, 2) }}</p>
                         <p class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y') }}</p>
+                        <p class="text-xs text-gray-400">Receipt: {{ $payment->receipt_number }} | AR: {{ $payment->ar_number ?? '—' }}</p>
                     </div>
-                    <span class="text-xs text-gray-400">{{ $payment->receipt_number }}</span>
+                    <div class="flex gap-2">
+                        @if($payment->receipt_file_path)
+                        <a href="{{ asset('storage/' . $payment->receipt_file_path) }}" target="_blank"
+                           class="text-xs text-blue-600 hover:text-blue-800 font-medium">View Receipt</a>
+                        @endif
+                    </div>
                 </li>
                 @endforeach
             </ul>

@@ -121,7 +121,7 @@ class TeacherController extends Controller
 
         $recipients = User::whereIn('role_id', [1, 2])->pluck('email')->filter();
         foreach ($recipients as $email) {
-            Mail::to($email)->queue(new GradesSubmittedMail($class, $data['grading_period']));
+            Mail::to($email)->send(new GradesSubmittedMail($class, $data['grading_period']));
         }
 
         return back()->with('success', 'Grades submitted for ' . $data['grading_period'] . '. ' . $gradeCount . ' grade(s) submitted.');

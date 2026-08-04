@@ -14,18 +14,16 @@ class AdmissionCredentialsMail extends Mailable
     use Queueable, SerializesModels;
 
     public $student;
-    public $password;
 
-    public function __construct(Student $student, string $password)
+    public function __construct(Student $student)
     {
         $this->student = $student;
-        $this->password = $password;
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Admission Approved - Your Account Credentials',
+            subject: 'Admission Approved - Enrollment Confirmation',
         );
     }
 

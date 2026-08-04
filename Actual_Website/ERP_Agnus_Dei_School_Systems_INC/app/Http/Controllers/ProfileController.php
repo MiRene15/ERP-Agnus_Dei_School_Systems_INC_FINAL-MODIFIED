@@ -38,19 +38,41 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Deactivate (archive) the user's account instead of deleting it.
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
-
         $user = $request->user();
 
-        Auth::logout();
+        $rules = [
+            'password' => ['required', 'current_password'],
+            'reason' => ['required', 'string', 'max:1000'],
+        ];
 
-        $user->delete();
+        if ($user->student) {
+            $rules['action'] = ['required', 'in:transfer,graduated'];
+        } else {
+            $rules['action'] = ['nullable', 'in:transfer,graduated'];
+        }
+
+        $request->validateWithBag('userDeletion', $rules);
+
+        if ($user->student) {
+            $user->student->status = 'archived';
+            $user->student->archive_action = $request->input('action');
+            $user->student->archive_reason = $request->input('reason');
+            $user->student->archived_at = now();
+            $user->student->save();
+        }
+
+        $user->status = 'inactive';
+        $user->save();
+
+        log_activity($user, 'Archived', 'Account archived: ' . $request->input('reason'), [
+            'action' => $request->input('action'),
+        ]);
+
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
