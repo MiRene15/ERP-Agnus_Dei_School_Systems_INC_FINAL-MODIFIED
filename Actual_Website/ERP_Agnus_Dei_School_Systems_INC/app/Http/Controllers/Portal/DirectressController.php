@@ -31,8 +31,10 @@ class DirectressController extends Controller
     }
 
     // ─── Fee Schedule (moved from Admin) ────────────────────────
-    public function fees()
+    public function fees(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = FeeSchedule::query();
 
         if (request('school_year')) {
@@ -41,7 +43,14 @@ class DirectressController extends Controller
 
         $fees = $query->orderBy('grade_level')->orderBy('term')->get()->groupBy('grade_level');
         $terms = ['1st Term', '2nd Term', '3rd Term'];
-        $schoolYears = FeeSchedule::distinct()->orderBy('school_year', 'desc')->pluck('school_year');
+        $schoolYears = all_school_years();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.directress.partials.fees-results', compact('fees', 'terms'))->render(),
+            ]);
+        }
+
         return view('portal.directress.fees.index', compact('fees', 'terms', 'schoolYears'));
     }
 
@@ -245,8 +254,10 @@ class DirectressController extends Controller
     }
 
     // ─── Teacher Management ─────────────────────────────────────
-    public function teachers()
+    public function teachers(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = Teacher::with('user');
 
         if (request('search')) {
@@ -263,6 +274,13 @@ class DirectressController extends Controller
         }
 
         $teachers = $query->orderBy('last_name')->paginate(20)->withQueryString();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.directress.partials.teachers-results', compact('teachers'))->render(),
+            ]);
+        }
+
         return view('portal.directress.teachers.index', compact('teachers'));
     }
 

@@ -21,3 +21,18 @@ if (!function_exists('active_school_year')) {
         return Setting::getValue('active_school_year', date('Y') . '-' . (date('Y') + 1));
     }
 }
+
+if (!function_exists('all_school_years')) {
+    function all_school_years(): \Illuminate\Support\Collection
+    {
+        $fromEnrollments = \App\Models\Enrollment::distinct()->pluck('school_year');
+        $fromAdmissions = \App\Models\Admission::distinct()->pluck('school_year');
+        $fromFees = \App\Models\FeeSchedule::distinct()->pluck('school_year');
+
+        return $fromEnrollments->merge($fromAdmissions)->merge($fromFees)
+            ->filter()
+            ->unique()
+            ->sortDesc()
+            ->values();
+    }
+}

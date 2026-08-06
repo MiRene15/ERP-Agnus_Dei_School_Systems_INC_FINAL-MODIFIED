@@ -28,14 +28,18 @@ class PrincipalController extends Controller
     }
 
     // ─── Schedules (per grade & per teacher) ────────────────────
-    public function schedules()
+    public function schedules(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $gradeLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         $selectedGrade = request('grade_level', $gradeLevels[0]);
+        $selectedYear = request('school_year', active_school_year());
+        $schoolYears = all_school_years();
 
         $query = Classes::with('subject', 'teacher', 'schedules')
             ->where('grade_level', $selectedGrade)
-            ->where('school_year', active_school_year());
+            ->where('school_year', $selectedYear);
 
         if (request('day')) {
             $query->whereHas('schedules', fn($q) => $q->where('day_of_week', request('day')));
@@ -54,7 +58,13 @@ class PrincipalController extends Controller
 
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-        return view('portal.principal.schedules', compact('gradeLevels', 'selectedGrade', 'classes', 'days'));
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.principal.partials.schedules-results', compact('classes', 'days', 'selectedGrade', 'selectedYear'))->render(),
+            ]);
+        }
+
+        return view('portal.principal.schedules', compact('gradeLevels', 'selectedGrade', 'classes', 'days', 'schoolYears', 'selectedYear'));
     }
 
     public function schedulesStore(Request $request)
@@ -91,16 +101,20 @@ class PrincipalController extends Controller
     }
 
     // ─── Student Grades (read-only view) ────────────────────────
-    public function grades()
+    public function grades(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $gradeLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         $selectedGrade = request('grade_level', $gradeLevels[0]);
+        $selectedYear = request('school_year', active_school_year());
+        $schoolYears = all_school_years();
 
         $query = Enrollment::with('student', 'section', 'grades', 'subjects')
             ->whereHas('section', function ($q) use ($selectedGrade) {
                 $q->where('grade_level', $selectedGrade);
             })
-            ->where('school_year', active_school_year())
+            ->where('school_year', $selectedYear)
             ->where('status', 'Active');
 
         if (request('search')) {
@@ -120,14 +134,22 @@ class PrincipalController extends Controller
         $sections = Section::where('grade_level', $selectedGrade)->get();
         $subjects = Subject::where('grade_level', $selectedGrade)->get();
 
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.principal.partials.grades-results', compact('enrollments', 'subjects', 'selectedGrade', 'selectedYear'))->render(),
+            ]);
+        }
+
         return view('portal.principal.grades', compact(
-            'gradeLevels', 'selectedGrade', 'enrollments', 'sections', 'subjects'
+            'gradeLevels', 'selectedGrade', 'enrollments', 'sections', 'subjects', 'schoolYears', 'selectedYear'
         ));
     }
 
     // ─── Announcements (CRUD) ──────────────────────────────────
-    public function announcements()
+    public function announcements(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = Announcement::query();
 
         if (request('search')) {
@@ -143,6 +165,13 @@ class PrincipalController extends Controller
         }
 
         $announcements = $query->latest()->paginate(15)->withQueryString();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.principal.partials.announcements-results', compact('announcements'))->render(),
+            ]);
+        }
+
         return view('portal.principal.announcements.index', compact('announcements'));
     }
 

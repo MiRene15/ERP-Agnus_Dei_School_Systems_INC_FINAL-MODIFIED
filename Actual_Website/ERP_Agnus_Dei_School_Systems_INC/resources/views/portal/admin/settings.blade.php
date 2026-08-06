@@ -19,7 +19,12 @@
         <div class="mb-5">
             <label class="block text-sm font-medium text-gray-700 mb-1">Active School Year</label>
             <p class="text-xs text-gray-500 mb-2">This controls which school year data is shown across the system (admissions, enrollments, classes, fees).</p>
-            <input type="text" name="active_school_year" value="{{ $activeSY }}" required maxlength="20" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <select name="active_school_year" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                @foreach($schoolYears as $sy)
+                <option value="{{ $sy }}" {{ $activeSY === $sy ? 'selected' : '' }}>{{ $sy }}</option>
+                @endforeach
+            </select>
+            <p class="text-xs text-gray-400 mt-1">Past and present school years are available. Add new years by creating fee schedules or enrollments.</p>
         </div>
 
         <hr class="my-5 border-gray-200">
