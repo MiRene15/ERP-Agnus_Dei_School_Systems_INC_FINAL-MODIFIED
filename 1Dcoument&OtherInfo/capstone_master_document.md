@@ -123,6 +123,8 @@ A student withdrawing after the fourth week of classes will be charged the tuiti
 * After the third week of classes: 70%
 * After the fourth week of classes: 0% *(There are no refunds under Plan B).*
 
+> **System note (2026-08-06):** The live `payment_plan` field is a VARCHAR with values `installment|full` (the "Plan A/B/C" labels above are policy documentation, not DB enums). Plan A cash = `full`, Plan B monthly = `installment`; Plan C is handled manually via cashier/registrar agreement.
+
 **3. Scholarships and Privileges & Discount**
 * **Honors Program:** Grade 6 Rank 1 receives **100% discount**, Rank 2 receives **50% discount**, Rank 3 receives **25% discount**. JHS Students (Grades 7 to 10): Rank 1 (**100%**), Rank 2 (**75%**), Rank 3 (**50%**).
 * **Family Discount:** Enrolling multiple children grants a 10% discount to the second child, and a 15% discount to the third child.
