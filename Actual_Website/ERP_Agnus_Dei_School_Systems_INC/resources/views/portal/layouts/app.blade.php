@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <script>
+        (function () {
+            try {
+                var stored = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (stored === 'dark' || (stored !== 'light' && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <title>{{ config('app.name', 'Agnus Dei ERP') }} - Portal</title>
 
     <link rel="icon" type="image/png" href="{{ asset('images/agnus_logo.png') }}">
@@ -27,6 +39,7 @@
             --font: 'Outfit', sans-serif;
             --text: #1E293B;
             --muted: #94A3B8;
+            --navy-text: #24225C;
             --ease: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --radius: 14px;
             --shadow: 0 8px 30px -8px rgba(36, 34, 92, 0.08);
@@ -84,8 +97,8 @@
             transition: var(--ease); text-decoration: none;
             white-space: nowrap; overflow: hidden; gap: 0;
         }
-        .sidebar-link:hover { background: rgba(163, 159, 233, 0.08); color: var(--navy); }
-        .sidebar-link.active { background: rgba(163, 159, 233, 0.1); color: var(--navy); font-weight: 600; }
+        .sidebar-link:hover { background: rgba(163, 159, 233, 0.08); color: var(--navy-text); }
+        .sidebar-link.active { background: rgba(163, 159, 233, 0.1); color: var(--navy-text); font-weight: 600; }
 
         .sidebar-icon { width: 20px; height: 20px; flex-shrink: 0; }
         .sidebar-label {
@@ -109,7 +122,7 @@
             color: var(--muted); background: transparent;
             transition: var(--ease);
         }
-        .toggle-btn:hover { background: rgba(163, 159, 233, 0.1); color: var(--navy); }
+        .toggle-btn:hover { background: rgba(163, 159, 233, 0.1); color: var(--navy-text); }
 
         .glass {
             background: var(--glass);
@@ -119,6 +132,106 @@
         }
 
         [x-cloak] { display: none !important; }
+
+        .icon-moon { display: none; }
+
+        /* ─── Dark mode ─────────────────────────────────────────── */
+        html.dark {
+            color-scheme: dark;
+            --off-white: #0E1124;
+            --text: #E8EAF6;
+            --muted: #8A90B0;
+            --glass: rgba(26, 30, 59, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --navy-text: #A39FE9;
+            --shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.45);
+        }
+        .dark .icon-sun { display: none; }
+        .dark .icon-moon { display: block; }
+        .dark body { background: var(--off-white); color: var(--text); }
+        .dark .ambient .blob { opacity: 0.08; }
+
+        .dark .skelly {
+            background: linear-gradient(90deg, #232852 25%, #2B315E 50%, #232852 75%);
+            background-size: 200% 100%;
+        }
+        .dark ::-webkit-scrollbar-thumb { background: #3A4070; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #4A5186; }
+
+        /* app header (glass strip) */
+        .dark .app-header {
+            background: rgba(20, 24, 50, 0.6) !important;
+            border-color: #2A2F58 !important;
+        }
+
+        /* surfaces */
+        .dark .bg-white { background-color: #1A1E3B; }
+        .dark .bg-gray-50 { background-color: #161A33; }
+        .dark .bg-gray-100 { background-color: #1F2447; }
+        .dark .bg-gray-200 { background-color: #272C55; }
+        .dark .hover\:bg-white:hover { background-color: #1A1E3B; }
+        .dark .hover\:bg-gray-50:hover { background-color: #161A33; }
+        .dark .hover\:bg-gray-100:hover { background-color: #1F2447; }
+        .dark .hover\:bg-gray-200:hover { background-color: #272C55; }
+
+        /* text */
+        .dark .text-gray-900 { color: #E8EAF6; }
+        .dark .text-gray-800 { color: #D9DBED; }
+        .dark .text-gray-700 { color: #C1C4DC; }
+        .dark .text-gray-600 { color: #9CA1C2; }
+        .dark .text-gray-500 { color: #7C82A5; }
+        .dark .text-gray-400 { color: #6A7094; }
+        .dark .text-gray-300 { color: #565C80; }
+        .dark .hover\:text-gray-900:hover { color: #E8EAF6; }
+        .dark .hover\:text-gray-800:hover { color: #D9DBED; }
+        .dark .hover\:text-gray-700:hover { color: #C1C4DC; }
+        .dark .hover\:text-gray-500:hover { color: #7C82A5; }
+
+        /* borders */
+        .dark .border-gray-50 { border-color: #23274C; }
+        .dark .border-gray-100 { border-color: #2A2F58; }
+        .dark .border-gray-200 { border-color: #2A2F58; }
+        .dark .border-gray-300 { border-color: #3B4172; }
+        .dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]) { border-color: #23274C; }
+        .dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #2A2F58; }
+        .dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #2A2F58; }
+
+        /* status: soft backgrounds */
+        .dark .bg-red-50 { background-color: rgba(248, 113, 113, 0.12); }
+        .dark .bg-red-100 { background-color: rgba(248, 113, 113, 0.2); }
+        .dark .bg-green-50 { background-color: rgba(74, 222, 128, 0.12); }
+        .dark .bg-green-100 { background-color: rgba(74, 222, 128, 0.2); }
+        .dark .bg-blue-50 { background-color: rgba(96, 165, 250, 0.12); }
+        .dark .bg-blue-100 { background-color: rgba(96, 165, 250, 0.2); }
+        .dark .bg-yellow-50 { background-color: rgba(251, 191, 36, 0.12); }
+        .dark .bg-yellow-100 { background-color: rgba(251, 191, 36, 0.18); }
+        .dark .bg-indigo-50 { background-color: rgba(129, 140, 248, 0.12); }
+        .dark .bg-indigo-100 { background-color: rgba(129, 140, 248, 0.2); }
+        .dark .bg-purple-100 { background-color: rgba(192, 132, 252, 0.2); }
+
+        /* status: text */
+        .dark .text-red-800 { color: #FCA5A5; }
+        .dark .text-red-700 { color: #F87171; }
+        .dark .text-red-600 { color: #F87171; }
+        .dark .text-red-500 { color: #F87171; }
+        .dark .text-red-400 { color: #FCA5A5; }
+        .dark .text-green-800 { color: #86EFAC; }
+        .dark .text-green-700 { color: #4ADE80; }
+        .dark .text-green-600 { color: #4ADE80; }
+        .dark .text-green-500 { color: #22C55E; }
+        .dark .text-blue-800 { color: #93C5FD; }
+        .dark .text-blue-700 { color: #60A5FA; }
+        .dark .text-blue-600 { color: #60A5FA; }
+        .dark .text-blue-500 { color: #3B82F6; }
+        .dark .text-yellow-800 { color: #FCD34D; }
+        .dark .text-yellow-700 { color: #FBBF24; }
+        .dark .text-yellow-600 { color: #FBBF24; }
+        .dark .text-purple-800 { color: #D8B4FE; }
+        .dark .text-purple-700 { color: #C084FC; }
+        .dark .text-purple-600 { color: #C084FC; }
+        .dark .text-purple-500 { color: #A855F7; }
+        .dark .text-indigo-800 { color: #A5B4FC; }
+        .dark .text-indigo-600 { color: #818CF8; }
     </style>
 </head>
 <body class="antialiased"
@@ -128,7 +241,7 @@
           function tick() {
               const d = new Date(), h = d.getHours();
               greeting = h < 12 ? 'Good morning' : (h < 18 ? 'Good afternoon' : 'Good evening');
-              time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+              time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
               date = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
           }
           tick(); setInterval(tick, 1000);
@@ -168,7 +281,7 @@
                          style="width: 32px; height: 32px; object-fit: cover;">
                     <span x-show="!collapsed"
                           class="font-semibold text-sm tracking-tight whitespace-nowrap"
-                          style="color: var(--navy);">Agnus Dei</span>
+                          style="color: var(--navy-text);">Agnus Dei</span>
                 </div>
             </div>
 
@@ -215,7 +328,7 @@
                     <img src="{{ asset('images/agnus_logo.png') }}" alt=""
                          class="rounded-full"
                          style="width: 28px; height: 28px; object-fit: cover;">
-                    <span class="font-bold text-base" style="color: var(--navy);">Agnus Dei</span>
+                    <span class="font-bold text-base" style="color: var(--navy-text);">Agnus Dei</span>
                 </div>
                 <button @click="mobileOpen = false"
                         class="toggle-btn">
@@ -257,7 +370,7 @@
         <div class="flex-1 flex flex-col h-screen overflow-hidden">
 
             {{-- Top bar --}}
-            <header class="h-14 flex items-center justify-between px-5 z-20 flex-shrink-0 border-b border-gray-100/80"
+            <header class="app-header h-14 flex items-center justify-between px-5 z-20 flex-shrink-0 border-b border-gray-100/80"
                     style="background: rgba(255,255,255,0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
                 <div class="flex items-center gap-2 min-w-0">
                     <button @click="window.innerWidth < 768 ? mobileOpen = true : collapsed = !collapsed"
@@ -269,7 +382,7 @@
                     <nav class="flex items-center gap-1.5 text-xs" style="color: var(--muted);">
                         <a href="{{ route('dashboard') }}" class="no-underline transition-colors hover:opacity-70" style="color: var(--muted);">Home</a>
                         <span class="opacity-40">/</span>
-                        @yield('breadcrumbs', '<span style="color: var(--navy); font-weight: 600;">Dashboard</span>')
+                        @yield('breadcrumbs', '<span style="color: var(--navy-text); font-weight: 600;">Dashboard</span>')
                     </nav>
                 </div>
 
@@ -288,6 +401,14 @@
                     };
                 @endphp
                 <div class="flex items-center gap-2.5 flex-shrink-0">
+                    <button onclick="toggleTheme()" class="toggle-btn" title="Toggle dark mode" style="flex-shrink: 0;">
+                        <svg class="icon-sun w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <svg class="icon-moon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
                     <div class="text-right leading-tight">
                         <div class="text-sm font-medium" style="color: var(--text);">{{ Auth::user()->name }}</div>
                         <div class="text-[10px] font-semibold tracking-widest uppercase" style="color: var(--lilac);">{{ $roleName }}</div>
@@ -299,11 +420,11 @@
             {{-- Welcome bar --}}
             <div class="px-5 pt-5 pb-2 flex items-end justify-between flex-shrink-0">
                 <div>
-                    <h1 class="text-lg font-semibold" style="color: var(--navy);" x-text="greeting + ', {{ Auth::user()->name }}.'"></h1>
+                    <h1 class="text-lg font-semibold" style="color: var(--navy-text);" x-text="greeting + ', {{ Auth::user()->name }}.'"></h1>
                     <p class="text-xs" style="color: var(--muted); margin-top: 2px;">{{ $roleName }} Dashboard</p>
                 </div>
                 <div class="text-right leading-tight">
-                    <div class="text-sm font-semibold" style="color: var(--navy);" x-text="time"></div>
+                    <div class="text-sm font-semibold" style="color: var(--navy-text);" x-text="time"></div>
                     <div class="text-[10px]" style="color: var(--muted); margin-top: 1px;" x-text="date"></div>
                 </div>
             </div>
@@ -333,6 +454,14 @@
 
     <script>
         window.addEventListener('pageshow', function (e) { if (e.persisted) window.location.reload(); });
+
+        function toggleTheme() {
+            var root = document.documentElement;
+            root.classList.toggle('dark');
+            try {
+                localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
+            } catch (e) {}
+        }
     </script>
 </body>
 </html>
