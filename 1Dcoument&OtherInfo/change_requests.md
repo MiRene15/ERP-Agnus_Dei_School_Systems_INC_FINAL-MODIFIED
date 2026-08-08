@@ -6,7 +6,7 @@ Logged: 2026-08-06. Four requested changes/adjustments, each with current state,
 
 ## Implementation Log
 
-**Status: Items 1–29 DONE** — 2026-08-06 (updated 2026-08-08)
+**Status: Items 1–30 DONE** — 2026-08-06 (updated 2026-08-08)
 
 | # | Request | Status | Files Modified |
 |---|---------|--------|----------------|
@@ -39,6 +39,7 @@ Logged: 2026-08-06. Four requested changes/adjustments, each with current state,
 | 27 | Fee structure: K-10 yearly, SHS per term | ✅ Done | `cor.blade.php`, `payment.blade.php`, `student-financial.blade.php` |
 | 28 | Fee assessment: move from report card to COR only | ✅ Done | `report-cards/show.blade.php`, `report-cards/print.blade.php` |
 | 29 | Switch database from MySQL to PostgreSQL (Supabase) + Docker/Render prep | ✅ Done | `Dockerfile`, `.dockerignore`, `BackupDatabase.php`, `RegistrarAdmissionController.php`, `2026_06_24_201535...`, `2026_06_25_100000...` |
+| 30 | Render HTTPS — TrustProxies middleware for SSL-terminated deployment | ✅ Done | `bootstrap/app.php` |
 
 ---
 
@@ -952,7 +953,41 @@ All files pass `php -l`; full app lint sweep OK; app boots (`route:list`) and al
 
 ---
 
-## Suggested implementation order
+## 30. Render HTTPS — TrustProxies middleware for SSL-terminated deployment
+
+### Problem
+
+Render terminates SSL at its load balancer and forwards the original request to Laravel over HTTP. Without telling Laravel about the proxy, all generated URLs (form actions, redirects, asset links) use `http://` instead of `https://`. The browser shows "The information you're about to submit is not secure" on the login form.
+
+### What was implemented
+
+Added `trustProxies` configuration in `bootstrap/app.php` middleware callback:
+- `at: '*'` — trust all proxy IPs (Render's pool is dynamic)
+- Headers forwarded: `X-Forwarded-For`, `X-Forwarded-Host`, `X-Forwarded-Port`, `X-Forwarded-Proto`
+
+Laravel now reads the `X-Forwarded-Proto: https` header from Render's proxy and generates all URLs with `https://` scheme.
+
+### Files modified
+
+- `bootstrap/app.php` — added `$middleware->trustProxies(at: '*', headers: ...)` inside `withMiddleware` callback
+
+### Render env (final)
+
+```
+DB_CONNECTION=pgsql
+DB_HOST=aws-0-ap-northeast-1.pooler.supabase.com
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USERNAME=postgres.sjnuvyiwszcjxixunlzi
+DB_PASSWORD=Agnus2026!!
+DB_SSLMODE=require
+```
+
+### Status
+
+Tested on Render deploy — login form submits over HTTPS, no browser security warning. App boots, announcements visible on homepage.
+
+---
 
 1. Item #11 (student seeders) — foundation for testing all student features
 2. Item #15 (hide application status when enrolled) — quick sidebar fix
