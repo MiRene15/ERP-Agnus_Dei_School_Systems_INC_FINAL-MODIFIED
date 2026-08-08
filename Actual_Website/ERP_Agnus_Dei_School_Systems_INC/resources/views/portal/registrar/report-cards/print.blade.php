@@ -23,6 +23,11 @@
         .signature { margin-top: 30px; }
         .signature td { padding: 15px 10px 0; font-size: 10px; }
         .average-row td { background-color: #f9f9f9; font-weight: bold; }
+        .fee-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; margin-top: 10px; }
+        .fee-table th, .fee-table td { border: 1px solid #999; padding: 4px 6px; font-size: 10px; }
+        .fee-table th { background-color: #f0f0f0; font-weight: bold; }
+        .fee-table td.amount { text-align: right; }
+        .fee-total td { font-weight: bold; background-color: #f5f5f5; }
     </style>
 </head>
 <body>
@@ -96,54 +101,6 @@
         @endif
     </table>
 
-    <div class="footer">
-        <table class="footer-table">
-            <tr>
-                <td><strong>Remarks:</strong></td>
-                <td></td>
-                <td style="text-align:right;"><strong>Date:</strong> {{ now()->format('F d, Y') }}</td>
-            </tr>
-        </table>
-        <table class="signature" width="100%">
-            <tr>
-                <td style="text-align:center;">
-                    <hr style="width:70%;">
-                    <strong>{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</strong><br>
-                    Student
-                </td>
-                <td style="text-align:center;">
-                    <hr style="width:70%;">
-                    <strong>{{ $enrollment->section?->adviser?->name ?? 'Adviser' }}</strong><br>
-                    Class Adviser
-                </td>
-                <td style="text-align:center;">
-                    <hr style="width:70%;">
-                    <strong>Registrar</strong><br>
-                    Registrar's Office
-                </td>
-            </tr>
-            <tr>
-                @if($principalName)
-                <td style="text-align:center;">
-                    <hr style="width:70%;">
-                    <strong>{{ $principalName }}</strong><br>
-                    Noted by: School Principal
-                </td>
-                @else
-                <td></td>
-                @endif
-                @if($directressName)
-                <td style="text-align:center;">
-                    <hr style="width:70%;">
-                    <strong>{{ $directressName }}</strong><br>
-                    Approved by: School Directress
-                </td>
-                @else
-                <td></td>
-                @endif
-                <td></td>
-            </tr>
-        </table>
-    </div>
+    <p style="font-size: 10px; text-align:right; margin-top: 20px;"><strong>Date:</strong> {{ now()->format('F d, Y') }}</p>
 </body>
 </html>
