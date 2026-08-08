@@ -4,17 +4,24 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
+use App\Models\FeeSchedule;
 use App\Models\Grade;
+use App\Models\Section;
 use App\Models\Setting;
+use App\Models\StudentLedger;
 use Illuminate\Http\Request;
 
 class ReportCardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = Enrollment::with('student', 'section')
-            ->where('status', 'Active')
-            ->where('school_year', active_school_year());
+            ->where('status', 'Active');
+
+        $schoolYear = $request->filled('school_year') ? $request->school_year : active_school_year();
+        $query->where('school_year', $schoolYear);
 
         if (request('search')) {
             $search = request('search');
@@ -34,11 +41,32 @@ class ReportCardController extends Controller
             });
         }
 
+        if (request('section_id') && request('section_id') !== 'All') {
+            $query->where('section_id', request('section_id'));
+        }
+
         $enrollments = $query->get()
             ->sortBy(fn($e) => $e->student?->last_name . ', ' . $e->student?->first_name)
             ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown');
 
-        return view('portal.registrar.report-cards.index', compact('enrollments'));
+        $sections = Section::where('is_active', true)
+            ->orderBy('grade_level')
+            ->orderBy('section_name')
+            ->get();
+
+        $schoolYears = Enrollment::distinct()
+            ->where('status', 'Active')
+            ->pluck('school_year')
+            ->sort()
+            ->values();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.registrar.partials.report-cards-results', compact('enrollments'))->render(),
+            ]);
+        }
+
+        return view('portal.registrar.report-cards.index', compact('enrollments', 'sections', 'schoolYears'));
     }
 
     public function show(Enrollment $enrollment)
@@ -71,7 +99,14 @@ class ReportCardController extends Controller
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
 
-        return view('portal.registrar.report-cards.show', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage'));
+        $feeSchedules = FeeSchedule::where('grade_level', $enrollment->section->grade_level)
+            ->where('school_year', $enrollment->school_year)
+            ->orderBy('term')
+            ->get();
+
+        $ledger = StudentLedger::where('student_id', $enrollment->student_id)->first();
+
+        return view('portal.registrar.report-cards.show', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage', 'feeSchedules', 'ledger'));
     }
 
     public function print(Enrollment $enrollment)
@@ -104,10 +139,17 @@ class ReportCardController extends Controller
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
 
+        $feeSchedules = FeeSchedule::where('grade_level', $enrollment->section->grade_level)
+            ->where('school_year', $enrollment->school_year)
+            ->orderBy('term')
+            ->get();
+
+        $ledger = StudentLedger::where('student_id', $enrollment->student_id)->first();
+
         $directressName = Setting::getValue('directress_name', '');
         $principalName = Setting::getValue('principal_name', '');
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.registrar.report-cards.print', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage', 'directressName', 'principalName'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.registrar.report-cards.print', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage', 'directressName', 'principalName', 'feeSchedules', 'ledger'));
         $pdf->setPaper('A4', 'portrait');
 
         return $pdf->stream("report-card-{$enrollment->student->student_number}.pdf");
