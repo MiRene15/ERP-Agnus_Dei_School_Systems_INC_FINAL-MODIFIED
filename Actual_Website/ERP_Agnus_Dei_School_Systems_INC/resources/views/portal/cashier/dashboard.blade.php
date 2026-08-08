@@ -5,14 +5,14 @@
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">Cashier's Office</h2>
-    <p class="text-gray-600 mt-1">Manage student ledgers, process tuition fees, and generate receipts.</p>
+    <p class="text-gray-600 mt-1">Overview of today's collections.</p>
 </div>
 
 @if(session('success'))
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
@@ -35,59 +35,16 @@
             </div>
         </div>
     </div>
-</div>
-
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-    <h3 class="font-semibold text-gray-900 mb-4">Pending Payments</h3>
-    @if($pendingPayments->isEmpty())
-        <p class="text-sm text-gray-500 text-center py-4">All enrolled students have cleared their payments.</p>
-    @else
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="border-b border-gray-200">
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Grade Level</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">School Year</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Plan</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Paid</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Balance</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($pendingPayments as $s)
-                @php $ledger = $s->ledger; @endphp
-                <tr class="border-b border-gray-100">
-                    <td class="py-3 px-2">
-                        <span class="font-medium text-gray-900">{{ $s->first_name }} {{ $s->last_name }}</span>
-                        <p class="text-xs text-gray-400">{{ $s->student_number }}</p>
-                    </td>
-                    <td class="py-3 px-2 text-gray-700">{{ $s->enrollments->first()?->section?->grade_level ?? 'N/A' }}</td>
-                    <td class="py-3 px-2 text-gray-700">{{ $s->enrollments->first()?->school_year ?? 'N/A' }}</td>
-                    <td class="py-3 px-2">
-                        <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ $ledger?->payment_plan === 'full' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700' }}">
-                            {{ $ledger ? ucfirst($ledger->payment_plan) : '—' }}
-                        </span>
-                    </td>
-                    <td class="py-3 px-2 text-gray-700">₱ {{ number_format($ledger?->total_paid ?? 0, 2) }}</td>
-                    <td class="py-3 px-2">
-                        <span class="font-medium {{ ($ledger?->balance ?? 0) > 0 ? 'text-red-600' : 'text-green-600' }}">
-                            ₱ {{ number_format($ledger?->balance ?? 0, 2) }}
-                        </span>
-                    </td>
-                    <td class="py-3 px-2">
-                        <a href="{{ route('cashier.payment', $s) }}"
-                           class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition"
-                           style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                            Process Payment
-                        </a>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <a href="{{ route('cashier.collections-report') }}" class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 font-medium">Collections Report</p>
+                <p class="text-lg font-bold text-gray-900">View by Date Range</p>
+            </div>
+        </a>
     </div>
-    @endif
 </div>
 @endsection
