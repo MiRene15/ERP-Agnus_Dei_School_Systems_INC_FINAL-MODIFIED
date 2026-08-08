@@ -3,7 +3,7 @@
 @section('breadcrumbs')
     <a href="{{ route('librarian.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
     <span class="opacity-40">/</span>
-    <a href="{{ route('librarian.books') }}" class="no-underline" style="color: var(--muted);">Library Holdings</a>
+    <a href="{{ route('librarian.books') }}" class="no-underline" style="color: var(--muted);">Catalog</a>
     <span class="opacity-40">/</span>
     <span class="current">Add Book</span>
 @endsection
