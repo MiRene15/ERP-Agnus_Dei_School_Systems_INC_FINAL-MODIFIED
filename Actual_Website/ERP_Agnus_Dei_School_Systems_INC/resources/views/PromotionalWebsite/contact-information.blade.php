@@ -9,15 +9,26 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-bottom: 150px;">
             <div class="card" style="text-align: center;">
                 <h3>📍 Address</h3>
-                <p>Agnus Dei School Systems, Inc.<br>Contact the school office for the exact location and campus map.</p>
+                <p>Agnus Dei School Systems, Inc.<br>#280, Quezon St., Cuyab,<br>San Pedro, Laguna</p>
             </div>
             <div class="card" style="text-align: center;">
                 <h3>📞 Phone</h3>
-                <p>School Office: (Contact the administration for the updated contact number)</p>
+                <p>
+                    <strong>Landline:</strong> 02-8-478-9906<br>
+                    <strong>Mobile:</strong> 0939 443 3684<br>
+                    <strong>Mobile:</strong> 0991 583 0428
+                </p>
             </div>
             <div class="card" style="text-align: center;">
-                <h3>✉️ Email</h3>
-                <p>For inquiries, please use our <a href="/inquiry" style="color: var(--primary-navy); font-weight: 600;">Inquiry Form</a> or visit the school office during business hours.</p>
+                <h3>🌐 Social Media</h3>
+                <p>
+                    Follow us on Facebook for the latest news and updates.<br>
+                    <a href="https://www.facebook.com/p/Agnus-Dei-School-Systems-Inc-100095457494756/" target="_blank" rel="noopener" style="color: var(--primary-navy); font-weight: 600; text-decoration: none;">Agnus Dei School Systems, Inc.</a>
+                </p>
+            </div>
+            <div class="card" style="text-align: center;">
+                <h3>✉️ Inquiries</h3>
+                <p>For inquiries, please use our <a href="/inquiry" style="color: var(--primary-navy); font-weight: 600;">Inquiry Form</a> or call us directly during business hours.</p>
             </div>
         </div>
     </main>
