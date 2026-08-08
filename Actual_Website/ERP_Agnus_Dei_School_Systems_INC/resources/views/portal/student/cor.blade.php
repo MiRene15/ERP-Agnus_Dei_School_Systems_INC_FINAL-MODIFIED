@@ -66,22 +66,64 @@
         </tbody>
     </table>
 
-    @if($ledger)
+    @if($feeSchedules->isNotEmpty())
+    @php
+        $isSHS = in_array($enrollment->section->grade_level, ['Grade 11', 'Grade 12']);
+    @endphp
     <h3 class="text-sm font-semibold uppercase border-b border-gray-300 pb-1 mb-3">Fee Assessment</h3>
-    <div class="grid grid-cols-2 gap-4 text-sm max-w-md">
-        <p class="font-semibold">Total Assessment:</p>
-        <p class="text-right">₱{{ number_format($ledger->total_assessed, 2) }}</p>
-        @if($ledger->discount_applied > 0)
-        <p class="font-semibold">Discount Applied:</p>
-        <p class="text-right text-green-600">-₱{{ number_format($ledger->discount_applied, 2) }}</p>
-        @endif
-        <p class="font-semibold">Total Paid:</p>
-        <p class="text-right">₱{{ number_format($ledger->total_paid, 2) }}</p>
-        <p class="font-semibold border-t border-gray-300 pt-1">Balance:</p>
-        <p class="text-right border-t border-gray-300 pt-1 font-bold">₱{{ number_format($ledger->balance, 2) }}</p>
-        <p class="font-semibold">Payment Plan:</p>
-        <p class="text-right capitalize">{{ $ledger->payment_plan ?? 'N/A' }}</p>
-    </div>
+    <table class="w-full text-sm border-collapse mb-4">
+        <thead>
+            <tr class="bg-gray-50">
+                <th class="text-left px-3 py-2 border border-gray-300 font-semibold">{{ $isSHS ? 'Term' : 'School Year' }}</th>
+                <th class="text-right px-3 py-2 border border-gray-300 font-semibold">Tuition</th>
+                <th class="text-right px-3 py-2 border border-gray-300 font-semibold">Misc</th>
+                <th class="text-right px-3 py-2 border border-gray-300 font-semibold">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if($isSHS)
+                @foreach($feeSchedules as $fs)
+                <tr>
+                    <td class="px-3 py-2 border border-gray-300">{{ $fs->term }}</td>
+                    <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($fs->tuition_fee, 2) }}</td>
+                    <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($fs->misc_fee, 2) }}</td>
+                    <td class="px-3 py-2 text-right border border-gray-300 font-medium">₱{{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</td>
+                </tr>
+                @endforeach
+            @else
+                <tr>
+                    <td class="px-3 py-2 border border-gray-300">{{ $enrollment->school_year }}</td>
+                    <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('tuition_fee'), 2) }}</td>
+                    <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('misc_fee'), 2) }}</td>
+                    <td class="px-3 py-2 text-right border border-gray-300 font-medium">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'), 2) }}</td>
+                </tr>
+            @endif
+        </tbody>
+        <tfoot>
+            <tr class="bg-gray-50 font-semibold">
+                <td class="px-3 py-2 border border-gray-300">Total Assessed</td>
+                <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('tuition_fee'), 2) }}</td>
+                <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('misc_fee'), 2) }}</td>
+                <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'), 2) }}</td>
+            </tr>
+            @if($ledger && $ledger->discount_applied > 0)
+            <tr>
+                <td colspan="3" class="px-3 py-2 text-right border border-gray-300 text-gray-600">Discount ({{ ucfirst($ledger->discount_type ?? 'N/A') }})</td>
+                <td class="px-3 py-2 text-right border border-gray-300 text-green-600">-₱{{ number_format($ledger->discount_applied, 2) }}</td>
+            </tr>
+            @endif
+            @if($ledger)
+            <tr>
+                <td colspan="3" class="px-3 py-2 text-right border border-gray-300 text-gray-600">Total Paid</td>
+                <td class="px-3 py-2 text-right border border-gray-300 text-green-600">₱{{ number_format($ledger->total_paid, 2) }}</td>
+            </tr>
+            <tr class="bg-gray-50 font-semibold">
+                <td colspan="3" class="px-3 py-2 text-right border border-gray-300">Balance</td>
+                <td class="px-3 py-2 text-right border border-gray-300 {{ $ledger->balance > 0 ? 'text-red-600' : 'text-green-600' }}">₱{{ number_format($ledger->balance, 2) }}</td>
+            </tr>
+            @endif
+        </tfoot>
+    </table>
     @endif
 
     <div class="mt-10 grid grid-cols-2 gap-8 text-sm text-center">
