@@ -22,89 +22,38 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
-<div class="mb-4 flex gap-2 flex-wrap items-center">
-    <form method="GET" class="flex gap-2 flex-1 flex-wrap">
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Search by name or code..."
-               class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-        <select name="grade_level" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <option value="All" {{ request('grade_level') === 'All' || !request('grade_level') ? 'selected' : '' }}>All Grade Levels</option>
-            @foreach($gradeLevels as $gl)
-                <option value="{{ $gl }}" {{ request('grade_level') === $gl ? 'selected' : '' }}>{{ $gl }}</option>
-            @endforeach
-        </select>
-        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
-        @if(request()->anyFilled(['search', 'grade_level']))
-            <a href="{{ url()->current() }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</a>
-        @endif
-    </form>
-</div>
+<div x-data="ajaxTable('{{ route('admin.subjects.index') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
+    <div class="mb-4 flex gap-2 flex-wrap items-center">
+        <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
+            <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
+                   placeholder="Search by name or code..."
+                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="All">All Grade Levels</option>
+                @foreach($gradeLevels as $gl)
+                    <option value="{{ $gl }}">{{ $gl }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
+            <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
+        </form>
+    </div>
 
-@php
-    $categoryColors = [
-        'Core'           => 'bg-blue-100 text-blue-800',
-        'Contextualized'  => 'bg-green-100 text-green-800',
-        'Specialized'     => 'bg-purple-100 text-purple-800',
-        'TVL'             => 'bg-orange-100 text-orange-800',
-    ];
-@endphp
-
-@foreach($gradeLevels as $gl)
-    @php $glSubjects = $subjects->get($gl, collect()); @endphp
-    @if($glSubjects->isEmpty())
-        @continue
-    @endif
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-4" x-data="{ open: true }">
-        <button @click="open = !open" class="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 rounded-t-xl transition cursor-pointer">
-            <div class="flex items-center gap-3">
-                <h3 class="font-semibold text-gray-900">{{ $gl }}</h3>
-                <span class="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{{ $glSubjects->count() }} {{ Str::plural('subject', $glSubjects->count()) }}</span>
-            </div>
-            <svg class="w-4 h-4 text-gray-500 transition-transform duration-200" :class="{ 'rotate-180': open }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </button>
-        <div x-show="open" x-collapse x-cloak>
-            <div class="px-4 pb-4">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-gray-200">
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 text-xs uppercase">Code</th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 text-xs uppercase">Name</th>
-                                <th class="text-left py-2 px-2 font-medium text-gray-500 text-xs uppercase">Category</th>
-                                <th class="text-right py-2 px-2 font-medium text-gray-500 text-xs uppercase">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($glSubjects as $subject)
-                            <tr class="border-b border-gray-50 hover:bg-gray-50 transition">
-                                <td class="py-2.5 px-2 font-mono text-xs text-gray-700">{{ $subject->subject_code }}</td>
-                                <td class="py-2.5 px-2 font-medium text-gray-900">{{ $subject->name }}</td>
-                                <td class="py-2.5 px-2">
-                                    @if($subject->category)
-                                        <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {{ $categoryColors[$subject->category] ?? 'bg-gray-100 text-gray-700' }}">{{ $subject->category }}</span>
-                                    @else
-                                        <span class="text-xs text-gray-400">—</span>
-                                    @endif
-                                </td>
-                                <td class="py-2.5 px-2 text-right">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <a href="{{ route('admin.subjects.edit', $subject) }}" class="px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">Edit</a>
-                                        <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}" onsubmit="return confirm('Delete {{ $subject->subject_code }}?')" class="inline">@csrf @method('DELETE')<button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800">Delete</button></form>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+    <!-- Skeleton loading -->
+    <div x-show="loading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+        <template x-for="i in 5" :key="i">
+            <div class="skelly sk-card">
+                <div class="grid grid-cols-4 gap-4 px-2">
+                    <div class="skelly sk-line-md col-span-2"></div>
+                    <div class="skelly sk-line-md"></div>
+                    <div class="skelly sk-line-sm"></div>
+                    <div class="skelly sk-line-sm"></div>
                 </div>
             </div>
-        </div>
+        </template>
     </div>
-@endforeach
 
-@empty($subjects)
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
-        <p class="text-sm text-gray-500 py-4">No subjects yet. <a href="{{ route('admin.subjects.create') }}" class="text-blue-600 font-medium">Add one</a>.</p>
-    </div>
-@endempty
+    <!-- Results injected via AJAX -->
+    <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+</div>
 @endsection

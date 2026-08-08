@@ -24,8 +24,10 @@ class NurseController extends Controller
         return view('portal.nurse.dashboard', compact('todayVisits', 'thisWeekVisits', 'referralsCount', 'followUps', 'recentLogs'));
     }
 
-    public function logs()
+    public function logs(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = ClinicLog::with('student');
 
         if (request('search')) {
@@ -54,6 +56,12 @@ class NurseController extends Controller
 
         $logs = $query->latest('incident_date')->paginate(20)->withQueryString();
         $logs->appends(request()->query());
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.nurse.partials.logs-results', compact('logs'))->render(),
+            ]);
+        }
 
         return view('portal.nurse.logs', compact('logs'));
     }

@@ -54,8 +54,10 @@ class WithdrawalController extends Controller
         return redirect()->route('student.dashboard')->with('success', 'Withdrawal request submitted. The registrar will review your request.');
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = Withdrawal::with('student.user', 'enrollment.section', 'processor');
 
         if (request('search')) {
@@ -76,6 +78,12 @@ class WithdrawalController extends Controller
         }
 
         $withdrawals = $query->latest()->paginate(20)->withQueryString();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.registrar.partials.withdrawals-results', compact('withdrawals'))->render(),
+            ]);
+        }
 
         return view('portal.registrar.withdrawals-index', compact('withdrawals'));
     }

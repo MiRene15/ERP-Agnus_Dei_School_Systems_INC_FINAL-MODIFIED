@@ -18,8 +18,10 @@ use Illuminate\Support\Facades\Mail;
 
 class RegistrarAdmissionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $query = Admission::with('student.user')
             ->where('school_year', active_school_year());
 
@@ -41,13 +43,19 @@ class RegistrarAdmissionController extends Controller
             $query->where('grade_level', request('grade_level'));
         }
 
-        $admissions = $query->orderByRaw("FIELD(status, 'Pending') DESC")
+        $admissions = $query->orderByRaw("CASE WHEN status = 'Pending' THEN 0 ELSE 1 END")
             ->latest()
             ->paginate(20)
             ->withQueryString();
 
         $pendingCount = $admissions->where('status', 'Pending')->count();
         $approvedCount = $admissions->where('status', 'Approved By Registrar')->count();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.registrar.partials.admissions-results', compact('admissions'))->render(),
+            ]);
+        }
 
         return view('portal.registrar.admissions-index', compact('admissions', 'pendingCount', 'approvedCount'));
     }
@@ -157,7 +165,7 @@ class RegistrarAdmissionController extends Controller
             log_activity($admission, 'Approved', 'Approved admission for ' . $student->first_name . ' ' . $student->last_name);
 
             if ($student->user?->email) {
-                Mail::to($student->user->email)->queue(new AdmissionCredentialsMail($student, ''));
+                Mail::to($student->user->email)->send(new AdmissionCredentialsMail($student));
             }
 
             return redirect()->route('registrar.admissions.index')

@@ -26,101 +26,46 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
-<div class="mb-4 flex gap-2 flex-wrap items-center">
-    <form method="GET" class="flex gap-2 flex-1 flex-wrap">
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Search by name or email..."
-               class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-        <select name="role_id" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <option value="">All Roles</option>
-            @foreach($roles as $role)
-                <option value="{{ $role->id }}" {{ request('role_id') == $role->id ? 'selected' : '' }}>{{ $role->name }}</option>
-            @endforeach
-        </select>
-        <select name="status" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <option value="">All Status</option>
-            <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
-            <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
-        </select>
-        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
-        @if(request()->anyFilled(['search', 'role_id', 'status']))
-            <a href="{{ url()->current() }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</a>
-        @endif
-    </form>
-</div>
+<div x-data="ajaxTable('{{ route('admin.users.index') }}', { search: '{{ request('search') }}', role_id: '{{ request('role_id') }}', status: '{{ request('status') }}' })">
+    <div class="mb-4 flex gap-2 flex-wrap items-center">
+        <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
+            <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
+                   placeholder="Search by name or email..."
+                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.role_id" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="">All Roles</option>
+                @foreach($roles as $role)
+                    <option value="{{ $role->id }}">{{ $role->name }}</option>
+                @endforeach
+            </select>
+            <select x-model="filters.status" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
+            <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
+        </form>
+    </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-    <table class="w-full text-sm">
-        <thead class="bg-gray-50 border-b border-gray-100">
-            <tr>
-                <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Name</th>
-                <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Email</th>
-                <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Role</th>
-                <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Status</th>
-                <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Actions</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-50">
-            @forelse ($users as $user)
-            <tr class="hover:bg-gray-50/50 transition-colors">
-                <td class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                        <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-200 shrink-0">
-                            {{ strtoupper(substr($user->name, 0, 1)) }}
-                        </div>
-                        <span class="font-medium text-gray-800">{{ $user->name }}</span>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Skeleton loading -->
+        <div x-show="loading" class="p-4 space-y-3">
+            <template x-for="i in 5" :key="i">
+                <div class="skelly sk-card">
+                    <div class="grid grid-cols-5 gap-4 px-2">
+                        <div class="skelly sk-line-md col-span-2"></div>
+                        <div class="skelly sk-line-md"></div>
+                        <div class="skelly sk-line-md"></div>
+                        <div class="skelly sk-line-sm"></div>
+                        <div class="skelly sk-line-sm"></div>
                     </div>
-                </td>
-                <td class="px-6 py-4 text-gray-500">{{ $user->email }}</td>
-                <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
-                        {{ $user->role?->name ?? 'N/A' }}
-                    </span>
-                </td>
-                <td class="px-6 py-4">
-                    @if ($user->status === 'active')
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span> Active
-                        </span>
-                    @else
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                            <span class="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span> Inactive
-                        </span>
-                    @endif
-                </td>
-                <td class="px-6 py-4">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        {{-- Edit --}}
-                        <a href="{{ route('admin.users.edit', $user) }}" class="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">Edit</a>
+                </div>
+            </template>
+        </div>
 
-                        {{-- Toggle Status --}}
-                        <form method="POST" action="{{ route('admin.users.toggle-status', $user) }}" onsubmit="return confirm('Toggle account status for {{ $user->name }}?')">
-                            @csrf
-                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {{ $user->status === 'active' ? 'text-red-700 bg-red-50 hover:bg-red-100' : 'text-green-700 bg-green-50 hover:bg-green-100' }}">
-                                {{ $user->status === 'active' ? 'Deactivate' : 'Activate' }}
-                            </button>
-                        </form>
-
-                        {{-- Reset Password --}}
-                        <form method="POST" action="{{ route('admin.users.reset-password', $user) }}" onsubmit="return confirm('Reset password for {{ $user->name }}? The new password will be shown once.')">
-                            @csrf
-                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">Reset PW</button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="5" class="px-6 py-12 text-center text-gray-400">
-                    <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                    No staff accounts yet. Create the first one!
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
-<div class="mt-4">
-    {{ $users->links() }}
+        <!-- Results injected via AJAX -->
+        <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+    </div>
 </div>
 @endsection

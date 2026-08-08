@@ -75,7 +75,7 @@ Route::get('/discounts-privileges', function () {
 });
 
 Route::get('/inquiry', [InquiryController::class, 'show']);
-Route::post('/inquiry', [InquiryController::class, 'store']);
+Route::post('/inquiry', [InquiryController::class, 'store'])->middleware('throttle:inquiry');
 
 
 /*
@@ -116,6 +116,8 @@ Route::middleware('auth')->group(function () {
          // School Settings
          Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
          Route::post('/admin/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
+         // Audit Logs
+         Route::get('/admin/audit-logs', [AdminController::class, 'auditLogs'])->name('admin.audit-logs');
          // Exports
         Route::get('/admin/exports/enrollments', [ExportController::class, 'enrollments'])->name('admin.exports.enrollments');
         Route::get('/admin/exports/grades', [ExportController::class, 'grades'])->name('admin.exports.grades');
@@ -144,8 +146,16 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['role:3'])->group(function() {
         Route::get('/cashier/dashboard', [CashierController::class, 'index'])->name('cashier.dashboard');
+        Route::get('/cashier/payments', [CashierController::class, 'payments'])->name('cashier.payments');
+        Route::get('/cashier/search', [CashierController::class, 'searchStudents'])->name('cashier.search');
         Route::get('/cashier/payment/{student}', [CashierController::class, 'showPayment'])->name('cashier.payment');
         Route::post('/cashier/payment/{student}/process', [CashierController::class, 'processPayment'])->name('cashier.payment.process');
+        Route::get('/cashier/financial/{student}', [CashierController::class, 'studentFinancial'])->name('cashier.student-financial');
+        Route::get('/cashier/receipt/{payment}', [CashierController::class, 'printReceipt'])->name('cashier.receipt.print');
+        Route::get('/cashier/collections', [CashierController::class, 'collectionsReport'])->name('cashier.collections-report');
+        Route::get('/cashier/collections/export', [CashierController::class, 'collectionsReportExport'])->name('cashier.collections-report.export');
+        Route::get('/cashier/discounts', [CashierController::class, 'discounts'])->name('cashier.discounts');
+        Route::post('/cashier/discounts/{ledger}', [CashierController::class, 'updateDiscount'])->name('cashier.discounts.update');
     });
 
     Route::middleware(['role:4'])->group(function() {
@@ -167,11 +177,23 @@ Route::middleware('auth')->group(function () {
         Route::get('/librarian/books/{book}/edit', [LibrarianController::class, 'editBook'])->name('librarian.books.edit');
         Route::patch('/librarian/books/{book}', [LibrarianController::class, 'updateBook'])->name('librarian.books.update');
         Route::delete('/librarian/books/{book}', [LibrarianController::class, 'destroyBook'])->name('librarian.books.destroy');
+        // Inactive Books
+        Route::get('/librarian/inactive-logs', [LibrarianController::class, 'inactiveBooks'])->name('librarian.inactive-logs');
+        Route::patch('/librarian/books/{book}/deactivate', [LibrarianController::class, 'deactivateBook'])->name('librarian.books.deactivate');
+        Route::patch('/librarian/books/{book}/reactivate', [LibrarianController::class, 'reactivateBook'])->name('librarian.books.reactivate');
         // Loan Management
         Route::get('/librarian/loans', [LibrarianController::class, 'loans'])->name('librarian.loans');
         Route::get('/librarian/loans/borrow', [LibrarianController::class, 'borrowForm'])->name('librarian.loans.borrow');
         Route::post('/librarian/loans/borrow', [LibrarianController::class, 'storeBorrow'])->name('librarian.loans.store');
-        Route::post('/librarian/loans/{transaction}/return', [LibrarianController::class, 'returnBook'])->name('librarian.loans.return');
+        Route::get('/librarian/loans/{transaction}/return', [LibrarianController::class, 'returnForm'])->name('librarian.loans.return-form');
+        Route::patch('/librarian/loans/{transaction}/return', [LibrarianController::class, 'processReturn'])->name('librarian.loans.process-return');
+        Route::get('/librarian/students/search', [LibrarianController::class, 'searchStudents'])->name('librarian.students.search');
+        Route::get('/librarian/books/search', [LibrarianController::class, 'searchBooks'])->name('librarian.books.search');
+        Route::get('/librarian/loans/search', [LibrarianController::class, 'searchLoans'])->name('librarian.loans.search');
+        // Library Visits
+        Route::get('/librarian/visits', [LibrarianController::class, 'visits'])->name('librarian.visits');
+        Route::post('/librarian/visits/clock-in', [LibrarianController::class, 'clockIn'])->name('librarian.visits.clock-in');
+        Route::patch('/librarian/visits/{visit}/clock-out', [LibrarianController::class, 'clockOut'])->name('librarian.visits.clock-out');
     });
 
     Route::middleware(['role:6'])->group(function() {
