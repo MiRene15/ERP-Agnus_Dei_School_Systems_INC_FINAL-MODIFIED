@@ -6,7 +6,7 @@ Logged: 2026-08-06. Four requested changes/adjustments, each with current state,
 
 ## Implementation Log
 
-**Status: Items 1–30 DONE** — 2026-08-06 (updated 2026-08-08)
+**Status: Items 1–33 DONE** — 2026-08-06 (updated 2026-08-11)
 
 | # | Request | Status | Files Modified |
 |---|---------|--------|----------------|
@@ -40,6 +40,9 @@ Logged: 2026-08-06. Four requested changes/adjustments, each with current state,
 | 28 | Fee assessment: move from report card to COR only | ✅ Done | `report-cards/show.blade.php`, `report-cards/print.blade.php` |
 | 29 | Switch database from MySQL to PostgreSQL (Supabase) + Docker/Render prep | ✅ Done | `Dockerfile`, `.dockerignore`, `BackupDatabase.php`, `RegistrarAdmissionController.php`, `2026_06_24_201535...`, `2026_06_25_100000...` |
 | 30 | Render HTTPS — TrustProxies middleware for SSL-terminated deployment | ✅ Done | `bootstrap/app.php` |
+| 31 | Show password option on the login page | ✅ Done | `auth/login.blade.php` |
+| 32 | `first_login_at` must persist to DB on first login | ✅ Done | `User.php` |
+| 33 | Student dashboard HTTP 500 on login | ✅ Done | `portal/student/dashboard.blade.php` |
 
 ---
 
@@ -986,6 +989,48 @@ DB_SSLMODE=require
 ### Status
 
 Tested on Render deploy — login form submits over HTTPS, no browser security warning. App boots, announcements visible on homepage.
+
+---
+
+## 31. Show password option on the login page
+
+### Problem
+
+The login form had only a `type="password"` field with no way to verify the typed value before submitting.
+
+### What was implemented
+
+Added a "Show password" checkbox + eye/eye-off toggle icon beside the password field in `auth/login.blade.php`. Toggling switches the input between `password` and `text`.
+
+---
+
+## 32. `first_login_at` must persist to DB on first login
+
+### Problem
+
+`first_login_at` stayed NULL even after a user logged in and completed the first-login password change (verified on Supabase: user 29 `first_login_at = NULL`, `last_login_at` populated). Root cause: `last_login_at`/`first_login_at` were missing from `App\Models\User::$fillable`, so `ForceChangePasswordController::update()`'s mass-assignment `update(['first_login_at' => now()])` silently dropped the value.
+
+### What was implemented
+
+Added `last_login_at` and `first_login_at` to `User::$fillable`. Verified: after completing the first-login flow, `first_login_at` is written to the DB.
+
+---
+
+## 33. Student dashboard HTTP 500 on login
+
+### Problem
+
+`POST /login` succeeded → `/force-change-password` → `/student/dashboard` returned HTTP 500:
+
+```
+Undefined variable $selectedTerm (View: .../portal/student/dashboard.blade.php)
+```
+
+Root cause: the grades table used PHP `@if($selectedTerm === 'all')` / `@php ... $selectedTerm ... @endphp` while `$selectedTerm` is an Alpine.js client-side variable (`x-data="{ selectedTerm: 'all' }"`) — Blade tried to evaluate it server-side and crashed.
+
+### What was implemented
+
+Rewrote the grades table so every term column is server-rendered and Alpine toggles visibility with `x-show="selectedTerm === 'all' || selectedTerm === @js($period)"`. No PHP reference to `$selectedTerm` remains. Verified: full student login flow returns HTTP 200 (reproduced with `juan.delacruz@agnusdei.edu.ph`).
 
 ---
 

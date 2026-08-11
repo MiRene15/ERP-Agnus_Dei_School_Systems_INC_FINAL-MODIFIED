@@ -250,23 +250,14 @@
                     @foreach($grades as $grade)
                     <tr class="border-b border-gray-100">
                         <td class="py-3 px-3 font-medium text-gray-900 border border-gray-200">{{ $grade->schoolClass->subject->name ?? 'N/A' }}</td>
-                        @if($selectedTerm === 'all')
-                            @foreach($gradingPeriods as $period)
-                            <td class="py-3 px-2 text-center text-gray-700 border border-gray-200">
-                                @php
-                                    $g = $grades->where('schoolClass.subject.name', $grade->schoolClass->subject->name)->where('grading_period', $period)->first();
-                                @endphp
+                        @foreach($gradingPeriods as $period)
+                            @php
+                                $g = $grades->where('schoolClass.subject.name', $grade->schoolClass->subject->name)->where('grading_period', $period)->first();
+                            @endphp
+                            <td class="py-3 px-2 text-center text-gray-700 border border-gray-200" x-show="selectedTerm === 'all' || selectedTerm === @js($period)">
                                 {{ $g?->final_grade ?? '—' }}
                             </td>
-                            @endforeach
-                        @else
-                            <td class="py-3 px-2 text-center text-gray-700 border border-gray-200">
-                                @php
-                                    $g = $grades->where('schoolClass.subject.name', $grade->schoolClass->subject->name)->where('grading_period', $selectedTerm)->first();
-                                @endphp
-                                {{ $g?->final_grade ?? '—' }}
-                            </td>
-                        @endif
+                        @endforeach
                         <td class="py-3 px-2 text-center font-semibold text-gray-900 border border-gray-200">{{ $grade->final_grade ?? '—' }}</td>
                         <td class="py-3 px-2 text-center border border-gray-200">
                             @if($grade->final_grade)
