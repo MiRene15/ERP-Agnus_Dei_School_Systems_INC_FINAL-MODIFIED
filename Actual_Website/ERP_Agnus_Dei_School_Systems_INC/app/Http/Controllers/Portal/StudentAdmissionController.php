@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Admission;
 use App\Models\Requirement;
+use App\Services\SupabaseStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -256,6 +257,7 @@ class StudentAdmissionController extends Controller
             'documents.*' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
+        $supabase = new SupabaseStorage();
         $count = 0;
 
         foreach ($request->file('documents') as $documentType => $file) {
@@ -263,12 +265,20 @@ class StudentAdmissionController extends Controller
                 ->where('document_type', $documentType)
                 ->first();
 
-            $path = $file->store('requirements/' . $admission->id, 'public');
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $path = 'requirements/' . $admission->id . '/' . $filename;
+
+            $supabase->delete($path);
+
+            $content = file_get_contents($file->getRealPath());
+            $supabase->upload($path, $content);
 
             if ($existing) {
-                Storage::disk('public')->delete($existing->file_path);
+                $supabase->delete($existing->file_path);
                 $existing->update([
                     'file_path' => $path,
+                    'original_filename' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
                     'status' => 'Under Review',
                 ]);
             } else {
@@ -276,6 +286,8 @@ class StudentAdmissionController extends Controller
                     'admission_id' => $admission->id,
                     'document_type' => $documentType,
                     'file_path' => $path,
+                    'original_filename' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
                     'status' => 'Under Review',
                 ]);
             }

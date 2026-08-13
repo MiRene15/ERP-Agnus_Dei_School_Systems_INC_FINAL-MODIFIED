@@ -125,7 +125,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <a href="{{ asset('storage/' . $req->file_path) }}" target="_blank"
+                        <a href="{{ $req->signed_url }}" target="_blank"
                            class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
                         @if($admission->status === 'Pending')
                         <form id="verify-form-{{ $req->id }}" method="POST"

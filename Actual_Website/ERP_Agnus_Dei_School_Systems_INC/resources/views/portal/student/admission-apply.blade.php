@@ -52,11 +52,16 @@
                 <template x-for="(s, i) in steps" :key="i">
                     <button type="button" @click="goTo(i + 1)"
                             class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition whitespace-nowrap"
-                            :class="step === i + 1 ? 'text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'"
+                            :class="step === i + 1 ? 'text-white shadow-sm' : (isStepComplete(i + 1) ? 'text-green-700 bg-green-50' : 'text-gray-500 hover:bg-gray-100')"
                             :style="step === i + 1 ? 'background: var(--navy);' : ''">
                         <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                              :class="step === i + 1 ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-600'">
-                            <span x-text="i + 1"></span>
+                              :class="step === i + 1 ? 'bg-white/20 text-white' : (isStepComplete(i + 1) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-600')">
+                            <template x-if="isStepComplete(i + 1) && step !== i + 1">
+                                <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg>
+                            </template>
+                            <template x-if="!isStepComplete(i + 1) || step === i + 1">
+                                <span x-text="i + 1"></span>
+                            </template>
                         </span>
                         <span class="hidden sm:inline" x-text="s"></span>
                         <span class="sm:hidden" x-text="s.replace(/ .*/, '')"></span>
@@ -403,6 +408,20 @@
                 const m = t.getMonth() - b.getMonth();
                 if (m < 0 || (m === 0 && t.getDate() < b.getDate())) a--;
                 return a;
+            },
+
+            isStepComplete(n) {
+                const requiredByStep = {
+                    1: ['application_type', 'grade_level', 'school_year'],
+                    2: ['first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'citizenship', 'contact_number'],
+                    3: ['permanent_address'],
+                    4: [],
+                    5: ['emergency_contact_name', 'emergency_contact_number', 'emergency_contact_relationship'],
+                    6: ['previous_school'],
+                };
+                const fields = requiredByStep[n] || [];
+                if (fields.length === 0) return true;
+                return fields.every(f => this[f] && String(this[f]).trim() !== '');
             },
 
             goTo(n) {

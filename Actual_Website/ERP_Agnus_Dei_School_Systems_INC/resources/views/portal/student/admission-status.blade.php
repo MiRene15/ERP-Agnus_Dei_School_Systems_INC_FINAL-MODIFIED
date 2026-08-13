@@ -73,12 +73,16 @@
                  x-data="{ docs: @js($requirements->pluck('document_type')) }">
                 <h3 class="font-semibold text-gray-900 mb-4">Upload Requirements</h3>
 
-                <form method="POST" action="{{ route('student.admission.requirements') }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ route('student.admission.requirements') }}" enctype="multipart/form-data" id="upload-form">
                     @csrf
                     @php
                         $requiredTypes = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
                         $optionalTypes = ['ESC Grant Certificate', 'Other'];
                     @endphp
+                    <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-start gap-2">
+                        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span><strong>Max file size: 5MB per file.</strong> Accepted formats: PDF, JPG, JPEG, PNG. Large photos should be compressed before uploading.</span>
+                    </div>
                     <div class="space-y-3">
                         @foreach($requiredTypes as $dt)
                         <div class="flex items-center gap-3 p-3 rounded-lg border transition"
@@ -126,6 +130,37 @@
                         </div>
                     </div>
                 </form>
+                <script>
+                document.getElementById('upload-form').addEventListener('submit', function(e) {
+                    var files = this.querySelectorAll('input[type="file"]');
+                    var maxSize = 5 * 1024 * 1024;
+                    for (var i = 0; i < files.length; i++) {
+                        var input = files[i];
+                        if (input.files.length > 0) {
+                            var file = input.files[0];
+                            if (file.size > maxSize) {
+                                e.preventDefault();
+                                var mb = (file.size / 1024 / 1024).toFixed(1);
+                                alert('File too large: ' + file.name + ' (' + mb + 'MB). Maximum allowed is 5MB. Please compress or resize the image and try again.');
+                                return;
+                            }
+                        }
+                    }
+                });
+                document.querySelectorAll('#upload-form input[type="file"]').forEach(function(input) {
+                    input.addEventListener('change', function() {
+                        if (this.files.length > 0) {
+                            var file = this.files[0];
+                            var maxSize = 5 * 1024 * 1024;
+                            if (file.size > maxSize) {
+                                var mb = (file.size / 1024 / 1024).toFixed(1);
+                                alert('Warning: ' + file.name + ' is ' + mb + 'MB. Maximum allowed is 5MB. Please choose a smaller file.');
+                                this.value = '';
+                            }
+                        }
+                    });
+                });
+                </script>
 
                 {{-- Timer Proceed Modal --}}
                 <div id="proceed-timer-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" style="transition: opacity 0.3s ease;">
@@ -179,7 +214,7 @@
                                 <p class="text-xs text-gray-500">{{ $req->status }}</p>
                             </div>
                         </div>
-                        <a href="{{ asset('storage/' . $req->file_path) }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
+                        <a href="{{ $req->signed_url }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
                     </li>
                     @endforeach
                 </ul>
