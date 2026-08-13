@@ -209,6 +209,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/student/admission/apply', [StudentAdmissionController::class, 'create'])->name('student.admission.create');
         Route::post('/student/admission/apply', [StudentAdmissionController::class, 'store'])->name('student.admission.store');
         Route::post('/student/admission/draft', [StudentAdmissionController::class, 'saveDraft'])->name('student.admission.draft');
+        Route::post('/student/admission/draft/discard', [StudentAdmissionController::class, 'discardDraft'])->name('student.admission.discard');
         Route::get('/student/admission/status', [StudentAdmissionController::class, 'status'])->name('student.admission.status');
         Route::post('/student/admission/requirements', [StudentAdmissionController::class, 'uploadRequirements'])->name('student.admission.requirements');
         Route::get('/student/enrollment/apply', [StudentEnrollmentController::class, 'create'])->name('student.enrollment.create');

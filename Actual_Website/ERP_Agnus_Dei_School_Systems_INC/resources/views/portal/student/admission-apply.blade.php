@@ -32,10 +32,9 @@
 @elseif($draftAdmission)
     <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm flex items-center justify-between">
         <span>You have a saved draft from a previous session. Resume where you left off.</span>
-        <form method="POST" action="{{ route('student.admission.draft') }}" class="inline">
+        <form method="POST" action="{{ route('student.admission.discard') }}" class="inline">
             @csrf
-            <input type="hidden" name="_step" value="0">
-            <button type="submit" name="action" value="discard" formaction="{{ route('student.admission.draft') }}" class="text-xs font-medium text-red-600 hover:text-red-800 ml-3"
+            <button type="submit" class="text-xs font-medium text-red-600 hover:text-red-800 ml-3"
                     onclick="return confirm('Discard your saved draft and start fresh?')">Discard Draft</button>
         </form>
     </div>
@@ -364,33 +363,33 @@
             step: {{ $draftStep ?? 1 }},
             saving: false,
             f: {
-                application_type: '{{ $draftData['application_type'] ?? '' }}',
-                grade_level: '{{ $draftData['grade_level'] ?? '' }}',
-                strand: '{{ $draftData['strand'] ?? '' }}',
-                school_year: '{{ $draftData['school_year'] ?? '' }}',
-                first_name: '{{ $draftData['first_name'] ?? $student->first_name }}',
-                middle_name: '{{ $draftData['middle_name'] ?? $student->middle_name }}',
-                last_name: '{{ $draftData['last_name'] ?? $student->last_name }}',
-                date_of_birth: '{{ $draftData['date_of_birth'] ?? ($student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->format('Y-m-d') : '') }}',
-                place_of_birth: '{{ $draftData['place_of_birth'] ?? $student->place_of_birth }}',
-                citizenship: '{{ $draftData['citizenship'] ?? $student->citizenship }}',
-                religion: '{{ $draftData['religion'] ?? $student->religion }}',
-                legacy_lrn: '{{ $draftData['legacy_lrn'] ?? $student->legacy_lrn }}',
-                contact_number: '{{ $draftData['contact_number'] ?? $student->contact_number }}',
-                permanent_address: '{{ $draftData['permanent_address'] ?? $student->permanent_address }}',
+                application_type: @js($draftData['application_type'] ?? ''),
+                grade_level: @js($draftData['grade_level'] ?? ''),
+                strand: @js($draftData['strand'] ?? ''),
+                school_year: @js($draftData['school_year'] ?? ''),
+                first_name: @js($draftData['first_name'] ?? $student->first_name),
+                middle_name: @js($draftData['middle_name'] ?? $student->middle_name),
+                last_name: @js($draftData['last_name'] ?? $student->last_name),
+                date_of_birth: @js($draftData['date_of_birth'] ?? ($student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->format('Y-m-d') : '')),
+                place_of_birth: @js($draftData['place_of_birth'] ?? $student->place_of_birth),
+                citizenship: @js($draftData['citizenship'] ?? $student->citizenship),
+                religion: @js($draftData['religion'] ?? $student->religion),
+                legacy_lrn: @js($draftData['legacy_lrn'] ?? $student->legacy_lrn),
+                contact_number: @js($draftData['contact_number'] ?? $student->contact_number),
+                permanent_address: @js($draftData['permanent_address'] ?? $student->permanent_address),
                 same_as_permanent: {{ ($draftData['same_as_permanent'] ?? $student->same_as_permanent) ? 'true' : 'false' }},
-                current_address: '{{ $draftData['current_address'] ?? $student->current_address }}',
-                father_name: '{{ $draftData['father_name'] ?? $student->father_name }}',
-                father_occupation: '{{ $draftData['father_occupation'] ?? $student->father_occupation }}',
-                mother_name: '{{ $draftData['mother_name'] ?? $student->mother_name }}',
-                mother_occupation: '{{ $draftData['mother_occupation'] ?? $student->mother_occupation }}',
-                guardian_name: '{{ $draftData['guardian_name'] ?? $student->guardian_name }}',
-                guardian_contact: '{{ $draftData['guardian_contact'] ?? $student->guardian_contact }}',
-                emergency_contact_name: '{{ $draftData['emergency_contact_name'] ?? $student->emergency_contact_name }}',
-                emergency_contact_number: '{{ $draftData['emergency_contact_number'] ?? $student->emergency_contact_number }}',
-                emergency_contact_relationship: '{{ $draftData['emergency_contact_relationship'] ?? $student->emergency_contact_relationship }}',
-                previous_school: '{{ $draftData['previous_school'] ?? $student->previous_school }}',
-                previous_school_address: '{{ $draftData['previous_school_address'] ?? $student->previous_school_address }}',
+                current_address: @js($draftData['current_address'] ?? $student->current_address),
+                father_name: @js($draftData['father_name'] ?? $student->father_name),
+                father_occupation: @js($draftData['father_occupation'] ?? $student->father_occupation),
+                mother_name: @js($draftData['mother_name'] ?? $student->mother_name),
+                mother_occupation: @js($draftData['mother_occupation'] ?? $student->mother_occupation),
+                guardian_name: @js($draftData['guardian_name'] ?? $student->guardian_name),
+                guardian_contact: @js($draftData['guardian_contact'] ?? $student->guardian_contact),
+                emergency_contact_name: @js($draftData['emergency_contact_name'] ?? $student->emergency_contact_name),
+                emergency_contact_number: @js($draftData['emergency_contact_number'] ?? $student->emergency_contact_number),
+                emergency_contact_relationship: @js($draftData['emergency_contact_relationship'] ?? $student->emergency_contact_relationship),
+                previous_school: @js($draftData['previous_school'] ?? $student->previous_school),
+                previous_school_address: @js($draftData['previous_school_address'] ?? $student->previous_school_address),
             },
             steps: [
                 'Application Details', 'Personal Information', 'Address',
@@ -441,17 +440,28 @@
             },
 
             submitAll() {
-                const last = this.$el.querySelector('[data-step="6"]');
-                const reqs = last.querySelectorAll('[required]');
-                let ok = true;
-                reqs.forEach(f => {
-                    f.classList.remove('border-red-500', 'bg-red-50');
-                    if (!f.value.trim()) {
-                        f.classList.add('border-red-500', 'bg-red-50');
-                        ok = false;
+                let firstErrorStep = null;
+                for (let s = 1; s <= 6; s++) {
+                    const box = this.$el.querySelector('[data-step="' + s + '"]');
+                    if (!box) continue;
+                    const reqs = box.querySelectorAll('[required]');
+                    let stepOk = true;
+                    reqs.forEach(f => {
+                        f.classList.remove('border-red-500', 'bg-red-50');
+                        if (!f.value.trim()) {
+                            f.classList.add('border-red-500', 'bg-red-50');
+                            stepOk = false;
+                        }
+                    });
+                    if (!stepOk && firstErrorStep === null) {
+                        firstErrorStep = s;
                     }
-                });
-                if (ok) this.$refs.form.submit();
+                }
+                if (firstErrorStep !== null) {
+                    this.goTo(firstErrorStep);
+                    return;
+                }
+                this.$refs.form.submit();
             },
 
             initForm() {

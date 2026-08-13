@@ -3,6 +3,19 @@
     $activeEnrollment ??= $student?->enrollments()->where('status', 'Active')->first();
     $pendingAdmission ??= $student?->admissions()->where('status', 'Pending')->first();
     $draftAdmission ??= $pendingAdmission ? null : $student?->admissions()->where('status', 'Draft')->latest()->first();
+    $draftData = $draftAdmission?->draft_data;
+
+    $checkSvg = '<svg width="14" height="14" viewBox="0 0 16 16" fill="#22c55e" class="inline-block ml-auto flex-shrink-0"><path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/></svg>';
+
+    $stepsComplete = [];
+    if ($student) {
+        $stepsComplete['Application Details'] = !empty($pendingAdmission?->application_type) || !empty($draftData['application_type']);
+        $stepsComplete['Personal Info'] = !empty($student->first_name) && !empty($student->last_name) && !empty($student->date_of_birth);
+        $stepsComplete['Address'] = !empty($student->permanent_address);
+        $stepsComplete['Family'] = !empty($student->father_name) || !empty($student->mother_name);
+        $stepsComplete['Emergency'] = !empty($student->emergency_contact_name) && !empty($student->emergency_contact_number);
+        $stepsComplete['Prev. School'] = !empty($student->previous_school);
+    }
 @endphp
 @if($student && $student->student_number)
     <a href="#grades" class="sidebar-link">
@@ -17,7 +30,6 @@
         <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
         <span class="sidebar-label">Statement of Account</span>
     </a>
-    {{-- Application Status: only show when NOT yet fully enrolled --}}
     @if($pendingAdmission || !$activeEnrollment)
     <a href="{{ route('student.admission.status') }}" class="sidebar-link">
         <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -38,16 +50,31 @@
         <span class="sidebar-label">COR</span>
     </a>
     @endif
-@elseif($draftAdmission)
+@elseif($draftAdmission || !$pendingAdmission)
+    <div style="padding: 9px 11px; margin-bottom: 4px;">
+        <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px;">Admission Progress</div>
+        @foreach($stepsComplete as $label => $done)
+        <div style="display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 0.8rem; color: {{ $done ? '#16a34a' : 'var(--muted)' }};">
+            @if($done)
+                {!! $checkSvg !!}
+            @else
+                <span style="width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #d1d5db; display: inline-block; flex-shrink: 0;"></span>
+            @endif
+            <span>{{ $label }}</span>
+        </div>
+        @endforeach
+    </div>
+    @if($draftAdmission)
     <a href="{{ route('student.admission.create') }}" class="sidebar-link">
         <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
         <span class="sidebar-label">Continue Application</span>
     </a>
-@elseif(!$pendingAdmission)
+    @else
     <a href="{{ route('student.admission.create') }}" class="sidebar-link">
         <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         <span class="sidebar-label">Apply for Admission</span>
     </a>
+    @endif
 @else
     <a href="{{ route('student.admission.status') }}" class="sidebar-link">
         <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>

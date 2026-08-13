@@ -219,6 +219,20 @@ class StudentAdmissionController extends Controller
             ->with('success', 'Application submitted! Your application number is ' . $admission->application_number);
     }
 
+    public function discardDraft(Request $request)
+    {
+        $student = auth()->user()->student;
+
+        $draft = $student->admissions()->where('status', 'Draft')->latest()->first();
+
+        if ($draft) {
+            $draft->delete();
+        }
+
+        return redirect()->route('student.admission.create')
+            ->with('success', 'Draft discarded. You can start a fresh application.');
+    }
+
     public function status()
     {
         $student = auth()->user()->student;
