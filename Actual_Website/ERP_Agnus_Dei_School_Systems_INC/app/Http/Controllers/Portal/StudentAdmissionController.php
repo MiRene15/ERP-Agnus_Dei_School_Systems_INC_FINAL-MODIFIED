@@ -252,6 +252,10 @@ class StudentAdmissionController extends Controller
         $student = auth()->user()->student;
         $admission = $student->admissions()->where('status', 'Pending')->latest()->firstOrFail();
 
+        if ($request->isMethod('post') && empty($request->all()) && $request->headers->get('content-length', 0) > 0) {
+            return back()->with('error', 'The total upload size is too large. Please upload files one at a time, or compress your images to under 5MB each. Max total POST size is 12MB.');
+        }
+
         $data = $request->validate([
             'documents' => 'required|array',
             'documents.*' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
