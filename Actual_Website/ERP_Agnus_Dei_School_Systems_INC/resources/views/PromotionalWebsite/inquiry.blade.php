@@ -44,6 +44,12 @@
             <button type="submit" class="btn-primary" style="width: 100%; text-align: center; border: none; cursor: pointer;">Generate Credentials & Inquire</button>
         </form>
     </div>
+
+    @if(session('error'))
+        <div style="background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.95rem;">
+            {{ session('error') }}
+        </div>
+    @endif
 </div>
 
 <!-- Success Modal -->
