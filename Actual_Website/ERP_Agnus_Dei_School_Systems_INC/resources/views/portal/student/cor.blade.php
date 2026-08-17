@@ -1,159 +1,194 @@
-@extends('portal.layouts.app')
-@section('breadcrumbs')
-    <a href="{{ route('student.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
-    <span class="opacity-40">/</span>
-    <span class="current">Certificate of Registration</span>
-@endsection
-
-@section('content')
-<div class="mb-4 flex items-center justify-between no-print">
-    <div>
-        <h2 class="text-2xl font-bold text-gray-900">Certificate of Registration</h2>
-        <p class="text-gray-600 mt-1">{{ $enrollment->school_year }}</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Certificate of Registration — {{ $student->first_name }} {{ $student->last_name }}</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f3f4f6; color: #111; }
+        .toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 50; background: #1a365d; padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+        .toolbar a { color: #fff; text-decoration: none; font-size: 14px; font-weight: 500; opacity: .85; transition: opacity .2s; }
+        .toolbar a:hover { opacity: 1; }
+        .toolbar button { background: #fff; color: #1a365d; border: none; padding: 8px 20px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .toolbar button:hover { background: #e5e7eb; }
+        .page-wrap { padding: 70px 24px 24px; display: flex; justify-content: center; }
+        .cor-page { width: 297mm; background: #fff; padding: 10mm 14mm; box-shadow: 0 4px 20px rgba(0,0,0,.08); border-radius: 2px; position: relative; }
+        .cor-header { text-align: center; border-bottom: 2px solid #111; padding-bottom: 4px; margin-bottom: 6px; }
+        .cor-header .school-name { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .cor-header .school-addr { font-size: 9px; color: #555; margin-top: 1px; }
+        .cor-header .doc-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-top: 6px; border-top: 1.5px solid #111; padding-top: 5px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 20px; font-size: 9px; margin-bottom: 6px; border: 1px solid #ccc; padding: 4px 8px; border-radius: 2px; }
+        .info-grid p { line-height: 1.5; }
+        .info-grid .lbl { font-weight: 700; color: #444; }
+        .section-title { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #333; border-bottom: 1.5px solid #999; padding-bottom: 1px; margin: 4px 0 3px; }
+        table.cor-table { width: 100%; border-collapse: collapse; font-size: 8.5px; margin-bottom: 4px; }
+        table.cor-table th { background: #e8edf3; text-align: left; padding: 2px 4px; border: 1px solid #999; font-weight: 700; font-size: 8px; text-transform: uppercase; letter-spacing: .5px; color: #333; }
+        table.cor-table td { padding: 2px 4px; border: 1px solid #bbb; line-height: 1.3; }
+        table.cor-table tbody tr:nth-child(even) { background: #f8f9fb; }
+        table.cor-table tfoot td { font-weight: 700; background: #e8edf3; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 8px; text-align: center; font-size: 9px; }
+        .sig-box .sig-line { border-top: 1px solid #222; width: 65%; margin: 0 auto 2px; }
+        .sig-box .sig-name { font-weight: 700; }
+        .sig-box .sig-role { color: #666; font-size: 7.5px; }
+        .cor-footer { margin-top: 4px; padding-top: 3px; border-top: 1px solid #ccc; text-align: center; font-size: 7.5px; color: #888; }
+        @media print {
+            body { background: #fff; }
+            .toolbar { display: none !important; }
+            .page-wrap { padding: 0; }
+            .cor-page { box-shadow: none; border-radius: 0; width: 100%; padding: 8mm 10mm; margin: 0; }
+            @page { size: A4 landscape; margin: 8mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a href="{{ route('student.dashboard') }}">&#8592; Back to Portal</a>
+        <button onclick="window.print()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Print COR
+        </button>
     </div>
-    <button onclick="window.print()" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Print COR</button>
-</div>
-
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 print:p-4" id="cor-content">
-    <div class="text-center border-b-2 border-gray-800 pb-4 mb-6">
-        <h1 class="text-xl font-bold uppercase tracking-wide">Agnus Dei School Systems Inc.</h1>
-        <p class="text-sm text-gray-600 mt-1">Certificate of Registration</p>
-    </div>
-
-    <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
-        <div>
-            <p><span class="font-semibold">Student Name:</span> {{ $student->first_name }} {{ $student->middle_name }} {{ $student->last_name }}</p>
-            <p><span class="font-semibold">Student No.:</span> {{ $student->student_number }}</p>
-            <p><span class="font-semibold">LRN:</span> {{ $student->legacy_lrn ?? 'N/A' }}</p>
-        </div>
-        <div>
-            <p><span class="font-semibold">Grade Level:</span> {{ $enrollment->section->grade_level }}</p>
-            <p><span class="font-semibold">Section:</span> {{ $enrollment->section->section_name }}</p>
-            <p><span class="font-semibold">School Year:</span> {{ $enrollment->school_year }}</p>
-            @if($enrollment->strand)
-            <p><span class="font-semibold">Strand:</span> {{ $enrollment->strand }}</p>
+    <div class="page-wrap">
+        <div class="cor-page">
+            <div class="cor-header">
+                <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;">
+                    <img src="{{ asset('images/agnus_logo.png') }}" alt="Logo" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                    <div style="text-align:left;">
+                        <p class="school-name">Agnus Dei School Systems Inc.</p>
+                        <p class="school-addr">Brgy. Catmon, Pandan, Antique</p>
+                    </div>
+                </div>
+                <p class="doc-title">Certificate of Registration</p>
+            </div>
+            <div class="info-grid">
+                <p><span class="lbl">Student Name:</span> {{ $student->first_name }} {{ $student->middle_name ? $student->middle_name . ' ' : '' }}{{ $student->last_name }}</p>
+                <p><span class="lbl">Grade Level:</span> {{ $enrollment->section->grade_level }}</p>
+                <p><span class="lbl">Student No.:</span> {{ $student->student_number }}</p>
+                <p><span class="lbl">Section:</span> {{ $enrollment->section->section_name }}</p>
+                <p><span class="lbl">LRN:</span> {{ $student->legacy_lrn ?? 'N/A' }}</p>
+                <p><span class="lbl">School Year:</span> {{ $enrollment->school_year }}</p>
+                @if($enrollment->strand)
+                <p><span class="lbl">Strand:</span> {{ $enrollment->strand }}</p>
+                @endif
+            </div>
+            <p class="section-title">Enrolled Subjects</p>
+            <table class="cor-table">
+                <thead>
+                    <tr>
+                        <th style="width:3%">#</th>
+                        <th style="width:18%">Subject</th>
+                        <th style="width:32%">Schedule</th>
+                        <th style="width:8%">Room</th>
+                        <th style="width:15%">Teacher</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($enrollment->subjects as $idx => $cls)
+                    <tr>
+                        <td class="text-center">{{ $idx + 1 }}</td>
+                        <td style="font-weight:600">{{ $cls->subject->name }}</td>
+                        <td>
+                            @foreach($cls->schedules as $sched)
+                                {{ $sched->day_of_week }} {{ \Carbon\Carbon::parse($sched->start_time)->format('g:i A') }}–{{ \Carbon\Carbon::parse($sched->end_time)->format('g:i A') }}@if(!$loop->last)<br>@endif
+                            @endforeach
+                        </td>
+                        <td>{{ $cls->room ?? ($cls->schedules->first()?->room ?? '—') }}</td>
+                        <td>{{ $cls->teacher->name ?? '—' }}</td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="5" class="text-center" style="padding:8px;color:#888">No subjects assigned.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+            @if($feeSchedules->isNotEmpty())
+            @php
+                $isSHS = in_array($enrollment->section->grade_level, ['Grade 11', 'Grade 12']);
+            @endphp
+            <p class="section-title">Fee Assessment</p>
+            <table class="cor-table">
+                <thead>
+                    <tr>
+                        <th style="width:35%">{{ $isSHS ? 'Term' : 'School Year' }}</th>
+                        <th class="text-right" style="width:20%">Tuition</th>
+                        <th class="text-right" style="width:20%">Miscellaneous</th>
+                        <th class="text-right" style="width:25%">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if($isSHS)
+                        @foreach($feeSchedules as $fs)
+                        <tr>
+                            <td>{{ $fs->term }}</td>
+                            <td class="text-right">₱{{ number_format($fs->tuition_fee, 2) }}</td>
+                            <td class="text-right">₱{{ number_format($fs->misc_fee, 2) }}</td>
+                            <td class="text-right" style="font-weight:600">₱{{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</td>
+                        </tr>
+                        @endforeach
+                    @else
+                        <tr>
+                            <td>{{ $enrollment->school_year }}</td>
+                            <td class="text-right">₱{{ number_format($feeSchedules->sum('tuition_fee'), 2) }}</td>
+                            <td class="text-right">₱{{ number_format($feeSchedules->sum('misc_fee'), 2) }}</td>
+                            <td class="text-right" style="font-weight:600">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'), 2) }}</td>
+                        </tr>
+                    @endif
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>Total Assessed</td>
+                        <td class="text-right">₱{{ number_format($feeSchedules->sum('tuition_fee'), 2) }}</td>
+                        <td class="text-right">₱{{ number_format($feeSchedules->sum('misc_fee'), 2) }}</td>
+                        <td class="text-right">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'), 2) }}</td>
+                    </tr>
+                    @if($ledger && $ledger->discount_applied > 0)
+                    <tr>
+                        <td colspan="3" class="text-right" style="font-weight:400;color:#555">Discount ({{ ucfirst($ledger->discount_type ?? 'N/A') }})</td>
+                        <td class="text-right" style="color:#16a34a">-₱{{ number_format($ledger->discount_applied, 2) }}</td>
+                    </tr>
+                    @endif
+                    @if($ledger)
+                    <tr>
+                        <td colspan="3" class="text-right" style="font-weight:400;color:#555">Total Paid</td>
+                        <td class="text-right" style="color:#16a34a">₱{{ number_format($ledger->total_paid, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-right" style="font-weight:400;color:#555">Balance</td>
+                        <td class="text-right" style="{{ $ledger->balance > 0 ? 'color:#dc2626' : 'color:#16a34a' }}">₱{{ number_format($ledger->balance, 2) }}</td>
+                    </tr>
+                    @endif
+                </tfoot>
+            </table>
             @endif
+            <div class="signatures">
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <p class="sig-name">{{ $student->first_name }} {{ $student->last_name }}</p>
+                    <p class="sig-role">Student</p>
+                </div>
+                @if($principalName)
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <p class="sig-name">{{ $principalName }}</p>
+                    <p class="sig-role">School Principal</p>
+                </div>
+                @endif
+                @if($directressName)
+                <div class="sig-box">
+                    <div class="sig-line"></div>
+                    <p class="sig-name">{{ $directressName }}</p>
+                    <p class="sig-role">School Directress</p>
+                </div>
+                @endif
+            </div>
+            <div class="cor-footer">
+                <p>This document is system-generated and valid upon presentation. | Issued: {{ now()->format('F d, Y') }}</p>
+            </div>
         </div>
     </div>
-
-    <h3 class="text-sm font-semibold uppercase border-b border-gray-300 pb-1 mb-3">Enrolled Subjects</h3>
-    <table class="w-full text-sm border-collapse mb-6">
-        <thead>
-            <tr class="bg-gray-50">
-                <th class="text-left px-3 py-2 border border-gray-300 font-semibold">Subject</th>
-                <th class="text-left px-3 py-2 border border-gray-300 font-semibold">Schedule</th>
-                <th class="text-left px-3 py-2 border border-gray-300 font-semibold">Room</th>
-                <th class="text-left px-3 py-2 border border-gray-300 font-semibold">Teacher</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($enrollment->subjects as $cls)
-            <tr class="border-b border-gray-200">
-                <td class="px-3 py-2 border border-gray-300">{{ $cls->subject->subject_code ?? $cls->subject->name }} - {{ $cls->subject->name }}</td>
-                <td class="px-3 py-2 border border-gray-300">
-                    @foreach($cls->schedules as $sched)
-                        {{ $sched->day_of_week }} {{ \Carbon\Carbon::parse($sched->start_time)->format('h:i A') }}-{{ \Carbon\Carbon::parse($sched->end_time)->format('h:i A') }}@if(!$loop->last), @endif
-                    @endforeach
-                </td>
-                <td class="px-3 py-2 border border-gray-300">{{ $cls->room ?? ($cls->schedules->first()?->room ?? '—') }}</td>
-                <td class="px-3 py-2 border border-gray-300">{{ $cls->teacher->name ?? '—' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="4" class="px-3 py-4 text-center text-gray-500 border border-gray-300">No subjects assigned yet.</td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-
-    @if($feeSchedules->isNotEmpty())
-    @php
-        $isSHS = in_array($enrollment->section->grade_level, ['Grade 11', 'Grade 12']);
-    @endphp
-    <h3 class="text-sm font-semibold uppercase border-b border-gray-300 pb-1 mb-3">Fee Assessment</h3>
-    <table class="w-full text-sm border-collapse mb-4">
-        <thead>
-            <tr class="bg-gray-50">
-                <th class="text-left px-3 py-2 border border-gray-300 font-semibold">{{ $isSHS ? 'Term' : 'School Year' }}</th>
-                <th class="text-right px-3 py-2 border border-gray-300 font-semibold">Tuition</th>
-                <th class="text-right px-3 py-2 border border-gray-300 font-semibold">Misc</th>
-                <th class="text-right px-3 py-2 border border-gray-300 font-semibold">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if($isSHS)
-                @foreach($feeSchedules as $fs)
-                <tr>
-                    <td class="px-3 py-2 border border-gray-300">{{ $fs->term }}</td>
-                    <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($fs->tuition_fee, 2) }}</td>
-                    <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($fs->misc_fee, 2) }}</td>
-                    <td class="px-3 py-2 text-right border border-gray-300 font-medium">₱{{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</td>
-                </tr>
-                @endforeach
-            @else
-                <tr>
-                    <td class="px-3 py-2 border border-gray-300">{{ $enrollment->school_year }}</td>
-                    <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('tuition_fee'), 2) }}</td>
-                    <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('misc_fee'), 2) }}</td>
-                    <td class="px-3 py-2 text-right border border-gray-300 font-medium">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'), 2) }}</td>
-                </tr>
-            @endif
-        </tbody>
-        <tfoot>
-            <tr class="bg-gray-50 font-semibold">
-                <td class="px-3 py-2 border border-gray-300">Total Assessed</td>
-                <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('tuition_fee'), 2) }}</td>
-                <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('misc_fee'), 2) }}</td>
-                <td class="px-3 py-2 text-right border border-gray-300">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'), 2) }}</td>
-            </tr>
-            @if($ledger && $ledger->discount_applied > 0)
-            <tr>
-                <td colspan="3" class="px-3 py-2 text-right border border-gray-300 text-gray-600">Discount ({{ ucfirst($ledger->discount_type ?? 'N/A') }})</td>
-                <td class="px-3 py-2 text-right border border-gray-300 text-green-600">-₱{{ number_format($ledger->discount_applied, 2) }}</td>
-            </tr>
-            @endif
-            @if($ledger)
-            <tr>
-                <td colspan="3" class="px-3 py-2 text-right border border-gray-300 text-gray-600">Total Paid</td>
-                <td class="px-3 py-2 text-right border border-gray-300 text-green-600">₱{{ number_format($ledger->total_paid, 2) }}</td>
-            </tr>
-            <tr class="bg-gray-50 font-semibold">
-                <td colspan="3" class="px-3 py-2 text-right border border-gray-300">Balance</td>
-                <td class="px-3 py-2 text-right border border-gray-300 {{ $ledger->balance > 0 ? 'text-red-600' : 'text-green-600' }}">₱{{ number_format($ledger->balance, 2) }}</td>
-            </tr>
-            @endif
-        </tfoot>
-    </table>
-    @endif
-
-    <div class="mt-10 grid grid-cols-2 gap-8 text-sm text-center">
-        @if($principalName)
-        <div>
-            <div class="border-t border-gray-800 w-48 mx-auto mb-1"></div>
-            <p class="font-semibold">{{ $principalName }}</p>
-            <p class="text-xs text-gray-500">Noted by: School Principal</p>
-        </div>
-        @endif
-        @if($directressName)
-        <div>
-            <div class="border-t border-gray-800 w-48 mx-auto mb-1"></div>
-            <p class="font-semibold">{{ $directressName }}</p>
-            <p class="text-xs text-gray-500">Approved by: School Directress</p>
-        </div>
-        @endif
-    </div>
-
-    <div class="mt-6 pt-4 border-t border-gray-300 text-center text-xs text-gray-500">
-        <p>This document is system-generated and valid upon presentation.</p>
-        <p>Issued: {{ now()->format('F d, Y') }}</p>
-    </div>
-</div>
-
-<style>
-@media print {
-    .no-print { display: none !important; }
-    body { background: white; }
-    #cor-content { box-shadow: none; border: none; border-radius: 0; }
-}
-</style>
-@endsection
+</body>
+</html>

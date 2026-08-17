@@ -3,49 +3,52 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\FeeSchedule;
 
 class FeeSchedulesSeeder extends Seeder
 {
     public function run(): void
     {
-        $schoolYear = active_school_year();
+        $schoolYear = '2026-2027';
+
+        $feeStructure = [
+            'Kinder'   => ['tuition' => 15000, 'misc' => 5000],
+            'Grade 1'  => ['tuition' => 16000, 'misc' => 5200],
+            'Grade 2'  => ['tuition' => 16000, 'misc' => 5200],
+            'Grade 3'  => ['tuition' => 17000, 'misc' => 5400],
+            'Grade 4'  => ['tuition' => 17000, 'misc' => 5400],
+            'Grade 5'  => ['tuition' => 18000, 'misc' => 5600],
+            'Grade 6'  => ['tuition' => 18000, 'misc' => 5600],
+            'Grade 7'  => ['tuition' => 20000, 'misc' => 6000],
+            'Grade 8'  => ['tuition' => 20000, 'misc' => 6000],
+            'Grade 9'  => ['tuition' => 21000, 'misc' => 6200],
+            'Grade 10' => ['tuition' => 21000, 'misc' => 6200],
+            'Grade 11' => ['tuition' => 25000, 'misc' => 7000],
+            'Grade 12' => ['tuition' => 25000, 'misc' => 7000],
+        ];
 
         $terms = ['1st Term', '2nd Term', '3rd Term'];
 
-        $feesPerGrade = [
-            'Kinder'   => ['tuition' => 21000.00, 'misc' => 4500.00],
-            'Grade 1'  => ['tuition' => 24748.00, 'misc' => 5200.00],
-            'Grade 2'  => ['tuition' => 24748.00, 'misc' => 5200.00],
-            'Grade 3'  => ['tuition' => 25748.00, 'misc' => 5500.00],
-            'Grade 4'  => ['tuition' => 26748.00, 'misc' => 5800.00],
-            'Grade 5'  => ['tuition' => 26748.00, 'misc' => 5800.00],
-            'Grade 6'  => ['tuition' => 26748.00, 'misc' => 5800.00],
-            'Grade 7'  => ['tuition' => 31700.00, 'misc' => 7500.00],
-            'Grade 8'  => ['tuition' => 31700.00, 'misc' => 7500.00],
-            'Grade 9'  => ['tuition' => 31700.00, 'misc' => 8200.00],
-            'Grade 10' => ['tuition' => 31700.00, 'misc' => 8200.00],
-            'Grade 11' => ['tuition' => 15000.00, 'misc' => 9500.00],
-            'Grade 12' => ['tuition' => 15000.00, 'misc' => 10200.00],
-        ];
-
-        $rows = [];
-
-        foreach ($feesPerGrade as $grade => $fees) {
+        foreach ($feeStructure as $gradeLevel => $fees) {
             foreach ($terms as $term) {
-                $rows[] = [
-                    'grade_level' => $grade,
-                    'term'    => $term,
-                    'tuition_fee' => $fees['tuition'],
-                    'misc_fee'    => $fees['misc'],
-                    'school_year' => $schoolYear,
-                    'created_at'  => now(),
-                    'updated_at'  => now(),
-                ];
+                FeeSchedule::updateOrCreate(
+                    [
+                        'grade_level' => $gradeLevel,
+                        'term' => $term,
+                        'school_year' => $schoolYear,
+                    ],
+                    [
+                        'tuition_fee' => $fees['tuition'] / 3,
+                        'misc_fee' => $fees['misc'] / 3,
+                        'misc_fee_items' => json_encode([
+                            'books' => round($fees['misc'] * 0.4 / 3, 2),
+                            'uniform' => round($fees['misc'] * 0.2 / 3, 2),
+                            'id' => round($fees['misc'] * 0.1 / 3, 2),
+                            'miscellaneous' => round($fees['misc'] * 0.3 / 3, 2),
+                        ]),
+                    ]
+                );
             }
         }
-
-        DB::table('fee_schedules')->where('school_year', $schoolYear)->delete();
-        DB::table('fee_schedules')->insert($rows);
     }
 }

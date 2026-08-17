@@ -118,6 +118,9 @@
                             @if($student->ledger->discount_type)
                             <span class="text-xs">({{ ucfirst($student->ledger->discount_type) }})</span>
                             @endif
+                            @if($student->ledger->total_assessed > 0)
+                            <span class="text-xs text-blue-500">{{ round($student->ledger->discount_applied / $student->ledger->total_assessed * 100) }}%</span>
+                            @endif
                         </span>
                         <span class="font-semibold text-blue-700">-₱ {{ number_format($student->ledger->discount_applied, 2) }}</span>
                     </div>

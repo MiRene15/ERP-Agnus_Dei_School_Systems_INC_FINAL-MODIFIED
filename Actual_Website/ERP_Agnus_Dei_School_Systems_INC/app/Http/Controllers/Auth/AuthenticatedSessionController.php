@@ -35,10 +35,6 @@ class AuthenticatedSessionController extends Controller
 
         log_activity($user, 'Login', 'User logged in successfully.');
 
-        if (!$user->first_login_at) {
-            return redirect()->route('password.force');
-        }
-
         $role = $user->role_id;
         $url = match($role) {
             1 => '/admin/dashboard',

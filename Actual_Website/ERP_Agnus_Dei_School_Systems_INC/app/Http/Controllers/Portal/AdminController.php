@@ -13,7 +13,7 @@ class AdminController extends Controller
     public function index()
     {
         $pendingConfirmations = StudentLedger::whereNull('it_confirmed_at')
-            ->where('clearance_status', 'Cleared')
+            ->where('total_paid', '>', 0)
             ->with('student.user')
             ->get();
 
@@ -29,7 +29,7 @@ class AdminController extends Controller
     public function pendingAccounts()
     {
         $pendingConfirmations = StudentLedger::whereNull('it_confirmed_at')
-            ->where('clearance_status', 'Cleared')
+            ->where('total_paid', '>', 0)
             ->with('student.user', 'student.enrollments.section')
             ->get();
 
@@ -38,14 +38,32 @@ class AdminController extends Controller
 
     public function confirmAccount(StudentLedger $ledger)
     {
-        if ($ledger->clearance_status !== 'Cleared') {
-            return back()->with('error', 'Student must have cleared payments before IT confirmation.');
-        }
-
         $ledger->it_confirmed_at = now();
+        $ledger->clearance_status = 'Cleared';
         $ledger->save();
 
         return back()->with('success', 'Account confirmed for ' . $ledger->student->first_name . ' ' . $ledger->student->last_name . '.');
+    }
+
+    public function confirmBatch(Request $request)
+    {
+        $data = $request->validate([
+            'ledger_ids' => 'required|array|min:1',
+            'ledger_ids.*' => 'exists:student_ledgers,id',
+        ]);
+
+        $count = 0;
+        StudentLedger::whereIn('id', $data['ledger_ids'])
+            ->whereNull('it_confirmed_at')
+            ->where('total_paid', '>', 0)
+            ->each(function ($ledger) use (&$count) {
+                $ledger->it_confirmed_at = now();
+                $ledger->clearance_status = 'Cleared';
+                $ledger->save();
+                $count++;
+            });
+
+        return back()->with('success', "{$count} student account(s) confirmed successfully.");
     }
 
     public function settings()

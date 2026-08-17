@@ -20,6 +20,26 @@
     </p>
 </div>
 
+@if(!auth()->user()->has_seen_welcome)
+<div x-data="{ show: true }" x-show="show" x-transition class="mb-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+    <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="flex-1">
+            <h3 class="font-bold text-gray-900">Welcome to your Student Portal!</h3>
+            <p class="text-sm text-gray-600 mt-1">Here you can view your class schedule, check your Statement of Account, download your Report Card and COR. Use the sidebar to navigate between pages.</p>
+            <div class="flex gap-2 mt-3">
+                <a href="{{ route('student.schedule') }}" class="text-xs font-semibold text-blue-700 hover:text-blue-900 underline">View Schedule &rarr;</a>
+                <a href="{{ route('student.ledger') }}" class="text-xs font-semibold text-blue-700 hover:text-blue-900 underline">Check Account &rarr;</a>
+            </div>
+        </div>
+        <button @click="show = false; fetch('/dismiss-welcome', {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'}})" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+</div>
+@endif
 @if(session('success'))
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
@@ -37,9 +57,7 @@
 </div>
 @endif
 
-{{-- ═══════════════════════════════════════════════════════════════ --}}
 {{-- NO ENROLLMENT STATE --}}
-{{-- ═══════════════════════════════════════════════════════════════ --}}
 @if(!$student->student_number && !$pendingAdmission)
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center gap-4">
@@ -82,9 +100,7 @@
         </div>
     </div>
 
-{{-- ═══════════════════════════════════════════════════════════════ --}}
 {{-- ENROLLED STATE: STATS + BUTTONS --}}
-{{-- ═══════════════════════════════════════════════════════════════ --}}
 @elseif($activeEnrollment)
     {{-- Stat Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -134,20 +150,14 @@
     </div>
 
     {{-- Quick Action Buttons --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <a href="#grades" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col items-center gap-2 hover:shadow-md transition">
-            <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-            </div>
-            <span class="text-sm font-medium text-gray-700">My Grades</span>
-        </a>
-        <a href="#schedule" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col items-center gap-2 hover:shadow-md transition">
+    <div class="grid grid-cols-4 gap-3">
+        <a href="{{ route('student.schedule') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col items-center gap-2 hover:shadow-md transition">
             <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
                 <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </div>
             <span class="text-sm font-medium text-gray-700">Schedule</span>
         </a>
-        <a href="#ledger" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col items-center gap-2 hover:shadow-md transition">
+        <a href="{{ route('student.ledger') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col items-center gap-2 hover:shadow-md transition">
             <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
                 <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
             </div>
@@ -166,170 +176,5 @@
             <span class="text-sm font-medium text-gray-700">COR</span>
         </a>
     </div>
-
-    {{-- ═══════════════════════════════════════════════════════════ --}}
-    {{-- CLASS SCHEDULE — Column Layout --}}
-    {{-- ═══════════════════════════════════════════════════════════ --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" id="schedule" x-data="scheduleManager()">
-        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-            <svg class="w-5 h-5 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            Class Schedule
-        </h3>
-        @if($activeEnrollment->subjects->isNotEmpty())
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="text-left py-3 px-3 font-semibold text-gray-600 border border-gray-200">Time</th>
-                        <th class="text-left py-3 px-3 font-semibold text-gray-600 border border-gray-200">Subject - Teacher</th>
-                        @foreach(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $day)
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border border-gray-200">{{ substr($day, 0, 3) }}</th>
-                        @endforeach
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($scheduleSlots as $slot)
-                    <tr class="border-b border-gray-100">
-                        <td class="py-3 px-3 font-medium text-gray-700 border border-gray-200 text-xs whitespace-nowrap">{{ $slot['time'] }}</td>
-                        <td class="py-3 px-3 text-gray-600 border border-gray-200 text-xs">{{ $slot['label'] }}</td>
-                        @foreach(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'] as $day)
-                        <td class="py-3 px-2 text-center border border-gray-200">
-                            @if(isset($slot['days'][$day]))
-                                <div class="text-xs font-medium text-gray-900">{{ $slot['days'][$day]['subject'] }}</div>
-                                <div class="text-xs text-gray-500">{{ $slot['days'][$day]['teacher'] }}</div>
-                            @else
-                                <span class="text-gray-300">—</span>
-                            @endif
-                        </td>
-                        @endforeach
-                    </tr>
-                    @endforeach
-                    @if(empty($scheduleSlots))
-                    <tr>
-                        <td colspan="8" class="py-6 text-center text-sm text-gray-400 border border-gray-200">No schedules set.</td>
-                    </tr>
-                    @endif
-                </tbody>
-            </table>
-        </div>
-        @else
-        <p class="text-sm text-gray-500 text-center py-4">No subjects assigned yet.</p>
-        @endif
-    </div>
-
-    {{-- ═══════════════════════════════════════════════════════════ --}}
-    {{-- GRADES — Per-Term Filter --}}
-    {{-- ═══════════════════════════════════════════════════════════ --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6" id="grades" x-data="{ selectedTerm: 'all' }">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900 flex items-center">
-                <svg class="w-5 h-5 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                My Grades
-            </h3>
-            <select x-model="selectedTerm" class="rounded-lg border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500">
-                <option value="all">All Terms</option>
-                <option value="1st Term">1st Term</option>
-                <option value="2nd Term">2nd Term</option>
-                <option value="3rd Term">3rd Term</option>
-            </select>
-        </div>
-        @if($grades->isNotEmpty())
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="text-left py-3 px-3 font-medium text-gray-600 border border-gray-200">Subject</th>
-                        <template x-for="period in (selectedTerm === 'all' ? @js($gradingPeriods) : [selectedTerm])" :key="period">
-                            <th class="text-center py-3 px-2 font-medium text-gray-600 border border-gray-200" x-text="period"></th>
-                        </template>
-                        <th class="text-center py-3 px-2 font-medium text-gray-600 border border-gray-200">Final</th>
-                        <th class="text-center py-3 px-2 font-medium text-gray-600 border border-gray-200">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($grades as $grade)
-                    <tr class="border-b border-gray-100">
-                        <td class="py-3 px-3 font-medium text-gray-900 border border-gray-200">{{ $grade->schoolClass->subject->name ?? 'N/A' }}</td>
-                        @foreach($gradingPeriods as $period)
-                            @php
-                                $g = $grades->where('schoolClass.subject.name', $grade->schoolClass->subject->name)->where('grading_period', $period)->first();
-                            @endphp
-                            <td class="py-3 px-2 text-center text-gray-700 border border-gray-200" x-show="selectedTerm === 'all' || selectedTerm === @js($period)">
-                                {{ $g?->final_grade ?? '—' }}
-                            </td>
-                        @endforeach
-                        <td class="py-3 px-2 text-center font-semibold text-gray-900 border border-gray-200">{{ $grade->final_grade ?? '—' }}</td>
-                        <td class="py-3 px-2 text-center border border-gray-200">
-                            @if($grade->final_grade)
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $grade->final_grade >= 75 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                                {{ $grade->final_grade >= 75 ? 'Passed' : 'Failed' }}
-                            </span>
-                            @else
-                            <span class="text-gray-400">—</span>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        @else
-        <p class="text-sm text-gray-500 text-center py-4">No grades available yet.</p>
-        @endif
-    </div>
-
-    {{-- ═══════════════════════════════════════════════════════════ --}}
-    {{-- STATEMENT OF ACCOUNT --}}
-    {{-- ═══════════════════════════════════════════════════════════ --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" id="ledger">
-        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-            <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Statement of Account
-        </h3>
-        @if($student->ledger)
-        <div class="space-y-3 text-sm">
-            <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                <span class="text-gray-600">Payment Plan</span>
-                <span class="font-medium text-gray-900">{{ ucfirst($student->ledger->payment_plan) }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                <span class="text-gray-600">Total Assessed</span>
-                <span class="font-medium text-gray-900">₱ {{ number_format($student->ledger->total_assessed, 2) }}</span>
-            </div>
-            @if($student->ledger->discount_applied > 0)
-            <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                <span class="text-gray-600">Discount ({{ ucfirst($student->ledger->discount_type) }})</span>
-                <span class="font-medium text-green-600">-₱ {{ number_format($student->ledger->discount_applied, 2) }}</span>
-            </div>
-            @endif
-            <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                <span class="text-gray-600">Total Paid</span>
-                <span class="font-medium text-green-600">₱ {{ number_format($student->ledger->total_paid, 2) }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2">
-                <span class="text-gray-600 font-medium">Balance</span>
-                <span class="font-bold text-lg {{ $student->ledger->balance > 0 ? 'text-red-600' : 'text-green-600' }}">₱ {{ number_format($student->ledger->balance, 2) }}</span>
-            </div>
-            <div class="flex justify-between items-center py-2">
-                <span class="text-gray-600">IT Confirmation</span>
-                <span class="font-medium {{ $student->ledger->it_confirmed_at ? 'text-green-600' : 'text-yellow-600' }}">
-                    {{ $student->ledger->it_confirmed_at ? 'Confirmed' : 'Pending' }}
-                </span>
-            </div>
-        </div>
-        @else
-        <p class="text-sm text-gray-500 text-center py-4">No payment records yet.</p>
-        @endif
-    </div>
 @endif
-
-<script>
-function scheduleManager() {
-    return {
-        init() {
-            // Schedule is server-rendered, this component is just a placeholder for Alpine
-        }
-    }
-}
-</script>
 @endsection

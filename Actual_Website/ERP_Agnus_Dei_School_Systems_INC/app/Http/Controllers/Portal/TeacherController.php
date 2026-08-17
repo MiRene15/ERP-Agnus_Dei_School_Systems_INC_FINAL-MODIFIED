@@ -8,6 +8,7 @@ use App\Models\Classes;
 use App\Models\Enrollment;
 use App\Models\Grade;
 use App\Models\Schedule;
+use App\Models\Student;
 use App\Models\User;
 use App\Mail\GradesSubmittedMail;
 use Illuminate\Support\Facades\Mail;
@@ -142,7 +143,7 @@ class TeacherController extends Controller
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $selectedPeriod = request('grading_period', $gradingPeriods[0]);
 
-        $assessmentTypes = ['Written Work', 'Performance Task', 'Semestral Assessment'];
+        $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
 
         $existingAssessments = Assessment::where('class_id', $class->id)
             ->where('grading_period', $selectedPeriod)
@@ -162,7 +163,7 @@ class TeacherController extends Controller
             'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
             'assessments' => 'required|array',
             'assessments.*' => 'required|array',
-            'assessments.*.*.type' => 'required|string|in:Written Work,Performance Task,Semestral Assessment',
+            'assessments.*.*.type' => 'required|string|in:Written Work,Quiz,Seatwork,Exam',
             'assessments.*.*.title' => 'nullable|string|max:255',
             'assessments.*.*.raw_score' => 'nullable|numeric|min:0',
             'assessments.*.*.max_score' => 'nullable|numeric|min:0',
@@ -224,5 +225,253 @@ class TeacherController extends Controller
         }
 
         return view('portal.teacher.schedule', compact('classes', 'weekDays', 'schedulesByDay'));
+    }
+
+    // ─── NEW SUB-TAB: List of Classes (Master List) ─────────────────────
+
+    public function classList()
+    {
+        $teacherId = auth()->id();
+        $classes = Classes::with('subject')
+            ->where('teacher_id', $teacherId)
+            ->where('school_year', active_school_year())
+            ->where('status', 'active')
+            ->get();
+
+        return view('portal.teacher.class-list', compact('classes'));
+    }
+
+    public function classStudents(Classes $class)
+    {
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $class->load('subject', 'enrollments.student.user');
+
+        $activeEnrollments = $class->enrollments->filter(function ($e) {
+            return $e->status === 'Active';
+        });
+
+        return view('portal.teacher.class-students', compact('class', 'activeEnrollments'));
+    }
+
+    // ─── NEW SUB-TAB: Grade Assessment ──────────────────────────────────
+
+    public function gradeAssessment()
+    {
+        $teacherId = auth()->id();
+        $classes = Classes::with('subject')
+            ->where('teacher_id', $teacherId)
+            ->where('school_year', active_school_year())
+            ->where('status', 'active')
+            ->get();
+
+        $selectedClassId = request('class_id');
+        $selectedPeriod = request('grading_period', '1st Term');
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+        $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+
+        $class = null;
+        $activeEnrollments = collect();
+        $existingAssessments = collect();
+
+        if ($selectedClassId) {
+            $class = Classes::with('subject')->find($selectedClassId);
+            if ($class && $class->teacher_id === auth()->id()) {
+                $class->load('enrollments.student');
+                $activeEnrollments = $class->enrollments->filter(fn($e) => $e->status === 'Active');
+                $existingAssessments = Assessment::where('class_id', $class->id)
+                    ->where('grading_period', $selectedPeriod)
+                    ->get()
+                    ->groupBy('enrollment_id');
+            } else {
+                $class = null;
+            }
+        }
+
+        return view('portal.teacher.grade-assessment', compact(
+            'classes', 'class', 'activeEnrollments', 'existingAssessments',
+            'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes'
+        ));
+    }
+
+    public function gradeAssessmentStudent(Classes $class, $enrollmentId)
+    {
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $class->load('subject');
+        $enrollment = Enrollment::with('student')->findOrFail($enrollmentId);
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+        $selectedPeriod = request('grading_period', '1st Term');
+        $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+
+        $existingAssessments = Assessment::where('class_id', $class->id)
+            ->where('enrollment_id', $enrollmentId)
+            ->where('grading_period', $selectedPeriod)
+            ->get()
+            ->groupBy('type');
+
+        return view('portal.teacher.grade-assessment-student', compact(
+            'class', 'enrollment', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments'
+        ));
+    }
+
+    public function storeGradeAssessmentStudent(Request $request, Classes $class, $enrollmentId)
+    {
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
+            'assessments' => 'required|array',
+            'assessments.*.type' => 'required|string|in:Written Work,Quiz,Seatwork,Exam',
+            'assessments.*.title' => 'nullable|string|max:255',
+            'assessments.*.raw_score' => 'nullable|numeric|min:0',
+            'assessments.*.max_score' => 'nullable|numeric|min:0',
+        ]);
+
+        Assessment::where('class_id', $class->id)
+            ->where('enrollment_id', $enrollmentId)
+            ->where('grading_period', $data['grading_period'])
+            ->delete();
+
+        $inserts = [];
+        foreach ($data['assessments'] as $item) {
+            if (empty($item['title']) && empty($item['raw_score'])) {
+                continue;
+            }
+            $inserts[] = [
+                'enrollment_id' => $enrollmentId,
+                'class_id' => $class->id,
+                'type' => $item['type'],
+                'title' => $item['title'] ?? '',
+                'raw_score' => $item['raw_score'] ?? 0,
+                'max_score' => $item['max_score'] ?? 0,
+                'grading_period' => $data['grading_period'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if (!empty($inserts)) {
+            Assessment::insert($inserts);
+        }
+
+        return back()->with('success', 'Assessment scores saved for this student.');
+    }
+
+    // ─── NEW SUB-TAB: Computed Grades ───────────────────────────────────
+
+    public function computedGrades()
+    {
+        $teacherId = auth()->id();
+        $classes = Classes::with('subject')
+            ->where('teacher_id', $teacherId)
+            ->where('school_year', active_school_year())
+            ->where('status', 'active')
+            ->get();
+
+        $selectedClassId = request('class_id');
+        $selectedPeriod = request('grading_period', '1st Term');
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+
+        $class = null;
+        $computedGrades = collect();
+
+        if ($selectedClassId) {
+            $class = Classes::with('subject')->find($selectedClassId);
+            if ($class && $class->teacher_id === auth()->id()) {
+                $class->load('enrollments.student');
+                $activeEnrollments = $class->enrollments->filter(fn($e) => $e->status === 'Active');
+
+                $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+                $weights = [
+                    'Written Work' => 0.25,
+                    'Quiz' => 0.25,
+                    'Seatwork' => 0.25,
+                    'Exam' => 0.25,
+                ];
+
+                $computedGrades = $activeEnrollments->map(function ($enrollment) use ($class, $selectedPeriod, $assessmentTypes, $weights) {
+                    $assessments = Assessment::where('class_id', $class->id)
+                        ->where('enrollment_id', $enrollment->id)
+                        ->where('grading_period', $selectedPeriod)
+                        ->get();
+
+                    $categoryScores = [];
+                    foreach ($assessmentTypes as $type) {
+                        $typeAssessments = $assessments->where('type', $type);
+                        $totalRaw = $typeAssessments->sum('raw_score');
+                        $totalMax = $typeAssessments->sum('max_score');
+                        $categoryScores[$type] = [
+                            'raw' => $totalRaw,
+                            'max' => $totalMax,
+                            'percentage' => $totalMax > 0 ? round(($totalRaw / $totalMax) * 100, 2) : 0,
+                        ];
+                    }
+
+                    $weightedSum = 0;
+                    foreach ($categoryScores as $type => $scores) {
+                        $weightedSum += $scores['percentage'] * ($weights[$type] ?? 0.25);
+                    }
+
+                    $existingGrade = Grade::where('class_id', $class->id)
+                        ->where('enrollment_id', $enrollment->id)
+                        ->where('grading_period', $selectedPeriod)
+                        ->first();
+
+                    return [
+                        'enrollment_id' => $enrollment->id,
+                        'student' => $enrollment->student,
+                        'categories' => $categoryScores,
+                        'computed_grade' => round($weightedSum, 2),
+                        'final_grade' => $existingGrade?->final_grade,
+                        'status' => $existingGrade?->status,
+                    ];
+                });
+            } else {
+                $class = null;
+            }
+        }
+
+        return view('portal.teacher.computed-grades', compact(
+            'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId'
+        ));
+    }
+
+    public function batchSubmitGrades(Request $request)
+    {
+        $data = $request->validate([
+            'class_id' => 'required|exists:classes,id',
+            'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
+            'grades' => 'required|array',
+            'grades.*.enrollment_id' => 'required|exists:enrollments,id',
+            'grades.*.final_grade' => 'required|numeric|min:0|max:100',
+        ]);
+
+        $class = Classes::findOrFail($data['class_id']);
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403);
+        }
+
+        foreach ($data['grades'] as $gradeData) {
+            Grade::updateOrCreate(
+                [
+                    'enrollment_id' => $gradeData['enrollment_id'],
+                    'class_id' => $class->id,
+                    'grading_period' => $data['grading_period'],
+                ],
+                [
+                    'final_grade' => $gradeData['final_grade'],
+                    'status' => 'Pending',
+                ]
+            );
+        }
+
+        return back()->with('success', count($data['grades']) . ' grade(s) saved for ' . $data['grading_period'] . '.');
     }
 }

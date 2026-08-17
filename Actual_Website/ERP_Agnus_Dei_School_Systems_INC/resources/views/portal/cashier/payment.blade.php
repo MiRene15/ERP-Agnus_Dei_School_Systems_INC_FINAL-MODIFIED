@@ -154,7 +154,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-semibold text-gray-900 mb-4">Process Payment</h3>
             <form method="POST" action="{{ route('cashier.payment.process', $student) }}" enctype="multipart/form-data"
-                  x-data="{ discountType: '{{ $discountAlreadyApplied ? ($student->ledger->discount_type ?? 'other') : ($autoDiscountType ?? '') }}', totalAssessed: {{ $totalAssessed }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountAlreadyApplied ? $student->ledger->discount_applied : $autoDiscountAmount }}, isAutoDiscount: {{ ($autoDiscountType && !$discountAlreadyApplied) ? 'true' : 'false' }}, autoDiscountLabel: '{{ $autoDiscountType === 'esc' ? 'ESC Grant (Tuition Waived)' : ($autoDiscountType === 'honor' ? 'Honor Discount (10%)' : ($autoDiscountType === 'sibling' ? 'Sibling Discount (5%)' : '')) }}' }">
+                  x-data="{ discountType: '{{ $discountAlreadyApplied ? ($student->ledger->discount_type ?? 'other') : ($autoDiscountType ?? '') }}', totalAssessed: {{ $totalAssessed }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountAlreadyApplied ? $student->ledger->discount_applied : $autoDiscountAmount }}, discountPercent: {{ $discountAlreadyApplied ? round($student->ledger->discount_applied / max($totalAssessed, 1) * 100) : (($autoDiscountType === 'honor') ? 10 : (($autoDiscountType === 'sibling') ? 5 : 0)) }}, isAutoDiscount: {{ ($autoDiscountType && !$discountAlreadyApplied) ? 'true' : 'false' }}, autoDiscountLabel: '{{ $autoDiscountType === 'esc' ? 'ESC Grant (Tuition Waived)' : ($autoDiscountType === 'honor' ? 'Honor Discount (10%)' : ($autoDiscountType === 'sibling' ? 'Sibling Discount (5%)' : '')) }}' }">
                 @csrf
                 <div class="space-y-4">
                     <div>
@@ -229,21 +229,32 @@
                     </div>
                     @else
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
-                        <select name="discount_type" x-model="discountType"
-                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                            <option value="">None</option>
-                            @foreach($discountTypes as $val => $label)
-                            <option value="{{ $val }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount Amount (₱)</label>
-                        <input type="number" name="discount_amount" step="0.01" min="0" x-model="discountAmount"
-                               placeholder="0.00"
-                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        @error('discount_amount') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount</label>
+                        <div class="flex gap-2">
+                            <button type="button" @click="discountPercent = 0; discountAmount = 0; discountType = '';"
+                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
+                                    :class="discountPercent === 0 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
+                                None
+                            </button>
+                            <button type="button" @click="discountPercent = 30; discountAmount = Math.round(totalAssessed * 0.30 * 100) / 100; discountType = 'other';"
+                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
+                                    :class="discountPercent === 30 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
+                                30%
+                            </button>
+                            <button type="button" @click="discountPercent = 50; discountAmount = Math.round(totalAssessed * 0.50 * 100) / 100; discountType = 'other';"
+                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
+                                    :class="discountPercent === 50 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
+                                50%
+                            </button>
+                            <button type="button" @click="discountPercent = 100; discountAmount = totalAssessed; discountType = 'other';"
+                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
+                                    :class="discountPercent === 100 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
+                                100%
+                            </button>
+                        </div>
+                        <input type="hidden" name="discount_type" :value="discountType">
+                        <input type="hidden" name="discount_amount" :value="discountAmount">
+                        <p class="text-xs text-blue-600 mt-1" x-show="discountPercent > 0" x-text="discountPercent + '% of ₱ ' + totalAssessed.toFixed(2) + ' = -₱ ' + discountAmount.toFixed(2)"></p>
                     </div>
                     @endif
                     <div class="text-sm bg-gray-50 rounded-lg p-3">
@@ -297,4 +308,33 @@
         @endif
     </div>
 </div>
+
+@if(session('payment_success'))
+@php $ps = session('payment_success'); @endphp
+<div x-data="{ show: true }" x-show="show" x-cloak
+     class="fixed inset-0 z-[999] flex items-center justify-center"
+     style="background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-8 text-center" @click.stop>
+        <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-1">Payment Successful!</h3>
+        <p class="text-sm text-gray-500 mb-1">₱{{ number_format($ps['amount'], 2) }} received from <strong>{{ $ps['student_name'] }}</strong></p>
+        <p class="text-xs text-gray-400 mb-6">Receipt: {{ $ps['receipt_number'] }}</p>
+        <div class="flex gap-3">
+            <a href="{{ route('cashier.payments') }}"
+               class="flex-1 py-2.5 rounded-lg text-sm font-semibold border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                Done
+            </a>
+            <a href="{{ route('cashier.receipt.print', $ps['payment_id']) }}" target="_blank"
+               class="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90"
+               style="background: var(--navy);">
+                Print Receipt
+            </a>
+        </div>
+    </div>
+</div>
+@endif
 @endsection

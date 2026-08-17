@@ -34,10 +34,6 @@
                         <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                     </button>
                 </div>
-                <div style="display: flex; align-items: center; margin-top: 8px;">
-                    <input type="checkbox" id="showPassword" style="width: 16px; height: 16px; accent-color: var(--primary-navy); margin-right: 8px;">
-                    <label for="showPassword" style="font-size: 0.9rem; color: var(--text-muted); cursor: pointer;">Show password</label>
-                </div>
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
             </div>
 
@@ -73,32 +69,15 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const passwordInput = document.getElementById('password');
-    const showCheckbox = document.getElementById('showPassword');
     const eyeOpen = document.getElementById('eyeOpen');
     const eyeClosed = document.getElementById('eyeClosed');
 
-    function syncEye() {
-        if (showCheckbox.checked) {
-            eyeOpen.style.display = 'none';
-            eyeClosed.style.display = '';
-        } else {
-            eyeOpen.style.display = '';
-            eyeClosed.style.display = 'none';
-        }
-    }
-
-    showCheckbox.addEventListener('change', function () {
-        passwordInput.type = showCheckbox.checked ? 'text' : 'password';
-        syncEye();
-    });
-
     document.getElementById('togglePassword').addEventListener('click', function () {
-        showCheckbox.checked = !showCheckbox.checked;
-        passwordInput.type = showCheckbox.checked ? 'text' : 'password';
-        syncEye();
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        eyeOpen.style.display = isPassword ? 'none' : '';
+        eyeClosed.style.display = isPassword ? '' : 'none';
     });
-
-    syncEye();
 });
 </script>
 @endsection

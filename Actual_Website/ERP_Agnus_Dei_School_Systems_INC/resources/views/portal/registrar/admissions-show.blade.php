@@ -21,6 +21,16 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
+<script type="application/json" id="requirements-data">
+{!! json_encode($admission->requirements->map(fn($r) => ['id' => $r->id, 'document_type' => $r->document_type, 'status' => $r->status])) !!}
+</script>
+<script type="application/json" id="classes-data">
+{!! json_encode($classes->map(fn($c) => ['id' => $c->id, 'subject' => $c->subject->name ?? 'N/A', 'teacher' => $c->teacher->name ?? 'No teacher', 'section' => $c->section])) !!}
+</script>
+<script type="application/json" id="section-map">
+{!! json_encode($sections->pluck('section_name', 'id')->toArray()) !!}
+</script>
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -57,39 +67,7 @@
 
         {{-- Requirements Checklist --}}
         @if($admission->requirements->isNotEmpty())
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
-             x-data="{
-                requirements: @js($admission->requirements->map(fn($r) => ['id' => $r->id, 'document_type' => $r->document_type, 'status' => $r->status])),
-                get verifiedCount() { return this.requirements.filter(r => r.status === 'Verified').length },
-                get totalCount() { return this.requirements.length },
-                get allVerified() { return this.verifiedCount === this.totalCount },
-                toggleVerify(reqId, currentStatus) {
-                    const form = document.getElementById('verify-form-' + reqId);
-                    const hiddenInput = form.querySelector('input[name=verify]');
-                    const newVal = currentStatus === 'Verified' ? '0' : '1';
-                    hiddenInput.value = newVal;
-                    const formData = new FormData(form);
-                    fetch(form.action, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                        .then(r => r.json())
-                        .then(data => {
-                            if (data.success) {
-                                const req = this.requirements.find(r => r.id === reqId);
-                                if (req) req.status = data.status;
-                            }
-                        });
-                },
-                verifyAll() {
-                    const form = document.getElementById('verify-all-form');
-                    const formData = new FormData(form);
-                    fetch(form.action, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                        .then(r => r.json())
-                        .then(data => {
-                            if (data.success) {
-                                this.requirements.forEach(r => r.status = 'Verified');
-                            }
-                        });
-                }
-             }">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" x-data="requirementsChecklist()">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-gray-900">Requirements Checklist</h3>
                 <div class="flex items-center gap-3">
@@ -125,14 +103,14 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <a href="{{ $req->signed_url }}" target="_blank"
+                        <a href="{{ route('registrar.requirements.view', $req->id) }}" target="_blank"
                            class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
                         @if($admission->status === 'Pending')
                         <form id="verify-form-{{ $req->id }}" method="POST"
                               action="{{ route('registrar.admissions.verify-requirement', $req) }}" class="inline">
                             @csrf
                             <input type="hidden" name="verify" value="{{ $req->status === 'Verified' ? '0' : '1' }}">
-                            <button type="button" @click="toggleVerify({{ $req->id }}, requirements.find(r => r.id === {{ $req->id }}).status)"
+                            <button type="button" @click="toggleVerify({{ $req->id }})"
                                     class="text-sm font-medium px-3 py-1 rounded-lg transition"
                                     :style="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'background: #fee2e2; color: #dc2626;' : 'background: #dcfce7; color: #16a34a;'"
                                     x-text="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'Unverify' : 'Verify'">
@@ -169,7 +147,7 @@
             </div>
 
             @if($admission->status === 'Pending')
-            <form method="POST" action="{{ route('registrar.admissions.approve', $admission) }}" class="space-y-3" x-data="{ selectedSection: '', selectedSectionGrade: '' }">
+            <form method="POST" action="{{ route('registrar.admissions.approve', $admission) }}" class="space-y-3" x-data="approveForm()">
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Assign Section</label>
@@ -189,20 +167,25 @@
                 {{-- Subject Assignment --}}
                 <div x-show="selectedSection !== ''" x-cloak>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Assign Subjects</label>
-                    @if($classes->isEmpty())
-                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">No classes available for {{ $admission->grade_level }}. Please create subjects and classes first.</div>
-                    @else
-                    <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                        @foreach($classes as $class)
-                        <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm">
-                            <input type="checkbox" name="subject_ids[]" value="{{ $class->id }}"
+                    <template x-if="filteredClasses.length === 0">
+                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">No classes found for this section.</div>
+                    </template>
+                    <div class="space-y-1 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                        <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm font-semibold text-gray-700 border-b border-gray-100 mb-1">
+                            <input type="checkbox" :checked="allSelected" @click="toggleAll()"
                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                            <span class="font-medium text-gray-700">{{ $class->subject->name ?? 'N/A' }}</span>
-                            <span class="text-xs text-gray-400 ml-auto">{{ $class->teacher->name ?? 'No teacher' }}</span>
+                            <span>Select All</span>
+                            <span class="text-xs text-gray-400 ml-auto" x-text="selectedIds.length + ' / ' + filteredClasses.length + ' selected'"></span>
                         </label>
-                        @endforeach
+                        <template x-for="cls in filteredClasses" :key="cls.id">
+                            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm">
+                                <input type="checkbox" name="subject_ids[]" :value="cls.id" :checked="isSelected(cls.id)" @change="toggleId(cls.id)"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="font-medium text-gray-700" x-text="cls.subject"></span>
+                                <span class="text-xs text-gray-400 ml-auto" x-text="cls.teacher"></span>
+                            </label>
+                        </template>
                     </div>
-                    @endif
                 </div>
 
                 <button type="submit"
@@ -245,4 +228,65 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    const reqData = JSON.parse(document.getElementById('requirements-data').textContent);
+    const clsData = JSON.parse(document.getElementById('classes-data').textContent);
+    const secMap = JSON.parse(document.getElementById('section-map').textContent);
+
+    Alpine.data('requirementsChecklist', () => ({
+        requirements: reqData,
+        get verifiedCount() { return this.requirements.filter(r => r.status === 'Verified').length },
+        get totalCount() { return this.requirements.length },
+        toggleVerify(reqId) {
+            const form = document.getElementById('verify-form-' + reqId);
+            const hiddenInput = form.querySelector('input[name=verify]');
+            const req = this.requirements.find(r => r.id === reqId);
+            const newVal = req.status === 'Verified' ? '0' : '1';
+            hiddenInput.value = newVal;
+            const formData = new FormData(form);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            fetch(form.action, {
+                method: 'POST', body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken }
+            })
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(data => { if (data.success) req.status = data.status; })
+            .catch(err => { console.error('Verify failed:', err); alert('Verify failed: ' + err.message); });
+        },
+        verifyAll() {
+            const form = document.getElementById('verify-all-form');
+            const formData = new FormData(form);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            fetch(form.action, {
+                method: 'POST', body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken }
+            })
+            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(data => { if (data.success) this.requirements.forEach(r => r.status = 'Verified'); })
+            .catch(err => { console.error('Verify All failed:', err); alert('Verify All failed: ' + err.message); });
+        }
+    }));
+
+    Alpine.data('approveForm', () => ({
+        selectedSection: '',
+        sectionMap: secMap,
+        allClasses: clsData,
+        selectedIds: [],
+        get selectedSectionName() { return this.sectionMap[this.selectedSection] || ''; },
+        get filteredClasses() { return this.allClasses.filter(c => c.section === this.selectedSectionName); },
+        get allSelected() { return this.filteredClasses.length > 0 && this.selectedIds.length === this.filteredClasses.length; },
+        toggleAll() {
+            if (this.allSelected) { this.selectedIds = []; }
+            else { this.selectedIds = this.filteredClasses.map(c => c.id); }
+        },
+        isSelected(id) { return this.selectedIds.includes(id); },
+        toggleId(id) {
+            if (this.isSelected(id)) { this.selectedIds = this.selectedIds.filter(x => x !== id); }
+            else { this.selectedIds.push(id); }
+        }
+    }));
+});
+</script>
 @endsection

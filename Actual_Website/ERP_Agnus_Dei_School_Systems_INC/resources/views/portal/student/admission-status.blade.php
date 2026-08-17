@@ -218,7 +218,7 @@
                                 <p class="text-xs text-gray-500">{{ $req->status }}</p>
                             </div>
                         </div>
-                        <a href="{{ $req->signed_url }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
+                        <a href="{{ route('student.admission.requirements.view', $req->id) }}" target="_blank" class="text-sm text-blue-600 hover:text-blue-800 font-medium">View</a>
                     </li>
                     @endforeach
                 </ul>

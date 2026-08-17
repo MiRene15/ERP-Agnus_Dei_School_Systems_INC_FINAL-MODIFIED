@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Admission;
 use App\Models\Requirement;
-use App\Services\SupabaseStorage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class StudentAdmissionController extends Controller
 {
@@ -238,7 +238,7 @@ class StudentAdmissionController extends Controller
     {
         $student = auth()->user()->student;
         $admission = $student->admissions()->latest()->first();
-        $requirements = $admission ? $admission->requirements()->get() : collect();
+        $requirements = $admission ? $admission->requirements()->select('id', 'document_type', 'original_filename', 'mime_type', 'file_size', 'status', 'admission_id')->get() : collect();
 
         $requiredDocs = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
         $uploadedTypes = $requirements->pluck('document_type')->toArray();
@@ -261,7 +261,6 @@ class StudentAdmissionController extends Controller
             'documents.*' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
-        $supabase = new SupabaseStorage();
         $count = 0;
 
         foreach ($request->file('documents') as $documentType => $file) {
@@ -269,36 +268,53 @@ class StudentAdmissionController extends Controller
                 ->where('document_type', $documentType)
                 ->first();
 
-            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-            $path = 'requirements/' . $admission->id . '/' . $filename;
-
-            $supabase->delete($path);
-
-            $content = file_get_contents($file->getRealPath());
-            $supabase->upload($path, $content);
+            $fileData = [
+                'file_content' => DB::raw("'\\x" . bin2hex($file->getContent()) . "'::bytea"),
+                'original_filename' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'status' => 'Under Review',
+            ];
 
             if ($existing) {
-                $supabase->delete($existing->file_path);
-                $existing->update([
-                    'file_path' => $path,
-                    'original_filename' => $file->getClientOriginalName(),
-                    'file_size' => $file->getSize(),
-                    'status' => 'Under Review',
-                ]);
+                $existing->update($fileData);
             } else {
-                Requirement::create([
+                Requirement::create(array_merge($fileData, [
                     'admission_id' => $admission->id,
                     'document_type' => $documentType,
-                    'file_path' => $path,
-                    'original_filename' => $file->getClientOriginalName(),
-                    'file_size' => $file->getSize(),
-                    'status' => 'Under Review',
-                ]);
+                ]));
             }
 
             $count++;
         }
 
         return back()->with('success', $count . ' document(s) uploaded successfully.');
+    }
+
+    public function viewRequirement(Requirement $requirement)
+    {
+        $user = auth()->user();
+        $admission = $requirement->admission;
+
+        $isStudent = $user->role_id === 7 && $admission->student_id === $user->student?->id;
+        $isRegistrar = in_array($user->role_id, [2, 3]);
+
+        if (!$isStudent && !$isRegistrar) {
+            abort(403);
+        }
+
+        if (!$requirement->file_content) {
+            abort(404);
+        }
+
+        $content = $requirement->file_content;
+        if (is_resource($content)) {
+            $content = stream_get_contents($content);
+        }
+
+        return response($content, 200, [
+            'Content-Type' => $requirement->mime_type ?? 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="' . ($requirement->original_filename ?? 'document') . '"',
+        ]);
     }
 }

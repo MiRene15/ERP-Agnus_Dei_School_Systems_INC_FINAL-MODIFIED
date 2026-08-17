@@ -40,9 +40,9 @@
     </div>
 </div>
 
-<div x-data="{ open: false, ledgerId: null, discountType: 'honor', discountAmount: 0, totalAssessed: 0 }"
+<div x-data="{ open: false, ledgerId: null, discountType: 'honor', discountAmount: 0, totalAssessed: 0, discountPercent: 0 }"
      x-show="open" x-cloak class="fixed inset-0 z-50"
-     @open-discount-modal.window="ledgerId = $event.detail.id; discountType = $event.detail.type || 'honor'; discountAmount = $event.detail.amount || 0; totalAssessed = $event.detail.total; open = true;">
+     @open-discount-modal.window="ledgerId = $event.detail.id; discountType = $event.detail.type || 'honor'; discountAmount = $event.detail.amount || 0; totalAssessed = $event.detail.total; discountPercent = totalAssessed > 0 ? Math.round((discountAmount / totalAssessed) * 100) : 0; open = true;">
     <div class="fixed inset-0 bg-black/40" @click="open = false"></div>
     <div class="fixed inset-0 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" @click.stop>
@@ -52,21 +52,32 @@
                 @method('POST')
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
-                        <select name="discount_type" x-model="discountType" required
-                                class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="honor">Honor</option>
-                            <option value="sibling">Sibling</option>
-                            <option value="esc">ESC Grant</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount Amount (₱)</label>
-                        <input type="number" name="discount_amount" x-model.number="discountAmount" min="0" step="0.01"
-                               :max="totalAssessed" required
-                               class="w-full border-gray-300 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        <p class="text-xs text-gray-400 mt-1">Max: ₱<span x-text="totalAssessed.toLocaleString('en-PH', {minimumFractionDigits: 2})"></span></p>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount</label>
+                        <div class="flex gap-2">
+                            <button type="button" @click="discountPercent = 0; discountAmount = 0; discountType = 'honor';"
+                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
+                                    :class="discountPercent === 0 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
+                                None
+                            </button>
+                            <button type="button" @click="discountPercent = 30; discountAmount = Math.round(totalAssessed * 0.30 * 100) / 100; discountType = 'other';"
+                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
+                                    :class="discountPercent === 30 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
+                                30%
+                            </button>
+                            <button type="button" @click="discountPercent = 50; discountAmount = Math.round(totalAssessed * 0.50 * 100) / 100; discountType = 'other';"
+                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
+                                    :class="discountPercent === 50 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
+                                50%
+                            </button>
+                            <button type="button" @click="discountPercent = 100; discountAmount = totalAssessed; discountType = 'other';"
+                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
+                                    :class="discountPercent === 100 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
+                                100%
+                            </button>
+                        </div>
+                        <input type="hidden" name="discount_type" :value="discountType">
+                        <input type="hidden" name="discount_amount" :value="discountAmount">
+                        <p class="text-xs text-blue-600 mt-1" x-show="discountPercent > 0" x-text="discountPercent + '% of ₱' + totalAssessed.toLocaleString('en-PH', {minimumFractionDigits: 2}) + ' = -₱' + discountAmount.toLocaleString('en-PH', {minimumFractionDigits: 2})"></p>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">

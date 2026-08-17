@@ -101,10 +101,16 @@ Route::middleware('auth')->group(function () {
         return redirect($url);
     })->name('dashboard');
 
+    Route::post('/dismiss-welcome', function() {
+        auth()->user()->update(['has_seen_welcome' => true]);
+        return response()->json(['ok' => true]);
+    })->name('dismiss-welcome');
+
     Route::middleware(['role:1'])->group(function() {
         Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
         Route::get('/admin/pending-accounts', [AdminController::class, 'pendingAccounts'])->name('admin.pending-accounts');
         Route::post('/admin/confirm-account/{ledger}', [AdminController::class, 'confirmAccount'])->name('admin.confirm-account');
+        Route::post('/admin/confirm-batch', [AdminController::class, 'confirmBatch'])->name('admin.confirm-batch');
 // Staff Account Management
          Route::resource('admin/users', UserController::class)->except(['show', 'destroy'])->names('admin.users');
          Route::post('admin/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
@@ -135,6 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/registrar/admissions/{admission}/reject', [RegistrarAdmissionController::class, 'reject'])->name('registrar.admissions.reject');
         Route::post('/registrar/admissions/{admission}/verify-all', [RegistrarAdmissionController::class, 'verifyAll'])->name('registrar.admissions.verify-all');
         Route::post('/registrar/requirements/{requirement}/verify', [RegistrarAdmissionController::class, 'verifyRequirement'])->name('registrar.admissions.verify-requirement');
+        Route::get('/registrar/requirements/{requirement}/view', [StudentAdmissionController::class, 'viewRequirement'])->name('registrar.requirements.view');
         Route::get('/registrar/withdrawals', [WithdrawalController::class, 'index'])->name('registrar.withdrawals.index');
         Route::post('/registrar/withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('registrar.withdrawals.approve');
         Route::post('/registrar/withdrawals/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('registrar.withdrawals.reject');
@@ -167,6 +174,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/teacher/classes/{class}/assessments', [TeacherController::class, 'assessments'])->name('teacher.assessments');
         Route::post('/teacher/classes/{class}/assessments', [TeacherController::class, 'storeAssessments'])->name('teacher.assessments.store');
         Route::get('/teacher/schedule', [TeacherController::class, 'schedule'])->name('teacher.schedule');
+
+        // New sub-tabs
+        Route::get('/teacher/class-list', [TeacherController::class, 'classList'])->name('teacher.class-list');
+        Route::get('/teacher/class-list/{class}/students', [TeacherController::class, 'classStudents'])->name('teacher.class-list.students');
+        Route::get('/teacher/grade-assessment', [TeacherController::class, 'gradeAssessment'])->name('teacher.grade-assessment');
+        Route::get('/teacher/grade-assessment/{class}/student/{enrollment}', [TeacherController::class, 'gradeAssessmentStudent'])->name('teacher.grade-assessment.student');
+        Route::post('/teacher/grade-assessment/{class}/student/{enrollment}', [TeacherController::class, 'storeGradeAssessmentStudent'])->name('teacher.grade-assessment.student.store');
+        Route::get('/teacher/computed-grades', [TeacherController::class, 'computedGrades'])->name('teacher.computed-grades');
+        Route::post('/teacher/computed-grades/batch-submit', [TeacherController::class, 'batchSubmitGrades'])->name('teacher.computed-grades.batch-submit');
     });
 
     Route::middleware(['role:5'])->group(function() {
@@ -212,6 +228,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/student/admission/draft/discard', [StudentAdmissionController::class, 'discardDraft'])->name('student.admission.discard');
         Route::get('/student/admission/status', [StudentAdmissionController::class, 'status'])->name('student.admission.status');
         Route::post('/student/admission/requirements', [StudentAdmissionController::class, 'uploadRequirements'])->name('student.admission.requirements');
+        Route::get('/student/admission/requirements/{requirement}/view', [StudentAdmissionController::class, 'viewRequirement'])->name('student.admission.requirements.view');
         Route::get('/student/enrollment/apply', [StudentEnrollmentController::class, 'create'])->name('student.enrollment.create');
         Route::post('/student/enrollment/apply', [StudentEnrollmentController::class, 'store'])->name('student.enrollment.store');
         Route::get('/student/withdrawal', [WithdrawalController::class, 'create'])->name('student.withdrawal.create');
@@ -219,6 +236,8 @@ Route::middleware('auth')->group(function () {
         // Report Card
         Route::get('/student/report-card', [ReportCardController::class, 'studentShow'])->name('student.report-card');
         Route::get('/student/cor', [StudentController::class, 'cor'])->name('student.cor');
+        Route::get('/student/schedule', [StudentController::class, 'schedule'])->name('student.schedule');
+        Route::get('/student/ledger', [StudentController::class, 'ledger'])->name('student.ledger');
     });
 
     // ─── School Directress (role 8) ────────────────────────────

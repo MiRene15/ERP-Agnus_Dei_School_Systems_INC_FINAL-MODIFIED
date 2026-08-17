@@ -29,18 +29,6 @@ class ForceChangePasswordController extends Controller
 
         log_activity($request->user(), 'Password Changed', 'First-login password changed successfully.');
 
-        $role = $request->user()->role_id;
-        $url = match($role) {
-            1 => '/admin/dashboard',
-            2 => '/registrar/dashboard',
-            3 => '/cashier/dashboard',
-            4 => '/teacher/dashboard',
-            5 => '/librarian/dashboard',
-            6 => '/nurse/dashboard',
-            7 => '/student/dashboard',
-            default => '/dashboard',
-        };
-
-        return redirect()->to($url)->with('success', 'Your password has been updated successfully.');
+        return redirect()->back()->with('success', 'Your password has been updated successfully.');
     }
 }

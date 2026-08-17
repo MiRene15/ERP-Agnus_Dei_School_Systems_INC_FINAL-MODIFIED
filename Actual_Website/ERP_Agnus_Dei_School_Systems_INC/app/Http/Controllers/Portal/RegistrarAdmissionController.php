@@ -62,7 +62,10 @@ class RegistrarAdmissionController extends Controller
 
     public function show(Admission $admission)
     {
-        $admission->load('student.user', 'requirements');
+        $admission->load('student.user');
+        $admission->load(['requirements' => function ($q) {
+            $q->select('id', 'document_type', 'original_filename', 'mime_type', 'file_size', 'status', 'admission_id');
+        }]);
         $sections = Section::where('is_active', true)
             ->where('grade_level', $admission->grade_level)
             ->get();

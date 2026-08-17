@@ -570,7 +570,6 @@
 
     <footer>
         <p><strong>Agnus Dei School Systems, Inc.</strong> &copy; 1987 - {{ date('Y') }}. All Rights Reserved.</p>
-        <p style="font-size: 0.85rem; color: #7c77c6; margin-top: 10px;">Powered by Laravel x Agile Tech</p>
     </footer>
 
 </body>

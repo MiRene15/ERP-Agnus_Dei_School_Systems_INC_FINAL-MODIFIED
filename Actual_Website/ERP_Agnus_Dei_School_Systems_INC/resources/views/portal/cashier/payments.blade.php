@@ -57,7 +57,7 @@
                                 <td class="py-3 px-2 text-gray-600" x-text="s.legacy_lrn || '—'"></td>
                                 <td class="py-3 px-2 text-gray-700" x-text="s.enrollments?.[0]?.section?.grade_level || 'N/A'"></td>
                                 <td class="py-3 px-2">
-                                    <span class="font-medium" :class="(s.ledger?.balance ?? 0) > 0 ? 'text-red-600' : 'text-green-600'" x-text="'₱ ' + (s.ledger?.balance ?? 0).toFixed(2)"></span>
+                                    <span class="font-medium" :class="s.computed_balance > 0 ? 'text-red-600' : 'text-green-600'" x-text="'₱ ' + s.computed_balance.toFixed(2)"></span>
                                 </td>
                                 <td class="py-3 px-2 flex gap-2">
                                     <a :href="'/cashier/payment/' + s.id" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">

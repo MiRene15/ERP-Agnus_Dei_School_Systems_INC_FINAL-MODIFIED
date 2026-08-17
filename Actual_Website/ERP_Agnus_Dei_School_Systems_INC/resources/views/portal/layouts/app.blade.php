@@ -463,5 +463,21 @@
             } catch (e) {}
         }
     </script>
+
+    <!-- Scroll to Top Button -->
+    <div x-data="{ show: false }"
+         x-init="window.addEventListener('scroll', () => { show = window.scrollY > 300 })"
+         x-show="show"
+         x-transition
+         @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+         class="fixed bottom-6 right-6 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center cursor-pointer transition hover:scale-110"
+         style="background: var(--navy); color: #fff;">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
+        </svg>
+    </div>
+
+    <!-- Force Change Password Modal -->
+    @include('portal.partials.force-change-password-modal')
 </body>
 </html>

@@ -33,15 +33,33 @@ class CashierController extends Controller
                 ->whereHas('enrollments', function ($q) {
                     $q->where('status', 'Active')->where('school_year', active_school_year());
                 })
-                ->where(function ($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('student_number', 'like', "%{$search}%")
-                        ->orWhere('legacy_lrn', 'like', "%{$search}%");
-                })
-                ->with(['user', 'enrollments.section', 'ledger'])
-                ->limit(20)
-                ->get();
+            ->where(function ($q) use ($search) {
+                $q->where('first_name', 'ilike', "%{$search}%")
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhere('student_number', 'ilike', "%{$search}%")
+                    ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
+            })
+            ->with(['user', 'enrollments.section', 'ledger'])
+            ->limit(20)
+                ->get()
+                ->map(function ($student) {
+                    $enrollment = $student->enrollments->where('status', 'Active')->first();
+                    $gradeLevel = $enrollment?->section?->grade_level;
+                    $schoolYear = $enrollment?->school_year;
+
+                    $totalAssessed = 0;
+                    if ($gradeLevel && $schoolYear) {
+                        $feeSchedules = FeeSchedule::where('grade_level', $gradeLevel)
+                            ->where('school_year', $schoolYear)
+                            ->get();
+                        $totalAssessed = $feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee');
+                    }
+
+                    $totalPaid = $student->ledger?->total_paid ?? 0;
+                    $discountApplied = $student->ledger?->discount_applied ?? 0;
+                    $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
+                    return $student;
+                });
         }
 
         return view('portal.cashier.payments', compact('students', 'search'));
@@ -60,14 +78,34 @@ class CashierController extends Controller
                 $q->where('status', 'Active')->where('school_year', active_school_year());
             })
             ->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('student_number', 'like', "%{$search}%")
-                    ->orWhere('legacy_lrn', 'like', "%{$search}%");
+                $q->where('first_name', 'ilike', "%{$search}%")
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhere('student_number', 'ilike', "%{$search}%")
+                    ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
             })
             ->with(['enrollments.section', 'ledger'])
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(function ($student) {
+                $enrollment = $student->enrollments->where('status', 'Active')->first();
+                $gradeLevel = $enrollment?->section?->grade_level;
+                $schoolYear = $enrollment?->school_year;
+
+                $totalAssessed = 0;
+                if ($gradeLevel && $schoolYear) {
+                    $feeSchedules = FeeSchedule::where('grade_level', $gradeLevel)
+                        ->where('school_year', $schoolYear)
+                        ->get();
+                    $totalAssessed = $feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee');
+                }
+
+                $totalPaid = $student->ledger?->total_paid ?? 0;
+                $discountApplied = $student->ledger?->discount_applied ?? 0;
+                $balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
+
+                $student->computed_balance = $balance;
+                return $student;
+            });
 
         return response()->json($students);
     }
@@ -193,15 +231,17 @@ class CashierController extends Controller
                         $discountType = $data['discount_type'] ?? null;
                     }
 
+                    $newBalance = max(0, $totalAssessed - $data['amount_paid'] - $discountAmount);
+                    $totalPaid = $data['amount_paid'];
                     $ledger = StudentLedger::create([
                         'student_id' => $student->id,
                         'payment_plan' => $paymentPlan,
                         'total_assessed' => $totalAssessed,
                         'discount_type' => $discountType,
                         'discount_applied' => $discountAmount,
-                        'total_paid' => $data['amount_paid'],
-                        'balance' => max(0, $totalAssessed - $data['amount_paid'] - $discountAmount),
-                        'clearance_status' => ($paymentPlan === 'full' && $data['amount_paid'] >= $totalAssessed - $discountAmount) ? 'Cleared' : 'Pending',
+                        'total_paid' => $totalPaid,
+                        'balance' => $newBalance,
+                        'clearance_status' => 'Pending',
                     ]);
                 } else {
                     $ledger->total_assessed = $totalAssessed;
@@ -218,9 +258,6 @@ class CashierController extends Controller
                     $ledger->total_paid += $data['amount_paid'];
                     $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
 
-                    if ($ledger->payment_plan === 'full' && $ledger->balance == 0) {
-                        $ledger->clearance_status = 'Cleared';
-                    }
                     $ledger->save();
                 }
 
@@ -260,8 +297,15 @@ class CashierController extends Controller
                 ->with('error', 'Payment processing failed. Please try again.');
         }
 
-        return redirect()->route('cashier.dashboard')
-            ->with('success', 'Payment of ₱' . number_format($data['amount_paid'], 2) . ' processed for ' . $student->first_name . ' ' . $student->last_name . '.');
+        $lastPayment = Payment::where('ledger_id', $student->ledger?->id ?? 0)->latest()->first();
+
+        return redirect()->route('cashier.payment', $student)
+            ->with('payment_success', [
+                'amount' => $data['amount_paid'],
+                'student_name' => $student->first_name . ' ' . $student->last_name,
+                'receipt_number' => $lastPayment?->receipt_number ?? '',
+                'payment_id' => $lastPayment?->id ?? '',
+            ]);
     }
 
     public function printReceipt(Payment $payment)
