@@ -40,14 +40,11 @@ class InquiryController extends Controller
         ]);
 
         try {
-            $firstName = $request->first_name;
-            $lastName = $request->last_name;
-            $personalEmail = $request->personal_email;
+            DB::transaction(function () use ($request) {
+                $firstName = $request->first_name;
+                $lastName = $request->last_name;
+                $personalEmail = $request->personal_email;
 
-            $password = Str::random(8);
-            $institutionalEmail = null;
-
-            DB::transaction(function () use ($firstName, $lastName, $personalEmail, $password, &$institutionalEmail) {
                 $baseEmail = strtolower(str_replace(' ', '', $firstName) . '.' . str_replace(' ', '', $lastName));
                 $institutionalEmail = $baseEmail . '@agnusdei.edu.ph';
 
@@ -56,6 +53,8 @@ class InquiryController extends Controller
                     $institutionalEmail = $baseEmail . $counter . '@agnusdei.edu.ph';
                     $counter++;
                 }
+
+                $password = Str::random(8);
 
                 $user = User::create([
                     'name' => $firstName . ' ' . $lastName,
@@ -71,13 +70,9 @@ class InquiryController extends Controller
                     'personal_email' => $personalEmail,
                     'status' => 'pre-admission'
                 ]);
-            });
 
-            try {
                 Mail::to($personalEmail)->send(new InquiryCredentialsMail($firstName, $institutionalEmail, $password));
-            } catch (\Exception $mailError) {
-                Log::error('Inquiry mail failed: ' . $mailError->getMessage());
-            }
+            });
 
             return redirect('/inquiry')->with('success', true);
 
