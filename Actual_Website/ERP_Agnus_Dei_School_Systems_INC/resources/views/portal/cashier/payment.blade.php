@@ -17,8 +17,8 @@
 @endif
 
 @php
-    $isFirstPayment = !$student->ledger || $student->ledger->payments()->count() === 0;
-    $isPlanLocked = $student->ledger && $student->ledger->payments()->count() > 0;
+    $isFirstPayment = !$student->ledger || $student->ledger->payments->isEmpty();
+    $isPlanLocked = $student->ledger && $student->ledger->payments->isNotEmpty();
     $discountAlreadyApplied = $student->ledger && $student->ledger->discount_applied > 0;
     $effectiveAutoType = $autoDiscountType;
     $effectiveAutoAmount = $autoDiscountAmount;

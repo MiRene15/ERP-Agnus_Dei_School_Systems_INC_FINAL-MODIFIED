@@ -19,7 +19,7 @@ class TeacherController extends Controller
     public function index()
     {
         $teacherId = auth()->id();
-        $classes = Classes::with('subject', 'schedules')
+        $classes = Classes::with('subject', 'schedules', 'enrollments')
             ->where('teacher_id', $teacherId)
             ->where('school_year', active_school_year())
             ->where('status', 'active')
@@ -31,7 +31,7 @@ class TeacherController extends Controller
         })->sortBy('start_time');
 
         $totalStudents = $classes->sum(function ($c) {
-            return $c->enrollments()->where('status', 'Active')->count();
+            return $c->enrollments->where('status', 'Active')->count();
         });
 
         return view('portal.teacher.dashboard', compact('classes', 'todaySchedule', 'totalStudents'));
@@ -211,17 +211,19 @@ class TeacherController extends Controller
 
         $weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
+        $allSchedules = Schedule::whereHas('schoolClass', function ($q) use ($teacherId) {
+            $q->where('teacher_id', $teacherId)
+                ->where('school_year', active_school_year())
+                ->where('status', 'active');
+        })
+        ->with('schoolClass.subject')
+        ->orderBy('start_time')
+        ->get()
+        ->groupBy('day_of_week');
+
         $schedulesByDay = [];
         foreach ($weekDays as $day) {
-            $schedulesByDay[$day] = Schedule::whereHas('schoolClass', function ($q) use ($teacherId) {
-                $q->where('teacher_id', $teacherId)
-                    ->where('school_year', active_school_year())
-                    ->where('status', 'active');
-            })
-            ->where('day_of_week', $day)
-            ->with('schoolClass.subject')
-            ->orderBy('start_time')
-            ->get();
+            $schedulesByDay[$day] = $allSchedules->get($day, collect());
         }
 
         return view('portal.teacher.schedule', compact('classes', 'weekDays', 'schedulesByDay'));
@@ -396,11 +398,18 @@ class TeacherController extends Controller
                     'Exam' => 0.25,
                 ];
 
-                $computedGrades = $activeEnrollments->map(function ($enrollment) use ($class, $selectedPeriod, $assessmentTypes, $weights) {
-                    $assessments = Assessment::where('class_id', $class->id)
-                        ->where('enrollment_id', $enrollment->id)
-                        ->where('grading_period', $selectedPeriod)
-                        ->get();
+                $allAssessments = Assessment::where('class_id', $class->id)
+                    ->where('grading_period', $selectedPeriod)
+                    ->get()
+                    ->groupBy('enrollment_id');
+
+                $allGrades = Grade::where('class_id', $class->id)
+                    ->where('grading_period', $selectedPeriod)
+                    ->get()
+                    ->keyBy('enrollment_id');
+
+                $computedGrades = $activeEnrollments->map(function ($enrollment) use ($class, $selectedPeriod, $assessmentTypes, $weights, $allAssessments, $allGrades) {
+                    $assessments = $allAssessments->get($enrollment->id, collect());
 
                     $categoryScores = [];
                     foreach ($assessmentTypes as $type) {
@@ -419,10 +428,7 @@ class TeacherController extends Controller
                         $weightedSum += $scores['percentage'] * ($weights[$type] ?? 0.25);
                     }
 
-                    $existingGrade = Grade::where('class_id', $class->id)
-                        ->where('enrollment_id', $enrollment->id)
-                        ->where('grading_period', $selectedPeriod)
-                        ->first();
+                    $existingGrade = $allGrades->get($enrollment->id);
 
                     return [
                         'enrollment_id' => $enrollment->id,

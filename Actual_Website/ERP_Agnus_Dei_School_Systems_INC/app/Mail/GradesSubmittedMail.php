@@ -5,12 +5,13 @@ namespace App\Mail;
 use App\Models\Classes;
 use App\Models\Enrollment;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class GradesSubmittedMail extends Mailable
+class GradesSubmittedMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

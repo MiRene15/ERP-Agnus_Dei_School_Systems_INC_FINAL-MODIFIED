@@ -1,12 +1,33 @@
 # Workflow Priority Plan — Agnus Dei School ERP
 
 Bugs to fix and features to add, ordered by the system workflow (inquiry → admission → payment → operations → cross-cutting).
-Generated: 2026-08-04 · **Last updated: 2026-08-06**
+Generated: 2026-08-04 · **Last updated: 2026-08-18**
 Bugs are from the verified list in `bug_report.md`; items marked **NEW** are feature additions.
+
+> **2026-08-18:** Performance optimization plan created — 56 issues identified. See `PERFORMANCE_OPTIMIZATION.md` for full details. Implementation pending.
 
 > **2026-08-06:** The 12 feature enhancements in `feature_enhancements.md` (library booking logs + overdue/damage/lost fees, book inactive logs + serial numbers, AR numbers, attached receipts, privacy-first cashier search, misc fees, student financial view, payment reminders, collections by date, school-year filters) were all implemented. This supersedes **L5 (Overdue fines)** below and partially covers **M7 (overdue email reminders — payment reminders only, not overdue-book emails).**
 
 Priority legend: HIGH = blocks/corrupts core operations · MEDIUM = significant user-facing gap · LOW = polish/robustness
+
+---
+
+## 0. Performance Optimization (cross-cutting) — NEW 2026-08-18
+
+**Status:** Planning — see `PERFORMANCE_OPTIMIZATION.md` for full details
+**Impact:** App feels slow during processing — not just cold starts, but actual page load speed
+**Issue Count:** 56 issues across 10 categories
+
+- **Fix (HIGH):** Cache `active_school_year()` helper — eliminates 1 DB query per page load (helpers.php:18-22)
+- **Fix (HIGH):** Cache `all_school_years()` helper — eliminates 3 DB queries per call (helpers.php:25-37)
+- **Fix (HIGH):** Cache `Setting::getValue()` model — eliminates DB queries for settings (Models/Setting.php:15-18)
+- **Fix (HIGH):** Add database indexes on `enrollments`, `classes`, `payments`, `assessments`, `fee_schedules` — 10-100x faster queries
+- **Fix (HIGH):** Fix N+1 in `ExportController::grades()` — 500+ queries reduced to 1
+- **Fix (HIGH):** Fix N+1 in `TeacherController::computedGrades()` — 80 queries reduced to 2
+- **Fix (MEDIUM):** Fix N+1 in `CashierController::payments()` — 20 queries reduced to 1
+- **Fix (MEDIUM):** Fix queries in Blade views (sidebar, payment, discounts)
+- **Fix (MEDIUM):** Add pagination to ApiController endpoints
+- **Fix (LOW):** Queue email sending and PDF generation
 
 ---
 
@@ -193,6 +214,18 @@ Priority legend: HIGH = blocks/corrupts core operations · MEDIUM = significant 
 | H5 | API authorized access per role (Sanctum, per-role endpoints, rate limiting) — FIXED 2026-08-04 | 16 |
 | L5 | Overdue fines — DONE 2026-08-06 via feature_enhancements.md #2 (late/damage/lost fees, settings-configurable) | 10 |
 
+### 🔴 HIGH — performance (NEW 2026-08-18)
+| # | Item | Section |
+|---|------|---------|
+| H9 | Cache `active_school_year()` — eliminates 1 DB query per page load | 0 |
+| H10 | Cache `all_school_years()` — eliminates 3 DB queries per call | 0 |
+| H11 | Cache `Setting::getValue()` — eliminates DB queries for settings | 0 |
+| H12 | Add database indexes (enrollments, classes, payments, assessments, fee_schedules) | 0 |
+| H13 | Fix N+1 in ExportController::grades() — 500+ queries reduced to 1 | 0 |
+| H14 | Fix N+1 in TeacherController::computedGrades() — 80 queries reduced to 2 | 0 |
+| H15 | Fix N+1 in CashierController::payments() — 20 queries reduced to 1 | 0 |
+| H16 | Fix queries in Blade views (sidebar, payment, discounts) | 0 |
+
 ### 🟡 MEDIUM — not started
 | # | Item | Section |
 |---|------|---------|
@@ -218,3 +251,6 @@ Priority legend: HIGH = blocks/corrupts core operations · MEDIUM = significant 
 | ~~L5~~ | ~~Overdue fines~~ — **DONE 2026-08-06** (see DONE table) | 10 |
 | L6 | Medicine inventory/stock tracking | 11 |
 | L7 | Automated tests for payment/grades flows | 15 |
+| L8 | Add pagination to ApiController endpoints | 16 |
+| L9 | Queue email sending and PDF generation | 15 |
+| L10 | Fix ReportCardController duplicate logic | 12 |

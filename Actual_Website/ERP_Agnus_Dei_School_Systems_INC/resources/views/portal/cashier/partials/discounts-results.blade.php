@@ -21,7 +21,7 @@
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-600">
                     @php
-                        $enroll = $ledger->student->enrollments()->where('status','Active')->latest()->first();
+                        $enroll = $ledger->student->enrollments->where('status','Active')->first();
                     @endphp
                     {{ $enroll?->section?->grade_level ?? '—' }}
                 </td>

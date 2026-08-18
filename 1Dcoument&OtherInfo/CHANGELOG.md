@@ -2,6 +2,31 @@
 
 ## [Unreleased](https://github.com/laravel/laravel/compare/v12.12.1...12.x)
 
+### Performance Optimization — 2026-08-18
+- Created `PERFORMANCE_OPTIMIZATION.md` — 56 performance issues identified across 10 categories
+- **Phase 1 — Quick Wins:**
+  - Cached `active_school_year()` helper (eliminates 1 DB query per page load)
+  - Cached `all_school_years()` helper (eliminates 3 DB queries per call)
+  - Cached `Setting::getValue()` model with cache invalidation on `setValue()`
+  - Added 20 database indexes across 10 tables (enrollments, classes, payments, assessments, fee_schedules, student_ledgers, activity_log, library_transactions, students, admissions)
+- **Phase 2 — N+1 Query Fixes:**
+  - ExportController::grades() — pre-fetched all grades (500+ queries → 1)
+  - TeacherController::computedGrades() — pre-fetched assessments and grades (80 queries → 2)
+  - TeacherController::index() — eager-loaded enrollments for count
+  - TeacherController::schedule() — loaded all schedules in 1 query (5 queries → 1)
+  - CashierController::payments() and searchStudents() — pre-fetched fee schedules
+  - CashierController::showPayment/printReceipt/studentFinancial() — used already-loaded enrollment
+- **Phase 3 — Blade View Fixes:**
+  - cashier/payment.blade.php — replaced `payments()->count()` with `payments->isEmpty()`
+  - cashier/student-financial.blade.php — replaced `payments()->count()` with `payments->isNotEmpty()`
+  - cashier/partials/discounts-results.blade.php — replaced `enrollments()->where()` with `enrollments->where()`
+- **Phase 4 — Email Queueing:**
+  - Added `ShouldQueue` to all 5 mail classes (GradesSubmittedMail, AdmissionCredentialsMail, InquiryCredentialsMail, InquiryVerificationMail, PaymentReminderMail)
+- **Phase 5 — API Pagination:**
+  - Added `paginate(50)` to 8 ApiController endpoints (adminUsers, registrarAdmissions, registrarStudents, cashierLedgers, librarianBooks, directressFees, principalSchedules, principalAnnouncements)
+- Updated `workflow_priority_plan.md` with performance items (H9-H16, L8-L10)
+- Updated `update_sessions_log.md` with Session 39
+
 ## [v12.12.1](https://github.com/laravel/laravel/compare/v12.12.0...v12.12.1) - 2026-03-10
 
 * [12.x] Makes imports consistent by [@nunomaduro](https://github.com/nunomaduro) in https://github.com/laravel/laravel/pull/6760

@@ -29,9 +29,11 @@ class CashierController extends Controller
         $students = collect();
 
         if ($search && strlen($search) >= 2) {
+            $schoolYear = active_school_year();
+
             $students = Student::where('status', 'enrolled')
-                ->whereHas('enrollments', function ($q) {
-                    $q->where('status', 'Active')->where('school_year', active_school_year());
+                ->whereHas('enrollments', function ($q) use ($schoolYear) {
+                    $q->where('status', 'Active')->where('school_year', $schoolYear);
                 })
             ->where(function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
@@ -42,13 +44,12 @@ class CashierController extends Controller
             ->with(['user', 'enrollments.section', 'ledger'])
             ->limit(20)
                 ->get()
-                ->map(function ($student) {
+                ->map(function ($student) use ($schoolYear) {
                     $enrollment = $student->enrollments->where('status', 'Active')->first();
                     $gradeLevel = $enrollment?->section?->grade_level;
-                    $schoolYear = $enrollment?->school_year;
 
                     $totalAssessed = 0;
-                    if ($gradeLevel && $schoolYear) {
+                    if ($gradeLevel) {
                         $feeSchedules = FeeSchedule::where('grade_level', $gradeLevel)
                             ->where('school_year', $schoolYear)
                             ->get();
@@ -73,9 +74,11 @@ class CashierController extends Controller
             return response()->json([]);
         }
 
+        $schoolYear = active_school_year();
+
         $students = Student::where('status', 'enrolled')
-            ->whereHas('enrollments', function ($q) {
-                $q->where('status', 'Active')->where('school_year', active_school_year());
+            ->whereHas('enrollments', function ($q) use ($schoolYear) {
+                $q->where('status', 'Active')->where('school_year', $schoolYear);
             })
             ->where(function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
@@ -86,13 +89,12 @@ class CashierController extends Controller
             ->with(['enrollments.section', 'ledger'])
             ->limit(10)
             ->get()
-            ->map(function ($student) {
+            ->map(function ($student) use ($schoolYear) {
                 $enrollment = $student->enrollments->where('status', 'Active')->first();
                 $gradeLevel = $enrollment?->section?->grade_level;
-                $schoolYear = $enrollment?->school_year;
 
                 $totalAssessed = 0;
-                if ($gradeLevel && $schoolYear) {
+                if ($gradeLevel) {
                     $feeSchedules = FeeSchedule::where('grade_level', $gradeLevel)
                         ->where('school_year', $schoolYear)
                         ->get();
@@ -113,7 +115,7 @@ class CashierController extends Controller
     public function showPayment(Student $student)
     {
         $student->load('user', 'enrollments.section', 'ledger', 'admissions');
-        $enrollment = $student->enrollments()->where('status', 'Active')->latest()->first();
+        $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
         $feeSchedules = $enrollment ? FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
             ->orderBy('term')
@@ -316,7 +318,7 @@ class CashierController extends Controller
         ]);
 
         $student = $payment->ledger->student;
-        $enrollment = $student->enrollments()->where('status', 'Active')->latest()->first();
+        $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
 
         $previousPayments = $payment->ledger->payments()
             ->where('id', '<', $payment->id)
@@ -336,7 +338,7 @@ class CashierController extends Controller
             'ledger.payments.cashier',
         ]);
 
-        $enrollment = $student->enrollments()->where('status', 'Active')->latest()->first();
+        $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
         $feeSchedules = $enrollment ? FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
             ->orderBy('term')

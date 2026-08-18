@@ -96,7 +96,7 @@ class ApiController extends Controller
 
     public function adminUsers(): JsonResponse
     {
-        $users = User::with('role')->whereNotIn('role_id', [7])->orderBy('role_id')->get();
+        $users = User::with('role')->whereNotIn('role_id', [7])->orderBy('role_id')->paginate(50);
         return $this->success($users);
     }
 
@@ -118,7 +118,7 @@ class ApiController extends Controller
 
     public function registrarAdmissions(): JsonResponse
     {
-        $admissions = Admission::with('student.user')->latest()->get();
+        $admissions = Admission::with('student.user')->latest()->paginate(50);
         return $this->success($admissions);
     }
 
@@ -129,7 +129,7 @@ class ApiController extends Controller
 
     public function registrarStudents(): JsonResponse
     {
-        $students = Student::with('user', 'enrollments.section')->latest()->get();
+        $students = Student::with('user', 'enrollments.section')->latest()->paginate(50);
         return $this->success($students);
     }
 
@@ -143,7 +143,7 @@ class ApiController extends Controller
 
     public function cashierLedgers(): JsonResponse
     {
-        $ledgers = StudentLedger::with('student.user')->latest()->get();
+        $ledgers = StudentLedger::with('student.user')->latest()->paginate(50);
         return $this->success($ledgers);
     }
 
@@ -178,7 +178,7 @@ class ApiController extends Controller
 
     public function librarianBooks(): JsonResponse
     {
-        $books = Book::latest()->get();
+        $books = Book::latest()->paginate(50);
         return $this->success($books);
     }
 
@@ -248,7 +248,7 @@ class ApiController extends Controller
 
     public function directressFees(): JsonResponse
     {
-        $fees = FeeSchedule::orderBy('grade_level')->orderBy('term')->get();
+        $fees = FeeSchedule::orderBy('grade_level')->orderBy('term')->paginate(50);
         return $this->success($fees);
     }
 
@@ -265,7 +265,7 @@ class ApiController extends Controller
 
     public function principalSchedules(): JsonResponse
     {
-        $schedules = Schedule::with('teacher', 'section', 'subject')->get();
+        $schedules = Schedule::with('teacher', 'section', 'subject')->paginate(50);
         return $this->success($schedules);
     }
 
@@ -279,7 +279,7 @@ class ApiController extends Controller
 
     public function principalAnnouncements(): JsonResponse
     {
-        $announcements = \App\Models\Announcement::latest()->get();
+        $announcements = \App\Models\Announcement::latest()->paginate(50);
         return $this->success($announcements);
     }
 }

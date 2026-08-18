@@ -42,10 +42,15 @@ class ExportController extends Controller
 
         $periods = ['1st Term', '2nd Term', '3rd Term'];
 
-        return $this->streamCsv('grades-' . active_school_year() . '.csv', function ($fh) use ($enrollments, $periods) {
+        $allGrades = Grade::whereIn('enrollment_id', $enrollments->pluck('id'))
+            ->whereIn('grading_period', $periods)
+            ->get()
+            ->groupBy('enrollment_id');
+
+        return $this->streamCsv('grades-' . active_school_year() . '.csv', function ($fh) use ($enrollments, $periods, $allGrades) {
             fputcsv($fh, array_merge(['LRN', 'Name', 'Grade', 'Section', 'Subject'], $periods, ['Final', 'Remarks']));
             foreach ($enrollments as $e) {
-                $grades = Grade::where('enrollment_id', $e->id)->whereIn('grading_period', $periods)->get()->groupBy('class_id');
+                $grades = $allGrades->get($e->id, collect())->groupBy('class_id');
                 foreach ($e->subjects as $class) {
                     $classGrades = $grades->get($class->id, collect());
                     $total = 0; $count = 0;
