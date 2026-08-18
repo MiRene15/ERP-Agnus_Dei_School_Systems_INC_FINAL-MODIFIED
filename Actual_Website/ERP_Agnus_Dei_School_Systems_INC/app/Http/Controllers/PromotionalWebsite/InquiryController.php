@@ -78,7 +78,7 @@ class InquiryController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Inquiry submission failed: ' . $e->getMessage());
-            return redirect('/inquiry')->with('error', 'Something went wrong while processing your inquiry. Please try again or contact support.');
+            return redirect('/inquiry')->with('error', 'Error: ' . $e->getMessage());
         }
     }
 }
