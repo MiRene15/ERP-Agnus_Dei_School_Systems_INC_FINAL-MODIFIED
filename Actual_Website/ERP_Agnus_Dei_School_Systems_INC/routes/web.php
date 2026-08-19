@@ -115,6 +115,10 @@ Route::middleware('auth')->group(function () {
          Route::resource('admin/users', UserController::class)->except(['show', 'destroy'])->names('admin.users');
          Route::post('admin/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
          Route::post('admin/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('admin.users.reset-password');
+         // Student Account Management
+         Route::get('admin/student-accounts', [\App\Http\Controllers\Admin\StudentAccountController::class, 'index'])->name('admin.student-accounts.index');
+         Route::post('admin/student-accounts/{user}/toggle-status', [\App\Http\Controllers\Admin\StudentAccountController::class, 'toggleStatus'])->name('admin.student-accounts.toggle-status');
+         Route::post('admin/student-accounts/{user}/reset-password', [\App\Http\Controllers\Admin\StudentAccountController::class, 'resetPassword'])->name('admin.student-accounts.reset-password');
          // Subjects Management
          Route::resource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class)->except(['show'])->names('admin.subjects');
          // Sections Management
