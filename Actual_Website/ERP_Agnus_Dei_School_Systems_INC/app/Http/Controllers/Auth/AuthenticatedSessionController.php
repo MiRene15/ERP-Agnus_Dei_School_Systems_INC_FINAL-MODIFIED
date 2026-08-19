@@ -44,6 +44,8 @@ class AuthenticatedSessionController extends Controller
             5 => '/librarian/dashboard',
             6 => '/nurse/dashboard',
             7 => '/student/dashboard',
+            8 => '/directress/dashboard',
+            9 => '/principal/dashboard',
             default => '/dashboard',
         };
 

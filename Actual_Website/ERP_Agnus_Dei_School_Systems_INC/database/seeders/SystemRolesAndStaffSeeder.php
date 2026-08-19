@@ -20,8 +20,8 @@ class SystemRolesAndStaffSeeder extends Seeder
             5 => 'Librarian',
             6 => 'Nurse',
             7 => 'Student',
-            8 => 'Principal',
-            9 => 'Directress',
+            8 => 'Directress',
+            9 => 'Principal',
         ];
 
         foreach ($roles as $id => $name) {
@@ -35,8 +35,8 @@ class SystemRolesAndStaffSeeder extends Seeder
             ['name' => 'Head Registrar', 'email' => 'registrar@agnusdei.local', 'role_id' => 2],
             ['name' => 'Cashier Window 1', 'email' => 'cashier1@agnusdei.local', 'role_id' => 3],
             ['name' => 'Cashier Window 2', 'email' => 'cashier2@agnusdei.local', 'role_id' => 3],
-            ['name' => 'School Principal', 'email' => 'principal@agnusdei.local', 'role_id' => 8],
-            ['name' => 'School Directress', 'email' => 'directress@agnusdei.local', 'role_id' => 9],
+            ['name' => 'School Directress', 'email' => 'directress@agnusdei.local', 'role_id' => 8],
+            ['name' => 'School Principal', 'email' => 'principal@agnusdei.local', 'role_id' => 9],
             ['name' => 'Head Librarian', 'email' => 'library@agnusdei.local', 'role_id' => 5],
             ['name' => 'School Nurse', 'email' => 'clinic@agnusdei.local', 'role_id' => 6],
         ];
