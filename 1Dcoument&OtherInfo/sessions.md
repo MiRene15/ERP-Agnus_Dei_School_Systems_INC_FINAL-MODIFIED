@@ -41,8 +41,8 @@
   - `FixArNumbersSeeder` — AR numbers assigned to all payments (AR-2026-0500 through AR-2026-0518)
 - **All accounts password**: `Agnus2026!`
 
-### Pending
-- **Commit + push** — all changes uncommitted; waiting for user signal
+### Pending (from Aug 14 session)
+- ~~Commit + push~~ — completed Aug 14
 
 ### Database Seeder Overhaul (this session)
 - **Reviewed user-written seeders** — `StudentsAndFeesSeeder`, `GradesAssessmentsSeeder`, `LibraryAndClinicSeeder`, `AnnouncementsTableSeeder`, `FixArNumbersSeeder` (user-created); `StudentsSeeder`, `StudentLedgersSeeder`, `BooksAndLibrarySeeder`, `AnnouncementsSeeder` (removed — duplicates of user's seeders)
@@ -132,6 +132,53 @@
 - `database/seeders/StudentLedgersSeeder.php` — duplicate of user's StudentsAndFeesSeeder
 - `app/Services/SupabaseStorage.php` — removed (using BYTEA)
 - `CHANGELOG.md` — deleted from project root
+
+---
+
+## Session: Aug 20, 2026
+
+### Completed (this session)
+- **Grading weights updated to 20/20/20/40** — Written Work 20%, Quiz 20%, Seatwork 20%, Exam 40% (was 25/25/25/25). Changed in: `TeacherController.php`, `computed-grades-results.blade.php`, `GradesAssessmentsSeeder.php`, and all capstone doc references
+- **Duplicate Dashboard button removed from teacher sidebar** — layout already provides a generic Dashboard link; removed the duplicate from `sidebar-teacher.blade.php`; added active state highlighting to layout's Dashboard link via `request()->routeIs('*.dashboard')`
+- **Duplicate force-change-password page removed** — deleted standalone `GET /force-change-password` route from `routes/auth.php` and `show()` method from `ForceChangePasswordController.php`; modal remains the sole mechanism
+- **Admission step 4 green checkmark fixed** — `isStepComplete()` in `admission-apply.blade.php` now returns `false` for empty required fields arrays instead of `true`
+- **Teacher management moved from Directress to Admin** — removed teacher CRUD routes, controller methods, sidebar link, and 4 view files from Directress; Admin `UserController.php` now creates/syncs Teacher model records on teacher account creation/update; `User.php` gets `teacher()` hasOne relationship; Directress dashboard simplified
+- **Capstone document Section IX fully rewritten** — all 21 modules + system-wide constraints updated with cleaned/standardized text matching actual codebase implementation; grading weights corrected throughout
+- **Broken route names fixed (500 errors)** — `librarian.books.index` → `librarian.books` in librarian dashboard; `nurse.consultations.create` → `nurse.logs.create` in nurse dashboard
+- **All changes pushed to GitHub** — 7 commits separated by feature/fixes/docs
+
+### Git Commits (Aug 20)
+1. `fix: remove duplicate Dashboard button in teacher sidebar`
+2. `fix: remove duplicate force-change-password page`
+3. `fix: step 4 green checkmark and form validation`
+4. `feat: move teacher management from Directress to Admin`
+5. `feat: update grading weights to 20/20/20/40`
+6. `docs: update capstone Requirements Analysis with corrected module descriptions and 20/20/20/40 weights`
+7. `fix: broken route names in librarian and nurse dashboards causing 500 errors`
+
+### Files Modified (Aug 20)
+- `resources/views/portal/partials/sidebar-teacher.blade.php` — removed duplicate Dashboard link
+- `resources/views/portal/layouts/app.blade.php` — added active state to generic Dashboard link
+- `app/Http/Controllers/Auth/ForceChangePasswordController.php` — removed `show()` method
+- `routes/auth.php` — removed `GET /force-change-password` route
+- `resources/views/portal/student/admission-apply.blade.php` — fixed `isStepComplete()` empty array check
+- `app/Http/Controllers/Portal/DirectressController.php` — removed teacher CRUD methods
+- `app/Http/Controllers/Admin/UserController.php` — added Teacher model creation/sync on teacher account create/update
+- `app/Models/User.php` — added `teacher()` hasOne relationship
+- `resources/views/portal/partials/sidebar-directress.blade.php` — removed Teachers link
+- `resources/views/portal/directress/partials/dashboard-results.blade.php` — removed teacher stats, simplified to 2-col grid
+- `routes/web.php` — removed 6 directress teacher routes
+- `app/Http/Controllers/Portal/TeacherController.php` — grading weights 0.25 → 0.20/0.40
+- `resources/views/portal/teacher/partials/computed-grades-results.blade.php` — weight labels 25% → 20%/40%
+- `resources/views/portal/librarian/dashboard.blade.php` — fixed `librarian.books.index` → `librarian.books`
+- `resources/views/portal/nurse/dashboard.blade.php` — fixed `nurse.consultations.create` → `nurse.logs.create`
+- `1Dcoument&OtherInfo/capstone_master_document.md` — Section VI dashboards updated, Section IX fully rewritten
+
+### Files Deleted (Aug 20)
+- `resources/views/portal/directress/teachers/index.blade.php`
+- `resources/views/portal/directress/teachers/create.blade.php`
+- `resources/views/portal/directress/teachers/edit.blade.php`
+- `resources/views/portal/directress/partials/teachers-results.blade.php`
 
 ---
 
