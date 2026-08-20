@@ -20,7 +20,7 @@
             <h3 class="font-bold text-gray-900">Welcome to the Health & Wellness Dashboard!</h3>
             <p class="text-sm text-gray-600 mt-1">Track student health records, log consultations, and manage referrals. Use the sidebar for all clinic tools.</p>
             <div class="flex gap-2 mt-3">
-                <a href="{{ route('nurse.consultations.create') }}" class="text-xs font-semibold text-red-700 hover:text-red-900 underline">Log Consultation &rarr;</a>
+                <a href="{{ route('nurse.logs.create') }}" class="text-xs font-semibold text-red-700 hover:text-red-900 underline">Log Consultation &rarr;</a>
             </div>
         </div>
         <button @click="show = false; fetch('/dismiss-welcome', {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'}})" class="text-gray-400 hover:text-gray-600 flex-shrink-0">

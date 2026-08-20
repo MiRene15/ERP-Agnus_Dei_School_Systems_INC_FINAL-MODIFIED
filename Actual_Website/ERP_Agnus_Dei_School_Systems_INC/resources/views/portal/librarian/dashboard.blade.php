@@ -20,7 +20,7 @@
             <h3 class="font-bold text-gray-900">Welcome to the Library Dashboard!</h3>
             <p class="text-sm text-gray-600 mt-1">Manage book inventory, track borrowings, and monitor overdue returns. Use the sidebar for all library tools.</p>
             <div class="flex gap-2 mt-3">
-                <a href="{{ route('librarian.books.index') }}" class="text-xs font-semibold text-yellow-700 hover:text-yellow-900 underline">Manage Books &rarr;</a>
+                <a href="{{ route('librarian.books') }}" class="text-xs font-semibold text-yellow-700 hover:text-yellow-900 underline">Manage Books &rarr;</a>
             </div>
         </div>
         <button @click="show = false; fetch('/dismiss-welcome', {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'}})" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
