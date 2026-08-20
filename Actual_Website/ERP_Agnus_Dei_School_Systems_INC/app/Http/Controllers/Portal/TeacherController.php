@@ -339,16 +339,18 @@ class TeacherController extends Controller
         $request->query->remove('ajax');
 
         $teacherId = auth()->id();
+        $selectedPeriod = request('grading_period', '1st Term');
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+        $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+
         $classes = Classes::with('subject')
             ->where('teacher_id', $teacherId)
             ->where('school_year', active_school_year())
             ->where('status', 'active')
+            ->where(function($q) use ($selectedPeriod) { $q->where('term', $selectedPeriod)->orWhereNull('term')->orWhere('term',''); })
             ->get();
 
         $selectedClassId = request('class_id');
-        $selectedPeriod = request('grading_period', '1st Term');
-        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
-        $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
 
         $class = null;
         $activeEnrollments = collect();
@@ -459,15 +461,17 @@ class TeacherController extends Controller
         $request->query->remove('ajax');
 
         $teacherId = auth()->id();
+        $selectedPeriod = request('grading_period', '1st Term');
+        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+
         $classes = Classes::with('subject')
             ->where('teacher_id', $teacherId)
             ->where('school_year', active_school_year())
             ->where('status', 'active')
+            ->where(function($q) use ($selectedPeriod) { $q->where('term', $selectedPeriod)->orWhereNull('term')->orWhere('term',''); })
             ->get();
 
         $selectedClassId = request('class_id');
-        $selectedPeriod = request('grading_period', '1st Term');
-        $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
 
         $class = null;
         $computedGrades = collect();

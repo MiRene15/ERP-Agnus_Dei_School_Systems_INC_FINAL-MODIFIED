@@ -47,14 +47,24 @@ class StudentController extends Controller
         $student = auth()->user()->student;
         if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found. Contact registrar.');
 
+        $currentTerm = Setting::getValue('current_term', '1st Term');
         $enrollment = $student->enrollments()
-            ->with('section', 'subjects.subject', 'subjects.schedules', 'subjects.teacher', 'promotedToEnrollment')
+            ->with(['section', 'subjects.subject', 'subjects.schedules', 'subjects.teacher', 'promotedToEnrollment'])
             ->where('status', 'Active')
             ->latest()
             ->first();
 
         if (!$enrollment) {
             return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
+        }
+
+        // Filter subjects by current term to avoid double listing same subject across terms
+        $enrollment->setRelation('subjects', $enrollment->subjects->filter(function($cls) use ($currentTerm) {
+            return empty($cls->term) || $cls->term === $currentTerm;
+        })->unique('subject_id')->values());
+        // Fallback: if filter empties (e.g., term mismatch), show deduplicated all
+        if ($enrollment->subjects->isEmpty()) {
+            $enrollment->setRelation('subjects', $enrollment->subjects->unique('subject_id')->values());
         }
 
         $ledger = $student->ledger;
@@ -146,13 +156,16 @@ class StudentController extends Controller
         }
 
         $student->load('ledger.payments');
+        $feeSchedules = \App\Models\FeeSchedule::where('grade_level', $activeEnrollment->section->grade_level)
+            ->where('school_year', $activeEnrollment->school_year)
+            ->orderBy('term')->get();
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment'))->render(),
+                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment', 'feeSchedules'))->render(),
             ]);
         }
 
-        return view('portal.student.ledger', compact('student', 'activeEnrollment'));
+        return view('portal.student.ledger', compact('student', 'activeEnrollment', 'feeSchedules'));
     }
 }
