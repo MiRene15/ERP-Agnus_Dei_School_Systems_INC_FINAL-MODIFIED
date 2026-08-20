@@ -438,7 +438,17 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 59
+## 44. Remaining Show/List Pages AJAX Conversion (Aug 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-08-20 | — | Feat: converted remaining non-AJAX show/list pages — Teacher class-students, Student admission-status, Admin promotion/index, Registrar admissions-show, Registrar report-cards/show, Cashier student-financial. All use ajaxTable with skeleton loading. |
+
+**Scope:** 6 more pages converted. Total AJAX pages now: 24 (up from 22 originally). Remaining non-AJAX pages are all forms (create/edit/grade entry) or standalone print pages (COR, report-card print) — these don't benefit from AJAX search/filter.
+
+---
+
+- **Total update sessions (commits):** 60
 - **Time span:** 2026-03-29 → 2026-08-20
 - **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals)
 - **Uncommitted/working changes:** Sessions 15–43 bug fixes + features + docs; modified `phpunit.xml`; untracked planning docs in `1Dcoument&OtherInfo/`

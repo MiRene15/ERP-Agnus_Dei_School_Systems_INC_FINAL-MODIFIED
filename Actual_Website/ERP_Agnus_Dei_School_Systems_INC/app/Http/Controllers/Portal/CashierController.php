@@ -338,8 +338,11 @@ class CashierController extends Controller
         return view('portal.cashier.partials.receipt-print', compact('payment', 'student', 'enrollment', 'previousPayments', 'balanceAfter'));
     }
 
-    public function studentFinancial(Student $student)
+    public function studentFinancial(Request $request, Student $student)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $student->load([
             'user',
             'enrollments' => fn($q) => $q->where('status', 'Active')->latest(),
@@ -354,6 +357,12 @@ class CashierController extends Controller
             ->get() : collect();
 
         $payments = $student->ledger?->payments()->latest('payment_date')->get() ?? collect();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments'))->render(),
+            ]);
+        }
 
         return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments'));
     }

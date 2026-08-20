@@ -69,8 +69,11 @@ class ReportCardController extends Controller
         return view('portal.registrar.report-cards.index', compact('enrollments', 'sections', 'schoolYears'));
     }
 
-    public function show(Enrollment $enrollment)
+    public function show(Request $request, Enrollment $enrollment)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $enrollment->load('student', 'section.adviser', 'subjects.subject');
 
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
@@ -105,6 +108,12 @@ class ReportCardController extends Controller
             ->get();
 
         $ledger = StudentLedger::where('student_id', $enrollment->student_id)->first();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.registrar.partials.report-cards-show-results', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage', 'feeSchedules', 'ledger'))->render(),
+            ]);
+        }
 
         return view('portal.registrar.report-cards.show', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage', 'feeSchedules', 'ledger'));
     }

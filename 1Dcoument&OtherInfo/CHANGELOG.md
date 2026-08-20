@@ -3,14 +3,16 @@
 ## [Unreleased](https://github.com/laravel/laravel/compare/v12.12.1...12.x)
 
 ### Full AJAX Conversion — 2026-08-20
-- Converted 16 traditional full-page-reload pages to AJAX across 9 portals
-- **Teacher portal** (6 pages): classes, class-list, grade-assessment, computed-grades, schedule, dashboard — all use `ajaxTable` with server-side search/filter and skeleton loading
-- **Student portal** (4 pages): dashboard, schedule, ledger, report-card — all use `ajaxTable` with skeleton loading
-- **Admin portal** (2 pages): dashboard, pending-accounts — ajaxTable
-- **Cashier, Librarian, Nurse, Registrar, Principal, Directress** dashboards — all ajaxTable with skeleton loading
-- Created 20+ new partial views in `partials/` subdirectories
-- Added AJAX support to 8 controllers (TeacherController, StudentController, ReportCardController, AdminController, CashierController, LibrarianController, NurseController, RegistrarController, PrincipalController, DirectressController)
-- All pages use consistent `ajaxTable` Alpine component with `skelly` skeleton classes
+- Converted 22 traditional full-page-reload pages to AJAX across 9 portals
+- **Teacher portal** (7 pages): classes, class-list, grade-assessment, computed-grades, schedule, dashboard, class-students — all use `ajaxTable` with server-side search/filter and skeleton loading
+- **Student portal** (5 pages): dashboard, schedule, ledger, report-card, admission-status — all use `ajaxTable` with skeleton loading
+- **Admin portal** (3 pages): dashboard, pending-accounts, promotion/index — ajaxTable
+- **Registrar** (3 pages): dashboard, admissions-show, report-cards/show — ajaxTable
+- **Cashier** (2 pages): dashboard, student-financial — ajaxTable
+- **Librarian, Nurse, Principal, Directress** dashboards — all ajaxTable with skeleton loading
+- Created 26+ new partial views in `partials/` subdirectories
+- Added AJAX support to 10 controllers
+- Remaining non-AJAX pages are all forms (create/edit/grade entry) or standalone print pages (COR, report-card print)
 
 ### Sidebar Active-State Fix — 2026-08-19
 - Fixed Onboarding tab incorrectly highlighting when clicking Dashboard (`sidebar-admin.blade.php`)

@@ -60,8 +60,11 @@ class RegistrarAdmissionController extends Controller
         return view('portal.registrar.admissions-index', compact('admissions', 'pendingCount', 'approvedCount'));
     }
 
-    public function show(Admission $admission)
+    public function show(Request $request, Admission $admission)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $admission->load('student.user');
         $admission->load(['requirements' => function ($q) {
             $q->select('id', 'document_type', 'original_filename', 'mime_type', 'file_size', 'status', 'admission_id');
@@ -74,6 +77,12 @@ class RegistrarAdmissionController extends Controller
             ->where('grade_level', $admission->grade_level)
             ->where('status', 'active')
             ->get();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.registrar.partials.admissions-show-results', compact('admission', 'sections', 'classes'))->render(),
+            ]);
+        }
 
         return view('portal.registrar.admissions-show', compact('admission', 'sections', 'classes'));
     }

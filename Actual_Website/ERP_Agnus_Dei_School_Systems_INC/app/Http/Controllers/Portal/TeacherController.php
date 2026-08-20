@@ -307,8 +307,11 @@ class TeacherController extends Controller
         return view('portal.teacher.class-list', compact('classes', 'gradeLevels'));
     }
 
-    public function classStudents(Classes $class)
+    public function classStudents(Request $request, Classes $class)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         if ($class->teacher_id !== auth()->id()) {
             abort(403);
         }
@@ -318,6 +321,12 @@ class TeacherController extends Controller
         $activeEnrollments = $class->enrollments->filter(function ($e) {
             return $e->status === 'Active';
         });
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.teacher.partials.class-students-results', compact('class', 'activeEnrollments'))->render(),
+            ]);
+        }
 
         return view('portal.teacher.class-students', compact('class', 'activeEnrollments'));
     }

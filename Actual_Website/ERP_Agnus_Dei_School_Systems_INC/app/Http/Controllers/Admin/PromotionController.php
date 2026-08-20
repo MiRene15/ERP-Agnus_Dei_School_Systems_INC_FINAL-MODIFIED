@@ -15,8 +15,11 @@ use Illuminate\Support\Facades\Log;
 
 class PromotionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $enrollments = Enrollment::with('student', 'section')
             ->where('status', 'Active')
             ->where('school_year', active_school_year())
@@ -35,6 +38,12 @@ class PromotionController extends Controller
         ];
 
         $schoolYears = Enrollment::distinct()->orderBy('school_year', 'desc')->pluck('school_year');
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.admin.partials.promotion-index-results', compact('enrollments', 'actions', 'schoolYears'))->render(),
+            ]);
+        }
 
         return view('portal.admin.promotion.index', compact('enrollments', 'actions', 'schoolYears'));
     }

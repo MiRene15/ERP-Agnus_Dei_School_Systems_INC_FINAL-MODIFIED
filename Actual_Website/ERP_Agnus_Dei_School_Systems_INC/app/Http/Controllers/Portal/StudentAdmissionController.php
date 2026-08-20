@@ -234,8 +234,11 @@ class StudentAdmissionController extends Controller
             ->with('success', 'Draft discarded. You can start a fresh application.');
     }
 
-    public function status()
+    public function status(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $student = auth()->user()->student;
         $admission = $student->admissions()->latest()->first();
         $requirements = $admission ? $admission->requirements()->select('id', 'document_type', 'original_filename', 'mime_type', 'file_size', 'status', 'admission_id')->get() : collect();
@@ -243,6 +246,12 @@ class StudentAdmissionController extends Controller
         $requiredDocs = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
         $uploadedTypes = $requirements->pluck('document_type')->toArray();
         $allRequiredUploaded = empty(array_diff($requiredDocs, $uploadedTypes));
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.student.partials.admission-status-results', compact('student', 'admission', 'requirements', 'allRequiredUploaded'))->render(),
+            ]);
+        }
 
         return view('portal.student.admission-status', compact('student', 'admission', 'requirements', 'allRequiredUploaded'));
     }
