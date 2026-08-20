@@ -7,15 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\View\View;
 
 class ForceChangePasswordController extends Controller
 {
-    public function show(): View
-    {
-        return view('auth.force-change-password');
-    }
-
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validateWithBag('forcePassword', [
