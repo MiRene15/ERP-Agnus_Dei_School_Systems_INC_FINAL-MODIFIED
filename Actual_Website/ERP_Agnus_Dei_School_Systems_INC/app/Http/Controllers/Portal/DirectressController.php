@@ -6,14 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\FeeSchedule;
 use App\Models\GraduationFee;
 use App\Models\StudentGraduationFee;
-use App\Models\Teacher;
-use App\Models\User;
 use App\Models\Enrollment;
 use App\Models\Student;
-use App\Models\Role;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DirectressController extends Controller
 {
@@ -23,21 +18,19 @@ class DirectressController extends Controller
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
-        $totalTeachers = Teacher::count();
-        $activeTeachers = Teacher::where('status', 'Active')->count();
         $feeSchedules = FeeSchedule::count();
         $graduationFees = GraduationFee::count();
 
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.directress.partials.dashboard-results', compact(
-                    'totalTeachers', 'activeTeachers', 'feeSchedules', 'graduationFees'
+                    'feeSchedules', 'graduationFees'
                 ))->render(),
             ]);
         }
 
         return view('portal.directress.dashboard', compact(
-            'totalTeachers', 'activeTeachers', 'feeSchedules', 'graduationFees'
+            'feeSchedules', 'graduationFees'
         ));
     }
 
@@ -262,124 +255,5 @@ class DirectressController extends Controller
         $assignment->save();
 
         return back()->with('success', 'Payment status updated.');
-    }
-
-    // ─── Teacher Management ─────────────────────────────────────
-    public function teachers(Request $request)
-    {
-        $isAjax = $request->boolean('ajax');
-        $request->query->remove('ajax');
-        $query = Teacher::with('user');
-
-        if (request('search')) {
-            $search = request('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
-
-        if (request('status')) {
-            $query->where('status', request('status'));
-        }
-
-        $teachers = $query->orderBy('last_name')->paginate(20)->withQueryString();
-
-        if ($isAjax) {
-            return response()->json([
-                'html' => view('portal.directress.partials.teachers-results', compact('teachers'))->render(),
-            ]);
-        }
-
-        return view('portal.directress.teachers.index', compact('teachers'));
-    }
-
-    public function teachersCreate()
-    {
-        return view('portal.directress.teachers.create');
-    }
-
-    public function teachersStore(Request $request)
-    {
-        $data = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'phone' => 'nullable|string|max:15',
-            'department' => 'nullable|string|max:100',
-            'teacher_number' => 'nullable|string|max:20|unique:teachers,teacher_number',
-        ]);
-
-        $rawPassword = Str::upper(Str::random(4)) . rand(100, 999) . '!' . Str::random(3);
-
-        $user = User::create([
-            'name' => $data['first_name'] . ' ' . $data['last_name'],
-            'email' => $data['email'],
-            'role_id' => 4, // Teacher
-            'contact_number' => $data['phone'],
-            'password' => Hash::make($rawPassword),
-            'status' => 'active',
-        ]);
-
-        Teacher::create([
-            'user_id' => $user->id,
-            'teacher_number' => $data['teacher_number'] ?? null,
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'department' => $data['department'],
-            'status' => 'Active',
-        ]);
-
-        return redirect()->route('directress.teachers')
-            ->with('success', "Teacher account created! Temporary password: <strong>{$rawPassword}</strong>.");
-    }
-
-    public function teachersEdit(Teacher $teacher)
-    {
-        return view('portal.directress.teachers.edit', compact('teacher'));
-    }
-
-    public function teachersUpdate(Request $request, Teacher $teacher)
-    {
-        $data = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $teacher->user_id,
-            'phone' => 'nullable|string|max:15',
-            'department' => 'nullable|string|max:100',
-            'teacher_number' => 'nullable|string|max:20|unique:teachers,teacher_number,' . $teacher->id,
-            'status' => 'required|in:Active,Inactive',
-        ]);
-
-        $teacher->update([
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'department' => $data['department'],
-            'teacher_number' => $data['teacher_number'],
-            'status' => $data['status'],
-        ]);
-
-        $teacher->user->update([
-            'name' => $data['first_name'] . ' ' . $data['last_name'],
-            'email' => $data['email'],
-            'contact_number' => $data['phone'],
-            'status' => $data['status'] === 'Active' ? 'active' : 'inactive',
-        ]);
-
-        return redirect()->route('directress.teachers')
-            ->with('success', 'Teacher profile updated.');
-    }
-
-    public function teachersResetPassword(Teacher $teacher)
-    {
-        $rawPassword = Str::upper(Str::random(4)) . rand(100, 999) . '!' . Str::random(3);
-        $teacher->user->update(['password' => Hash::make($rawPassword)]);
-
-        return back()->with('success', "Password reset for {$teacher->first_name} {$teacher->last_name}. New temporary password: <strong>{$rawPassword}</strong>");
     }
 }

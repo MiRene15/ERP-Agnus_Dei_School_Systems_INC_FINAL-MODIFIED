@@ -265,13 +265,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/directress/graduation-fees/{graduationFee}/assign', [DirectressController::class, 'graduationFeesAssignStore'])->name('directress.graduation-fees.assign.store');
         Route::get('/directress/graduation-fees/{graduationFee}/assigned', [DirectressController::class, 'graduationFeesAssigned'])->name('directress.graduation-fees.assigned');
         Route::post('/directress/graduation-fees/{assignment}/toggle-paid', [DirectressController::class, 'graduationFeesTogglePaid'])->name('directress.graduation-fees.toggle-paid');
-        // Teachers
-        Route::get('/directress/teachers', [DirectressController::class, 'teachers'])->name('directress.teachers');
-        Route::get('/directress/teachers/create', [DirectressController::class, 'teachersCreate'])->name('directress.teachers.create');
-        Route::post('/directress/teachers', [DirectressController::class, 'teachersStore'])->name('directress.teachers.store');
-        Route::get('/directress/teachers/{teacher}/edit', [DirectressController::class, 'teachersEdit'])->name('directress.teachers.edit');
-        Route::patch('/directress/teachers/{teacher}', [DirectressController::class, 'teachersUpdate'])->name('directress.teachers.update');
-        Route::post('/directress/teachers/{teacher}/reset-password', [DirectressController::class, 'teachersResetPassword'])->name('directress.teachers.reset-password');
     });
 
     // ─── School Principal (role 9) ─────────────────────────────

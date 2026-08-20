@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -94,6 +95,22 @@ class UserController extends Controller
             'status'         => 'active',
         ]);
 
+        // If role is Teacher (4), also create a Teacher record
+        if ($request->role_id == 4) {
+            $nameParts = explode(' ', $request->name, 2);
+            $firstName = $nameParts[0];
+            $lastName = $nameParts[1] ?? '';
+
+            Teacher::create([
+                'user_id'      => $newUser->id,
+                'first_name'   => $firstName,
+                'last_name'    => $lastName,
+                'email'        => $request->email,
+                'phone'        => $this->normalizePhone($request->contact_number),
+                'status'       => 'Active',
+            ]);
+        }
+
         log_activity($newUser, 'Created', "Created staff account: {$request->name}");
 
         return redirect()->route('admin.users.index')
@@ -123,6 +140,20 @@ class UserController extends Controller
             'role_id'        => $request->role_id,
             'contact_number' => $this->normalizePhone($request->contact_number),
         ]);
+
+        // If user has a Teacher record, sync the changes
+        if ($user->teacher) {
+            $nameParts = explode(' ', $request->name, 2);
+            $firstName = $nameParts[0];
+            $lastName = $nameParts[1] ?? '';
+
+            $user->teacher->update([
+                'first_name' => $firstName,
+                'last_name'  => $lastName,
+                'email'      => $request->email,
+                'phone'      => $this->normalizePhone($request->contact_number),
+            ]);
+        }
 
         log_activity($user, 'Updated', "Updated staff account: {$user->name}");
 

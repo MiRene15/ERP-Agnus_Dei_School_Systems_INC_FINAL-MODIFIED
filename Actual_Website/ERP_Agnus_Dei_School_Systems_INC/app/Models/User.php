@@ -40,6 +40,11 @@ class User extends Authenticatable
         return $this->hasOne(Student::class);
     }
 
+    public function teacher()
+    {
+        return $this->hasOne(Teacher::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
