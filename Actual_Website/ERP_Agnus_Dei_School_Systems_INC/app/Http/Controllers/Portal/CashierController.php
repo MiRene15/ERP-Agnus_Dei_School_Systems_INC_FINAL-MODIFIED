@@ -15,10 +15,19 @@ use Illuminate\Support\Facades\Storage;
 
 class CashierController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $todayCollection = Payment::whereDate('payment_date', today())->sum('amount_paid');
         $receiptsToday = Payment::whereDate('payment_date', today())->count();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.cashier.partials.dashboard-results', compact('todayCollection', 'receiptsToday'))->render(),
+            ]);
+        }
 
         return view('portal.cashier.dashboard', compact('todayCollection', 'receiptsToday'));
     }

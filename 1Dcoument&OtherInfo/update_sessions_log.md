@@ -418,7 +418,27 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 57
-- **Time span:** 2026-03-29 → 2026-08-19
-- **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization
-- **Uncommitted/working changes:** Sessions 15–41 bug fixes + features + docs; modified `phpunit.xml`; untracked planning docs in `1Dcoument&OtherInfo/`
+## 42. Sidebar Active-State Fix + MD Updates (Aug 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-08-19 | 8ad48ce | Fix: removed `admin.dashboard` from Onboarding sidebar active check — was causing Onboarding tab to highlight when clicking Dashboard |
+
+**Scope:** Single-line fix in `sidebar-admin.blade.php`. Updated MDs (CHANGELOG, sessions log, workflow plan).
+
+---
+
+## 43. Full AJAX Conversion — All Portals (Aug 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-08-20 | — | Feat: converted all traditional full-page-reload pages to AJAX across 9 portals. Teacher portal: classes, class-list, grade-assessment, computed-grades, schedule, dashboard — all use ajaxTable with server-side search/filter and skeleton loading. Student portal: dashboard, schedule, ledger, report-card — all use ajaxTable with skeleton loading. Admin portal: dashboard, pending-accounts — ajaxTable. Cashier, Librarian, Nurse, Registrar, Principal, Directress dashboards — all ajaxTable with skeleton loading. Created 20+ new partial views. Added AJAX support to 8 controllers (TeacherController, StudentController, ReportCardController, AdminController, CashierController, LibrarianController, NurseController, RegistrarController, PrincipalController, DirectressController). |
+
+**Scope:** Converted 16 traditional pages to AJAX across 9 portal sections. Teacher portal went from 0/9 AJAX to 6/9 (remaining 3 are form pages: grades entry, assessments entry, grade-assessment-student). Student portal went from 0/9 to 4/9 (remaining 5 are forms or standalone pages: admission-apply, enrollment-apply, withdrawal-create, admission-status, COR). All dashboards (9 total) now use AJAX with skeleton loading. All new pages use the existing `ajaxTable` Alpine component pattern with `skelly` skeleton classes.
+
+---
+
+- **Total update sessions (commits):** 59
+- **Time span:** 2026-03-29 → 2026-08-20
+- **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals)
+- **Uncommitted/working changes:** Sessions 15–43 bug fixes + features + docs; modified `phpunit.xml`; untracked planning docs in `1Dcoument&OtherInfo/`

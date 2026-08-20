@@ -2,6 +2,26 @@
 
 ## [Unreleased](https://github.com/laravel/laravel/compare/v12.12.1...12.x)
 
+### Full AJAX Conversion — 2026-08-20
+- Converted 16 traditional full-page-reload pages to AJAX across 9 portals
+- **Teacher portal** (6 pages): classes, class-list, grade-assessment, computed-grades, schedule, dashboard — all use `ajaxTable` with server-side search/filter and skeleton loading
+- **Student portal** (4 pages): dashboard, schedule, ledger, report-card — all use `ajaxTable` with skeleton loading
+- **Admin portal** (2 pages): dashboard, pending-accounts — ajaxTable
+- **Cashier, Librarian, Nurse, Registrar, Principal, Directress** dashboards — all ajaxTable with skeleton loading
+- Created 20+ new partial views in `partials/` subdirectories
+- Added AJAX support to 8 controllers (TeacherController, StudentController, ReportCardController, AdminController, CashierController, LibrarianController, NurseController, RegistrarController, PrincipalController, DirectressController)
+- All pages use consistent `ajaxTable` Alpine component with `skelly` skeleton classes
+
+### Sidebar Active-State Fix — 2026-08-19
+- Fixed Onboarding tab incorrectly highlighting when clicking Dashboard (`sidebar-admin.blade.php`)
+
+### Admin Account Management — 2026-08-19
+- Created collapsible "Account Management" sidebar section with Staff + Students sub-links
+- New `StudentAccountController` for student account management (list, view, toggle status, reset password)
+- Student account views and AJAX partials
+- Re-ran `SystemRolesAndStaffSeeder` — role IDs now correct (8=Directress, 9=Principal)
+- Added login redirect for roles 8 and 9 in `AuthenticatedSessionController`
+
 ### Performance Optimization — 2026-08-18
 - Created `PERFORMANCE_OPTIMIZATION.md` — 56 performance issues identified across 10 categories
 - **Phase 1 — Quick Wins:**

@@ -8,8 +8,11 @@ use Illuminate\Http\Request;
 
 class StudentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $student = auth()->user()->student;
 
         $activeEnrollment = $student->enrollments()
@@ -21,6 +24,12 @@ class StudentController extends Controller
         $pendingAdmission = $student->admissions()->where('status', 'Pending')->latest()->first();
 
         $student->load('ledger');
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission'))->render(),
+            ]);
+        }
 
         return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission'));
     }
@@ -52,8 +61,11 @@ class StudentController extends Controller
         return view('portal.student.cor', compact('student', 'enrollment', 'ledger', 'feeSchedules', 'directressName', 'principalName'));
     }
 
-    public function schedule()
+    public function schedule(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $student = auth()->user()->student;
         $activeEnrollment = $student->enrollments()
             ->with('section', 'subjects.subject', 'subjects.schedules', 'subjects.teacher')
@@ -62,6 +74,9 @@ class StudentController extends Controller
             ->first();
 
         if (!$activeEnrollment) {
+            if ($isAjax) {
+                return response()->json(['html' => '<div class="p-8 text-center text-sm text-gray-500">No active enrollment found.</div>']);
+            }
             return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
         }
 
@@ -89,11 +104,20 @@ class StudentController extends Controller
         uasort($slotMap, fn($a, $b) => strcmp($a['start'], $b['start']));
         $scheduleSlots = array_values($slotMap);
 
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.student.partials.schedule-results', compact('activeEnrollment', 'scheduleSlots'))->render(),
+            ]);
+        }
+
         return view('portal.student.schedule', compact('student', 'activeEnrollment', 'scheduleSlots'));
     }
 
-    public function ledger()
+    public function ledger(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $student = auth()->user()->student;
         $activeEnrollment = $student->enrollments()
             ->with('section')
@@ -102,10 +126,19 @@ class StudentController extends Controller
             ->first();
 
         if (!$activeEnrollment) {
+            if ($isAjax) {
+                return response()->json(['html' => '<div class="p-8 text-center text-sm text-gray-500">No active enrollment found.</div>']);
+            }
             return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
         }
 
         $student->load('ledger.payments');
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment'))->render(),
+            ]);
+        }
 
         return view('portal.student.ledger', compact('student', 'activeEnrollment'));
     }

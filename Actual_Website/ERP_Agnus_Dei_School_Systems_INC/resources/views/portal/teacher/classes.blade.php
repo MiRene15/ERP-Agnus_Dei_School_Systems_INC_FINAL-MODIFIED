@@ -12,53 +12,37 @@
     <p class="text-gray-600 mt-1">View your assigned classes and enter grades.</p>
 </div>
 
-@if($classes->isEmpty())
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-    <p class="text-sm text-gray-500">No classes assigned to you yet.</p>
-</div>
-@else
-<div x-data="{ search: '', grade: '' }">
-    <div class="flex gap-2 mb-4">
-        <input type="text" x-model="search" placeholder="Search subject..."
-               class="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-        <select x-model="grade"
-                class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <option value="">All Grades</option>
-            @foreach($classes->pluck('grade_level')->unique()->sort() as $gl)
-            <option value="{{ $gl }}">{{ $gl }}</option>
-            @endforeach
-        </select>
+<div x-data="ajaxTable('{{ route('teacher.classes') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
+    <div class="mb-4 flex gap-2 flex-wrap items-center">
+        <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
+            <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
+                   placeholder="Search subject..."
+                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="">All Grades</option>
+                @foreach($gradeLevels as $gl)
+                    <option value="{{ $gl }}">{{ $gl }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
+            <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
+        </form>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        @foreach($classes as $class)
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition"
-             x-show="(search === '' || '{{ strtolower($class->subject->name ?? '') }}'.includes(search.toLowerCase())) && (grade === '' || '{{ $class->grade_level }}' === grade)">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <h3 class="font-bold text-gray-900">{{ $class->subject->name ?? 'N/A' }}</h3>
-                    <p class="text-sm text-gray-500">{{ $class->subject->subject_code ?? '' }}</p>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div x-show="loading" class="p-4 space-y-3">
+            <template x-for="i in 4" :key="i">
+                <div class="skelly sk-card">
+                    <div class="grid grid-cols-3 gap-4 px-2">
+                        <div class="skelly sk-line-md col-span-2"></div>
+                        <div class="skelly sk-line-md"></div>
+                        <div class="skelly sk-line-sm"></div>
+                        <div class="skelly sk-line-sm"></div>
+                    </div>
                 </div>
-            </div>
-            <div class="text-sm text-gray-600 space-y-1 mb-4">
-                <p><span class="font-medium">Grade/Section:</span> {{ $class->grade_level }} - {{ $class->section }}</p>
-                <p><span class="font-medium">Room:</span> {{ $class->room ?? 'N/A' }}</p>
-                <p><span class="font-medium">Schedule:</span> {{ $class->schedules->count() }} session(s)</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="{{ route('teacher.classes.show', $class) }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                    Enter Grades
-                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </a>
-                <a href="{{ route('teacher.assessments', $class) }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                    Assessments
-                </a>
-            </div>
+            </template>
         </div>
-        @endforeach
+        <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
     </div>
-    <div x-show="search !== '' || grade !== ''" x-cloak class="mt-4 text-center text-sm text-gray-400"
-         x-effect="$el.style.display = document.querySelectorAll('[x-show]').length > 0 ? 'none' : 'block'"></div>
 </div>
-@endif
 @endsection

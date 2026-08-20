@@ -30,37 +30,23 @@
 </div>
 @endif
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Total Sections</p>
-        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalSections }}</p>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Active Students</p>
-        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalStudents }}</p>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Announcements</p>
-        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalAnnouncements }}</p>
-    </div>
-</div>
-
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-    <h3 class="text-lg font-bold text-gray-900 mb-4">Recent Announcements</h3>
-    @if($recentAnnouncements->isEmpty())
-    <p class="text-sm text-gray-500 text-center py-4">No announcements yet.</p>
-    @else
-    <div class="space-y-2">
-        @foreach($recentAnnouncements as $a)
-        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div>
-                <p class="font-medium text-sm text-gray-900">{{ $a->title }}</p>
-                <p class="text-xs text-gray-500">{{ \Carbon\Carbon::parse($a->date)->format('M d, Y') }} — {{ ucfirst($a->type) }}</p>
-            </div>
-            <span class="text-xs {{ $a->is_published ? 'text-green-600' : 'text-gray-400' }}">{{ $a->is_published ? 'Published' : 'Draft' }}</span>
+<div x-data="ajaxTable('{{ route('principal.dashboard') }}')">
+    <div x-show="loading" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <template x-for="i in 3" :key="i">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                    <div class="skelly sk-line-sm w-24 mb-2"></div>
+                    <div class="skelly sk-line-md w-16"></div>
+                </div>
+            </template>
         </div>
-        @endforeach
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
+            <div class="skelly sk-line-md w-32 mb-4"></div>
+            <template x-for="i in 3" :key="i">
+                <div class="skelly sk-card"></div>
+            </template>
+        </div>
     </div>
-    @endif
+    <div x-show="!loading" x-cloak x-html="html" class="fade-in"></div>
 </div>
 @endsection

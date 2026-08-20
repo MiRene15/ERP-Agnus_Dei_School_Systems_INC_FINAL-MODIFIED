@@ -12,8 +12,11 @@ use Illuminate\Support\Facades\DB;
 
 class LibrarianController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $totalBooks = Book::where('is_active', true)->count();
         $availableBooks = Book::where('is_active', true)->sum('available_quantity');
         $borrowedBooks = LibraryTransaction::where('status', 'Borrowed')->count();
@@ -25,6 +28,12 @@ class LibrarianController extends Controller
             ->latest('borrow_date')
             ->take(5)
             ->get();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.librarian.partials.dashboard-results', compact('totalBooks', 'availableBooks', 'borrowedBooks', 'overdueBooks', 'recentTransactions'))->render(),
+            ]);
+        }
 
         return view('portal.librarian.dashboard', compact('totalBooks', 'availableBooks', 'borrowedBooks', 'overdueBooks', 'recentTransactions'));
     }

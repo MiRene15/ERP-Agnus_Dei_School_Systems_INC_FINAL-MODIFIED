@@ -155,8 +155,11 @@ class ReportCardController extends Controller
         return $pdf->stream("report-card-{$enrollment->student->student_number}.pdf");
     }
 
-    public function studentShow()
+    public function studentShow(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $student = auth()->user()->student;
 
         $enrollment = $student->enrollments()
@@ -167,6 +170,9 @@ class ReportCardController extends Controller
             ->first();
 
         if (!$enrollment) {
+            if ($isAjax) {
+                return response()->json(['html' => '<div class="p-8 text-center text-sm text-gray-500">No active enrollment found.</div>']);
+            }
             return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
         }
 
@@ -195,6 +201,12 @@ class ReportCardController extends Controller
         });
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.student.partials.report-card-results', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage'))->render(),
+            ]);
+        }
 
         return view('portal.student.report-card', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage'));
     }

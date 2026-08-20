@@ -18,12 +18,23 @@ use Illuminate\Support\Str;
 class DirectressController extends Controller
 {
     // ─── Dashboard ───────────────────────────────────────────────
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $totalTeachers = Teacher::count();
         $activeTeachers = Teacher::where('status', 'Active')->count();
         $feeSchedules = FeeSchedule::count();
         $graduationFees = GraduationFee::count();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.directress.partials.dashboard-results', compact(
+                    'totalTeachers', 'activeTeachers', 'feeSchedules', 'graduationFees'
+                ))->render(),
+            ]);
+        }
 
         return view('portal.directress.dashboard', compact(
             'totalTeachers', 'activeTeachers', 'feeSchedules', 'graduationFees'

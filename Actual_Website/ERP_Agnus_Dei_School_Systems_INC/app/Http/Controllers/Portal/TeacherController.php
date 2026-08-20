@@ -16,8 +16,11 @@ use Illuminate\Http\Request;
 
 class TeacherController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $teacherId = auth()->id();
         $classes = Classes::with('subject', 'schedules', 'enrollments')
             ->where('teacher_id', $teacherId)
@@ -34,19 +37,48 @@ class TeacherController extends Controller
             return $c->enrollments->where('status', 'Active')->count();
         });
 
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.teacher.partials.dashboard-results', compact('classes', 'todaySchedule', 'totalStudents'))->render(),
+            ]);
+        }
+
         return view('portal.teacher.dashboard', compact('classes', 'todaySchedule', 'totalStudents'));
     }
 
-    public function classes()
+    public function classes(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $teacherId = auth()->id();
-        $classes = Classes::with('subject', 'schedules', 'teacher')
+        $query = Classes::with('subject', 'schedules', 'teacher')
             ->where('teacher_id', $teacherId)
             ->where('school_year', active_school_year())
-            ->where('status', 'active')
-            ->get();
+            ->where('status', 'active');
 
-        return view('portal.teacher.classes', compact('classes'));
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('subject', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('subject_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('grade_level')) {
+            $query->where('grade_level', $request->grade_level);
+        }
+
+        $classes = $query->get();
+        $gradeLevels = $classes->pluck('grade_level')->unique()->sort()->values()->all();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.teacher.partials.classes-results', compact('classes', 'gradeLevels'))->render(),
+            ]);
+        }
+
+        return view('portal.teacher.classes', compact('classes', 'gradeLevels'));
     }
 
     public function showClass(Classes $class)
@@ -200,8 +232,11 @@ class TeacherController extends Controller
         return back()->with('success', 'Assessments saved for ' . $data['grading_period'] . '.');
     }
 
-    public function schedule()
+    public function schedule(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $teacherId = auth()->id();
         $classes = Classes::with('subject', 'schedules')
             ->where('teacher_id', $teacherId)
@@ -226,21 +261,50 @@ class TeacherController extends Controller
             $schedulesByDay[$day] = $allSchedules->get($day, collect());
         }
 
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.teacher.partials.schedule-results', compact('weekDays', 'schedulesByDay'))->render(),
+            ]);
+        }
+
         return view('portal.teacher.schedule', compact('classes', 'weekDays', 'schedulesByDay'));
     }
 
     // ─── NEW SUB-TAB: List of Classes (Master List) ─────────────────────
 
-    public function classList()
+    public function classList(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $teacherId = auth()->id();
-        $classes = Classes::with('subject')
+        $query = Classes::with('subject')
             ->where('teacher_id', $teacherId)
             ->where('school_year', active_school_year())
-            ->where('status', 'active')
-            ->get();
+            ->where('status', 'active');
 
-        return view('portal.teacher.class-list', compact('classes'));
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('subject', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('subject_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('grade_level')) {
+            $query->where('grade_level', $request->grade_level);
+        }
+
+        $classes = $query->get();
+        $gradeLevels = $classes->pluck('grade_level')->unique()->sort()->values()->all();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.teacher.partials.class-list-results', compact('classes', 'gradeLevels'))->render(),
+            ]);
+        }
+
+        return view('portal.teacher.class-list', compact('classes', 'gradeLevels'));
     }
 
     public function classStudents(Classes $class)
@@ -260,8 +324,11 @@ class TeacherController extends Controller
 
     // ─── NEW SUB-TAB: Grade Assessment ──────────────────────────────────
 
-    public function gradeAssessment()
+    public function gradeAssessment(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $teacherId = auth()->id();
         $classes = Classes::with('subject')
             ->where('teacher_id', $teacherId)
@@ -290,6 +357,15 @@ class TeacherController extends Controller
             } else {
                 $class = null;
             }
+        }
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.teacher.partials.grade-assessment-results', compact(
+                    'classes', 'class', 'activeEnrollments', 'existingAssessments',
+                    'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes'
+                ))->render(),
+            ]);
         }
 
         return view('portal.teacher.grade-assessment', compact(
@@ -368,8 +444,11 @@ class TeacherController extends Controller
 
     // ─── NEW SUB-TAB: Computed Grades ───────────────────────────────────
 
-    public function computedGrades()
+    public function computedGrades(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $teacherId = auth()->id();
         $classes = Classes::with('subject')
             ->where('teacher_id', $teacherId)
@@ -442,6 +521,14 @@ class TeacherController extends Controller
             } else {
                 $class = null;
             }
+        }
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.teacher.partials.computed-grades-results', compact(
+                    'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId'
+                ))->render(),
+            ]);
         }
 
         return view('portal.teacher.computed-grades', compact(

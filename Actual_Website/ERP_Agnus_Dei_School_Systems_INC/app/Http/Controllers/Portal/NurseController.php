@@ -9,8 +9,11 @@ use Illuminate\Http\Request;
 
 class NurseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $todayVisits = ClinicLog::whereDate('incident_date', today())->count();
         $thisWeekVisits = ClinicLog::whereBetween('incident_date', [now()->startOfWeek(), now()->endOfWeek()])->count();
         $referralsCount = ClinicLog::whereNotNull('referred_to')->count();
@@ -20,6 +23,12 @@ class NurseController extends Controller
             ->latest('incident_date')
             ->take(5)
             ->get();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.nurse.partials.dashboard-results', compact('todayVisits', 'thisWeekVisits', 'referralsCount', 'followUps', 'recentLogs'))->render(),
+            ]);
+        }
 
         return view('portal.nurse.dashboard', compact('todayVisits', 'thisWeekVisits', 'referralsCount', 'followUps', 'recentLogs'));
     }

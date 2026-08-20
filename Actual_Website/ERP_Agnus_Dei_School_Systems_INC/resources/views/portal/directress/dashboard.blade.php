@@ -27,22 +27,17 @@
 </div>
 @endif
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Total Teachers</p>
-        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $totalTeachers }}</p>
+<div x-data="ajaxTable('{{ route('directress.dashboard') }}')">
+    <div x-show="loading" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <template x-for="i in 4" :key="i">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                    <div class="skelly sk-line-sm w-24 mb-2"></div>
+                    <div class="skelly sk-line-md w-16"></div>
+                </div>
+            </template>
+        </div>
     </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Active Teachers</p>
-        <p class="text-2xl font-bold text-green-600 mt-1">{{ $activeTeachers }}</p>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Fee Schedules</p>
-        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $feeSchedules }}</p>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-        <p class="text-sm text-gray-500">Graduation Fees</p>
-        <p class="text-2xl font-bold text-gray-900 mt-1">{{ $graduationFees }}</p>
-    </div>
+    <div x-show="!loading" x-cloak x-html="html" class="fade-in"></div>
 </div>
 @endsection

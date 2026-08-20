@@ -34,43 +34,23 @@
 </div>
 @endif
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-    <a href="{{ route('registrar.admissions.index') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition block">
-        <h3 class="text-lg font-bold text-gray-900 mb-2">Pending Admissions</h3>
-        <p class="text-4xl font-bold text-blue-600">{{ $pendingCount }}</p>
-        <p class="text-sm text-gray-500 mt-2">Awaiting document verification</p>
-    </a>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 class="text-lg font-bold text-gray-900 mb-2">Currently Enrolled</h3>
-        <p class="text-4xl font-bold text-green-600">{{ $enrolledCount }}</p>
-        <p class="text-sm text-gray-500 mt-2">Active enrollments this school year</p>
-    </div>
-</div>
-
-@if($recentAdmissions->isNotEmpty())
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-    <h3 class="font-semibold text-gray-900 mb-4">Recent Applications</h3>
-    <div class="divide-y divide-gray-50">
-        @foreach($recentAdmissions as $admission)
-        <div class="py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700">
-                    {{ substr($admission->student->first_name, 0, 1) }}{{ substr($admission->student->last_name, 0, 1) }}
+<div x-data="ajaxTable('{{ route('registrar.dashboard') }}')">
+    <div x-show="loading" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <template x-for="i in 2" :key="i">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                    <div class="skelly sk-line-sm w-24 mb-2"></div>
+                    <div class="skelly sk-line-md w-16"></div>
                 </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-900">{{ $admission->student->first_name }} {{ $admission->student->last_name }}</p>
-                    <p class="text-xs text-gray-500">{{ $admission->application_type }} &middot; {{ $admission->grade_level }}{{ $admission->strand ? ' — '.$admission->strand : '' }} &middot; {{ $admission->school_year }} &middot; {{ $admission->created_at->diffForHumans() }}</p>
-                </div>
-            </div>
-            <a href="{{ route('registrar.admissions.show', $admission) }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Review</a>
+            </template>
         </div>
-        @endforeach
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
+            <div class="skelly sk-line-md w-32 mb-4"></div>
+            <template x-for="i in 3" :key="i">
+                <div class="skelly sk-card"></div>
+            </template>
+        </div>
     </div>
-    @if($pendingCount > 5)
-    <div class="mt-3 text-center">
-        <a href="{{ route('registrar.admissions.index') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">View all {{ $pendingCount }} pending admissions &rarr;</a>
-    </div>
-    @endif
+    <div x-show="!loading" x-cloak x-html="html" class="fade-in"></div>
 </div>
-@endif
 @endsection

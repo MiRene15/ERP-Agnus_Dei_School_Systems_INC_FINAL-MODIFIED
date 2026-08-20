@@ -1,10 +1,16 @@
 # Workflow Priority Plan — Agnus Dei School ERP
 
 Bugs to fix and features to add, ordered by the system workflow (inquiry → admission → payment → operations → cross-cutting).
-Generated: 2026-08-04 · **Last updated: 2026-08-18**
+Generated: 2026-08-04 · **Last updated: 2026-08-20**
 Bugs are from the verified list in `bug_report.md`; items marked **NEW** are feature additions.
 
-> **2026-08-18:** Performance optimization plan created — 56 issues identified. See `PERFORMANCE_OPTIMIZATION.md` for full details. Implementation pending.
+> **2026-08-20:** Full AJAX conversion COMPLETED — 16 traditional pages converted to AJAX across 9 portals. All dashboards (9) + Teacher (6 pages) + Student (4 pages) + Admin pending-accounts now use `ajaxTable` with skeleton loading.
+
+> **2026-08-19:** Admin sidebar active-state bug fixed — Onboarding no longer highlights when clicking Dashboard.
+
+> **2026-08-19:** Role ID swap fixed — seeder now matches code (8=Directress, 9=Principal). Admin Account Management created (Staff + Students). Seeder re-run on Supabase.
+
+> **2026-08-18:** Performance optimization COMPLETED — 56 issues fixed. See `PERFORMANCE_OPTIMIZATION.md` for full details.
 
 > **2026-08-06:** The 12 feature enhancements in `feature_enhancements.md` (library booking logs + overdue/damage/lost fees, book inactive logs + serial numbers, AR numbers, attached receipts, privacy-first cashier search, misc fees, student financial view, payment reminders, collections by date, school-year filters) were all implemented. This supersedes **L5 (Overdue fines)** below and partially covers **M7 (overdue email reminders — payment reminders only, not overdue-book emails).**
 
@@ -14,9 +20,9 @@ Priority legend: HIGH = blocks/corrupts core operations · MEDIUM = significant 
 
 ## 0. Performance Optimization (cross-cutting) — NEW 2026-08-18
 
-**Status:** Planning — see `PERFORMANCE_OPTIMIZATION.md` for full details
+**Status:** ✅ Completed — see `PERFORMANCE_OPTIMIZATION.md` for full details
 **Impact:** App feels slow during processing — not just cold starts, but actual page load speed
-**Issue Count:** 56 issues across 10 categories
+**Issue Count:** 56 issues across 10 categories — ALL FIXED
 
 - **Fix (HIGH):** Cache `active_school_year()` helper — eliminates 1 DB query per page load (helpers.php:18-22)
 - **Fix (HIGH):** Cache `all_school_years()` helper — eliminates 3 DB queries per call (helpers.php:25-37)

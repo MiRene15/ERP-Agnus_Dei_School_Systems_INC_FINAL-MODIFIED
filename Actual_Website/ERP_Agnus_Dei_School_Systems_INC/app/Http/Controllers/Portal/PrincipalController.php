@@ -15,12 +15,23 @@ use Illuminate\Http\Request;
 
 class PrincipalController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $totalAnnouncements = Announcement::count();
         $totalSections = Section::count();
         $totalStudents = Enrollment::where('status', 'Active')->count();
         $recentAnnouncements = Announcement::latest()->take(5)->get();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.principal.partials.dashboard-results', compact(
+                    'totalAnnouncements', 'totalSections', 'totalStudents', 'recentAnnouncements'
+                ))->render(),
+            ]);
+        }
 
         return view('portal.principal.dashboard', compact(
             'totalAnnouncements', 'totalSections', 'totalStudents', 'recentAnnouncements'

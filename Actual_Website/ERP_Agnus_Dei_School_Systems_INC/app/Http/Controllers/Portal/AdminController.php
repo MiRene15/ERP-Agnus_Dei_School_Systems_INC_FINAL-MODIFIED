@@ -10,8 +10,11 @@ use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $pendingConfirmations = StudentLedger::whereNull('it_confirmed_at')
             ->where('total_paid', '>', 0)
             ->with('student.user')
@@ -23,15 +26,30 @@ class AdminController extends Controller
 
         $recentActivity = \App\Models\ActivityLog::with('causer')->latest()->take(5)->get();
 
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.admin.partials.dashboard-results', compact('pendingConfirmations', 'confirmedCount', 'totalUsers', 'activeRoles', 'recentActivity'))->render(),
+            ]);
+        }
+
         return view('portal.admin.dashboard', compact('pendingConfirmations', 'confirmedCount', 'totalUsers', 'activeRoles', 'recentActivity'));
     }
 
-    public function pendingAccounts()
+    public function pendingAccounts(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $pendingConfirmations = StudentLedger::whereNull('it_confirmed_at')
             ->where('total_paid', '>', 0)
             ->with('student.user', 'student.enrollments.section')
             ->get();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.admin.partials.pending-accounts-results', compact('pendingConfirmations'))->render(),
+            ]);
+        }
 
         return view('portal.admin.pending-accounts', compact('pendingConfirmations'));
     }

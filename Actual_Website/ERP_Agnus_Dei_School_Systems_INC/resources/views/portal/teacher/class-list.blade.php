@@ -12,40 +12,37 @@
     <p class="text-gray-600 mt-1">Select a class to view its master list of students.</p>
 </div>
 
-@if($classes->isEmpty())
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-    <p class="text-sm text-gray-500">No classes assigned to you yet.</p>
-</div>
-@else
-<div x-data="{ search: '', grade: '' }">
-    <div class="flex gap-2 mb-4">
-        <input type="text" x-model="search" placeholder="Search subject..."
-               class="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-        <select x-model="grade"
-                class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <option value="">All Grades</option>
-            @foreach($classes->pluck('grade_level')->unique()->sort() as $gl)
-            <option value="{{ $gl }}">{{ $gl }}</option>
-            @endforeach
-        </select>
+<div x-data="ajaxTable('{{ route('teacher.class-list') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
+    <div class="mb-4 flex gap-2 flex-wrap items-center">
+        <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
+            <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
+                   placeholder="Search subject..."
+                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="">All Grades</option>
+                @foreach($gradeLevels as $gl)
+                    <option value="{{ $gl }}">{{ $gl }}</option>
+                @endforeach
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
+            <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
+        </form>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        @foreach($classes as $class)
-        <a href="{{ route('teacher.class-list.students', $class) }}"
-           class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition block"
-           x-show="(search === '' || '{{ strtolower($class->subject->name ?? '') }}'.includes(search.toLowerCase())) && (grade === '' || '{{ $class->grade_level }}' === grade)">
-            <div class="mb-3">
-                <h3 class="font-bold text-gray-900">{{ $class->subject->name ?? 'N/A' }}</h3>
-                <p class="text-xs text-gray-500">{{ $class->subject->subject_code ?? '' }}</p>
-            </div>
-            <div class="text-sm text-gray-600 space-y-1 mb-3">
-                <p><span class="font-medium">Grade/Section:</span> {{ $class->grade_level }} - {{ $class->section }}</p>
-                <p><span class="font-medium">Students:</span> {{ $class->enrollments->where('status', 'Active')->count() }}</p>
-            </div>
-            <span class="text-xs font-semibold text-blue-600">View Master List &rarr;</span>
-        </a>
-        @endforeach
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div x-show="loading" class="p-4 space-y-3">
+            <template x-for="i in 6" :key="i">
+                <div class="skelly sk-card">
+                    <div class="grid grid-cols-4 gap-4 px-2">
+                        <div class="skelly sk-line-md col-span-2"></div>
+                        <div class="skelly sk-line-md"></div>
+                        <div class="skelly sk-line-sm"></div>
+                        <div class="skelly sk-line-sm"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
-@endif
 @endsection
