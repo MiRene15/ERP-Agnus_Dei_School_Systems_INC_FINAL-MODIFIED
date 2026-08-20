@@ -420,7 +420,7 @@
                     6: ['previous_school'],
                 };
                 const fields = requiredByStep[n] || [];
-                if (fields.length === 0) return true;
+                if (fields.length === 0) return false;
                 return fields.every(f => this[f] && String(this[f]).trim() !== '');
             },
 
