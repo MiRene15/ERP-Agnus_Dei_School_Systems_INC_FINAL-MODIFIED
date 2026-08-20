@@ -480,10 +480,10 @@ class TeacherController extends Controller
 
                 $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
                 $weights = [
-                    'Written Work' => 0.25,
-                    'Quiz' => 0.25,
-                    'Seatwork' => 0.25,
-                    'Exam' => 0.25,
+                    'Written Work' => 0.20,
+                    'Quiz' => 0.20,
+                    'Seatwork' => 0.20,
+                    'Exam' => 0.40,
                 ];
 
                 $allAssessments = Assessment::where('class_id', $class->id)

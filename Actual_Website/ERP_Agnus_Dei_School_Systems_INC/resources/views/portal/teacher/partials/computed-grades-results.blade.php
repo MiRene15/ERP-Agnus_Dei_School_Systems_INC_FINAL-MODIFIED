@@ -50,10 +50,10 @@
                     <tr class="bg-gray-50">
                         <th class="text-left py-3 px-3 font-semibold text-gray-600 border-b">#</th>
                         <th class="text-left py-3 px-3 font-semibold text-gray-600 border-b">Student</th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Written Work<br><span class="text-[10px] font-normal text-gray-400">25%</span></th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Quiz<br><span class="text-[10px] font-normal text-gray-400">25%</span></th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Seatwork<br><span class="text-[10px] font-normal text-gray-400">25%</span></th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Exam<br><span class="text-[10px] font-normal text-gray-400">25%</span></th>
+                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Written Work<br><span class="text-[10px] font-normal text-gray-400">20%</span></th>
+                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Quiz<br><span class="text-[10px] font-normal text-gray-400">20%</span></th>
+                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Seatwork<br><span class="text-[10px] font-normal text-gray-400">20%</span></th>
+                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Exam<br><span class="text-[10px] font-normal text-gray-400">40%</span></th>
                         <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Computed</th>
                         <th class="text-center py-3 px-3 font-semibold text-gray-600 border-b">Final Grade</th>
                     </tr>
