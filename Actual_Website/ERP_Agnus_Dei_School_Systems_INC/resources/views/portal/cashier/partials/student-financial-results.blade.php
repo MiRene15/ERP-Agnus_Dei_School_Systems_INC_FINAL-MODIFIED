@@ -43,7 +43,7 @@
                     <dd class="font-medium">
                         @if($student->ledger?->payment_plan)
                             @php $isLocked = $student->ledger->payments->isNotEmpty(); @endphp
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{ $student->ledger->payment_plan === 'full' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700' }}">
+                            <span title="{{ $isLocked ? 'Payment plan locked after first payment' : '' }}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{ $student->ledger->payment_plan === 'full' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700' }}">
                                 @if($isLocked)
                                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
                                 @endif
@@ -68,32 +68,18 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-semibold text-gray-900 mb-4">Fee Summary</h3>
             <div class="space-y-3 text-sm">
-                @php $isSHS = in_array($enrollment?->section?->grade_level, ['Grade 11', 'Grade 12']); @endphp
-                @if($isSHS)
-                    @foreach($feeSchedules as $fs)
-                    <div class="bg-gray-50 rounded-lg p-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium text-gray-800">{{ $fs->term }}</span>
-                            <span class="font-semibold text-gray-900">₱ {{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</span>
-                        </div>
-                        <div class="flex justify-between text-xs text-gray-500">
-                            <span>Tuition: ₱ {{ number_format($fs->tuition_fee, 2) }}</span>
-                            <span>Misc: ₱ {{ number_format($fs->misc_fee, 2) }}</span>
-                        </div>
+                @foreach($feeSchedules as $fs)
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-gray-800">{{ $fs->term ?: $enrollment->school_year }}</span>
+                        <span class="font-semibold text-gray-900">₱ {{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</span>
                     </div>
-                    @endforeach
-                @else
-                    <div class="bg-gray-50 rounded-lg p-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="font-medium text-gray-800">{{ $enrollment->school_year }} (Full Year)</span>
-                            <span class="font-semibold text-gray-900">₱ {{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'), 2) }}</span>
-                        </div>
-                        <div class="flex justify-between text-xs text-gray-500">
-                            <span>Tuition: ₱ {{ number_format($feeSchedules->sum('tuition_fee'), 2) }}</span>
-                            <span>Misc: ₱ {{ number_format($feeSchedules->sum('misc_fee'), 2) }}</span>
-                        </div>
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>Tuition: ₱ {{ number_format($fs->tuition_fee, 2) }}</span>
+                        <span>Misc: ₱ {{ number_format($fs->misc_fee, 2) }}</span>
                     </div>
-                @endif
+                </div>
+                @endforeach
 
                 @if($student->ledger)
                 <div class="flex justify-between py-2 border-t border-gray-200 font-semibold">

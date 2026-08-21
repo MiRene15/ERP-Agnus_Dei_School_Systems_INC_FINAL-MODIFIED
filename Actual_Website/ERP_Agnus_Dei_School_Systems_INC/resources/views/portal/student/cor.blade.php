@@ -120,23 +120,14 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if($isSHS)
-                        @foreach($feeSchedules as $fs)
-                        <tr>
-                            <td>{{ $fs->term }}</td>
-                            <td class="text-right">₱{{ number_format($fs->tuition_fee, 2) }}</td>
-                            <td class="text-right">₱{{ number_format($fs->misc_fee, 2) }}</td>
-                            <td class="text-right" style="font-weight:600">₱{{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</td>
-                        </tr>
-                        @endforeach
-                    @else
-                        <tr>
-                            <td>{{ $enrollment->school_year }}</td>
-                            <td class="text-right">₱{{ number_format($feeSchedules->sum('tuition_fee'), 2) }}</td>
-                            <td class="text-right">₱{{ number_format($feeSchedules->sum('misc_fee'), 2) }}</td>
-                            <td class="text-right" style="font-weight:600">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'), 2) }}</td>
-                        </tr>
-                    @endif
+                    @foreach($feeSchedules as $fs)
+                    <tr>
+                        <td>{{ $fs->term ?: $enrollment->school_year }}</td>
+                        <td class="text-right">₱{{ number_format($fs->tuition_fee, 2) }}</td>
+                        <td class="text-right">₱{{ number_format($fs->misc_fee, 2) }}</td>
+                        <td class="text-right" style="font-weight:600">₱{{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</td>
+                    </tr>
+                    @endforeach
                 </tbody>
                 <tfoot>
                     <tr>
