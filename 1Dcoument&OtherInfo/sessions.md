@@ -180,6 +180,13 @@
 - `resources/views/portal/directress/teachers/edit.blade.php`
 - `resources/views/portal/directress/partials/teachers-results.blade.php`
 
+### Next (Pending — No Push Until Done)
+- Rename **Onboarding → Verification** — sidebar, pending-accounts page, dashboard cards, capstone doc
+- Promotion: show per-student **GWA / grades + qualified/not-qualified** badge on `admin/promotion` table
+- Promotion workflow: draft cleaner flow (transfer, dropout, retain, graduate, promote) — **MD first, wait for go signal**
+- Admin settings: draft actual technical settings spec — **MD first, wait for go signal**
+- Scheduling: answer on Principal CSV upload vs manual — **no code until approved**
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

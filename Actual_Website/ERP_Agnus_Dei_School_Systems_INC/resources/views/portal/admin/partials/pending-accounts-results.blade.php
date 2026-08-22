@@ -1,6 +1,6 @@
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" x-data="{ selected: [], allIds: @js($pendingConfirmations->pluck('id')->toArray()) }">
     @if($pendingConfirmations->isEmpty())
-        <p class="text-sm text-gray-500 text-center py-4">No pending onboarding. All students have been confirmed.</p>
+        <p class="text-sm text-gray-500 text-center py-4">No pending verification. All students have been confirmed.</p>
     @else
     <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">

@@ -3,12 +3,12 @@
 @section('breadcrumbs')
     <a href="{{ route('admin.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
     <span class="opacity-40">/</span>
-    <span class="current">Pending Onboarding</span>
+    <span class="current">Pending Verification</span>
 @endsection
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Pending Onboarding</h2>
+    <h2 class="text-2xl font-bold text-gray-900">Pending Verification</h2>
     <p class="text-gray-600 mt-1">Confirm student accounts after payment clearance to activate portal access.</p>
 </div>
 

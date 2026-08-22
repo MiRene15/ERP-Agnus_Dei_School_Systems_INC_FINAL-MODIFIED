@@ -18,9 +18,9 @@
         </div>
         <div class="flex-1">
             <h3 class="font-bold text-gray-900">Welcome to the Admin Dashboard!</h3>
-            <p class="text-sm text-gray-600 mt-1">Manage users, review onboarding, configure school settings, and export data. Use the sidebar to access all admin tools.</p>
+            <p class="text-sm text-gray-600 mt-1">Manage users, review verification, configure school settings, and export data. Use the sidebar to access all admin tools.</p>
             <div class="flex gap-2 mt-3">
-                <a href="{{ route('admin.pending-accounts') }}" class="text-xs font-semibold text-purple-700 hover:text-purple-900 underline">Review Onboarding &rarr;</a>
+                <a href="{{ route('admin.pending-accounts') }}" class="text-xs font-semibold text-purple-700 hover:text-purple-900 underline">Review Verification &rarr;</a>
             </div>
         </div>
         <button @click="show = false; fetch('/dismiss-welcome', {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'}})" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
