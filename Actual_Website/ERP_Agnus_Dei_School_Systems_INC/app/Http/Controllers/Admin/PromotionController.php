@@ -20,7 +20,7 @@ class PromotionController extends Controller
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
-        $enrollments = Enrollment::with('student', 'section')
+        $enrollments = Enrollment::with(['student.ledger', 'student', 'section', 'grades'])
             ->where('status', 'Active')
             ->where('school_year', active_school_year())
             ->orderBy('school_year', 'desc')
@@ -35,6 +35,7 @@ class PromotionController extends Controller
             'retain' => 'Retain in same grade',
             'graduate' => 'Graduate',
             'transfer' => 'Transfer Out',
+            'dropped' => 'Dropped Out',
         ];
 
         $schoolYears = Enrollment::distinct()->orderBy('school_year', 'desc')->pluck('school_year');
@@ -52,11 +53,13 @@ class PromotionController extends Controller
     {
         $data = $request->validate([
             'actions' => 'required|array',
-            'actions.*' => 'required|in:promote,retain,graduate,transfer',
+            'actions.*' => 'required|in:promote,retain,graduate,transfer,dropped',
             'school_year' => 'required|string|max:20',
+            'reasons' => 'nullable|array',
+            'reasons.*' => 'nullable|string|max:500',
         ]);
 
-        $results = ['promoted' => 0, 'retained' => 0, 'graduated' => 0, 'transferred' => 0, 'errors' => []];
+        $results = ['promoted' => 0, 'retained' => 0, 'graduated' => 0, 'transferred' => 0, 'dropped' => 0, 'errors' => []];
 
         foreach ($data['actions'] as $enrollmentId => $action) {
             $enrollment = Enrollment::with('student.ledger', 'section')->find($enrollmentId);
@@ -77,21 +80,28 @@ class PromotionController extends Controller
             }
 
             try {
-                DB::transaction(function () use ($enrollment, $action, $data) {
+                $reason = $data['reasons'][$enrollmentId] ?? null;
+                if (in_array($action, ['transfer', 'dropped']) && empty(trim((string) $reason))) {
+                    $results['errors'][] = "{$enrollment->student->first_name} {$enrollment->student->last_name}: Reason required for " . ($action === 'transfer' ? 'Transfer' : 'Dropped Out') . ".";
+                    continue;
+                }
+                DB::transaction(function () use ($enrollment, $action, $data, $reason) {
                     match ($action) {
                         'promote' => $this->promote($enrollment, $data['school_year']),
                         'retain' => $this->retain($enrollment, $data['school_year']),
                         'graduate' => $this->graduate($enrollment),
-                        'transfer' => $this->transfer($enrollment),
+                        'transfer' => $this->transfer($enrollment, $reason),
+                        'dropped' => $this->dropped($enrollment, $reason),
                     };
                 });
-                $results[$action === 'promote' ? 'promoted' : ($action === 'retain' ? 'retained' : ($action === 'graduate' ? 'graduated' : 'transferred'))]++;
+                $key = match($action) { 'promote'=>'promoted','retain'=>'retained','graduate'=>'graduated','transfer'=>'transferred','dropped'=>'dropped' };
+                $results[$key]++;
             } catch (\Exception $e) {
                 $results['errors'][] = "{$enrollment->student?->first_name} {$enrollment->student?->last_name}: {$e->getMessage()}";
             }
         }
 
-        $message = "Processed: {$results['promoted']} promoted, {$results['retained']} retained, {$results['graduated']} graduated, {$results['transferred']} transferred.";
+        $message = "Processed: {$results['promoted']} promoted, {$results['retained']} retained, {$results['graduated']} graduated, {$results['transferred']} transferred, {$results['dropped']} dropped.";
         if ($results['errors']) {
             $message .= ' Errors: ' . implode(' | ', $results['errors']);
         }
@@ -191,15 +201,32 @@ class PromotionController extends Controller
         log_activity($enrollment, 'Graduated', "Graduated {$enrollment->student->first_name} {$enrollment->student->last_name}");
     }
 
-    private function transfer(Enrollment $enrollment)
+    private function transfer(Enrollment $enrollment, ?string $reason = null)
     {
-        $enrollment->status = 'Withdrawn';
+        $enrollment->status = 'Transferred';
         $enrollment->save();
 
         $enrollment->student->status = 'archived';
+        $enrollment->student->archive_action = 'transferred';
+        $enrollment->student->archive_reason = $reason ?? 'Transferred out';
+        $enrollment->student->archived_at = now();
         $enrollment->student->save();
 
-        log_activity($enrollment, 'Transferred', "Transferred out {$enrollment->student->first_name} {$enrollment->student->last_name}");
+        log_activity($enrollment, 'Transferred', "Transferred out {$enrollment->student->first_name} {$enrollment->student->last_name}" . ($reason ? " — {$reason}" : ""));
+    }
+
+    private function dropped(Enrollment $enrollment, ?string $reason = null)
+    {
+        $enrollment->status = 'Dropped';
+        $enrollment->save();
+
+        $enrollment->student->status = 'archived';
+        $enrollment->student->archive_action = 'dropped';
+        $enrollment->student->archive_reason = $reason ?? 'Dropped out';
+        $enrollment->student->archived_at = now();
+        $enrollment->student->save();
+
+        log_activity($enrollment, 'Dropped', "Dropped {$enrollment->student->first_name} {$enrollment->student->last_name}" . ($reason ? " — {$reason}" : ""));
     }
 
     private function carryFees(Student $student, string $gradeLevel, string $schoolYear)
