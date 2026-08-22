@@ -20,7 +20,7 @@ class PromotionController extends Controller
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
-        $enrollments = Enrollment::with(['student.ledger', 'student', 'section', 'grades'])
+        $enrollments = Enrollment::with(['student.ledger', 'student', 'section', 'grades.schoolClass.subject'])
             ->where('status', 'Active')
             ->where('school_year', active_school_year())
             ->orderBy('school_year', 'desc')
@@ -39,14 +39,15 @@ class PromotionController extends Controller
         ];
 
         $schoolYears = Enrollment::distinct()->orderBy('school_year', 'desc')->pluck('school_year');
+        $passingGrade = (int) \App\Models\Setting::getValue('passing_grade', '75');
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.admin.partials.promotion-index-results', compact('enrollments', 'actions', 'schoolYears'))->render(),
+                'html' => view('portal.admin.partials.promotion-index-results', compact('enrollments', 'actions', 'schoolYears', 'passingGrade'))->render(),
             ]);
         }
 
-        return view('portal.admin.promotion.index', compact('enrollments', 'actions', 'schoolYears'));
+        return view('portal.admin.promotion.index', compact('enrollments', 'actions', 'schoolYears', 'passingGrade'));
     }
 
     public function process(Request $request)

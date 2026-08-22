@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Student;
 use App\Models\Admission;
 use App\Models\Requirement;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,10 @@ class StudentAdmissionController extends Controller
 
     public function create()
     {
+        if (Setting::getValue('enrollment_open', '1') === '0') {
+            return view('portal.student.admission-closed');
+        }
+
         $student = auth()->user()->student;
 
         if ($student->student_number) {
@@ -123,6 +128,10 @@ class StudentAdmissionController extends Controller
 
     public function store(Request $request)
     {
+        if (Setting::getValue('enrollment_open', '1') === '0') {
+            return back()->with('error', 'Enrollment is currently closed. Please try again when enrollment reopens.');
+        }
+
         $student = auth()->user()->student;
 
         if ($student->student_number) {

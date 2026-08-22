@@ -180,12 +180,23 @@
 - `resources/views/portal/directress/teachers/edit.blade.php`
 - `resources/views/portal/directress/partials/teachers-results.blade.php`
 
-### Next (Pending — No Push Until Done)
-- Rename **Onboarding → Verification** — sidebar, pending-accounts page, dashboard cards, capstone doc
-- Promotion: show per-student **GWA / grades + qualified/not-qualified** badge on `admin/promotion` table
-- Promotion workflow: draft cleaner flow (transfer, dropout, retain, graduate, promote) — **MD first, wait for go signal**
-- Admin settings: draft actual technical settings spec — **MD first, wait for go signal**
-- Scheduling: answer on Principal CSV upload vs manual — **no code until approved**
+### Next (Executed Aug 20, pushed)
+- Rename **Onboarding → Verification** — sidebar, pending-accounts page, dashboard cards ✅
+- Promotion: show per-student **GWA / grades + qualified/not-qualified** badge on `admin/promotion` table ✅
+- Promotion workflow: cleaner flow (transfer, dropout, retain, graduate, promote) — `promotion_workflow_proposal.md` drafted, then implemented (5 actions + reason) ✅
+- Admin settings: actual technical settings — `admin_settings_proposal.md` drafted, then implemented (school identity, academic, library, system) ✅
+- Scheduling: **hybrid CSV** — manual kept + optional CSV import with preview + conflict check for Principal (`principal/schedules/template` + `import`) ✅
+
+### Git Commits (Aug 20 — after first push)
+8. `refactor: rename Onboarding to Verification across admin UI`
+9. `feat: promotion table shows GWA + qualification + Dropped Out with reason`
+10. `feat: expand admin settings to cover school identity, academic, library and system config`
+11. `feat: hybrid CSV import for principal schedules (manual kept, CSV optional with conflict check)`
+12. `docs: add promotion workflow and admin settings proposals`
+
+### Next — Polish (Approved Aug 20, MDS updated before execution)
+Per `1Dcoument&OtherInfo/polish_suggestions.md` — Quick wins (<30m) + Small features (30-90m) to be executed now.
+Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `PromotionController` + `ReportCardController` (passing_grade), `SubjectController` (hybrid CSV like schedules), `portal/admin/partials/promotion-index-results.blade.php` (filter chips + grade modal), `portal/librarian/loans` (overdue badge), `portal/admin/audit-logs` link, `ExportController` (filename row count), plus favicon/title and docs ERD sync.
 
 ---
 

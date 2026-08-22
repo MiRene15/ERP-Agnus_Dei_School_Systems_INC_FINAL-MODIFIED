@@ -24,8 +24,15 @@
     @foreach($enrollments as $gradeLevel => $gradeEnrollments)
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-4">
         <h3 class="font-semibold text-gray-900 mb-3">{{ $gradeLevel }} <span class="text-sm font-normal text-gray-500">({{ $gradeEnrollments->count() }} student(s))</span></h3>
-        <div class="overflow-x-auto">
-            <p class="text-xs text-gray-400 mb-2">GWA &ge;75 and no failing subject (&lt;75) = qualified. Failing or no grades = not qualified — review manually.</p>
+        <div class="overflow-x-auto" x-data="{ filter: 'all' }">
+            <p class="text-xs text-gray-400 mb-2">GWA &ge;{{ $passingGrade ?? 75 }} and no failing subject (&lt;{{ $passingGrade ?? 75 }}) = qualified. Failing or no grades = not qualified — review manually.</p>
+            <div class="flex gap-1.5 mb-3 flex-wrap">
+                <button type="button" @click="filter='all'" :class="filter==='all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'" class="px-2.5 py-1 rounded-full text-xs font-medium">All</button>
+                <button type="button" @click="filter='qualified'" :class="filter==='qualified' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-2.5 py-1 rounded-full text-xs font-medium">Qualified</button>
+                <button type="button" @click="filter='not'" :class="filter==='not' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-2.5 py-1 rounded-full text-xs font-medium">Not qualified</button>
+                <button type="button" @click="filter='none'" :class="filter==='none' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600'" class="px-2.5 py-1 rounded-full text-xs font-medium">No grades</button>
+                <button type="button" @click="filter='balance'" :class="filter==='balance' ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-2.5 py-1 rounded-full text-xs font-medium">With balance</button>
+            </div>
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-200">
@@ -41,23 +48,33 @@
                     @foreach($gradeEnrollments as $enrollment)
                     @php
                         $isGrade12 = $gradeLevel === 'Grade 12';
+                        $passing = $passingGrade ?? 75;
                         $grades = $enrollment->grades ?? collect();
                         $avg = $grades->isNotEmpty() ? round($grades->avg('final_grade'), 2) : null;
-                        $failCount = $grades->where('final_grade', '<', 75)->count();
+                        $failCount = $grades->where('final_grade', '<', $passing)->count();
                         $subjectCount = $grades->count();
-                        $qualified = $avg !== null && $avg >= 75 && $failCount === 0;
+                        $qualified = $avg !== null && $avg >= $passing && $failCount === 0;
+                        $balVal = $enrollment->student->ledger?->balance ?? 0;
                     @endphp
-                    <tr class="border-b border-gray-100">
+                    <tr class="border-b border-gray-100" x-show="filter==='all' || (filter==='qualified' && {{ $qualified ? 'true':'false' }}) || (filter==='not' && {{ (!$qualified && $avg!==null) ? 'true':'false' }}) || (filter==='none' && {{ $avg===null ? 'true':'false' }}) || (filter==='balance' && {{ $balVal>0 ? 'true':'false' }})" x-data="{ open: false }">
                         <td class="py-3 px-2">
                             <span class="font-medium text-gray-900">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
                             <span class="block text-xs text-gray-400">{{ $enrollment->student->student_number }} · {{ $subjectCount }} subject(s)</span>
+                            @if($subjectCount>0)
+                                <button type="button" @click="open=!open" class="text-xs text-blue-600 hover:underline mt-1" x-text="open ? 'Hide grades' : 'View grades'"></button>
+                                <div x-show="open" x-cloak class="mt-1 text-xs bg-gray-50 rounded-lg p-2 space-y-0.5">
+                                    @foreach($grades as $g)
+                                        <div class="flex justify-between"><span class="text-gray-600">{{ $g->schoolClass->subject->name ?? $g->schoolClass->subject_code ?? 'Subject' }} ({{ $g->grading_period }})</span><span class="{{ $g->final_grade < $passing ? 'text-red-600 font-semibold' : 'text-gray-900' }}">{{ number_format($g->final_grade,2) }}</span></div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </td>
                         <td class="py-3 px-2 text-gray-700">{{ $enrollment->section->section_name ?? 'N/A' }}</td>
                         <td class="py-3 px-2">
                             @if($avg === null)
                                 <span class="text-gray-400 text-xs">No grades</span>
                             @else
-                                <span class="font-semibold {{ $avg >= 75 ? 'text-gray-900' : 'text-red-600' }}">{{ number_format($avg, 2) }}</span>
+                                <span class="font-semibold {{ $avg >= $passing ? 'text-gray-900' : 'text-red-600' }}">{{ number_format($avg, 2) }}</span>
                                 @if($failCount > 0)
                                     <span class="block text-xs text-red-500">{{ $failCount }} failing</span>
                                 @endif
@@ -73,9 +90,8 @@
                             @endif
                         </td>
                         <td class="py-3 px-2">
-                            @php $bal = $enrollment->student->ledger?->balance ?? 0; @endphp
-                            <span class="{{ $bal > 0 ? 'text-red-600 font-medium' : 'text-green-600' }}">
-                                ₱ {{ number_format($bal, 2) }}
+                            <span class="{{ $balVal > 0 ? 'text-red-600 font-medium' : 'text-green-600' }}">
+                                ₱ {{ number_format($balVal, 2) }}
                             </span>
                         </td>
                         <td class="py-3 px-2">
@@ -101,7 +117,8 @@
     </div>
     @endforeach
 
-    <div class="flex justify-end">
+    <div class="flex justify-between items-center mt-4">
+        <a href="{{ route('admin.audit-logs', ['event' => 'Promoted']) }}" class="text-xs text-gray-500 hover:text-blue-600 underline">View promotion audit logs &rarr;</a>
         <button type="submit" class="px-6 py-3 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
             Process All Actions
         </button>

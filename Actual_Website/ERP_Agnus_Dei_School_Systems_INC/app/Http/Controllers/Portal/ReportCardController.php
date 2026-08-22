@@ -77,6 +77,7 @@ class ReportCardController extends Controller
         $enrollment->load('student', 'section.adviser', 'subjects.subject');
 
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+        $passing = (int) Setting::getValue('passing_grade', '75');
 
         $grades = Grade::where('enrollment_id', $enrollment->id)
             ->whereIn('grading_period', $gradingPeriods)
@@ -84,7 +85,7 @@ class ReportCardController extends Controller
             ->get()
             ->groupBy('class_id');
 
-        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods) {
+        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods, $passing) {
             $classGrades = $grades->get($class->id, collect());
             $row = ['subject' => $class->subject->name ?? 'N/A'];
             $total = 0;
@@ -96,7 +97,7 @@ class ReportCardController extends Controller
             }
             $avg = $count > 0 ? round($total / $count, 2) : 0;
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
-            $row['remarks'] = $avg >= 75 ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
+            $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
         });
 
@@ -123,6 +124,7 @@ class ReportCardController extends Controller
         $enrollment->load('student', 'section.adviser', 'subjects.subject');
 
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+        $passing = (int) Setting::getValue('passing_grade', '75');
 
         $grades = Grade::where('enrollment_id', $enrollment->id)
             ->whereIn('grading_period', $gradingPeriods)
@@ -130,7 +132,7 @@ class ReportCardController extends Controller
             ->get()
             ->groupBy('class_id');
 
-        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods) {
+        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods, $passing) {
             $classGrades = $grades->get($class->id, collect());
             $row = ['subject' => $class->subject->name ?? 'N/A'];
             $total = 0;
@@ -142,7 +144,7 @@ class ReportCardController extends Controller
             }
             $avg = $count > 0 ? round($total / $count, 2) : 0;
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
-            $row['remarks'] = $avg >= 75 ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
+            $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
         });
 
@@ -186,6 +188,7 @@ class ReportCardController extends Controller
         }
 
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+        $passing = (int) Setting::getValue('passing_grade', '75');
 
         $grades = Grade::where('enrollment_id', $enrollment->id)
             ->whereIn('grading_period', $gradingPeriods)
@@ -193,7 +196,7 @@ class ReportCardController extends Controller
             ->get()
             ->groupBy('class_id');
 
-        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods) {
+        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods, $passing) {
             $classGrades = $grades->get($class->id, collect());
             $row = ['subject' => $class->subject->name ?? 'N/A'];
             $total = 0;
@@ -205,7 +208,7 @@ class ReportCardController extends Controller
             }
             $avg = $count > 0 ? round($total / $count, 2) : 0;
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
-            $row['remarks'] = $avg >= 75 ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
+            $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
         });
 
