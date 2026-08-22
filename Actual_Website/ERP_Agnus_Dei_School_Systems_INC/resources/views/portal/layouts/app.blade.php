@@ -17,7 +17,8 @@
         })();
     </script>
 
-    <title>{{ config('app.name', 'Agnus Dei ERP') }} - Portal</title>
+    @php $layoutRoleName = auth()->check() ? match(auth()->user()->role_id){1=>'Admin',2=>'Registrar',3=>'Cashier',4=>'Teacher',5=>'Librarian',6=>'Nurse',7=>'Student',8=>'Directress',9=>'Principal',default=>'Portal'} : 'Portal'; @endphp
+    <title>{{ config('app.name', 'Agnus Dei ERP') }} — {{ $layoutRoleName }}</title>
 
     <link rel="icon" type="image/png" href="{{ asset('images/agnus_logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -248,7 +249,7 @@
     </style>
 </head>
 <body class="antialiased"
-      x-data="{ collapsed: false, mobileOpen: false, loading: true, time: '', date: '', greeting: '' }"
+      x-data="{ collapsed: false, mobileOpen: false, loading: true, time: '', date: '', greeting: '', loggingOut: false }"
       x-init="
           setTimeout(() => loading = false, 700);
           function tick() {
@@ -314,7 +315,7 @@
             </nav>
 
             <div class="px-2.5 py-2.5 border-t border-gray-50 flex-shrink-0">
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" @submit.prevent="loggingOut=true; $el.submit()">
                     @csrf
                     <button type="submit" class="sidebar-link w-full text-red-400 hover:text-red-600 hover:bg-red-50" :title="collapsed ? 'Log Out' : ''">
                         <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -367,7 +368,7 @@
             </nav>
 
             <div class="px-3 py-2.5 border-t border-gray-50 flex-shrink-0">
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" @submit.prevent="loggingOut=true; $el.submit()">
                     @csrf
                     <button type="submit" class="sidebar-link w-full text-red-400 hover:text-red-600 hover:bg-red-50">
                         <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -488,6 +489,19 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
         </svg>
+    </div>
+
+    <!-- Logging Out Modal -->
+    <div x-show="loggingOut" x-cloak x-transition.opacity
+         class="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+         style="background: rgba(14,17,36,0.55); backdrop-filter: blur(6px);">
+        <div class="bg-white dark:bg-[#1A1E3B] rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center border border-gray-100 dark:border-[#2A2F58]">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--navy);">
+                <svg class="w-6 h-6 text-white animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Logging Out</h3>
+            <p class="text-sm text-gray-500 dark:text-[#8A90B0] mt-1">Please wait...</p>
+        </div>
     </div>
 
     <!-- Force Change Password Modal -->
