@@ -361,11 +361,11 @@ flowchart LR
 ## VII. Technical Database Architecture (Laravel / MySQL)
 
 ### Database Schema Map
-* **Core Access:** `users`, `roles`
-* **Student Records:** `students`, `admissions`, `requirements`
+* **Core Access:** `users`, `roles`, `settings` (KV: active_school_year, school_name/address, passing_grade, library fees/duration, enrollment_open)
+* **Student Records:** `students` (archive_action/reason/archived_at), `admissions`, `requirements`
 * **Financials:** `fee_schedules`, `student_ledgers` (payment plan types), `payments`
-* **Academics:** `subjects`, `sections`, `classes`, `schedules`, `enrollments`
-* **Assessments & Support:** `assessments` (raw scores categorized as Written, Performance, Quarterly), `grades` (computed term averages), `library_transactions`, `library_visits`, `clinic_logs`, `activity_logs`, `announcements`
+* **Academics:** `subjects`, `sections`, `classes`, `schedules`, `enrollments` (status: Active/Promoted/Retained/Graduated/Transferred/Dropped/Withdrawn)
+* **Assessments & Support:** `assessments` (Written Work, Quiz, Seatwork, Exam — weights 20/20/20/40), `grades` (computed term averages), `library_transactions`, `library_visits`, `clinic_logs`, `activity_logs`, `announcements`
 
 ### Entity-Relationship Diagram (ERD)
 ```mermaid
@@ -383,12 +383,15 @@ erDiagram
     CLASSES ||--|| SUBJECTS : "Based On"
     CLASSES ||--o{ SCHEDULES : "Timetabled"
     
-    ENROLLMENTS ||--o{ ASSESSMENTS : "Written, Performance, Quarterly"
-    ENROLLMENTS ||--o{ GRADES : "Computed Final Grade"
+    ENROLLMENTS ||--o{ ASSESSMENTS : "WW/Quiz/Seatwork/Exam (20/20/20/40)"
+    ENROLLMENTS ||--o{ GRADES : "Computed Final Grade (passing via settings)"
     ASSESSMENTS }|--|| GRADES : "Computes Into"
 
     STUDENTS ||--|| STUDENT_LEDGERS : "Finances (Plan A/B/C)"
     STUDENT_LEDGERS ||--o{ PAYMENTS : "Satisfies"
+
+    SETTINGS ||--o{ ENROLLMENTS : "active_school_year scope"
+    SETTINGS ||--o{ LIBRARY_TRANSACTIONS : "late/damage fees config"
     
     STUDENTS ||--o{ LIBRARY_TRANSACTIONS : "Borrows"
     STUDENTS ||--o{ LIBRARY_VISITS : "Manual Entry Logs"

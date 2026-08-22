@@ -41,14 +41,21 @@ class GradesAssessmentsSeeder extends Seeder
         $gradeRows = [];
         $now = now()->toDateTimeString();
 
+        $demoFailIds = $activeEnrollments->take(2)->pluck('id')->toArray();
+        $demoNoGradesId = $activeEnrollments->skip(2)->first()->id ?? null;
+
         foreach ($activeEnrollments as $enrollment) {
+            $isNoGrades = $demoNoGradesId && $enrollment->id === $demoNoGradesId;
+            if ($isNoGrades) continue; // leave this enrollment with no grades for demo (No grades badge)
+
             $enrolledClasses = DB::table('enrollment_subject')
                 ->where('enrollment_id', $enrollment->id)
                 ->pluck('class_id');
 
             foreach ($enrolledClasses as $classId) {
                 foreach ($gradingPeriods as $period) {
-                    $baseScore = mt_rand(6000, 9800) / 100;
+                    $isFailDemo = in_array($enrollment->id, $demoFailIds);
+                    $baseScore = $isFailDemo ? mt_rand(4500, 6500) / 100 : mt_rand(6000, 9800) / 100;
                     $weightedTotal = 0;
 
                     foreach ($assessmentTypes as $at) {
