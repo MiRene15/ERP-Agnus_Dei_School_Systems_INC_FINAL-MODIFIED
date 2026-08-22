@@ -65,10 +65,10 @@
                             <td class="py-2 px-2 text-gray-600" x-text="txn.book_title"></td>
                             <td class="py-2 px-2 text-gray-600" x-text="formatDate(txn.borrow_date)"></td>
                             <td class="py-2 px-2 text-gray-600" x-text="formatDate(txn.return_date)"></td>
-                            <td class="py-2 px-2">
+                             <td class="py-2 px-2">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                       :class="isOverdue(txn) ? 'bg-red-100 text-red-700' : (txn.status === 'Returned' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')"
-                                      x-text="isOverdue(txn) ? 'Overdue' : txn.status"></span>
+                                      x-text="isOverdue(txn) ? ('Overdue • ' + daysOverdue(txn) + 'd') : txn.status"></span>
                             </td>
                             <td class="py-2 px-2">
                                 <template x-if="txn.status === 'Borrowed'">
@@ -86,7 +86,7 @@
 
         <!-- Empty State -->
         <div x-show="transactions.length === 0" class="py-6 text-center text-gray-500 text-sm">
-            No loans found.
+            No loans found. <span class="block text-xs mt-1 text-gray-400">Try adjusting filters or create a loan via [+ New Loan].</span>
         </div>
 
         <!-- Pagination -->
@@ -170,6 +170,9 @@ function loansManager() {
         },
         isOverdue(txn) {
             return txn.status === 'Borrowed' && new Date(txn.return_date) < new Date();
+        },
+        daysOverdue(txn) {
+            return Math.max(0, Math.floor((new Date() - new Date(txn.return_date)) / 86400000));
         },
         formatDate(date) {
             return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

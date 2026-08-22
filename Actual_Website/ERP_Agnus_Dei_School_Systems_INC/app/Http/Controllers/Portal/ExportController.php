@@ -17,7 +17,8 @@ class ExportController extends Controller
             ->where('school_year', active_school_year())
             ->get();
 
-        return $this->streamCsv('enrollments-' . active_school_year() . '.csv', function ($fh) use ($enrollments) {
+        $filename = 'enrollments-' . active_school_year() . '-' . $enrollments->count() . 'rows.csv';
+        return $this->streamCsv($filename, function ($fh) use ($enrollments) {
             fputcsv($fh, ['LRN', 'First Name', 'Last Name', 'Grade Level', 'Section', 'Adviser', 'Status']);
             foreach ($enrollments as $e) {
                 fputcsv($fh, [
@@ -47,7 +48,9 @@ class ExportController extends Controller
             ->get()
             ->groupBy('enrollment_id');
 
-        return $this->streamCsv('grades-' . active_school_year() . '.csv', function ($fh) use ($enrollments, $periods, $allGrades) {
+        $passing = (int) \App\Models\Setting::getValue('passing_grade', '75');
+        $filename = 'grades-' . active_school_year() . '-' . $enrollments->count() . 'students.csv';
+        return $this->streamCsv($filename, function ($fh) use ($enrollments, $periods, $allGrades, $passing) {
             fputcsv($fh, array_merge(['LRN', 'Name', 'Grade', 'Section', 'Subject'], $periods, ['Final', 'Remarks']));
             foreach ($enrollments as $e) {
                 $grades = $allGrades->get($e->id, collect())->groupBy('class_id');
@@ -62,7 +65,7 @@ class ExportController extends Controller
                     }
                     $avg = $count > 0 ? round($total / $count, 2) : '';
                     $row[] = $avg ?: '';
-                    $row[] = $avg >= 75 ? 'Passed' : ($avg > 0 ? 'Failed' : '');
+                    $row[] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '');
                     fputcsv($fh, $row);
                 }
             }
@@ -76,7 +79,8 @@ class ExportController extends Controller
             ->orderBy('payment_date')
             ->get();
 
-        return $this->streamCsv('collections-' . now()->format('Y-m') . '.csv', function ($fh) use ($payments) {
+        $filename = 'collections-' . now()->format('Y-m') . '-' . $payments->count() . 'rows.csv';
+        return $this->streamCsv($filename, function ($fh) use ($payments) {
             fputcsv($fh, ['Receipt #', 'Student', 'LRN', 'Amount', 'Payment Date', 'Cashier']);
             foreach ($payments as $p) {
                 fputcsv($fh, [

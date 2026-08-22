@@ -120,6 +120,8 @@ Route::middleware('auth')->group(function () {
          Route::post('admin/student-accounts/{user}/toggle-status', [\App\Http\Controllers\Admin\StudentAccountController::class, 'toggleStatus'])->name('admin.student-accounts.toggle-status');
          Route::post('admin/student-accounts/{user}/reset-password', [\App\Http\Controllers\Admin\StudentAccountController::class, 'resetPassword'])->name('admin.student-accounts.reset-password');
          // Subjects Management
+         Route::get('admin/subjects/template', [\App\Http\Controllers\Admin\SubjectController::class, 'template'])->name('admin.subjects.template');
+         Route::post('admin/subjects/import', [\App\Http\Controllers\Admin\SubjectController::class, 'import'])->name('admin.subjects.import');
          Route::resource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class)->except(['show'])->names('admin.subjects');
          // Sections Management
          Route::resource('admin/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('admin.sections');
