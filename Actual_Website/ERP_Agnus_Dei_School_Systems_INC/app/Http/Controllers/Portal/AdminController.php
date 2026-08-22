@@ -88,9 +88,23 @@ class AdminController extends Controller
     {
         $activeSY = active_school_year();
         $schoolYears = all_school_years();
-        $directressName = Setting::getValue('directress_name', '');
-        $principalName = Setting::getValue('principal_name', '');
-        return view('portal.admin.settings', compact('activeSY', 'schoolYears', 'directressName', 'principalName'));
+        return view('portal.admin.settings', [
+            'activeSY' => $activeSY,
+            'schoolYears' => $schoolYears,
+            'directressName' => Setting::getValue('directress_name', ''),
+            'principalName' => Setting::getValue('principal_name', ''),
+            'schoolName' => Setting::getValue('school_name', 'Agnus Dei School Systems, Inc.'),
+            'schoolAddress' => Setting::getValue('school_address', ''),
+            'contactEmail' => Setting::getValue('contact_email', ''),
+            'contactPhone' => Setting::getValue('contact_phone', ''),
+            'passingGrade' => Setting::getValue('passing_grade', '75'),
+            'lateFee' => Setting::getValue('library_late_fee_per_day', '5.00'),
+            'damageMinor' => Setting::getValue('library_damage_minor', '50.00'),
+            'damageMajor' => Setting::getValue('library_damage_major', '200.00'),
+            'loanDuration' => Setting::getValue('library_loan_duration_days', '7'),
+            'maxBooks' => Setting::getValue('library_max_books_per_student', '3'),
+            'enrollmentOpen' => Setting::getValue('enrollment_open', '1'),
+        ]);
     }
 
     public function updateSettings(Request $request)
@@ -99,11 +113,33 @@ class AdminController extends Controller
             'active_school_year' => 'required|string|max:20',
             'directress_name'    => 'nullable|string|max:100',
             'principal_name'     => 'nullable|string|max:100',
+            'school_name'        => 'required|string|max:150',
+            'school_address'     => 'nullable|string|max:255',
+            'contact_email'      => 'nullable|email|max:150',
+            'contact_phone'      => 'nullable|string|max:30',
+            'passing_grade'      => 'required|integer|min:50|max:100',
+            'library_late_fee_per_day' => 'required|numeric|min:0|max:100',
+            'library_damage_minor' => 'required|numeric|min:0|max:5000',
+            'library_damage_major' => 'required|numeric|min:0|max:10000',
+            'library_loan_duration_days' => 'required|integer|min:1|max:60',
+            'library_max_books_per_student' => 'required|integer|min:1|max:20',
+            'enrollment_open'    => 'required|in:0,1',
         ]);
 
         Setting::setValue('active_school_year', $data['active_school_year']);
         Setting::setValue('directress_name', $data['directress_name'] ?? '');
         Setting::setValue('principal_name', $data['principal_name'] ?? '');
+        Setting::setValue('school_name', $data['school_name']);
+        Setting::setValue('school_address', $data['school_address'] ?? '');
+        Setting::setValue('contact_email', $data['contact_email'] ?? '');
+        Setting::setValue('contact_phone', $data['contact_phone'] ?? '');
+        Setting::setValue('passing_grade', (string) $data['passing_grade']);
+        Setting::setValue('library_late_fee_per_day', (string) $data['library_late_fee_per_day']);
+        Setting::setValue('library_damage_minor', (string) $data['library_damage_minor']);
+        Setting::setValue('library_damage_major', (string) $data['library_damage_major']);
+        Setting::setValue('library_loan_duration_days', (string) $data['library_loan_duration_days']);
+        Setting::setValue('library_max_books_per_student', (string) $data['library_max_books_per_student']);
+        Setting::setValue('enrollment_open', $data['enrollment_open']);
 
         return back()->with('success', 'Settings saved successfully.');
     }
