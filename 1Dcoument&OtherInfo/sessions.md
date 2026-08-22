@@ -198,6 +198,12 @@
 Per `1Dcoument&OtherInfo/polish_suggestions.md` — Quick wins (<30m) + Small features (30-90m) to be executed now.
 Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `PromotionController` + `ReportCardController` (passing_grade), `SubjectController` (hybrid CSV like schedules), `portal/admin/partials/promotion-index-results.blade.php` (filter chips + grade modal), `portal/librarian/loans` (overdue badge), `portal/admin/audit-logs` link, `ExportController` (filename row count), plus favicon/title and docs ERD sync.
 
+### Executed Polish (Aug 20 late — pushed)
+- `feat: polish - enrollment gate, passing grade config, promotion filters + grade breakdown` — admission-closed gate (`enrollment_open`), passing_grade wired to report cards/promotion/exports, promotion filter chips + per-row grade modal
+- `feat: polish - subjects CSV hybrid, export row counts, loans overdue badge, audit link` — `admin/subjects/template+import` hybrid CSV, export filenames include row counts, loans overdue `Overdue • Xd`, promotion audit link
+- `docs: refresh ERD + schema map` — `capstone_master_document.md` VII: settings KV, enrollment statuses, 20/20/20/40 weights; seeder demo: 2 failing + 1 no-grades for promotion demo
+- All MDS verified: `polish_suggestions.md` items checked, capstone VII done, no broken routes, no log errors, working tree clean
+
 ---
 
 ## Prior Work (Before Aug 14 Session)
