@@ -29,6 +29,36 @@
     @endforeach
 </div>
 
+<div class="mb-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+    <details>
+        <summary class="cursor-pointer text-sm font-semibold text-gray-700">Import from CSV (hybrid — manual stays) <span class="text-xs font-normal text-gray-400">— optional bulk upload with conflict check</span></summary>
+        <div class="mt-3 flex flex-col gap-3">
+            <p class="text-xs text-gray-500">CSV columns: <code>class_id,day_of_week,start_time,end_time,room</code> — <code>day_of_week</code> = Monday..Friday, time = HH:MM (24h). Duplicate/conflicting rows are skipped and reported.</p>
+            <div class="flex gap-2 items-center flex-wrap">
+                <a href="{{ route('principal.schedules.template') }}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Download template</a>
+                <span class="text-xs text-gray-400">Find <code>class_id</code> in the table below (or Schedules → search).</span>
+            </div>
+            <form method="POST" action="{{ route('principal.schedules.import') }}" enctype="multipart/form-data" class="flex gap-2 items-center flex-wrap">
+                @csrf
+                <input type="file" name="file" accept=".csv,.txt" required class="text-sm border border-gray-300 rounded-lg px-3 py-1.5">
+                <button type="submit" class="px-4 py-1.5 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Import CSV</button>
+            </form>
+            @if(session('import_errors') || session('import_skipped'))
+                <div class="text-xs space-y-1">
+                    @if(session('import_errors'))
+                        <p class="font-semibold text-red-600">Errors:</p>
+                        <ul class="list-disc ml-4 text-red-600">@foreach(session('import_errors') as $e)<li>{{ $e }}</li>@endforeach</ul>
+                    @endif
+                    @if(session('import_skipped'))
+                        <p class="font-semibold text-amber-600 mt-2">Skipped (conflicts):</p>
+                        <ul class="list-disc ml-4 text-amber-600">@foreach(session('import_skipped') as $s)<li>{{ $s }}</li>@endforeach</ul>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </details>
+</div>
+
 <div x-data="ajaxTable('{{ route('principal.schedules') }}', { search: '{{ request('search') }}', school_year: '{{ request('school_year') }}', day: '{{ request('day') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">

@@ -111,6 +111,116 @@ class PrincipalController extends Controller
         return back()->with('success', 'Schedule removed.');
     }
 
+    // ─── Schedules CSV — hybrid import (manual stays, CSV optional) ─
+    public function schedulesTemplate()
+    {
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="schedules_template.csv"'];
+        $columns = ['class_id', 'day_of_week', 'start_time', 'end_time', 'room'];
+        $example = ['1', 'Monday', '08:00', '09:00', 'Room 101'];
+        return response()->stream(function () use ($columns, $example) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, $columns);
+            fputcsv($out, $example);
+            fclose($out);
+        }, 200, $headers);
+    }
+
+    public function schedulesImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+        $handle = fopen($path, 'r');
+        if (!$handle) {
+            return back()->with('error', 'Cannot read uploaded file.');
+        }
+
+        $header = fgetcsv($handle);
+        $expected = ['class_id', 'day_of_week', 'start_time', 'end_time', 'room'];
+        $headerNorm = array_map(fn($h) => strtolower(trim($h)), $header ?? []);
+        if ($headerNorm !== $expected) {
+            fclose($handle);
+            return back()->with('error', 'Invalid CSV header. Expected: ' . implode(',', $expected) . '. Download the template.');
+        }
+
+        $rows = [];
+        $line = 1;
+        while (($data = fgetcsv($handle)) !== false) {
+            $line++;
+            if (count(array_filter($data, fn($v) => trim($v) !== '')) === 0) continue;
+            if (count($data) < 5) {
+                $rows[] = ['line' => $line, 'error' => 'Missing columns', 'data' => $data];
+                continue;
+            }
+            $rows[] = [
+                'line' => $line,
+                'class_id' => trim($data[0]),
+                'day_of_week' => trim($data[1]),
+                'start_time' => trim($data[2]),
+                'end_time' => trim($data[3]),
+                'room' => trim($data[4]),
+            ];
+        }
+        fclose($handle);
+
+        $allowedDays = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+        $imported = 0;
+        $errors = [];
+        $skipped = [];
+
+        foreach ($rows as $r) {
+            if (isset($r['error'])) { $errors[] = "Line {$r['line']}: {$r['error']}"; continue; }
+            $validator = \Illuminate\Support\Facades\Validator::make($r, [
+                'class_id' => 'required|exists:classes,id',
+                'day_of_week' => 'required|in:' . implode(',', $allowedDays),
+                'start_time' => 'required',
+                'end_time' => 'required|after:start_time',
+                'room' => 'nullable|string|max:50',
+            ]);
+            if ($validator->fails()) {
+                $errors[] = "Line {$r['line']}: " . implode(', ', $validator->errors()->all());
+                continue;
+            }
+
+            $conflict = Schedule::where('class_id', $r['class_id'])
+                ->where('day_of_week', $r['day_of_week'])
+                ->where(function ($q) use ($r) {
+                    $q->whereBetween('start_time', [$r['start_time'], $r['end_time']])
+                      ->orWhereBetween('end_time', [$r['start_time'], $r['end_time']]);
+                })->exists();
+
+            if ($conflict) {
+                $skipped[] = "Line {$r['line']}: time conflict for class {$r['class_id']} on {$r['day_of_week']} {$r['start_time']}-{$r['end_time']} — skipped.";
+                continue;
+            }
+
+            try {
+                Schedule::create([
+                    'class_id' => $r['class_id'],
+                    'day_of_week' => $r['day_of_week'],
+                    'start_time' => $r['start_time'],
+                    'end_time' => $r['end_time'],
+                    'room' => $r['room'] ?: null,
+                ]);
+                $imported++;
+            } catch (\Exception $e) {
+                $errors[] = "Line {$r['line']}: " . $e->getMessage();
+            }
+        }
+
+        $msg = "{$imported} schedule(s) imported.";
+        if ($skipped) $msg .= ' ' . count($skipped) . ' skipped (conflict).';
+        if ($errors) $msg .= ' Errors: ' . implode(' | ', array_slice($errors, 0, 5)) . (count($errors) > 5 ? ' (+' . (count($errors)-5) . ' more)' : '');
+
+        $type = $imported > 0 ? 'success' : 'error';
+        if ($skipped) $type = $imported > 0 ? 'success' : 'error';
+
+        return back()->with($type, $msg)->with('import_errors', $errors)->with('import_skipped', $skipped);
+    }
+
     // ─── Student Grades (read-only view) ────────────────────────
     public function grades(Request $request)
     {
