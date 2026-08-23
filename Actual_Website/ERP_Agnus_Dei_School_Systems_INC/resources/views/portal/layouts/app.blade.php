@@ -209,6 +209,19 @@
         .dark .bg-indigo-100 { background-color: rgba(129, 140, 248, 0.2); }
         .dark .bg-purple-100 { background-color: rgba(192, 132, 252, 0.2); }
 
+        /* inputs: ensure readable on dark */
+        .dark input, .dark select, .dark textarea {
+            background-color: #23274C;
+            color: #E8EAF6;
+            border-color: #3B4172;
+        }
+        .dark input::placeholder, .dark textarea::placeholder { color: #6A7094; }
+        .dark select option { background-color: #23274C; color: #E8EAF6; }
+
+        /* welcome banners: ensure dark bg */
+        .dark .bg-gradient-to-r { background: #1A1E3B !important; background-image: none !important; border-color: #2A2F58 !important; }
+        .dark .from-purple-50, .dark .from-blue-50, .dark .from-indigo-50, .dark .from-yellow-50 { --tw-gradient-from: #23274C; }
+
         /* status: text */
         .dark .text-red-800 { color: #FCA5A5; }
         .dark .text-red-700 { color: #F87171; }
@@ -479,5 +492,7 @@
 
     <!-- Force Change Password Modal -->
     @include('portal.partials.force-change-password-modal')
+    <!-- Tutorial Welcome Modal -->
+    @include('portal.partials.tutorial-modal')
 </body>
 </html>

@@ -202,7 +202,31 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - `feat: polish - enrollment gate, passing grade config, promotion filters + grade breakdown` — admission-closed gate (`enrollment_open`), passing_grade wired to report cards/promotion/exports, promotion filter chips + per-row grade modal
 - `feat: polish - subjects CSV hybrid, export row counts, loans overdue badge, audit link` — `admin/subjects/template+import` hybrid CSV, export filenames include row counts, loans overdue `Overdue • Xd`, promotion audit link
 - `docs: refresh ERD + schema map` — `capstone_master_document.md` VII: settings KV, enrollment statuses, 20/20/20/40 weights; seeder demo: 2 failing + 1 no-grades for promotion demo
+- `docs: update sessions log to mark polish execution complete and MDS verified`
 - All MDS verified: `polish_suggestions.md` items checked, capstone VII done, no broken routes, no log errors, working tree clean
+
+### Next — Password Overlay + Dark/Light Consistency (Approved, MDS updated before execution)
+- Password prompt: convert to true AJAX overlay (no page reload) — `ForceChangePasswordController` returns JSON, modal `fetch` with inline errors, success hides overlay
+- UI dark/light: audit all portal views/layouts for readable colors/fonts in both modes — `portal/layouts/app.blade.php` global input/placeholder/border fixes, modal/card/button contrast
+
+### Executed — Password Overlay + Dark/Light (Aug 20)
+- `ForceChangePasswordController.php:13` — now handles JSON (`expectsJson`/`ajax` returns `{"success":true}`), uses explicit `Password::min(8)->letters()->mixedCase()->numbers()->symbols()`, plain assignment (hashed cast), `session()->regenerate()`
+- `force-change-password-modal.blade.php` — fully AJAX overlay (`forcePasswordModal()`), no reload, inline `errors[]` + `successMsg`, spinner, dark-aware inputs (`dark:bg-[#23274C] dark:text-[#E8EAF6]`), error box with bag fallback
+- `portal/layouts/app.blade.php` — global dark input/select/textarea (`bg #23274C`, `text #E8EAF6`, `border #3B4172`, placeholder `#6A7094`), welcome banners forced to `bg #1A1E3B` in dark, modal backdrop `rgba(14,17,36,0.55)`
+
+### Next — Tutorial Floating Modal (Approved, MDS updated before execution)
+- Tutorial prompt: convert inline welcome cards (9 dashboards) to floating modal like password prompt — `portal/partials/tutorial-modal.blade.php` as overlay (backdrop blur, dark/light consistent), role-specific content, dismiss via `POST /dismiss-welcome` without reload, shown only after password set (`first_login_at` && `!has_seen_welcome`) so it doesn't compete with password modal
+
+### Executed — Tutorial Floating Modal (Aug 20)
+- Created `tutorial-modal.blade.php` as floating overlay (same style as password modal) with role-specific title/desc/link, `tutorialModal()` Alpine, `show` with `x-transition`, dark-aware (`dark:bg-[#1A1E3B]`), dismiss via fetch
+- Included in `portal/layouts/app.blade.php` after password modal
+- Removed inline `@if(!has_seen_welcome)` cards from 9 dashboards (admin, registrar, cashier, teacher, librarian, nurse, student, directress, principal)
+
+### Login 500/419 Check (Aug 20)
+- Checked `laravel.log` — no recent ERROR/Exception entries
+- Verified auth routes: `login` (GET/POST), `dismiss-welcome` (POST), `password.force.update` (PUT) all present via `route:list`
+- View cache compiled successfully — no blade 500s
+- Password overlay now AJAX (no reload) and dark/light inputs verified readable in both modes (global `dark input/select/textarea` + modal `dark:bg/#23274C` + welcome banner `dark:bg #1A1E3B`)
 
 ---
 

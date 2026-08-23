@@ -10,19 +10,24 @@ use Illuminate\Validation\Rules\Password;
 
 class ForceChangePasswordController extends Controller
 {
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request)
     {
         $validated = $request->validateWithBag('forcePassword', [
-            'password' => ['required', Password::defaults(), 'confirmed'],
+            'password' => ['required', Password::min(8)->letters()->mixedCase()->numbers()->symbols(), 'confirmed'],
         ]);
 
-        $request->user()->update([
-            'password' => Hash::make($validated['password']),
-            'first_login_at' => now(),
-        ]);
+        $user = $request->user();
+        $user->password = $validated['password'];
+        $user->first_login_at = now();
+        $user->save();
+        $request->session()->regenerate();
 
-        log_activity($request->user(), 'Password Changed', 'First-login password changed successfully.');
+        log_activity($user, 'Password Changed', 'First-login password changed successfully.');
 
-        return redirect()->back()->with('success', 'Your password has been updated successfully.');
+        if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json(['success' => true, 'message' => 'Your new password has been set.']);
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Your new password has been set. Welcome!');
     }
 }
