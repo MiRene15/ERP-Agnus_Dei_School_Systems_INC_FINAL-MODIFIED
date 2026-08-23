@@ -120,13 +120,11 @@ Route::middleware('auth')->group(function () {
          Route::get('admin/student-accounts', [\App\Http\Controllers\Admin\StudentAccountController::class, 'index'])->name('admin.student-accounts.index');
          Route::post('admin/student-accounts/{user}/toggle-status', [\App\Http\Controllers\Admin\StudentAccountController::class, 'toggleStatus'])->name('admin.student-accounts.toggle-status');
          Route::post('admin/student-accounts/{user}/reset-password', [\App\Http\Controllers\Admin\StudentAccountController::class, 'resetPassword'])->name('admin.student-accounts.reset-password');
-         // Subjects Management
-         Route::get('admin/subjects/template', [\App\Http\Controllers\Admin\SubjectController::class, 'template'])->name('admin.subjects.template');
-         Route::post('admin/subjects/import', [\App\Http\Controllers\Admin\SubjectController::class, 'import'])->name('admin.subjects.import');
-         Route::resource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class)->except(['show'])->names('admin.subjects');
-         // Sections Management
-         Route::resource('admin/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('admin.sections');
-         // School Settings
+        // Subjects Management (hidden — no sidebar link per request, but routes kept for direct access)
+        Route::get('admin/subjects/template', [\App\Http\Controllers\Admin\SubjectController::class, 'template'])->name('admin.subjects.template');
+        Route::post('admin/subjects/import', [\App\Http\Controllers\Admin\SubjectController::class, 'import'])->name('admin.subjects.import');
+        Route::resource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class)->except(['show'])->names('admin.subjects');
+        // School Settings
          Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
          Route::post('/admin/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
          // Audit Logs
@@ -138,6 +136,11 @@ Route::middleware('auth')->group(function () {
         // Promotion / End-of-Year
         Route::get('/admin/promotion', [\App\Http\Controllers\Admin\PromotionController::class, 'index'])->name('admin.promotion.index');
         Route::post('/admin/promotion/process', [\App\Http\Controllers\Admin\PromotionController::class, 'process'])->name('admin.promotion.process');
+    });
+
+    // Sections — accessible to Admin and Registrar (moved from Admin-only per request)
+    Route::middleware(['role:1,2'])->group(function() {
+        Route::resource('admin/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('admin.sections');
     });
 
     Route::middleware(['role:2'])->group(function() {

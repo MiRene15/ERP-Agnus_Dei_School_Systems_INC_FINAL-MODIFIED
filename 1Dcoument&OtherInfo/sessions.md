@@ -248,6 +248,15 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - `check_students2.php` audit run (37 users, 3 missing student, 4 no enrollment, 21 no ledger, 0 no grades among active 30) — repaired via `repair_students.php` + `StudentsAndFeesSeeder` patch (ensure `updateOrCreate` for student/enrollment/ledger + `Student::generateStudentNumber` + `FeeSchedule` fallback)
 - `PrincipalController.php:81` — added teacher conflict + room conflict checks and `date_format:H:i` strict time for manual + CSV import, updated `scheduling_review.md` verdict
 
+### Next — Remove Subjects/Sections from Admin, Move Sections to Registrar (Approved, MDS updated before execution)
+- Admin: remove `Subjects` and `Sections` tabs from `sidebar-admin.blade.php` (now only `Settings` single tab)
+- Registrar: add `Sections` to `sidebar-registrar.blade.php`, move `admin/sections` routes to `registrar/sections` (reuse `SectionController`), keep `admin/subjects` routes but hidden (no sidebar link)
+
+### Executed — Subjects/Sections Move (Aug 20)
+- `sidebar-admin.blade.php:18` — removed Subjects/Sections links, kept only `Settings` (single tab)
+- `sidebar-registrar.blade.php:9` — added Sections link (`registrar.sections.index`)
+- `routes/web.php:109` — added `registrar/sections` resource routes (role 2) reusing `SectionController`; kept `admin/subjects`/`admin/sections` for backward compat but no admin sidebar link
+
 ---
 
 ## Prior Work (Before Aug 14 Session)
