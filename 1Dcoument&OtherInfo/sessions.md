@@ -260,6 +260,11 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 ### Fix — Sections Registrar-Only (Aug 20)
 - Per `Only registrar should have access instead` — changed `admin/sections` (role 1,2) → `registrar/sections` (role 2 only), updated `SectionController.php` redirects and 4 blade views (`admin/sections/index/create/edit` + `partials/sections-index-results`) from `admin.sections.*` → `registrar.sections.*`, breadcrumbs updated
 
+### Cleanup — Ensure No Overlap with Actual Features (Aug 20)
+- Audited `admin.sections` vs `registrar.sections`, `admin.subjects` (now hidden, no sidebar link — kept for direct admin access, not overlapping), password/tutorial modals (z 999 vs 998, distinct handlers), sections views naming
+- Moved sections views `portal/admin/sections/*` → `portal/registrar/sections/*` (3 files) + partial `admin/partials/sections-index-results` → `registrar/partials/sections-index-results`, updated `SectionController.php` to return `portal.registrar.sections.*` and `portal.registrar.partials.*`, removed empty `portal/admin/sections` dir
+- Verified `admin.subjects` remains hidden (no overlap with registrar sections), `SectionController` still under `Admin` namespace but now registrar-only (single responsibility, no duplicate routes), dark/light CSS already consolidated — no overlapping styles
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

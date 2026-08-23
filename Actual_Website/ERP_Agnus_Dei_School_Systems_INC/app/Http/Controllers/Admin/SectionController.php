@@ -31,18 +31,18 @@ class SectionController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.admin.partials.sections-index-results', compact('sections', 'gradeLevels'))->render(),
+                'html' => view('portal.registrar.partials.sections-index-results', compact('sections', 'gradeLevels'))->render(),
             ]);
         }
 
-        return view('portal.admin.sections.index', compact('sections', 'gradeLevels'));
+        return view('portal.registrar.sections.index', compact('sections', 'gradeLevels'));
     }
 
     public function create()
     {
         $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         $teachers = User::where('role_id', 4)->orderBy('name')->get();
-        return view('portal.admin.sections.create', compact('gradeLevels', 'teachers'));
+        return view('portal.registrar.sections.create', compact('gradeLevels', 'teachers'));
     }
 
     public function store(Request $request)
@@ -78,7 +78,7 @@ class SectionController extends Controller
     {
         $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         $teachers = User::where('role_id', 4)->orderBy('name')->get();
-        return view('portal.admin.sections.edit', compact('section', 'gradeLevels', 'teachers'));
+        return view('portal.registrar.sections.edit', compact('section', 'gradeLevels', 'teachers'));
     }
 
     public function update(Request $request, Section $section)
