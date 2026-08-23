@@ -1,13 +1,13 @@
 @extends('portal.layouts.app')
 
 @section('breadcrumbs')
-    <a href="{{ route('admin.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a><span class="opacity-40"> / </span><a href="{{ route('admin.sections.index') }}" class="no-underline" style="color: var(--muted);">Sections</a><span class="opacity-40"> / </span><span class="current">Create</span>
+    <a href="{{ route('registrar.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a><span class="opacity-40"> / </span><a href="{{ route('registrar.sections.index') }}" class="no-underline" style="color: var(--muted);">Sections</a><span class="opacity-40"> / </span><span class="current">Create</span>
 @endsection
 
 @section('content')
 <div class="mb-6"><h2 class="text-2xl font-bold text-gray-900">Create Section</h2></div>
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-lg">
-    <form method="POST" action="{{ route('admin.sections.store') }}">
+    <form method="POST" action="{{ route('registrar.sections.store') }}">
         @csrf
         <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">Grade Level *</label>

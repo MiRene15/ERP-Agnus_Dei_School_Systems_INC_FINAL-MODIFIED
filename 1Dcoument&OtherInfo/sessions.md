@@ -255,7 +255,10 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 ### Executed — Subjects/Sections Move (Aug 20)
 - `sidebar-admin.blade.php:18` — removed Subjects/Sections links, kept only `Settings` (single tab)
 - `sidebar-registrar.blade.php:9` — added Sections link (`registrar.sections.index`)
-- `routes/web.php:109` — added `registrar/sections` resource routes (role 2) reusing `SectionController`; kept `admin/subjects`/`admin/sections` for backward compat but no admin sidebar link
+- `routes/web.php:109` — moved `admin/sections` to `registrar/sections` (role 2 only, registrar-only per request); `admin/subjects` hidden (no sidebar link)
+
+### Fix — Sections Registrar-Only (Aug 20)
+- Per `Only registrar should have access instead` — changed `admin/sections` (role 1,2) → `registrar/sections` (role 2 only), updated `SectionController.php` redirects and 4 blade views (`admin/sections/index/create/edit` + `partials/sections-index-results`) from `admin.sections.*` → `registrar.sections.*`, breadcrumbs updated
 
 ---
 

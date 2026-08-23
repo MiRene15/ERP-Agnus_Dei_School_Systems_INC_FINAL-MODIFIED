@@ -138,9 +138,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/promotion/process', [\App\Http\Controllers\Admin\PromotionController::class, 'process'])->name('admin.promotion.process');
     });
 
-    // Sections — accessible to Admin and Registrar (moved from Admin-only per request)
-    Route::middleware(['role:1,2'])->group(function() {
-        Route::resource('admin/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('admin.sections');
+    // Sections — Registrar only (moved from Admin per request)
+    Route::middleware(['role:2'])->group(function() {
+        Route::resource('registrar/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('registrar.sections');
     });
 
     Route::middleware(['role:2'])->group(function() {

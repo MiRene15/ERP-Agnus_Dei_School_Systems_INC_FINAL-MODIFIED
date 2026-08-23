@@ -20,8 +20,8 @@
                         </td>
                         <td class="py-3 px-2">
                             <div class="flex gap-1">
-                                <a href="{{ route('admin.sections.edit', $section) }}" class="px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">Edit</a>
-                                <form method="POST" action="{{ route('admin.sections.destroy', $section) }}" onsubmit="return confirm('Delete {{ $section->section_name }}?')" class="inline">@csrf @method('DELETE')<button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800">Delete</button></form>
+                                <a href="{{ route('registrar.sections.edit', $section) }}" class="px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">Edit</a>
+                                <form method="POST" action="{{ route('registrar.sections.destroy', $section) }}" onsubmit="return confirm('Delete {{ $section->section_name }}?')" class="inline">@csrf @method('DELETE')<button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800">Delete</button></form>
                             </div>
                         </td>
                     </tr>

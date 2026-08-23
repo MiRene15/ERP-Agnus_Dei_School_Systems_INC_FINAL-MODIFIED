@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('breadcrumbs')
-    <a href="{{ route('admin.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a><span class="opacity-40"> / </span><span class="current">Sections</span>
+    <a href="{{ route('registrar.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a><span class="opacity-40"> / </span><span class="current">Sections</span>
 @endsection
 
 @section('content')
@@ -10,14 +10,14 @@
         <h2 class="text-2xl font-bold text-gray-900">Sections</h2>
         <p class="text-gray-600 mt-1">Manage sections/classrooms per grade level.</p>
     </div>
-    <a href="{{ route('admin.sections.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">+ Add Section</a>
+    <a href="{{ route('registrar.sections.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">+ Add Section</a>
 </div>
 
 @if(session('success'))
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
 
-<div x-data="ajaxTable('{{ route('admin.sections.index') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
+<div x-data="ajaxTable('{{ route('registrar.sections.index') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"

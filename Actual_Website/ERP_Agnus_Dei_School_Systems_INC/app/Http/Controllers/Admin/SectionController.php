@@ -70,7 +70,7 @@ class SectionController extends Controller
 
         log_activity(new \App\Models\Section, 'Created', "Created section: {$data['section_name']} ({$data['grade_level']})");
 
-        return redirect()->route('admin.sections.index')
+        return redirect()->route('registrar.sections.index')
             ->with('success', "Section {$data['section_name']} created for {$data['grade_level']}.");
     }
 
@@ -99,7 +99,7 @@ class SectionController extends Controller
 
         log_activity($section, 'Updated', "Updated section: {$section->section_name}");
 
-        return redirect()->route('admin.sections.index')
+        return redirect()->route('registrar.sections.index')
             ->with('success', "Section {$data['section_name']} updated.");
     }
 
