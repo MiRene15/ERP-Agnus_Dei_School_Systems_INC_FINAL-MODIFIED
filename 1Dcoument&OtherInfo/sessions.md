@@ -228,6 +228,26 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - View cache compiled successfully — no blade 500s
 - Password overlay now AJAX (no reload) and dark/light inputs verified readable in both modes (global `dark input/select/textarea` + modal `dark:bg/#23274C` + welcome banner `dark:bg #1A1E3B`)
 
+### Next — Scheduling Review + Settings One-Tab + Tutorial Once + Student 500 (Approved, MDS updated before execution)
+- Scheduling: review Principal module (manual + hybrid CSV) — put in `scheduling_review.md` (strengths, gaps, recommendations)
+- Settings: collapse Admin Settings collapsible (Subjects/Sections/Main Settings) into **ONE tab** (`admin.settings` only)
+- Tutorial: fix floating modal to show **only on dashboard once per login** (not on every transaction) — add `request()->routeIs('*.dashboard')` + session guard, fix dismiss persistence
+- Student dashboard 500 for `lorene.valencia2` (user has no `student` record) — `StudentController@index` null check
+
+### Executed — Scheduling Review + Settings One-Tab + Tutorial + Student 500 (Aug 20)
+- `scheduling_review.md` created (current impl, strengths, gaps: teacher/room conflict, time format, UX, recommendations)
+- `sidebar-admin.blade.php` — collapsed Settings to single link (ONE tab) — removed Subjects/Sections from dropdown, moved them to top-level if needed (now single Settings)
+- `tutorial-modal.blade.php` + `portal/layouts/app.blade.php` — added `*.dashboard` route guard + session `tutorial_dismissed` check, dismiss now sets session + DB
+- `StudentController.php:11` — added null `student` guard (lorene.valencia2 case) to prevent 500 on `student/dashboard`
+
+### Next — Student Accounts Audit + Scheduling Recommendations (Approved, MDS updated before execution)
+- Student accounts: audit `role_id=7` users vs `students`/`enrollments`/`ledgers` in seeder + live DB (found 3 users missing student, 4 students no enrollment, 21 no ledger) — backfill via repair script + update `StudentsAndFeesSeeder` to ensure idempotent `updateOrCreate` for all necessary info
+- Scheduling: implement `scheduling_review.md` recs 1+2 — teacher/room conflict checks + `date_format:H:i` strict time in `schedulesStore` + `schedulesImport`, plus template helper note
+
+### Executed — Student Accounts + Scheduling Recs (Aug 20)
+- `check_students2.php` audit run (37 users, 3 missing student, 4 no enrollment, 21 no ledger, 0 no grades among active 30) — repaired via `repair_students.php` + `StudentsAndFeesSeeder` patch (ensure `updateOrCreate` for student/enrollment/ledger + `Student::generateStudentNumber` + `FeeSchedule` fallback)
+- `PrincipalController.php:81` — added teacher conflict + room conflict checks and `date_format:H:i` strict time for manual + CSV import, updated `scheduling_review.md` verdict
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

@@ -15,6 +15,14 @@ class StudentController extends Controller
 
         $student = auth()->user()->student;
 
+        if (!$student) {
+            $msg = 'No student profile found for this account. Please contact the registrar.';
+            if ($isAjax) {
+                return response()->json(['html' => '<div class="p-8 text-center text-sm text-red-600">'.$msg.'</div>']);
+            }
+            return view('portal.student.dashboard', ['student' => null, 'activeEnrollment' => null, 'pendingAdmission' => null])->with('error', $msg);
+        }
+
         $activeEnrollment = $student->enrollments()
             ->with('section', 'subjects')
             ->where('status', 'Active')
@@ -37,6 +45,7 @@ class StudentController extends Controller
     public function cor()
     {
         $student = auth()->user()->student;
+        if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found. Contact registrar.');
 
         $enrollment = $student->enrollments()
             ->with('section', 'subjects.subject', 'subjects.schedules', 'subjects.teacher', 'promotedToEnrollment')
@@ -67,6 +76,8 @@ class StudentController extends Controller
         $request->query->remove('ajax');
 
         $student = auth()->user()->student;
+        if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found.');
+
         $activeEnrollment = $student->enrollments()
             ->with('section', 'subjects.subject', 'subjects.schedules', 'subjects.teacher')
             ->where('status', 'Active')
@@ -119,6 +130,8 @@ class StudentController extends Controller
         $request->query->remove('ajax');
 
         $student = auth()->user()->student;
+        if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found.');
+
         $activeEnrollment = $student->enrollments()
             ->with('section')
             ->where('status', 'Active')

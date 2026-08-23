@@ -1,4 +1,4 @@
-@if(auth()->user()->first_login_at && !auth()->user()->has_seen_welcome)
+@if(auth()->user()->first_login_at && request()->routeIs('*.dashboard') && !session('tutorial_dismissed'))
 @php
 $tutorial = match(auth()->user()->role_id) {
     1 => ['title' => 'Welcome to the Admin Dashboard!', 'desc' => 'Manage users, review verification, configure school settings, and export data. Use the sidebar to access all admin tools.', 'link' => route('admin.pending-accounts'), 'linkText' => 'Review Verification →', 'color' => 'purple'],

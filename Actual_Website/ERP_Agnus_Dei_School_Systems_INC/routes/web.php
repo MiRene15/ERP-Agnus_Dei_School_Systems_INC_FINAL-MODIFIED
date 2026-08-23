@@ -103,6 +103,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/dismiss-welcome', function() {
         auth()->user()->update(['has_seen_welcome' => true]);
+        session(['tutorial_dismissed' => true]);
         return response()->json(['ok' => true]);
     })->name('dismiss-welcome');
 
