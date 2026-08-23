@@ -109,8 +109,9 @@
             </div>
         </div>
 
-        <div class="mt-6">
+        <div class="mt-6 flex items-center gap-3">
             <button type="submit" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90 cursor-pointer" style="background: var(--navy);">Save All Settings</button>
+            <a href="{{ route('admin.audit-logs') }}" class="text-xs text-gray-500 hover:text-blue-600 underline">View audit logs →</a>
         </div>
     </form>
 </div>

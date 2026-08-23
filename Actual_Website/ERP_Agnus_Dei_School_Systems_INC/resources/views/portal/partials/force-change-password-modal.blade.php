@@ -35,14 +35,26 @@
         <form @submit.prevent="submit()" novalidate>
             <div class="mb-4">
                 <label class="block text-sm font-semibold text-gray-700 dark:text-[#C1C4DC] mb-1">New Password</label>
-                <input type="password" x-model="password" required autocomplete="new-password"
-                       class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] placeholder-gray-400 dark:placeholder-[#6A7094] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-sm outline-none transition">
+                <div class="relative">
+                    <input :type="showPw ? 'text' : 'password'" x-model="password" required autocomplete="new-password"
+                           class="w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] placeholder-gray-400 dark:placeholder-[#6A7094] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-sm outline-none transition">
+                    <button type="button" @click="showPw = !showPw" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 dark:text-[#6A7094] hover:text-gray-600 dark:hover:text-[#E8EAF6]" :aria-label="showPw ? 'Hide password' : 'Show password'">
+                        <svg x-show="!showPw" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        <svg x-show="showPw" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
                 <p class="text-xs text-gray-400 dark:text-[#6A7094] mt-1">Min 8 chars, include uppercase, lowercase, number, and symbol.</p>
             </div>
             <div class="mb-6">
                 <label class="block text-sm font-semibold text-gray-700 dark:text-[#C1C4DC] mb-1">Confirm New Password</label>
-                <input type="password" x-model="password_confirmation" required autocomplete="new-password"
-                       class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] placeholder-gray-400 dark:placeholder-[#6A7094] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-sm outline-none transition">
+                <div class="relative">
+                    <input :type="showPw2 ? 'text' : 'password'" x-model="password_confirmation" required autocomplete="new-password"
+                           class="w-full px-4 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] placeholder-gray-400 dark:placeholder-[#6A7094] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 text-sm outline-none transition">
+                    <button type="button" @click="showPw2 = !showPw2" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 dark:text-[#6A7094] hover:text-gray-600 dark:hover:text-[#E8EAF6]" :aria-label="showPw2 ? 'Hide password' : 'Show password'">
+                        <svg x-show="!showPw2" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        <svg x-show="showPw2" class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
             </div>
             <button type="submit" :disabled="loading"
                     class="w-full py-3 rounded-lg text-white font-bold text-sm tracking-wide transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -58,6 +70,8 @@ function forcePasswordModal() {
     return {
         show: true,
         loading: false,
+        showPw: false,
+        showPw2: false,
         errors: [],
         successMsg: '',
         password: '',

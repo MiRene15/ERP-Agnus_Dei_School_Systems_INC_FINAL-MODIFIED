@@ -52,7 +52,7 @@
             </td>
         </tr>
         @empty
-        <tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">No admissions applications yet.</td></tr>
+        <tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">No admissions found.<br><span class="text-xs">Try adjusting filters or check back later.</span></td></tr>
         @endforelse
     </tbody>
 </table>

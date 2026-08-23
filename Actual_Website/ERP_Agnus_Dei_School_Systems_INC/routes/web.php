@@ -143,6 +143,10 @@ Route::middleware('auth')->group(function () {
         Route::resource('registrar/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('registrar.sections');
     });
 
+    Route::middleware(['role:2,3'])->group(function() {
+        Route::get('/registrar/requirements/{requirement}/view', [StudentAdmissionController::class, 'viewRequirement'])->name('registrar.requirements.view');
+    });
+
     Route::middleware(['role:2'])->group(function() {
         Route::get('/registrar/dashboard', [RegistrarController::class, 'index'])->name('registrar.dashboard');
         Route::get('/registrar/admissions', [RegistrarAdmissionController::class, 'index'])->name('registrar.admissions.index');
@@ -151,7 +155,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/registrar/admissions/{admission}/reject', [RegistrarAdmissionController::class, 'reject'])->name('registrar.admissions.reject');
         Route::post('/registrar/admissions/{admission}/verify-all', [RegistrarAdmissionController::class, 'verifyAll'])->name('registrar.admissions.verify-all');
         Route::post('/registrar/requirements/{requirement}/verify', [RegistrarAdmissionController::class, 'verifyRequirement'])->name('registrar.admissions.verify-requirement');
-        Route::get('/registrar/requirements/{requirement}/view', [StudentAdmissionController::class, 'viewRequirement'])->name('registrar.requirements.view');
         Route::get('/registrar/withdrawals', [WithdrawalController::class, 'index'])->name('registrar.withdrawals.index');
         Route::post('/registrar/withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('registrar.withdrawals.approve');
         Route::post('/registrar/withdrawals/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('registrar.withdrawals.reject');
