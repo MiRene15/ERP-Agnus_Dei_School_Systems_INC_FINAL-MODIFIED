@@ -33,10 +33,10 @@
     <details>
         <summary class="cursor-pointer text-sm font-semibold text-gray-700">Import from CSV (hybrid — manual stays) <span class="text-xs font-normal text-gray-400">— optional bulk upload with conflict check</span></summary>
         <div class="mt-3 flex flex-col gap-3">
-            <p class="text-xs text-gray-500">CSV columns: <code>class_id,day_of_week,start_time,end_time,room</code> — <code>day_of_week</code> = Monday..Friday, time = HH:MM (24h). Duplicate/conflicting rows are skipped and reported.</p>
+            <p class="text-xs text-gray-500">CSV columns: <code>grade_level, section, subject_code, day_of_week, start_time, end_time, room</code> — e.g., <code>Grade 7, A, ENG7, Monday, 08:00, 09:00, J-101</code>. <code>subject_code</code> can be code (ENG7) or name (English). Time = HH:MM (24h). Also supports old <code>class_id</code> format. Duplicate/conflicting rows are skipped.</p>
             <div class="flex gap-2 items-center flex-wrap">
                 <a href="{{ route('principal.schedules.template') }}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Download template</a>
-                <span class="text-xs text-gray-400">Find <code>class_id</code> in the table below (or Schedules → search).</span>
+                <span class="text-xs text-gray-400">Find <code>Grade — Section — Subject</code> in the table below. Teacher is auto-filled from class.</span>
             </div>
             <form method="POST" action="{{ route('principal.schedules.import') }}" enctype="multipart/form-data" class="flex gap-2 items-center flex-wrap">
                 @csrf

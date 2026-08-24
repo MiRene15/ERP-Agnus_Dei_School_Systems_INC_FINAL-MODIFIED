@@ -136,16 +136,19 @@ class PrincipalController extends Controller
         return back()->with('success', 'Schedule removed.');
     }
 
-    // ─── Schedules CSV — hybrid import (manual stays, CSV optional) ─
+    // ─── Schedules CSV — hybrid import (friendly template: no class_id needed) ─
     public function schedulesTemplate()
     {
         $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="schedules_template.csv"'];
-        $columns = ['class_id', 'day_of_week', 'start_time', 'end_time', 'room'];
-        $example = ['1', 'Monday', '08:00', '09:00', 'Room 101'];
-        return response()->stream(function () use ($columns, $example) {
+        $columns = ['grade_level', 'section', 'subject_code', 'day_of_week', 'start_time', 'end_time', 'room'];
+        $examples = [
+            ['Grade 7', 'A', 'ENG7', 'Monday', '08:00', '09:00', 'J-101'],
+            ['Grade 7', 'A', 'MATH7', 'Tuesday', '09:00', '10:00', 'J-101'],
+        ];
+        return response()->stream(function () use ($columns, $examples) {
             $out = fopen('php://output', 'w');
             fputcsv($out, $columns);
-            fputcsv($out, $example);
+            foreach ($examples as $ex) fputcsv($out, $ex);
             fclose($out);
         }, 200, $headers);
     }
@@ -164,11 +167,14 @@ class PrincipalController extends Controller
         }
 
         $header = fgetcsv($handle);
-        $expected = ['class_id', 'day_of_week', 'start_time', 'end_time', 'room'];
         $headerNorm = array_map(fn($h) => strtolower(trim($h)), $header ?? []);
-        if ($headerNorm !== $expected) {
+        $legacy = ['class_id', 'day_of_week', 'start_time', 'end_time', 'room'];
+        $friendly = ['grade_level', 'section', 'subject_code', 'day_of_week', 'start_time', 'end_time', 'room'];
+        $isLegacy = $headerNorm === $legacy;
+        $isFriendly = $headerNorm === $friendly;
+        if (!$isLegacy && !$isFriendly) {
             fclose($handle);
-            return back()->with('error', 'Invalid CSV header. Expected: ' . implode(',', $expected) . '. Download the template.');
+            return back()->with('error', 'Invalid CSV header. Expected: ' . implode(',', $friendly) . ' (or legacy ' . implode(',', $legacy) . '). Download the template.');
         }
 
         $rows = [];
@@ -176,18 +182,23 @@ class PrincipalController extends Controller
         while (($data = fgetcsv($handle)) !== false) {
             $line++;
             if (count(array_filter($data, fn($v) => trim($v) !== '')) === 0) continue;
-            if (count($data) < 5) {
-                $rows[] = ['line' => $line, 'error' => 'Missing columns', 'data' => $data];
-                continue;
+            if ($isLegacy) {
+                if (count($data) < 5) { $rows[] = ['line' => $line, 'error' => 'Missing columns', 'data' => $data]; continue; }
+                $rows[] = ['line' => $line, 'class_id' => trim($data[0]), 'day_of_week' => trim($data[1]), 'start_time' => trim($data[2]), 'end_time' => trim($data[3]), 'room' => trim($data[4])];
+            } else {
+                if (count($data) < 7) { $rows[] = ['line' => $line, 'error' => 'Missing columns (need 7)', 'data' => $data]; continue; }
+                $grade = trim($data[0]); $section = trim($data[1]); $subjCode = trim($data[2]);
+                $day = trim($data[3]); $start = trim($data[4]); $end = trim($data[5]); $room = trim($data[6]);
+                $schoolYear = active_school_year();
+                $class = Classes::where('grade_level', $grade)->where('section', $section)->where('school_year', $schoolYear)
+                    ->whereHas('subject', fn($q) => $q->where('subject_code', $subjCode)->orWhere('name', $subjCode))
+                    ->first();
+                if (!$class) {
+                    $rows[] = ['line' => $line, 'error' => "Class not found for $grade / $section / $subjCode ($schoolYear)", 'data' => $data];
+                    continue;
+                }
+                $rows[] = ['line' => $line, 'class_id' => $class->id, 'day_of_week' => $day, 'start_time' => $start, 'end_time' => $end, 'room' => $room, 'resolved' => "$grade $section $subjCode → Class #{$class->id} ({$class->subject->name} / {$class->teacher?->name})"];
             }
-            $rows[] = [
-                'line' => $line,
-                'class_id' => trim($data[0]),
-                'day_of_week' => trim($data[1]),
-                'start_time' => trim($data[2]),
-                'end_time' => trim($data[3]),
-                'room' => trim($data[4]),
-            ];
         }
         fclose($handle);
 
