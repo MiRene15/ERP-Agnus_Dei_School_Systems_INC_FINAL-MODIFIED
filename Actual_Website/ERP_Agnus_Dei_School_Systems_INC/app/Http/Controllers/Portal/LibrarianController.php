@@ -22,6 +22,8 @@ class LibrarianController extends Controller
         $borrowedBooks = LibraryTransaction::where('status', 'Borrowed')->count();
         $overdueBooks = LibraryTransaction::where('status', 'Borrowed')
             ->where('return_date', '<', now())
+            ->where('return_date', '>', '1970-01-02')
+            ->whereNotNull('return_date')
             ->count();
 
         $recentTransactions = LibraryTransaction::with('student', 'book')

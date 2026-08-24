@@ -51,7 +51,10 @@ class LibraryTransaction extends Model
 
     public function isOverdue(): bool
     {
-        return $this->status === 'Borrowed' && $this->return_date && now()->greaterThan($this->return_date);
+        if ($this->status !== 'Borrowed' || !$this->return_date) return false;
+        // Treat 1970-01-01 (epoch) as invalid/missing due date
+        if ($this->return_date->year === 1970) return false;
+        return now()->greaterThan($this->return_date);
     }
 
     public function daysOverdue(): int

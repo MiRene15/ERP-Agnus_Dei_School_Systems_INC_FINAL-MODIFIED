@@ -168,14 +168,24 @@ function loansManager() {
             this.currentPage = 1;
             this.performSearch();
         },
+        isValidDue(date) {
+            if (!date) return false;
+            const d = new Date(date);
+            return !isNaN(d) && d.getFullYear() !== 1970;
+        },
         isOverdue(txn) {
-            return txn.status === 'Borrowed' && new Date(txn.return_date) < new Date();
+            if (txn.status !== 'Borrowed' || !this.isValidDue(txn.return_date)) return false;
+            return new Date(txn.return_date) < new Date();
         },
         daysOverdue(txn) {
+            if (!this.isValidDue(txn.return_date)) return 0;
             return Math.max(0, Math.floor((new Date() - new Date(txn.return_date)) / 86400000));
         },
         formatDate(date) {
-            return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            if (!date) return '—';
+            const d = new Date(date);
+            if (isNaN(d) || d.getFullYear() === 1970) return '—';
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
     }
 }
