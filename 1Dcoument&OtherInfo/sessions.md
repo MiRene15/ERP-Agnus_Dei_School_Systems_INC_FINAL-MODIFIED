@@ -265,6 +265,15 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - Moved sections views `portal/admin/sections/*` → `portal/registrar/sections/*` (3 files) + partial `admin/partials/sections-index-results` → `registrar/partials/sections-index-results`, updated `SectionController.php` to return `portal.registrar.sections.*` and `portal.registrar.partials.*`, removed empty `portal/admin/sections` dir
 - Verified `admin.subjects` remains hidden (no overlap with registrar sections), `SectionController` still under `Admin` namespace but now registrar-only (single responsibility, no duplicate routes), dark/light CSS already consolidated — no overlapping styles
 
+### Next — Promotion Failing Logic Fix (Approved, MDS updated before execution)
+- Current: `Not qualified` based on per-term `final_grade <75` (counts every quarter) — Ana Gonzales shows 6 failing term grades but GWA 82.43, incorrectly Not qualified. Per request: base on **final per-school-year per subject** (avg of 3 terms per subject), GWA = avg of subject finals, failing = count of subject finals <75
+
+### Executed — Promotion Final-Per-Year Fix (Aug 20)
+- `portal/admin/partials/promotion-index-results.blade.php:42` — now groups `grades` by `class_id`, computes subject final = avg of its 3 terms, GWA = avg of finals, `failCount` = finals < `passing`, `subjectCount` = distinct subjects; `View grades` modal now shows per-subject final
+
+### Approved Design Consistency Fix (Aug 20)
+- `portal/registrar/partials/admissions-results.blade.php:30` — unified `Approved` badge to `bg-green-100 text-green-800` for any `*Approved*` status (was gray `bg-gray-100` for `Approved` vs green for `Approved By Registrar`); now `Pending` yellow, `Approved`/`Approved By Registrar` green, `Rejected` red consistently across admissions, withdrawals, and reports — dark mode `dark:bg-*` already handled
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

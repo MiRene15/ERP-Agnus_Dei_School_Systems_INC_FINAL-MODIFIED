@@ -28,19 +28,21 @@
             <td class="px-4 py-3 text-gray-600">{{ $admission->school_year }}</td>
             <td class="px-4 py-3 text-gray-500 text-xs">{{ $admission->created_at->diffForHumans() }}</td>
             <td class="px-4 py-3">
-                @switch($admission->status)
-                    @case('Pending')
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
-                        @break
-                    @case('Approved By Registrar')
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Approved</span>
-                        @break
-                    @case('Rejected')
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>
-                        @break
-                    @default
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ $admission->status }}</span>
-                @endswitch
+                @php
+                    $statusLower = strtolower($admission->status);
+                    $isApproved = str_contains($statusLower, 'approved');
+                    $isPending = str_contains($statusLower, 'pending');
+                    $isRejected = str_contains($statusLower, 'reject');
+                @endphp
+                @if($isApproved)
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Approved</span>
+                @elseif($isPending)
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
+                @elseif($isRejected)
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>
+                @else
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ $admission->status }}</span>
+                @endif
             </td>
             <td class="px-4 py-3 text-right">
                 <a href="{{ route('registrar.admissions.show', $admission) }}"

@@ -50,9 +50,12 @@
                         $isGrade12 = $gradeLevel === 'Grade 12';
                         $passing = $passingGrade ?? 75;
                         $grades = $enrollment->grades ?? collect();
-                        $avg = $grades->isNotEmpty() ? round($grades->avg('final_grade'), 2) : null;
-                        $failCount = $grades->where('final_grade', '<', $passing)->count();
-                        $subjectCount = $grades->count();
+                        // Final per school year per subject: avg of 3 terms per class
+                        $grouped = $grades->groupBy('class_id');
+                        $finals = $grouped->map(fn($g) => round($g->avg('final_grade'), 2));
+                        $avg = $finals->isNotEmpty() ? round($finals->avg(), 2) : null;
+                        $failCount = $finals->filter(fn($f) => $f < $passing)->count();
+                        $subjectCount = $finals->count();
                         $qualified = $avg !== null && $avg >= $passing && $failCount === 0;
                         $balVal = $enrollment->student->ledger?->balance ?? 0;
                     @endphp
@@ -63,8 +66,9 @@
                             @if($subjectCount>0)
                                 <button type="button" @click="open=!open" class="text-xs text-blue-600 hover:underline mt-1" x-text="open ? 'Hide grades' : 'View grades'"></button>
                                 <div x-show="open" x-cloak class="mt-1 text-xs bg-gray-50 rounded-lg p-2 space-y-0.5">
-                                    @foreach($grades as $g)
-                                        <div class="flex justify-between"><span class="text-gray-600">{{ $g->schoolClass->subject->name ?? $g->schoolClass->subject_code ?? 'Subject' }} ({{ $g->grading_period }})</span><span class="{{ $g->final_grade < $passing ? 'text-red-600 font-semibold' : 'text-gray-900' }}">{{ number_format($g->final_grade,2) }}</span></div>
+                                    @foreach($grouped as $classId => $gGroup)
+                                        @php $final = round($gGroup->avg('final_grade'),2); $subj = $gGroup->first()->schoolClass->subject->name ?? $gGroup->first()->schoolClass->subject_code ?? 'Subject'; @endphp
+                                        <div class="flex justify-between"><span class="text-gray-600">{{ $subj }}</span><span class="{{ $final < $passing ? 'text-red-600 font-semibold' : 'text-gray-900' }}">{{ number_format($final,2) }}</span></div>
                                     @endforeach
                                 </div>
                             @endif
