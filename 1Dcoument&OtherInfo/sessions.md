@@ -274,6 +274,56 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 ### Approved Design Consistency Fix (Aug 20)
 - `portal/registrar/partials/admissions-results.blade.php:30` — unified `Approved` badge to `bg-green-100 text-green-800` for any `*Approved*` status (was gray `bg-gray-100` for `Approved` vs green for `Approved By Registrar`); now `Pending` yellow, `Approved`/`Approved By Registrar` green, `Rejected` red consistently across admissions, withdrawals, and reports — dark mode `dark:bg-*` already handled
 
+### Next — Teacher Dynamic Grade Inputs (Approved, MDS updated before execution)
+- Current: fixed 3 rows per category (Written Work, Quiz, Seatwork, Exam) in `grade-assessment-student.blade.php:47` (`max(count,3)` with `@for`). Per request: make it dynamic with **+ Add New** per category (Written Work, Quiz, Seatwork) — teacher can add unlimited rows
+
+### Executed — Teacher Dynamic Inputs (Aug 20)
+- `grade-assessment-student.blade.php:39` — converted each category to Alpine `x-data` with `items: @json(...)` (min 1 row), `x-for` rendering, `add()`/`remove(index)`, dynamic `name="assessments[INDEX][title/type/raw_score/max_score]"`, live subtotal
+
+### Next — Cashier Floating Search Modal (Approved, MDS updated before execution)
+- Current: inline `Search Student` card on `cashier/payments` with input + Search button. Per request: make it a **floating modal** prompt (like password/tutorial modals) to input student's name, dark/light consistent, dismissable, shows results
+
+### Executed — Cashier Floating Modal (Aug 20)
+- `cashier/payments.blade.php:19` — added floating modal (`x-data="{ show:true }"` backdrop `rgba(14,17,36,0.55)`, `bg-white dark:bg-[#1A1E3B]`), input `Search by name, student number, or LRN...`, Search button calls `performSearch()` and keeps modal results, X to dismiss, dark-aware styling
+
+### Next — Tutorial Dark/Light + First-Login Show Password (Approved, MDS updated before execution)
+- Tutorial floating modal must fully follow dark/light mode (like password modal) — ensure all text/bg/border/button colors have `dark:` variants
+- First-time login prompt (`force-change-password-modal`) needs **show password** eye toggle (closed eye when hidden, open when visible) like login page
+
+### Executed — Tutorial Dark + Show Password (Aug 20)
+- `tutorial-modal.blade.php:1` — verified `bg-white dark:bg-[#1A1E3B]`, `text-gray-900 dark:text-[#E8EAF6]` etc., added missing `dark:` for link/button/border
+- `force-change-password-modal.blade.php:31` — added Alpine `showPw`/`showPw2` toggles with eye open/closed SVGs (closed when hidden), `dark:` input styles already present
+
+### Next — Logging Out Floating Modal (Approved, MDS updated before execution)
+- On logout click (desktop + mobile sidebar), show floating modal `Logging Out...` with spinner (like password/tutorial), dark/light consistent, then submit `POST /logout`
+
+### Executed — Logging Out Modal (Aug 20)
+- `portal/layouts/app.blade.php:303` — added global `loggingOut` Alpine state, `logging-out-modal` overlay (`z-[1000]`, backdrop `rgba(14,17,36,0.55)`, `bg-white dark:bg-[#1A1E3B]`), both logout forms now `@submit.prevent="loggingOut=true; $el.submit()"` with spinner
+
+### Next — Double Subjects + Fee Breakdown (Approved, MDS updated before execution)
+- Double subjects: COR + grading show same subject multiple times (one `Classes` row per term, same `subject_id`). Per request: **filter by term** instead of dedup only.
+- Fee breakdown: per request list of breakdown of fees in **Student Statement of Account**, **Cashier Financial Overview per student**, and **COR** — see `1Dcoument&OtherInfo/fee_double_subjects_fix.md`
+
+### Executed — Double Subjects + Fee Breakdown (Aug 20)
+- `StudentController.php:50` `cor` — now filters `subjects` by `current_term` (`Setting::getValue('current_term')`) with dedup fallback
+- `TeacherController.php:342` grading queries filtered by `term = selectedPeriod`
+- `fee_double_subjects_fix.md` created; fee helper `feeBreakdown()` added for ledger/cashier/COR breakdown tables
+
+### Next — Final Polish Round (Approved, MDS updated before execution)
+- Quick: uniform empty states with hints, consistent `M d, Y` dates, delete confirmations, dynamic portal title + favicon
+- Small: search debounce on remaining filters, plan lock tooltip, balance legend, audit deep links, capstone screenshots note
+
+### Executed — Final Polish (Aug 20)
+- Empty states: added `Try adjusting filters` hints to `admissions-results`, `collections-report`, `library/visits` + existing `sections`/`subjects`/`loans`
+- Dates: standardized to `M d, Y` in ledger/cashier/registrar views
+- Deletes: added `onsubmit="return confirm('Delete ...')"` to `fees`, `graduation-fees`, `subjects` (already had `sections`)
+- Title: `portal/layouts/app.blade.php:20` now `{{ $roleName }} — Portal` dynamic + favicon already `agnus_logo.png`
+- Search: added `@input.debounce.300ms` to `admin/users` filters
+- Tooltip: `student-financial-results.blade.php:47` lock icon now `title="Payment plan locked after first payment"`
+- Legend: added `Red = owes, Green = cleared` legend to financial tables
+- Audit: added `View audit logs` links on `admin/settings` and `registrar/sections` index
+- Docs: capstone screenshots note added to `polish_suggestions.md`
+
 ---
 
 ## Prior Work (Before Aug 14 Session)
