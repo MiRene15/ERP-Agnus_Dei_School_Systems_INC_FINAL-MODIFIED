@@ -1,10 +1,10 @@
 # Scheduling Review — Principal Module
 
-## Current Implementation
+## Current Implementation (Updated Aug 24)
 - **Owner:** Principal (role 9)
-- **Routes:** `GET /principal/schedules` (list), `POST /principal/schedules` (manual add), `DELETE /principal/schedules/{schedule}` (remove), `GET /principal/schedules/template` + `POST /principal/schedules/import` (hybrid CSV)
-- **Controller:** `PrincipalController@schedules` (filter by grade_level 7-12, school_year, day, search), `schedulesStore` (validate `class_id|exists:classes`, `day_of_week` Monday-Friday, `start_time < end_time`, `room`, conflict check per `class_id+day`), `schedulesDestroy`, `schedulesTemplate`/`Import` (CSV: `class_id,day_of_week,start_time,end_time,room`, header validation, per-row validation, conflict skip)
-- **View:** `principal/schedules.blade.php` (grade tabs 7-12, search + year + day filters via `ajaxTable`, skeleton loading, results via `schedules-results` partial), plus hybrid CSV `<details>` panel (template download + file input, error/skip display)
+- **Routes:** `GET /principal/schedules` (list), `POST /principal/schedules` (manual add), `DELETE /principal/schedules/{schedule}` (remove), `GET /principal/schedules/template` + `POST /principal/schedules/import` (hybrid CSV — now friendly)
+- **Controller:** `PrincipalController@schedules` (filter 7-12, year, day, search), `schedulesStore` (validate `class_id|exists:classes`, `day_of_week` Mon-Fri, `start_time`/`end_time` `date_format:H:i` + `after:start_time`, `room`, conflict checks: per-class + cross-class **teacher** (`whereHas('schoolClass', teacher_id)`) + **room** (`where('room', ...)`) ), `schedulesTemplate` (now `grade_level,section,subject_code,day_of_week,start_time,end_time,room` with 2 examples, legacy `class_id` still supported), `schedulesImport` (detects legacy vs friendly header, resolves `grade/section/subject_code` → `class_id` via `active_school_year` lookup, strict time, teacher/room skip)
+- **View:** `principal/schedules.blade.php` (grade tabs, search/year/day, `ajaxTable`, hybrid `<details>` panel now explains `grade_level, section, subject_code` e.g. `Grade 7, A, ENG7, Monday, 08:00, 09:00, J-101`, notes `subject_code` can be code or name)
 - **Model:** `Schedule` (`class_id`, `day_of_week`, `start_time`, `end_time`, `room`), `Classes` (`grade_level`, `school_year`, `section`, `subject`, `teacher`)
 
 ## Strengths
@@ -32,7 +32,7 @@
 - Keep hybrid as is — now fully defensible.
 
 ## Remaining Optional (Not Blocking)
-- 3. CSV friendlier key (grade+section+subject_code) — can add if Principal requests
-- 4. Template helper table — current note "Find class_id in the table below" already helps
+- 3. CSV friendlier key — ✅ Done (friendly header now primary, legacy still supported)
+- 4. Template helper table — updated to "Find Grade — Section — Subject in the table below"
 - 5. Edit — delete-only is acceptable for defense
 
