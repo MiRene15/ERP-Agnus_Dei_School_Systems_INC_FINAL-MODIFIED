@@ -25,12 +25,39 @@
     <form method="POST" action="{{ route('student.withdrawal.store') }}">
         @csrf
         <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Reason for Withdrawal *</label>
-            <textarea name="reason" rows="4" required maxlength="1000"
-                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Please explain your reason for withdrawing...">{{ old('reason') }}</textarea>
-            @error('reason') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+            <select name="category" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">Select a reason category</option>
+                <option value="Transfer to Another School" {{ old('category')=='Transfer to Another School'?'selected':'' }}>Transfer to Another School</option>
+                <option value="Change of Mind" {{ old('category')=='Change of Mind'?'selected':'' }}>Change of Mind</option>
+                <option value="Financial Issues" {{ old('category')=='Financial Issues'?'selected':'' }}>Financial Issues</option>
+                <option value="Health Reasons" {{ old('category')=='Health Reasons'?'selected':'' }}>Health Reasons</option>
+                <option value="Relocation" {{ old('category')=='Relocation'?'selected':'' }}>Relocation</option>
+                <option value="Family Reasons" {{ old('category')=='Family Reasons'?'selected':'' }}>Family Reasons</option>
+                <option value="Other" {{ old('category')=='Other'?'selected':'' }}>Other</option>
+            </select>
+            @error('category') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Details (optional)</label>
+            <textarea name="details" rows="3" maxlength="1000"
+                      class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Please provide additional details if you wish...">{{ old('details') }}</textarea>
+            @error('details') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            <p class="text-xs text-gray-400 mt-1">If you select Other, please explain.</p>
+        </div>
+        <!-- Keep hidden reason for backward compat, will be filled from category+details -->
+        <input type="hidden" name="reason" id="withdrawalReason">
+        <script>
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const cat = document.querySelector('[name=category]')?.value || '';
+                const det = document.querySelector('[name=details]')?.value || '';
+                const reasonEl = document.getElementById('withdrawalReason');
+                if (reasonEl) {
+                    reasonEl.value = det ? cat + ' — ' + det : cat;
+                }
+            });
+        </script>
         <div class="flex items-center gap-2">
             <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Submit Request</button>
             <a href="{{ route('student.dashboard') }}" class="px-5 py-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Cancel</a>

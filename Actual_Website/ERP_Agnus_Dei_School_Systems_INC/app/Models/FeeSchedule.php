@@ -14,6 +14,11 @@ class FeeSchedule extends Model
         'term',
         'tuition_fee',
         'misc_fee',
+        'misc_fee_items',
         'school_year',
+    ];
+
+    protected $casts = [
+        'misc_fee_items' => 'array',
     ];
 }

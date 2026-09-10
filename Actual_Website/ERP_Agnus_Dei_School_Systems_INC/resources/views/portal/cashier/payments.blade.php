@@ -48,8 +48,8 @@
     </div>
     <div class="flex gap-3">
         <input type="text" x-model="searchQuery" @input.debounce.300ms="performSearch()" placeholder="Search by name, student number, or LRN..."
-               class="flex-1 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
-        <button type="button" @click="performSearch()" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Search</button>
+               class="flex-1 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] placeholder-gray-400 dark:placeholder-[#6A7094] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+        <button type="button" @click="performSearch()" class="px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap" style="background: var(--navy);">Search</button>
     </div>
 
     <!-- Skeleton Loading -->
@@ -66,24 +66,24 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="border-b border-gray-200">
-                            <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
-                            <th class="text-left py-3 px-2 font-medium text-gray-600">Student No.</th>
-                            <th class="text-left py-3 px-2 font-medium text-gray-600">LRN</th>
-                            <th class="text-left py-3 px-2 font-medium text-gray-600">Grade Level</th>
-                            <th class="text-left py-3 px-2 font-medium text-gray-600">Balance</th>
-                            <th class="text-left py-3 px-2 font-medium text-gray-600">Actions</th>
+                        <tr class="border-b border-gray-200 dark:border-[#2A2F58]">
+                            <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Student</th>
+                            <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Student No.</th>
+                            <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">LRN</th>
+                            <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Grade Level</th>
+                            <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Balance</th>
+                            <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         <template x-for="s in students" :key="s.id">
-                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            <tr class="border-b border-gray-100 dark:border-[#2A2F58] hover:bg-gray-50 dark:hover:bg-[#23274C]">
                                 <td class="py-3 px-2">
-                                    <span class="font-medium text-gray-900" x-text="s.first_name + ' ' + s.last_name"></span>
+                                    <span class="font-medium text-gray-900 dark:text-[#E8EAF6]" x-text="s.first_name + ' ' + s.last_name"></span>
                                 </td>
-                                <td class="py-3 px-2 text-gray-600" x-text="s.student_number"></td>
-                                <td class="py-3 px-2 text-gray-600" x-text="s.legacy_lrn || '—'"></td>
-                                <td class="py-3 px-2 text-gray-700" x-text="s.enrollments?.[0]?.section?.grade_level || 'N/A'"></td>
+                                <td class="py-3 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="s.student_number"></td>
+                                <td class="py-3 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="s.legacy_lrn || '—'"></td>
+                                <td class="py-3 px-2 text-gray-700 dark:text-[#C1C4DC]" x-text="s.enrollments?.[0]?.section?.grade_level || 'N/A'"></td>
                                 <td class="py-3 px-2">
                                     <span class="font-medium" :class="s.computed_balance > 0 ? 'text-red-600' : 'text-green-600'" x-text="'₱ ' + s.computed_balance.toFixed(2)"></span>
                                 </td>

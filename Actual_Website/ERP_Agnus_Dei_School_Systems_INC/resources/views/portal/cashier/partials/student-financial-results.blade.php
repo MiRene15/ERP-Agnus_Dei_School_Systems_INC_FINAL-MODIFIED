@@ -69,15 +69,18 @@
             <h3 class="font-semibold text-gray-900 mb-4">Fee Summary</h3>
             <div class="space-y-3 text-sm">
                 @foreach($feeSchedules as $fs)
-                <div class="bg-gray-50 rounded-lg p-3">
+                <div class="bg-gray-50 dark:bg-[#23274C] rounded-lg p-3 border border-gray-100 dark:border-[#2A2F58]">
                     <div class="flex justify-between items-center mb-2">
-                        <span class="font-medium text-gray-800">{{ $fs->term ?: $enrollment->school_year }}</span>
-                        <span class="font-semibold text-gray-900">₱ {{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</span>
+                        <span class="font-medium text-gray-800 dark:text-[#E8EAF6]">{{ $fs->term ?: $enrollment->school_year }}</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">₱ {{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</span>
                     </div>
-                    <div class="flex justify-between text-xs text-gray-500">
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-[#8A90B0]">
                         <span>Tuition: ₱ {{ number_format($fs->tuition_fee, 2) }}</span>
                         <span>Misc: ₱ {{ number_format($fs->misc_fee, 2) }}</span>
                     </div>
+                    @if(!empty($fs->misc_fee_items))
+                        <div class="mt-1 text-xs text-gray-400 dark:text-[#6A7094]">Breakdown: @foreach((is_string($fs->misc_fee_items) ? json_decode($fs->misc_fee_items, true) : $fs->misc_fee_items) as $k => $v) {{ ucfirst($k) }} ₱{{ number_format($v,2) }}@if(!$loop->last) · @endif @endforeach</div>
+                    @endif
                 </div>
                 @endforeach
 

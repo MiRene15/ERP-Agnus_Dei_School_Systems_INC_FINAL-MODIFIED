@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Agnus Dei School Systems, Inc.</title>
     <link rel="icon" type="image/png" href="{{ asset('images/agnus_logo.png') }}">
+    <script>
+        (function () {
+            try {
+                var stored = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (stored === 'dark' || (stored !== 'light' && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -377,6 +388,13 @@
         @media (max-width: 768px) {
             .nav-links { display: none; }
         }
+
+        /* Dark mode for Promotional + Login modals */
+        html.dark { color-scheme: dark; --surface-off-white: #0E1124; --surface-white: #1A1E3B; --text-dark: #E8EAF6; --text-muted: #8A90B0; }
+        html.dark body { background-color: var(--surface-off-white); color: var(--text-dark); }
+        html.dark .card { background: var(--surface-white); border-color: #2A2F58; }
+        html.dark .page-title, html.dark .card h3 { color: var(--text-dark); }
+        html.dark .card p { color: var(--text-muted); }
     </style>
 </head>
 <body>

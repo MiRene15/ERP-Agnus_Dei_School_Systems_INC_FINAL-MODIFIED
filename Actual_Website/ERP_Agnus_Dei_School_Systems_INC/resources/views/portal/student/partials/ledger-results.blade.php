@@ -1,4 +1,4 @@
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 class="font-semibold text-gray-900 mb-4">Account Summary</h3>
         @if($student->ledger)
@@ -46,6 +46,9 @@
                 <tbody>
                     @foreach($feeSchedules as $fs)
                     <tr class="border-b border-gray-50"><td class="py-2 px-2">{{ $fs->term ?: $fs->school_year }}</td><td class="text-right py-2">₱{{ number_format($fs->tuition_fee,2) }}</td><td class="text-right py-2">₱{{ number_format($fs->misc_fee,2) }}</td><td class="text-right py-2 font-semibold">₱{{ number_format($fs->tuition_fee + $fs->misc_fee,2) }}</td></tr>
+                    @if(!empty($fs->misc_fee_items))
+                        <tr><td colspan="4" class="py-1 px-2 text-xs text-gray-500 bg-gray-50">Misc breakdown: @foreach((is_string($fs->misc_fee_items) ? json_decode($fs->misc_fee_items, true) : $fs->misc_fee_items) as $k => $v) {{ ucfirst($k) }} ₱{{ number_format($v,2) }}@if(!$loop->last), @endif @endforeach</td></tr>
+                    @endif
                     @endforeach
                 </tbody>
                 <tfoot><tr class="border-t-2 border-gray-200 font-bold"><td class="py-2 px-2">Total Assessed</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('tuition_fee'),2) }}</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('misc_fee'),2) }}</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'),2) }}</td></tr></tfoot>

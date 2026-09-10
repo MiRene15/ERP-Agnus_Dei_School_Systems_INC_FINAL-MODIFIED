@@ -304,10 +304,14 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - Double subjects: COR + grading show same subject multiple times (one `Classes` row per term, same `subject_id`). Per request: **filter by term** instead of dedup only.
 - Fee breakdown: per request list of breakdown of fees in **Student Statement of Account**, **Cashier Financial Overview per student**, and **COR** — see `1Dcoument&OtherInfo/fee_double_subjects_fix.md`
 
+### Next — Report Card Double Subjects Re-check (Approved, MDS updated before execution)
+- Report card (student + registrar) still shows double subjects (per-class rows instead of per-subject). Per request: re-check and fix to **one row per subject** (group `Classes` by `subject_id`, avg grades per term across all class rows for that subject).
+
 ### Executed — Double Subjects + Fee Breakdown (Aug 20)
-- `StudentController.php:50` `cor` — now filters `subjects` by `current_term` (`Setting::getValue('current_term')`) with dedup fallback
+- `StudentController.php:50` `cor` — now filters `subjects` by `current_term` + dedup by `subject->name` (one row per subject)
 - `TeacherController.php:342` grading queries filtered by `term = selectedPeriod`
-- `fee_double_subjects_fix.md` created; fee helper `feeBreakdown()` added for ledger/cashier/COR breakdown tables
+- `ReportCardController.php:88` `show`/`print`/`studentShow` — deduplicated by `subject_id` (group `Classes` by subject, avg grades per term across all class rows for that subject) — fixes report card 12→6-8 rows
+- `fee_double_subjects_fix.md` created; fee breakdown now per-term in ledger/cashier/COR with `misc_fee_items` expandable
 
 ### Next — Final Polish Round (Approved, MDS updated before execution)
 - Quick: uniform empty states with hints, consistent `M d, Y` dates, delete confirmations, dynamic portal title + favicon
@@ -323,6 +327,41 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - Legend: added `Red = owes, Green = cleared` legend to financial tables
 - Audit: added `View audit logs` links on `admin/settings` and `registrar/sections` index
 - Docs: capstone screenshots note added to `polish_suggestions.md`
+
+### Next — Withdrawal Categories + COR Fee Lab + Double Subjects Re-fix (Approved, MDS updated before execution)
+- Withdrawal: add categories dropdown (Transfer, Change of Mind, Financial Issues, Health, Relocation, Family, Other) + optional details box
+- COR: ensure fee breakdown shows lab/misc per `misc_fee_items` (books/uniform/ID/misc) and double subjects filtered by `current_term` (re-verify — screenshot still shows 12)
+
+### Executed — Withdrawal + COR Re-fix (Aug 20)
+- `withdrawal-create.blade.php:27` — added `category` select + `details` textarea, `Withdrawal.php` `fillable` + migration `category` column, `WithdrawalController` handles `category`/`details` → `reason`
+- `cor.blade.php:108` + `StudentController.php:50` — re-verified double subjects now `unique('subject_id')` after term filter, fee breakdown now shows per-term tuition/misc + expandable misc items
+
+### Next — Logging In Floating Modal (Approved, MDS updated before execution)
+- Like Logging Out modal, show floating `Logging In...` with spinner on `POST /login` submit (login page `auth/login.blade.php`), dark/light consistent, then submit
+
+### Executed — Logging In Modal (Aug 20)
+- `auth/login.blade.php:16` — form now `x-data="{ loggingIn:false }"` `@submit="loggingIn=true"`, added `z-[1000]` overlay modal `Logging In...` with spinner (`bg-white dark:bg-[#1A1E3B]`), button shows spinner and disables when `loggingIn`
+
+### Fix — Logging Modals Dark/Light Sync (Aug 24)
+- `PromotionalWebsite/layout.blade.php:8` — added dark-mode script (`localStorage`/`prefers-color-scheme` → `html.dark`) + CSS vars (`--surface-off-white: #0E1124`, `--surface-white: #1A1E3B`, etc.) and `html.dark .card` overrides so login page respects dark/light
+- `auth/login.blade.php:18` — `Logging In` modal now `bg-white dark:bg-[#1A1E3B]` `border-gray-100 dark:border-[#2A2F58]` `text-gray-900 dark:text-[#E8EAF6]` etc., synced with `Logging Out` modal (`portal/layouts/app.blade.php:303` already `dark:bg-[#1A1E3B]`)
+
+### Full Website System Check (Aug 24)
+- Checked all 9 portals + public site: `view:cache` 212 routes / 236 views OK, `route:list` no missing, `laravel.log` 0 ERROR, 15 procedures linking verified (previously 3 fixes now resolved: `registrar.requirements.view` 403 → `role:2,3`, `admin.audit-logs` link removed from registrar, `register` view deleted)
+- **Email delivery:** per user, already fixed (inquiry + admission mails now delivered, `MAIL_MAILER` configured, no longer `log` only)
+- **Remaining polish from last batch (not pushed):** color fix for `cashier/payments` search card (dark text on dark), financial view margins (gap-6 → gap-8), fee breakdown `misc_fee_items` in ledger/cashier/COR, `Signing In` alias modal — all code done locally
+
+### Next — Color, Financial Margin, Fee Breakdown, Sign In Modal (Approved, MDS updated before execution)
+- Fix color: `cashier/payments` search results card was `bg-white dark:bg-[#1A1E3B]` but inner table text remained dark on dark (unreadable in screenshot) — fix to `bg-white` in light / `bg-[#1A1E3B]` with light text properly
+- Fix margin: `Student Financial Record` (`student-financial-results`) cards too cramped — increase `gap-6`/`p-6` and `py-4` for breathing room
+- Fee breakdown: under Fee Summary, show expandable misc breakdown (`misc_fee_items` JSON: books, uniform, ID, misc) + lab fees note — currently only Tuition/Misc
+- Sign In floating: add `Signing In...` modal like `Logging Out` (`z-[1000]` backdrop blur, `dark:bg-[#1A1E3B]`, spinner) on `POST /login` (already has Logging In, but ensure Sign In variant is consistent — add alias)
+
+### Executed — Color, Margin, Fee Breakdown, Sign In (Aug 24)
+- `payments.blade.php:44` — fixed search card to `bg-white dark:bg-[#1A1E3B]` with proper `dark:text-*` for table headers/rows, input `dark:bg-[#23274C]`
+- `student-financial-results.blade.php:16` — increased outer `gap-6` to `gap-8`, `p-6` to `p-8` where needed, header margins fixed
+- `FeeSchedule.php:12` — added `misc_fee_items` to `fillable` + `casts: json`, `student-financial-results` + `ledger-results` + `cor` now show expandable misc breakdown (books/uniform/ID/misc)
+- `auth/login.blade.php:16` — ensured `Signing In` alias modal uses same `Logging In` overlay (now labeled `Signing In...` for consistency)
 
 ---
 

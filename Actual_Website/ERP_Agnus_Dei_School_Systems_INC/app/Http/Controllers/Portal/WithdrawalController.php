@@ -41,13 +41,22 @@ class WithdrawalController extends Controller
         }
 
         $data = $request->validate([
-            'reason' => 'required|string|max:1000',
+            'category' => 'required|string|in:Transfer to Another School,Change of Mind,Financial Issues,Health Reasons,Relocation,Family Reasons,Other',
+            'details' => 'nullable|string|max:1000',
+            'reason' => 'nullable|string|max:1000',
         ]);
+
+        $reason = $data['category'];
+        if (!empty($data['details'])) {
+            $reason .= ' — ' . $data['details'];
+        } elseif (!empty($data['reason'])) {
+            $reason = $data['reason'];
+        }
 
         Withdrawal::create([
             'enrollment_id' => $activeEnrollment->id,
             'student_id' => $student->id,
-            'reason' => $data['reason'],
+            'reason' => $reason,
             'status' => 'Pending',
         ]);
 

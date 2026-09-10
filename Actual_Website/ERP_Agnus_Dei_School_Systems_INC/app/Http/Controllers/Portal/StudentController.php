@@ -58,14 +58,13 @@ class StudentController extends Controller
             return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
         }
 
-        // Filter subjects by current term to avoid double listing same subject across terms
-        $enrollment->setRelation('subjects', $enrollment->subjects->filter(function($cls) use ($currentTerm) {
+        // Filter by current term and deduplicate by subject (one row per subject, not per class row)
+        $filtered = $enrollment->subjects->filter(function($cls) use ($currentTerm) {
             return empty($cls->term) || $cls->term === $currentTerm;
-        })->unique('subject_id')->values());
-        // Fallback: if filter empties (e.g., term mismatch), show deduplicated all
-        if ($enrollment->subjects->isEmpty()) {
-            $enrollment->setRelation('subjects', $enrollment->subjects->unique('subject_id')->values());
-        }
+        });
+        if ($filtered->isEmpty()) $filtered = $enrollment->subjects;
+        $deduped = $filtered->unique(fn($c) => $c->subject->name ?? $c->subject_id)->values();
+        $enrollment->setRelation('subjects', $deduped);
 
         $ledger = $student->ledger;
 

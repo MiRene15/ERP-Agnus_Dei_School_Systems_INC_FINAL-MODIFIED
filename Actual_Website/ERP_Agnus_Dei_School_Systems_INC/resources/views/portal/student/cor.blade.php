@@ -127,6 +127,9 @@
                         <td class="text-right">₱{{ number_format($fs->misc_fee, 2) }}</td>
                         <td class="text-right" style="font-weight:600">₱{{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</td>
                     </tr>
+                    @if(!empty($fs->misc_fee_items))
+                    <tr><td colspan="4" style="font-size:7px; color:#6b7280; background:#f8f9fb; padding:2px 4px;">Misc: @foreach((is_string($fs->misc_fee_items) ? json_decode($fs->misc_fee_items, true) : $fs->misc_fee_items) as $k => $v) {{ ucfirst($k) }} ₱{{ number_format($v,2) }}@if(!$loop->last) · @endif @endforeach</td></tr>
+                    @endif
                     @endforeach
                 </tbody>
                 <tfoot>

@@ -85,21 +85,27 @@ class ReportCardController extends Controller
             ->get()
             ->groupBy('class_id');
 
-        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods, $passing) {
-            $classGrades = $grades->get($class->id, collect());
-            $row = ['subject' => $class->subject->name ?? 'N/A'];
-            $total = 0;
-            $count = 0;
+        // Deduplicate by subject — one row per subject, not per class row
+        $groupedBySubject = $enrollment->subjects->groupBy(fn($c) => $c->subject_id ?? $c->subject->name);
+        $subjects = $groupedBySubject->map(function ($classes) use ($grades, $gradingPeriods, $passing) {
+            $first = $classes->first();
+            $row = ['subject' => $first->subject->name ?? 'N/A'];
+            $total = 0; $count = 0;
             foreach ($gradingPeriods as $period) {
-                $g = $classGrades->firstWhere('grading_period', $period);
-                $row[$period] = $g ? number_format($g->final_grade, 2) : '—';
-                if ($g) { $total += $g->final_grade; $count++; }
+                $periodGrades = collect();
+                foreach ($classes as $cls) {
+                    $g = $grades->get($cls->id, collect())->firstWhere('grading_period', $period);
+                    if ($g) $periodGrades->push($g);
+                }
+                $avgPeriod = $periodGrades->isNotEmpty() ? round($periodGrades->avg('final_grade'), 2) : null;
+                $row[$period] = $avgPeriod !== null ? number_format($avgPeriod, 2) : '—';
+                if ($avgPeriod !== null) { $total += $avgPeriod; $count++; }
             }
             $avg = $count > 0 ? round($total / $count, 2) : 0;
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
             $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
-        });
+        })->values();
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
 
@@ -132,21 +138,26 @@ class ReportCardController extends Controller
             ->get()
             ->groupBy('class_id');
 
-        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods, $passing) {
-            $classGrades = $grades->get($class->id, collect());
-            $row = ['subject' => $class->subject->name ?? 'N/A'];
-            $total = 0;
-            $count = 0;
+        $groupedBySubject = $enrollment->subjects->groupBy(fn($c) => $c->subject_id ?? $c->subject->name);
+        $subjects = $groupedBySubject->map(function ($classes) use ($grades, $gradingPeriods, $passing) {
+            $first = $classes->first();
+            $row = ['subject' => $first->subject->name ?? 'N/A'];
+            $total = 0; $count = 0;
             foreach ($gradingPeriods as $period) {
-                $g = $classGrades->firstWhere('grading_period', $period);
-                $row[$period] = $g ? number_format($g->final_grade, 2) : '—';
-                if ($g) { $total += $g->final_grade; $count++; }
+                $periodGrades = collect();
+                foreach ($classes as $cls) {
+                    $g = $grades->get($cls->id, collect())->firstWhere('grading_period', $period);
+                    if ($g) $periodGrades->push($g);
+                }
+                $avgPeriod = $periodGrades->isNotEmpty() ? round($periodGrades->avg('final_grade'), 2) : null;
+                $row[$period] = $avgPeriod !== null ? number_format($avgPeriod, 2) : '—';
+                if ($avgPeriod !== null) { $total += $avgPeriod; $count++; }
             }
             $avg = $count > 0 ? round($total / $count, 2) : 0;
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
             $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
-        });
+        })->values();
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
 
@@ -196,21 +207,26 @@ class ReportCardController extends Controller
             ->get()
             ->groupBy('class_id');
 
-        $subjects = $enrollment->subjects->map(function ($class) use ($grades, $gradingPeriods, $passing) {
-            $classGrades = $grades->get($class->id, collect());
-            $row = ['subject' => $class->subject->name ?? 'N/A'];
-            $total = 0;
-            $count = 0;
+        $groupedBySubject = $enrollment->subjects->groupBy(fn($c) => $c->subject_id ?? $c->subject->name);
+        $subjects = $groupedBySubject->map(function ($classes) use ($grades, $gradingPeriods, $passing) {
+            $first = $classes->first();
+            $row = ['subject' => $first->subject->name ?? 'N/A'];
+            $total = 0; $count = 0;
             foreach ($gradingPeriods as $period) {
-                $g = $classGrades->firstWhere('grading_period', $period);
-                $row[$period] = $g ? number_format($g->final_grade, 2) : '—';
-                if ($g) { $total += $g->final_grade; $count++; }
+                $periodGrades = collect();
+                foreach ($classes as $cls) {
+                    $g = $grades->get($cls->id, collect())->firstWhere('grading_period', $period);
+                    if ($g) $periodGrades->push($g);
+                }
+                $avgPeriod = $periodGrades->isNotEmpty() ? round($periodGrades->avg('final_grade'), 2) : null;
+                $row[$period] = $avgPeriod !== null ? number_format($avgPeriod, 2) : '—';
+                if ($avgPeriod !== null) { $total += $avgPeriod; $count++; }
             }
             $avg = $count > 0 ? round($total / $count, 2) : 0;
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
             $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
-        });
+        })->values();
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
 
