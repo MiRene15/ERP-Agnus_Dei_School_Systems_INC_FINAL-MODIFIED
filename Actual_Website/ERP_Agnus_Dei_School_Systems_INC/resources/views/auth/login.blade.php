@@ -8,22 +8,24 @@
     </div>
 </div>
 
-<div class="container" style="max-width: 480px; margin-bottom: 100px;">
+<div class="container" style="max-width: 480px; margin-bottom: 100px;" x-data="{ loggingIn: false }">
+    <div x-show="loggingIn" x-cloak x-transition.opacity class="fixed inset-0 flex items-center justify-center p-4" style="background: rgba(14,17,36,0.55); backdrop-filter: blur(6px); z-index: 9999;">
+        <div class="rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center" style="background: #FFFFFF; border: 1px solid #e5e7eb;">
+            <div style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;background:#24225C;">
+                <svg style="width:24px;height:24px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </div>
+            <h3 style="font-size:18px;font-weight:700;color:#111;">Signing In</h3>
+            <p style="font-size:14px;color:#6b7280;margin-top:4px;">Please wait...</p>
+        </div>
+    </div>
+    <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
+
     <div class="card">
 
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
-        <form method="POST" action="{{ route('login') }}" x-data="{ loggingIn: false }" @submit="loggingIn = true">
+        <form method="POST" action="{{ route('login') }}" @submit="loggingIn = true">
             @csrf
-            <div x-show="loggingIn" x-cloak x-transition.opacity class="fixed inset-0 z-[1000] flex items-center justify-center p-4" style="background: rgba(14,17,36,0.55); backdrop-filter: blur(6px);">
-                <div class="bg-white dark:bg-[#1A1E3B] rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center border border-gray-100 dark:border-[#2A2F58]">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background: var(--primary-navy, #24225C);">
-                        <svg class="w-6 h-6 text-white animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Signing In</h3>
-                    <p class="text-sm text-gray-500 dark:text-[#8A90B0] mt-1">Please wait...</p>
-                </div>
-            </div>
 
             <div style="margin-bottom: 20px;">
                 <label for="email" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--primary-navy);">Email Address</label>
