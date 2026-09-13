@@ -72,13 +72,10 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
     // Usage: <div @click="handlePaginationClick($event)" x-html="html"></div>
     handlePaginationClick(event) {
         const link = event.target.closest('a[href]');
-        if (!link || !link.closest('.pagination')) return;
-
-        const url = new URL(link.href);
+        if (!link) return;
+        const url = new URL(link.href, window.location.origin);
         const page = url.searchParams.get('page');
-
-        if (link.href === window.location.href && !link.dataset.active) return;
-
+        if (!page) return;
         event.preventDefault();
         this.filters.page = page;
         this.reload();
