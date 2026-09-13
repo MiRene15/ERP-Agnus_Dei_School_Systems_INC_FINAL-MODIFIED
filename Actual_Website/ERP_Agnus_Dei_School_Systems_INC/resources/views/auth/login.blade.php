@@ -9,18 +9,17 @@
 </div>
 
 <div class="container" style="max-width: 480px; margin-bottom: 100px;" x-data="{ loggingIn: false }">
-    <div x-show="loggingIn" x-cloak x-transition.opacity class="fixed inset-0 flex items-center justify-center p-4" style="background: rgba(14,17,36,0.55); backdrop-filter: blur(6px); z-index: 9999;">
-        <div style="background: #FFFFFF; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); width: 100%; max-width: 380px; padding: 32px; text-align: center;">
-            <div style="width:48px;height:48px;border-radius:50%;background:#24225C;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-                <svg style="width:24px;height:24px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+    <div class="card" style="position: relative; overflow: hidden;">
+        <div x-show="loggingIn" x-cloak x-transition.opacity class="absolute inset-0 flex items-center justify-center p-4" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); z-index: 10; border-radius: 20px;">
+            <div style="background: #FFFFFF; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 320px; padding: 24px; text-align: center;">
+                <div style="width:40px;height:40px;border-radius:50%;background:#24225C;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <svg style="width:20px;height:20px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </div>
+                <h3 style="font-size:16px;font-weight:700;color:#111827;">Signing In</h3>
+                <p style="font-size:13px;color:#6b7280;margin-top:2px;">Please wait...</p>
             </div>
-            <h3 style="font-size:18px;font-weight:700;color:#111827;">Signing In</h3>
-            <p style="font-size:14px;color:#6b7280;margin-top:4px;">Please wait...</p>
         </div>
-    </div>
-    <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
-
-    <div class="card">
+        <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
 
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
