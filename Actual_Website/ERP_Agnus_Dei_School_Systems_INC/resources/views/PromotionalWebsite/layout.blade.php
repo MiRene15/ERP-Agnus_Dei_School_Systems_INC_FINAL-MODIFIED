@@ -395,7 +395,9 @@
         html.dark .card { background: var(--surface-white); border-color: #2A2F58; }
         html.dark .page-title, html.dark .card h3 { color: var(--text-dark); }
         html.dark .card p { color: var(--text-muted); }
+        [x-cloak] { display: none !important; }
     </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
 
