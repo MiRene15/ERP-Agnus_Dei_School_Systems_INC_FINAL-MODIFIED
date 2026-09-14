@@ -10,7 +10,7 @@
 
 <div class="container" style="max-width: 480px; margin-bottom: 100px;" x-data="{ loggingIn: false }">
     <div class="card" style="position: relative; overflow: hidden;">
-        <div x-show="loggingIn" x-cloak x-transition.opacity class="absolute inset-0 flex items-center justify-center p-4" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); z-index: 10; border-radius: 20px;">
+        <div x-show="loggingIn" x-cloak style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:16px; background: rgba(255,255,255,0.92); backdrop-filter: blur(6px); z-index: 10; border-radius: 20px;">
             <div style="background: #FFFFFF; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 320px; padding: 24px; text-align: center;">
                 <div style="width:40px;height:40px;border-radius:50%;background:#24225C;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
                     <svg style="width:20px;height:20px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -19,7 +19,7 @@
                 <p style="font-size:13px;color:#6b7280;margin-top:2px;">Please wait...</p>
             </div>
         </div>
-        <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
+        <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} [x-cloak]{display:none !important}</style>
 
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
