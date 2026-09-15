@@ -21,16 +21,23 @@ class DirectressController extends Controller
         $feeSchedules = FeeSchedule::count();
         $graduationFees = GraduationFee::count();
 
+        // Demographics
+        $totalStudents = Enrollment::where('status', 'Active')->count();
+        $byGrade = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->grade_level ?? 'Unknown')->map->count()->sortKeys();
+        $bySection = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->section_name ?? 'Unknown')->map->count();
+        $byYear = Enrollment::where('status','Active')->get()->groupBy('school_year')->map->count()->sortKeysDesc();
+        $totalFeesAssessed = \App\Models\FeeSchedule::sum(\DB::raw('tuition_fee + misc_fee'));
+
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.directress.partials.dashboard-results', compact(
-                    'feeSchedules', 'graduationFees'
+                    'feeSchedules', 'graduationFees', 'totalStudents', 'byGrade', 'bySection', 'byYear', 'totalFeesAssessed'
                 ))->render(),
             ]);
         }
 
         return view('portal.directress.dashboard', compact(
-            'feeSchedules', 'graduationFees'
+            'feeSchedules', 'graduationFees', 'totalStudents', 'byGrade', 'bySection', 'byYear', 'totalFeesAssessed'
         ));
     }
 

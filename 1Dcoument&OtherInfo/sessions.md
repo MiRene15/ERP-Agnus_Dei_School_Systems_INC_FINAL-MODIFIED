@@ -363,6 +363,18 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - `FeeSchedule.php:12` — added `misc_fee_items` to `fillable` + `casts: json`, `student-financial-results` + `ledger-results` + `cor` now show expandable misc breakdown (books/uniform/ID/misc)
 - `auth/login.blade.php:16` — ensured `Signing In` alias modal uses same `Logging In` overlay (now labeled `Signing In...` for consistency)
 
+### Next — Directress Demographics + Principal Announcement Counts + Library History + Return Condition (Approved, MDS updated before execution)
+- Directress: add demographics to dashboard (enrollments per grade, per section, per school year, total students, fee coverage)
+- Principal: under announcements, add number counts for monitoring (total, published, draft, events)
+- Library: add History tab (all transactions with return/damage/lost, filterable)
+- Library return: on return, librarian chooses condition (Good / Minor / Major / Lost) with auto-computed fees and mirror to book's current condition if changed (Good=no change, Minor/Major/Lost=update book condition)
+
+### Executed — Directress/Principal/Library (Aug 24)
+- `DirectressController.php:16` + `directress/dashboard.blade.php` + `partials/dashboard-results.blade.php` — demographics added
+- `PrincipalController.php:18` + `principal/dashboard` + `announcements/index` — counts added
+- `LibrarianController.php` + `routes/web.php` + `sidebar-librarian` — History tab added (`librarian.history`)
+- `librarian/return-form.blade.php` + `LibrarianController@processReturn` — condition chooser (Good/Minor/Major/Lost) with auto fee compute and book condition mirror
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

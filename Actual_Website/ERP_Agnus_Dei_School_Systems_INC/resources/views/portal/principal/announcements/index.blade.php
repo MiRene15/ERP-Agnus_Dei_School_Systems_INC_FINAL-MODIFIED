@@ -14,6 +14,14 @@
     </div>
     <a href="{{ route('principal.announcements.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">+ New Announcement</a>
 </div>
+@if(isset($counts))
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center"><p class="text-2xl font-bold text-gray-900">{{ $counts['total'] }}</p><p class="text-xs text-gray-500">Total</p></div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center"><p class="text-2xl font-bold text-green-600">{{ $counts['published'] }}</p><p class="text-xs text-gray-500">Published</p></div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center"><p class="text-2xl font-bold text-gray-500">{{ $counts['draft'] }}</p><p class="text-xs text-gray-500">Draft</p></div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 text-center"><p class="text-2xl font-bold text-indigo-600">{{ $counts['events'] }}</p><p class="text-xs text-gray-500">Events</p></div>
+</div>
+@endif
 
 @if(session('success'))
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>

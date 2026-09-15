@@ -348,6 +348,12 @@ class PrincipalController extends Controller
         }
 
         $announcements = $query->latest()->paginate(15)->withQueryString();
+        $counts = [
+            'total' => Announcement::count(),
+            'published' => Announcement::where('is_published', true)->count(),
+            'draft' => Announcement::where('is_published', false)->count(),
+            'events' => Announcement::where('type', 'event')->count(),
+        ];
 
         if ($isAjax) {
             return response()->json([
@@ -355,7 +361,7 @@ class PrincipalController extends Controller
             ]);
         }
 
-        return view('portal.principal.announcements.index', compact('announcements'));
+        return view('portal.principal.announcements.index', compact('announcements', 'counts'));
     }
 
     public function announcementsCreate()

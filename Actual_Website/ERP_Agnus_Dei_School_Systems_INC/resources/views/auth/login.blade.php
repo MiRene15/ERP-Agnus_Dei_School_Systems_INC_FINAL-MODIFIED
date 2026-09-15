@@ -8,7 +8,7 @@
     </div>
 </div>
 
-<div class="container" style="max-width: 480px; margin-bottom: 100px;" x-data="{ loggingIn: false }">
+<div x-data="{ loggingIn: false }">
     <div x-show="loggingIn" x-cloak style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:16px; background: rgba(14,17,36,0.55); backdrop-filter: blur(6px); z-index: 9999; margin:0;">
         <div style="background: #FFFFFF; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); width: 100%; max-width: 380px; padding: 32px; text-align: center; margin:auto;">
             <div style="width:48px;height:48px;border-radius:50%;background:#24225C;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
@@ -20,6 +20,7 @@
     </div>
     <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} [x-cloak]{display:none !important}</style>
 
+    <div class="container" style="max-width: 480px; margin-bottom: 100px;">
     <div class="card">
 
         <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -66,6 +67,7 @@
             </div>
         </form>
     </div>
+</div>
 </div>
 
 <style>
