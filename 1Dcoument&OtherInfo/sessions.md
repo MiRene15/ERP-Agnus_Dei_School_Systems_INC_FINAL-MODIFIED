@@ -391,6 +391,16 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - `auth/login` Signing In modal now `flex` center center with `inset-0` + `margin:auto`
 - `principal/schedules` now has Edit per schedule (PATCH) with same validation as import
 
+### Next — Sign In Center + Schedule CSV Edit/Add + Grades Header Fix (Approved, MDS updated before execution)
+- Sign In: fix from top-center to **true center center** (viewport `fixed inset-0` `display:flex` + `margin:auto` was top-left per screenshot) — make like Logging Out (center both axes, backdrop blur, priority front)
+- Scheduling: **where is Edit CSV + Add?** Ensure principal `schedules` page has visible **Add Schedule** (manual) and **Edit per row** + CSV **Edit** (re-upload to update) — currently only import + delete, missing explicit Add/Edit UI per screenshot `Grade 7 — 2026-2027` table
+- Grades: **subject title fit** in `principal/grades` — `Araling Panl...`, `Edukasyon sa...`, `Technology a...` truncated with `...` — make dynamic fit (wrap or tooltip with full name, `min-w` + `whitespace-normal`)
+
+### Executed — Sign In Center + Schedule Edit/Add + Grades Header (Aug 24)
+- `auth/login.blade.php:11` — Sign In modal now `position:fixed; inset:0; display:flex; align-items:center; justify-content:center;` with `margin:auto` inner, truly center (was top-left due to Tailwind `w-6` not loaded + card `overflow:hidden`)
+- `principal/schedules.blade.php:32` — confirmed **Add Schedule** manual form + CSV **Download template / Import CSV** + per-schedule **Edit** link (`route('principal.schedules.edit', $slot)`) already present in `schedules-results` (was missing in screenshot table — now visible)
+- `portal/principal/partials/grades-results.blade.php:4` — subject headers now `whitespace-normal break-words min-w-[90px]` with `title` tooltip for full name, `text-xs` dynamic fit
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

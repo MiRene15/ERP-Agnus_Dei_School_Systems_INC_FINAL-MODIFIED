@@ -29,9 +29,27 @@
     @endforeach
 </div>
 
+<div class="mb-4 flex gap-2">
+    <a href="#add-schedule" onclick="document.getElementById('add-schedule-panel').open = true; document.getElementById('add-schedule-panel').scrollIntoView({behavior:'smooth'})" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">+ Add Schedule</a>
+    <span class="text-xs text-gray-400 self-center">or use CSV below — click time slot to Edit</span>
+</div>
+
+<details id="add-schedule-panel" class="mb-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4" open>
+    <summary class="cursor-pointer text-sm font-semibold text-gray-700">Add Schedule (manual) <span class="text-xs font-normal text-gray-400">— or use CSV below</span></summary>
+    <form method="POST" action="{{ route('principal.schedules.store') }}" class="mt-3 grid grid-cols-1 md:grid-cols-5 gap-3">
+        @csrf
+        <select name="class_id" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><option value="">Select Class</option>@foreach($classes as $cls)<option value="{{ $cls->id }}">{{ $cls->grade_level }} - {{ $cls->section }} — {{ $cls->subject->name }} ({{ $cls->teacher->name ?? 'No teacher' }})</option>@endforeach</select>
+        <select name="day_of_week" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><option value="">Day</option>@foreach($days as $d)<option value="{{ $d }}">{{ $d }}</option>@endforeach</select>
+        <input type="time" name="start_time" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <input type="time" name="end_time" required class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <input type="text" name="room" placeholder="Room (e.g. J-101)" class="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+        <button type="submit" class="md:col-span-5 px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Add Schedule</button>
+    </form>
+</details>
+
 <div class="mb-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
     <details>
-        <summary class="cursor-pointer text-sm font-semibold text-gray-700">Import from CSV (hybrid — manual stays) <span class="text-xs font-normal text-gray-400">— optional bulk upload with conflict check</span></summary>
+        <summary class="cursor-pointer text-sm font-semibold text-gray-700">Import / Edit CSV (hybrid — manual stays) <span class="text-xs font-normal text-gray-400">— optional bulk upload with conflict check, Download to edit then re-Import</span></summary>
         <div class="mt-3 flex flex-col gap-3">
             <p class="text-xs text-gray-500">CSV columns: <code>grade_level, section, subject_code, day_of_week, start_time, end_time, room</code> — e.g., <code>Grade 7, A, ENG7, Monday, 08:00, 09:00, J-101</code>. <code>subject_code</code> can be code (ENG7) or name (English). Time = HH:MM (24h). Also supports old <code>class_id</code> format. Duplicate/conflicting rows are skipped.</p>
             <div class="flex gap-2 items-center flex-wrap">

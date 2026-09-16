@@ -6,7 +6,7 @@
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Section</th>
                 @foreach($subjects as $subject)
-                <th class="text-center py-3 px-2 font-medium text-gray-600 text-xs">{{ Str::limit($subject->name, 12) }}</th>
+                <th class="text-center py-3 px-2 font-medium text-gray-600 text-xs whitespace-normal break-words min-w-[90px]" title="{{ $subject->name }}">{{ $subject->name }}</th>
                 @endforeach
             </tr>
         </thead>
