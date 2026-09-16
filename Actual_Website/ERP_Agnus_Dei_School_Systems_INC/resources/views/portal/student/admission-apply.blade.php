@@ -112,14 +112,12 @@
                     @error('grade_level') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div x-show="f.grade_level === 'Grade 11' || f.grade_level === 'Grade 12'" x-cloak>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">SHS Strand *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SHS Elective *</label>
                     <select name="strand" x-model="f.strand" x-bind:required="f.grade_level === 'Grade 11' || f.grade_level === 'Grade 12'"
                             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="">Select strand...</option>
-                        <option value="STEM">STEM</option>
-                        <option value="ABM">ABM</option>
-                        <option value="HUMSS">HUMSS</option>
-                        <option value="GAS">GAS</option>
+                        <option value="">Select elective...</option>
+                        <option value="Arts, Social Sciences, and Humanities">Arts, Social Sciences, and Humanities</option>
+                        <option value="Business and Entrepreneurship">Business and Entrepreneurship</option>
                     </select>
                     @error('strand') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>

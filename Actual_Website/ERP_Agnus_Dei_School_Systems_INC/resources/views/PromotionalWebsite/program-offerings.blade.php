@@ -47,27 +47,17 @@
                 </ul>
             </div>
         </section>
-        <h2 style="text-align: center; margin-bottom: 40px; font-size: 2.2rem; color: var(--primary-navy);">Senior High Strands</h2>
+        <h2 style="text-align: center; margin-bottom: 40px; font-size: 2.2rem; color: var(--primary-navy);">Senior High School Electives</h2>
         <section class="track-grid">
             <div class="strand-card">
-                <div class="strand-title">🔬 STEM</div>
-                <p class="strand-desc">Science, Technology, Engineering, and Mathematics</p>
-                <p style="font-size: 0.9rem; color: #888;">For students focused on medical fields, engineering, architecture, and pure sciences.</p>
+                <div class="strand-title">🎨 Arts, Social Sciences, and Humanities</div>
+                <p class="strand-desc">Creativity, culture, and societal studies</p>
+                <p style="font-size: 0.9rem; color: #888;">For students passionate about arts, communication, political science, journalism, and human society.</p>
             </div>
             <div class="strand-card">
-                <div class="strand-title">💼 ABM</div>
-                <p class="strand-desc">Accountancy, Business, and Management</p>
-                <p style="font-size: 0.9rem; color: #888;">Geared toward future entrepreneurs, corporate executives, and CPAs.</p>
-            </div>
-            <div class="strand-card">
-                <div class="strand-title">⚖️ HUMSS</div>
-                <p class="strand-desc">Humanities and Social Sciences</p>
-                <p style="font-size: 0.9rem; color: #888;">For those passionate about political science, law, journalism, and societal analysis.</p>
-            </div>
-            <div class="strand-card">
-                <div class="strand-title">🌍 GAS</div>
-                <p class="strand-desc">General Academic Strand</p>
-                <p style="font-size: 0.9rem; color: #888;">A flexible track for students still forging their distinct career path.</p>
+                <div class="strand-title">💼 Business and Entrepreneurship</div>
+                <p class="strand-desc">Commerce, business, and entrepreneurial skills</p>
+                <p style="font-size: 0.9rem; color: #888;">Geared toward future entrepreneurs, business leaders, and innovators in commerce.</p>
             </div>
         </section>
     </main>

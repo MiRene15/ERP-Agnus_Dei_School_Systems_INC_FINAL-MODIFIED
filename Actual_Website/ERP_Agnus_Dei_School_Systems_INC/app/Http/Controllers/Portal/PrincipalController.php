@@ -181,6 +181,14 @@ class PrincipalController extends Controller
         return redirect()->route('principal.schedules')->with('success', 'Schedule updated.');
     }
 
+    public function schedulesManage(Request $request)
+    {
+        $gradeLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+        $classes = Classes::with('subject', 'teacher')->where('school_year', active_school_year())->where('status','active')->orderBy('grade_level')->get();
+        $days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+        return view('portal.principal.schedules-manage', compact('gradeLevels','classes','days'));
+    }
+
     public function schedulesDestroy(Schedule $schedule)
     {
         $schedule->delete();

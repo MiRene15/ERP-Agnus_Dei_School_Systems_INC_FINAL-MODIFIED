@@ -276,4 +276,21 @@ class DirectressController extends Controller
 
         return back()->with('success', 'Payment status updated.');
     }
+
+    // ─── School Year ──────────────────────────────────────────────
+    public function schoolYears()
+    {
+        $years = collect(all_school_years())->map(fn($y) => ['year' => $y, 'count' => FeeSchedule::where('school_year', $y)->count()])->sortByDesc('year');
+        return view('portal.directress.school-years', compact('years'));
+    }
+
+    public function storeSchoolYear(Request $request)
+    {
+        $data = $request->validate(['school_year' => 'required|regex:/^\d{4}-\d{4}$/|unique:fee_schedules,school_year']);
+        // Create a placeholder fee schedule to register the year
+        FeeSchedule::firstOrCreate(['grade_level' => 'Grade 1', 'term' => '1st Term', 'school_year' => $data['school_year']], ['tuition_fee' => 0, 'misc_fee' => 0]);
+        FeeSchedule::where('grade_level','Grade 1')->where('term','1st Term')->where('school_year',$data['school_year'])->delete();
+        \App\Models\Setting::setValue('active_school_year', $data['school_year']);
+        return back()->with('success', 'School year '.$data['school_year'].' added.');
+    }
 }

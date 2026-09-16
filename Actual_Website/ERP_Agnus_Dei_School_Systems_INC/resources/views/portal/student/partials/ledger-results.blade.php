@@ -54,6 +54,10 @@
                 <tfoot><tr class="border-t-2 border-gray-200 font-bold"><td class="py-2 px-2">Total Assessed</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('tuition_fee'),2) }}</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('misc_fee'),2) }}</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'),2) }}</td></tr></tfoot>
             </table>
         </div>
+        @php $libraryFees = \App\Models\LibraryTransaction::where('student_id', $student->id)->where('fees_assessed', true)->sum('total_fees'); @endphp
+        @if($libraryFees > 0)
+            <p class="text-sm text-orange-600 mt-2 text-right">Library Fees: ₱{{ number_format($libraryFees,2) }} (included in Balance)</p>
+        @endif
         @if($student->ledger && $student->ledger->discount_applied > 0)
             <p class="text-sm text-green-600 mt-2 text-right">Discount ({{ ucfirst($student->ledger->discount_type) }}): -₱{{ number_format($student->ledger->discount_applied,2) }}</p>
         @endif

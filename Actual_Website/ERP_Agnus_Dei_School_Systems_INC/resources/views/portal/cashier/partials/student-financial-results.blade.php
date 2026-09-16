@@ -84,9 +84,16 @@
                 </div>
                 @endforeach
 
+                @php $libraryFees = \App\Models\LibraryTransaction::where('student_id', $student->id)->where('fees_assessed', true)->sum('total_fees'); @endphp
+                @if($libraryFees > 0)
+                <div class="flex justify-between py-1 text-xs">
+                    <span class="text-gray-500">Library Fees</span>
+                    <span class="font-medium text-orange-600">₱ {{ number_format($libraryFees, 2) }}</span>
+                </div>
+                @endif
                 @if($student->ledger)
                 <div class="flex justify-between py-2 border-t border-gray-200 font-semibold">
-                    <span class="text-gray-800">Total Assessed</span>
+                    <span class="text-gray-800">Total Assessed (incl. Library)</span>
                     <span class="text-gray-900">₱ {{ number_format($student->ledger->total_assessed, 2) }}</span>
                 </div>
 

@@ -70,7 +70,7 @@ class StudentAdmissionController extends Controller
             '_step' => 'required|integer|min:1|max:6',
             'application_type' => 'nullable|in:New,Transferee',
             'grade_level' => 'nullable|string|max:20',
-            'strand' => 'nullable|in:STEM,ABM,HUMSS,GAS',
+            'strand' => 'nullable|in:Arts, Social Sciences, and Humanities,Business and Entrepreneurship',
             'school_year' => 'nullable|string|max:20',
             'first_name' => 'nullable|string|max:100',
             'middle_name' => 'nullable|string|max:100',
@@ -141,7 +141,7 @@ class StudentAdmissionController extends Controller
         $data = $request->validate([
             'application_type' => 'required|in:New,Transferee',
             'grade_level' => 'required|string|max:20',
-            'strand' => 'nullable|required_if:grade_level,Grade 11,Grade 12|in:STEM,ABM,HUMSS,GAS',
+            'strand' => 'nullable|required_if:grade_level,Grade 11,Grade 12|in:Arts, Social Sciences, and Humanities,Business and Entrepreneurship',
             'school_year' => 'required|string|max:20',
 
             'first_name' => 'required|string|max:100',

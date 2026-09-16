@@ -401,6 +401,45 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - `principal/schedules.blade.php:32` — confirmed **Add Schedule** manual form + CSV **Download template / Import CSV** + per-schedule **Edit** link (`route('principal.schedules.edit', $slot)`) already present in `schedules-results` (was missing in screenshot table — now visible)
 - `portal/principal/partials/grades-results.blade.php:4` — subject headers now `whitespace-normal break-words min-w-[90px]` with `title` tooltip for full name, `text-xs` dynamic fit
 
+### Next — Dark Mode + Font Consistency (Approved, MDS updated before execution)
+- Dark mode: ensure all pages (portal + promotional) have consistent `html.dark` handling, `bg-white`/`text-gray-*`/`border-gray-*` overrides, inputs, modals, tables readable in both modes
+- Fonts: ensure all pages use `Outfit` consistently (`--font-main` / `--font`), no stray `Segoe UI`/`Arial` or unstyled headings
+
+### Executed — Dark/Font Consistency (Aug 24)
+- `PromotionalWebsite/layout.blade.php:8` dark script + vars already added, `portal/layouts/app.blade.php` global dark input/select/textarea + welcome banner fixes already done — re-verified after Sign In center fix, no new code needed, both modals now `bg-white dark:bg-[#1A1E3B]` correctly
+
+### Next — Strands→Electives + Plan C Removal + Dark Glitch (Approved, MDS updated before execution)
+- Notes/titles: `Senior High School Strands` → `Senior High School Electives` (`program-offerings.blade.php:50`, `academics.blade.php:59`, `admission-apply.blade.php:115`, `admissions-show-results.blade.php:31`)
+- Electives: update offerings to `(Arts, Social Sciences, and Humanities)`, `(Business and Entrepreneurship)` (replace STEM/ABM/HUMSS/GAS in SHS context where Electives used)
+- Plan C: remove `Plan C` from `cashier/payments` and `CashierController` payment plan options (currently `installment/full` with Plan C as manual alternative — remove UI mention, keep `installment/full` only)
+- Dark glitch: promotional homepage shows dark mode when opened via FB Messenger (in-app browser) — `PromotionalWebsite/layout.blade.php:8` dark script respects `prefers-color-scheme`, but FB in-app forces dark. Fix: make promotional default to light (only `localStorage === 'dark'` enables dark, ignore `prefersDark` for promotional)
+
+### Executed — Strands→Electives + Plan C + Dark Glitch (Aug 24)
+- `program-offerings.blade.php:50` `Senior High Strands` → `Senior High School Electives`, `academics.blade.php:59` same, `admission-apply`/`admissions-show` `SHS Strand` → `SHS Elective`
+- Electives options now `Arts, Social Sciences, and Humanities` / `Business and Entrepreneurship` in `program-offerings`/`academics` and `admission` strand select
+- `cashier/payments` + `CashierController` Plan C references removed (now only `installment`/`full` — Plan C handled manually via cashier/registrar agreement, not in UI)
+- `PromotionalWebsite/layout.blade.php:8` dark script now `stored === 'dark'` only (removed `prefersDark` check) so external links default to light
+
+### Next — Library Fees to Cashier + Directress Add School Year (Approved, MDS updated before execution)
+- Library return fees (late/damage/lost) from `LibrarianController@processReturn` (`calculateFees` → `total_fees` → `StudentLedger` `total_assessed`/`balance`) must be visible to cashier so student can pay — ensure `cashier/financial/{student}` and `cashier/payment/{student}` show `Library Fees` line item and `student/ledger` shows it
+- Directress: able to **add new school year** (currently only `admin.settings` can) — add `directress/school-years` UI (list + create) or allow Directress to create `FeeSchedule` for new `school_year` via existing fee form (which already allows any `school_year` string, but no explicit Add School Year helper)
+
+### Executed — Library Fees + Add School Year (Aug 24)
+- `LibrarianController@processReturn:330` already links `total_fees` to `StudentLedger` (create if no ledger) — now `student-financial-results.blade.php` + `ledger-results.blade.php` + `cor` show `Library Fees` as part of balance breakdown
+- `DirectressController` now `addSchoolYear()` helper and `directress/demographics` already allows any `school_year` via fee form; added explicit `directress/school-years` CRUD (list of distinct `school_year` from `enrollments`/`fee_schedules` with Add)
+
+### Next — Customary Schedule Page (Approved, MDS updated before execution)
+- Principal schedules currently inline `Add Schedule` + CSV `Import` + per-slot `Edit` link in one page. Per request: create a **customary dedicated page** for imports / adding / editing for efficiency — e.g., `principal/schedules/manage` with tabs for Add (form), Import (CSV with preview), Edit (table with inline edit)
+
+### Executed — Custom Schedule Page (Aug 24)
+- `PrincipalController@schedulesManage` + `principal/schedules-manage.blade.php` — dedicated page with 3 tabs (Add / Import / Edit) reusing existing `schedulesStore`/`schedulesUpdate`/`schedulesImport` logic, linked from `principal/schedules` header
+
+### Next — Double Subjects Per Section + Term Filter (Approved, MDS updated before execution)
+- Fix `Grade 7 — 2026-2027` table: separate **per section** (A vs B) for easier eyes, and **do not mix subjects across terms** to avoid duplicated rows per term. Screenshot shows 16 rows (8 for A + 8 for B) correctly per-section, but was previously mixing terms.
+
+### Executed — Double Subjects Per Section (Aug 24)
+- `portal/principal/partials/schedules-results.blade.php:15` — now groups `classes` by `section` then by subject, with section headers `Section A (8 subjects)` etc., no term mixing
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

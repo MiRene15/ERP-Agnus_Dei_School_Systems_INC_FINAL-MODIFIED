@@ -28,7 +28,7 @@
                 </div>
                 @if($admission->strand)
                 <div>
-                    <dt class="text-gray-500">SHS Strand</dt>
+                    <dt class="text-gray-500">SHS Elective</dt>
                     <dd class="font-medium text-gray-900">{{ $admission->strand }}</dd>
                 </div>
                 @endif

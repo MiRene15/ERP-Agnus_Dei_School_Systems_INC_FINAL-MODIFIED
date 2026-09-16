@@ -259,6 +259,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:8'])->group(function() {
         Route::get('/directress/dashboard', [DirectressController::class, 'index'])->name('directress.dashboard');
         Route::get('/directress/demographics', [DirectressController::class, 'demographics'])->name('directress.demographics');
+        Route::get('/directress/school-years', [DirectressController::class, 'schoolYears'])->name('directress.school-years');
+        Route::post('/directress/school-years', [DirectressController::class, 'storeSchoolYear'])->name('directress.school-years.store');
         // Fee Schedule
         Route::get('/directress/fees', [DirectressController::class, 'fees'])->name('directress.fees');
         Route::get('/directress/fees/create', [DirectressController::class, 'feesCreate'])->name('directress.fees.create');
@@ -284,6 +286,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/principal/dashboard', [PrincipalController::class, 'index'])->name('principal.dashboard');
         // Schedules — manual + hybrid CSV + edit
         Route::get('/principal/schedules', [PrincipalController::class, 'schedules'])->name('principal.schedules');
+        Route::get('/principal/schedules/manage', [PrincipalController::class, 'schedulesManage'])->name('principal.schedules.manage');
         Route::post('/principal/schedules', [PrincipalController::class, 'schedulesStore'])->name('principal.schedules.store');
         Route::get('/principal/schedules/{schedule}/edit', [PrincipalController::class, 'schedulesEdit'])->name('principal.schedules.edit');
         Route::patch('/principal/schedules/{schedule}', [PrincipalController::class, 'schedulesUpdate'])->name('principal.schedules.update');

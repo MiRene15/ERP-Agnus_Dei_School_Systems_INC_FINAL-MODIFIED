@@ -7,9 +7,12 @@
 @endsection
 
 @section('content')
-<div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Class Schedules</h2>
-    <p class="text-gray-600 mt-1">View and manage class schedules per grade level.</p>
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900">Class Schedules</h2>
+        <p class="text-gray-600 mt-1">View and manage class schedules per grade level.</p>
+    </div>
+    <a href="{{ route('principal.schedules.manage') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Manage Schedules</a>
 </div>
 
 @if(session('success'))
