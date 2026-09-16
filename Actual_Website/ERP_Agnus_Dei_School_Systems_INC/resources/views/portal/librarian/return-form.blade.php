@@ -56,6 +56,13 @@
                 <dt class="text-gray-500">Condition at Borrow</dt>
                 <dd class="font-medium text-gray-900">{{ $transaction->condition_at_borrow }}</dd>
             </div>
+            <div class="flex justify-between">
+                <dt class="text-gray-500">Book Current Condition</dt>
+                <dd class="font-medium {{ ($transaction->book->condition ?? 'Good') !== 'Good' ? 'text-amber-600' : 'text-gray-900' }}">{{ $transaction->book->condition ?? 'Good' }}</dd>
+            </div>
+            @if(($transaction->book->condition ?? 'Good') !== 'Good')
+            <p class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">This book is already in <strong>{{ $transaction->book->condition }}</strong> condition. Returning as Good will keep it as {{ $transaction->book->condition }}. Only escalate if worse.</p>
+            @endif
         </dl>
     </div>
 

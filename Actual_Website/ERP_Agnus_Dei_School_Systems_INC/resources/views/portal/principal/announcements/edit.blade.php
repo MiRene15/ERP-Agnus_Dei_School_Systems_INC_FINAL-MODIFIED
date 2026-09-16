@@ -18,15 +18,15 @@
     <form method="POST" action="{{ route('principal.announcements.update', $announcement) }}">
         @csrf @method('PATCH')
         <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                <input type="text" name="title" value="{{ old('title', $announcement->title) }}" required
+            <div x-data="{ count: {{ strlen(old('title', $announcement->title)) }} }">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Title * <span class="text-xs font-normal text-gray-400" x-text="count + '/255'"></span></label>
+                <input type="text" name="title" value="{{ old('title', $announcement->title) }}" required maxlength="255" @input="count = $el.value.length"
                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 @error('title') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Content *</label>
-                <textarea name="content" rows="5" required
+            <div x-data="{ count: {{ strlen(old('content', $announcement->content)) }} }">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Content * <span class="text-xs font-normal text-gray-400" x-text="count + '/5000'"></span></label>
+                <textarea name="content" rows="5" required maxlength="5000" @input="count = $el.value.length"
                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">{{ old('content', $announcement->content) }}</textarea>
                 @error('content') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>

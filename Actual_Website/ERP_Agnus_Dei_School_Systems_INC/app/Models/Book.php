@@ -23,6 +23,7 @@ class Book extends Model
         'inactive_reason',
         'inactive_at',
         'deactivated_by',
+        'condition',
     ];
 
     protected $casts = [

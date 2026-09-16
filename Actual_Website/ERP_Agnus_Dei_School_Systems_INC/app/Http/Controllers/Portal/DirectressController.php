@@ -21,7 +21,7 @@ class DirectressController extends Controller
         $feeSchedules = FeeSchedule::count();
         $graduationFees = GraduationFee::count();
 
-        // Demographics
+        // Demographics (light for dashboard)
         $totalStudents = Enrollment::where('status', 'Active')->count();
         $byGrade = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->grade_level ?? 'Unknown')->map->count()->sortKeys();
         $bySection = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->section_name ?? 'Unknown')->map->count();
@@ -39,6 +39,19 @@ class DirectressController extends Controller
         return view('portal.directress.dashboard', compact(
             'feeSchedules', 'graduationFees', 'totalStudents', 'byGrade', 'bySection', 'byYear', 'totalFeesAssessed'
         ));
+    }
+
+    public function demographics(Request $request)
+    {
+        $byGrade = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->grade_level ?? 'Unknown')->map->count()->sortKeys();
+        $bySection = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->section_name ?? 'Unknown')->map->count()->sortKeys();
+        $byYear = Enrollment::where('status','Active')->get()->groupBy('school_year')->map->count()->sortKeysDesc();
+        $byGender = \App\Models\Student::whereHas('enrollments', fn($q)=>$q->where('status','Active'))->get()->groupBy(fn($s)=>$s->gender ?? 'Unknown')->map->count();
+        // Fallback if gender not collected, show by strand for SHS
+        $byStrand = Enrollment::where('status','Active')->whereNotNull('strand')->get()->groupBy('strand')->map->count();
+
+        $total = $byGrade->sum();
+        return view('portal.directress.demographics', compact('byGrade','bySection','byYear','byGender','byStrand','total'));
     }
 
     // ─── Fee Schedule (moved from Admin) ────────────────────────

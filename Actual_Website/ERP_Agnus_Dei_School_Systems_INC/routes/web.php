@@ -223,6 +223,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/librarian/visits', [LibrarianController::class, 'visits'])->name('librarian.visits');
         Route::post('/librarian/visits/clock-in', [LibrarianController::class, 'clockIn'])->name('librarian.visits.clock-in');
         Route::patch('/librarian/visits/{visit}/clock-out', [LibrarianController::class, 'clockOut'])->name('librarian.visits.clock-out');
+        // History
+        Route::get('/librarian/history', [LibrarianController::class, 'history'])->name('librarian.history');
     });
 
     Route::middleware(['role:6'])->group(function() {
@@ -256,6 +258,7 @@ Route::middleware('auth')->group(function () {
     // ─── School Directress (role 8) ────────────────────────────
     Route::middleware(['role:8'])->group(function() {
         Route::get('/directress/dashboard', [DirectressController::class, 'index'])->name('directress.dashboard');
+        Route::get('/directress/demographics', [DirectressController::class, 'demographics'])->name('directress.demographics');
         // Fee Schedule
         Route::get('/directress/fees', [DirectressController::class, 'fees'])->name('directress.fees');
         Route::get('/directress/fees/create', [DirectressController::class, 'feesCreate'])->name('directress.fees.create');
@@ -279,9 +282,11 @@ Route::middleware('auth')->group(function () {
     // ─── School Principal (role 9) ─────────────────────────────
     Route::middleware(['role:9'])->group(function() {
         Route::get('/principal/dashboard', [PrincipalController::class, 'index'])->name('principal.dashboard');
-        // Schedules — manual + hybrid CSV
+        // Schedules — manual + hybrid CSV + edit
         Route::get('/principal/schedules', [PrincipalController::class, 'schedules'])->name('principal.schedules');
         Route::post('/principal/schedules', [PrincipalController::class, 'schedulesStore'])->name('principal.schedules.store');
+        Route::get('/principal/schedules/{schedule}/edit', [PrincipalController::class, 'schedulesEdit'])->name('principal.schedules.edit');
+        Route::patch('/principal/schedules/{schedule}', [PrincipalController::class, 'schedulesUpdate'])->name('principal.schedules.update');
         Route::delete('/principal/schedules/{schedule}', [PrincipalController::class, 'schedulesDestroy'])->name('principal.schedules.destroy');
         Route::get('/principal/schedules/template', [PrincipalController::class, 'schedulesTemplate'])->name('principal.schedules.template');
         Route::post('/principal/schedules/import', [PrincipalController::class, 'schedulesImport'])->name('principal.schedules.import');

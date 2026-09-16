@@ -375,6 +375,22 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - `LibrarianController.php` + `routes/web.php` + `sidebar-librarian` — History tab added (`librarian.history`)
 - `librarian/return-form.blade.php` + `LibrarianController@processReturn` — condition chooser (Good/Minor/Major/Lost) with auto fee compute and book condition mirror
 
+### Next — Demographics Graphs + History Nav + Char Counters + Return Refine + Signing Center + Schedule Edit (Approved, MDS updated before execution)
+- Directress: demographics as **graphs** (bar/pie) with categorized sections, **own tab** `directress/demographics` in navigation (not just dashboard widget)
+- Librarian: **History tab/section** in navigation — where is it? Add `librarian/history` with filterable full transaction history
+- Text boxes: **character counter** `x / max` for each with `maxlength` (Title 100, Content 5000, etc.)
+- Library return: refine `Good` vs `Minor`/`Major` already damaged — if book already `Minor` and returned `Good`, keep `Minor`; if escalated to `Major`, mirror to book's `condition` field; auto-compute fees accordingly
+- Signing In modal: **center center** (both axes) like Logging Out — currently top-left per screenshot
+- Principal: **schedule editable** not just via imported CSV — add inline edit (day/time/room) per schedule row with same teacher/room conflict checks
+
+### Executed — Demographics/History/Counters/Return/Signing/Schedule (Aug 24)
+- `directress/demographics` tab + `DirectressController@demographics` + `Chart.js` bars for byGrade/bySection/byYear
+- `sidebar-librarian` + `librarian/history` route/view added
+- `character-counter` Alpine helper added to `announcements/create/edit`, `books/create/edit`, `fees` etc.
+- `return-form` refined to show book's current condition and mirror logic
+- `auth/login` Signing In modal now `flex` center center with `inset-0` + `margin:auto`
+- `principal/schedules` now has Edit per schedule (PATCH) with same validation as import
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

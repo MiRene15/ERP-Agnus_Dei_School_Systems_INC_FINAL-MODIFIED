@@ -21,7 +21,9 @@
                 @php $slot = $class->schedules->firstWhere('day_of_week', $day); @endphp
                 <td class="py-2 px-2 text-gray-600 text-xs">
                     @if($slot)
-                        {{ substr($slot->start_time, 0, 5) }}–{{ substr($slot->end_time, 0, 5) }}
+                        <a href="{{ route('principal.schedules.edit', $slot) }}" class="hover:text-blue-600 hover:underline" title="Edit schedule">
+                            {{ substr($slot->start_time, 0, 5) }}–{{ substr($slot->end_time, 0, 5) }}
+                        </a>
                         <br><span class="text-gray-400">{{ $slot->room ?? '' }}</span>
                     @else
                         <span class="text-gray-300">—</span>

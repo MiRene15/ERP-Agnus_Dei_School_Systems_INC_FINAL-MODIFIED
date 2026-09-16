@@ -349,6 +349,24 @@ class LibrarianController extends Controller
         $book = $transaction->book;
         if ($book) {
             $book->increment('available_quantity');
+            // Mirror condition if changed from borrow
+            $borrowCond = $transaction->condition_at_borrow ?? 'Good';
+            $returnCond = $data['condition_at_return'];
+            if ($returnCond !== 'Good' && $returnCond !== $borrowCond) {
+                // Update book's current condition to returned condition (escalate if worse)
+                $order = ['Good' => 0, 'Minor Damage' => 1, 'Major Damage' => 2, 'Lost' => 3];
+                $currentOrder = $order[$book->condition ?? 'Good'] ?? 0;
+                $newOrder = $order[$returnCond] ?? 0;
+                if ($newOrder > $currentOrder) {
+                    $book->update(['condition' => $returnCond]);
+                }
+            }
+            if ($returnCond === 'Lost') {
+                $book->decrement('available_quantity'); // lost means not actually returned to shelf
+                if ($book->available_quantity <= 0) {
+                    $book->update(['is_active' => false, 'inactive_reason' => 'Lost on return']);
+                }
+            }
         }
 
         log_activity($transaction, 'Book Returned', 'Book "' . $transaction->book_title . '" returned. Fees: ₱' . number_format($transaction->total_fees, 2));
@@ -471,6 +489,26 @@ class LibrarianController extends Controller
         $books = $query->orderBy('title')->paginate(20);
 
         return response()->json($books);
+    }
+
+    public function history(Request $request)
+    {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+        $query = LibraryTransaction::with('student', 'book');
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('book_title', 'like', "%{$search}%")
+                  ->orWhereHas('student', fn($sq) => $sq->where('first_name','like',"%{$search}%")->orWhere('last_name','like',"%{$search}%"));
+            });
+        }
+        if ($request->filled('status') && $request->status !== 'All') $query->where('status', $request->status);
+        $transactions = $query->latest('borrow_date')->paginate(20)->withQueryString();
+        if ($isAjax) {
+            return response()->json(['html' => view('portal.librarian.partials.history-results', compact('transactions'))->render()]);
+        }
+        return view('portal.librarian.history', compact('transactions'));
     }
 
     public function searchLoans(Request $request)

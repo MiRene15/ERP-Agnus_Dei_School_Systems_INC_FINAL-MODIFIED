@@ -130,6 +130,57 @@ class PrincipalController extends Controller
         return back()->with('success', 'Schedule added.');
     }
 
+    public function schedulesEdit(Schedule $schedule)
+    {
+        $schedule->load('schoolClass.subject', 'schoolClass.teacher');
+        return view('portal.principal.schedules-edit', compact('schedule'));
+    }
+
+    public function schedulesUpdate(Request $request, Schedule $schedule)
+    {
+        $data = $request->validate([
+            'day_of_week' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'room' => 'nullable|string|max:50',
+        ]);
+
+        $conflict = Schedule::where('id', '!=', $schedule->id)
+            ->where('class_id', $schedule->class_id)
+            ->where('day_of_week', $data['day_of_week'])
+            ->where(function ($q) use ($data) {
+                $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
+                  ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+            })->exists();
+        if ($conflict) return back()->with('error', 'Time conflict for this class.');
+
+        $class = $schedule->schoolClass;
+        if ($class && $class->teacher_id) {
+            $teacherConflict = Schedule::where('id', '!=', $schedule->id)
+                ->where('day_of_week', $data['day_of_week'])
+                ->whereHas('schoolClass', fn($q) => $q->where('teacher_id', $class->teacher_id))
+                ->where(function ($q) use ($data) {
+                    $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
+                      ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+                })->exists();
+            if ($teacherConflict) return back()->with('error', 'Teacher already booked at this time.');
+        }
+
+        if (!empty($data['room'])) {
+            $roomConflict = Schedule::where('id', '!=', $schedule->id)
+                ->where('day_of_week', $data['day_of_week'])
+                ->where('room', $data['room'])
+                ->where(function ($q) use ($data) {
+                    $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
+                      ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+                })->exists();
+            if ($roomConflict) return back()->with('error', 'Room already booked at this time.');
+        }
+
+        $schedule->update($data);
+        return redirect()->route('principal.schedules')->with('success', 'Schedule updated.');
+    }
+
     public function schedulesDestroy(Schedule $schedule)
     {
         $schedule->delete();
