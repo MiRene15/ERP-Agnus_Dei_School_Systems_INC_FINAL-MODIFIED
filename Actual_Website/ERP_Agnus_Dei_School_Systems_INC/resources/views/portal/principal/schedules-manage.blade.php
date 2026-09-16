@@ -51,9 +51,12 @@
                 <select id="editSection" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><option value="">Select Section</option></select>
                 <select id="editClass" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><option value="">Select Class</option></select>
             </div>
-            <div id="editResults" class="text-sm text-gray-500">Choose grade → section → class to load its weekly slots. Each slot has <span class="font-semibold">Edit</span> / <span class="font-semibold">Delete</span> and an <span class="font-semibold">Add</span> row at bottom.</div>
+            <div id="editResults" class="text-sm">
+                <p class="text-gray-500">Choose grade → section → class to load and edit its weekly slots. All subjects for the selected section will be listed below.</p>
+            </div>
             <script>
                 const allClasses = @json($classes);
+                const allSubjects = @json(\App\Models\Subject::orderBy('name')->get(['id','name','subject_code']));
                 const gradeEl = document.getElementById('editGrade');
                 const sectionEl = document.getElementById('editSection');
                 const classEl = document.getElementById('editClass');
@@ -65,27 +68,47 @@
                     const sections = [...new Set(filtered.map(c => c.section))];
                     sectionEl.innerHTML = '<option value=\"\">Select Section</option>' + sections.map(s => `<option value=\"${s}\">${s}</option>`).join('');
                     classEl.innerHTML = '<option value=\"\">Select Class</option>';
-                    resultsEl.innerHTML = '<p class=\"text-sm text-gray-500\">Choose section and class.</p>';
+                    resultsEl.innerHTML = '<p class=\"text-sm text-gray-500\">Choose section and class. All subjects for that grade/section will be shown below for editing.</p>';
                 });
                 sectionEl.addEventListener('change', () => {
                     const grade = gradeEl.value;
                     const section = sectionEl.value;
                     const filtered = allClasses.filter(c => c.grade_level === grade && c.section === section);
-                    classEl.innerHTML = '<option value=\"\">Select Class</option>' + filtered.map(c => `<option value=\"${c.id}\">${c.subject?.name || c.subject_id} — ${c.teacher?.name || 'No teacher'}</option>`).join('');
+                    // Show all subjects for this grade/section, even if no class yet
+                    const subjectOptions = filtered.length ? filtered.map(c => `<option value=\"${c.id}\">${c.subject?.name || c.subject_id} — ${c.teacher?.name || 'No teacher'}</option>`).join('') : '<option value=\"\">No classes yet — add via Add tab</option>';
+                    classEl.innerHTML = '<option value=\"\">Select Class</option>' + subjectOptions;
+                    if (filtered.length) {
+                        let html = '<p class=\"text-xs text-gray-400 mb-2\">All subjects for ' + grade + ' ' + section + ':</p><div class=\"flex flex-wrap gap-1\">' + filtered.map(c => `<span class=\"px-2 py-1 bg-gray-100 rounded text-xs\">${c.subject?.name || c.subject_id}</span>`).join('') + '</div>';
+                        resultsEl.innerHTML = html;
+                    }
                 });
                 classEl.addEventListener('change', async () => {
                     const classId = classEl.value;
-                    if (!classId) { resultsEl.innerHTML = '<p class=\"text-sm text-gray-500\">Select a class.</p>'; return; }
-                    resultsEl.innerHTML = '<p class=\"text-sm text-gray-500\">Loading slots...</p>';
+                    if (!classId) return;
+                    resultsEl.innerHTML = '<p class=\"text-sm text-gray-500\">Loading editable slots...</p>';
                     try {
                         const res = await fetch(`{{ url('/principal/schedules') }}?class_id=${classId}&ajax=1`);
                         const data = await res.json();
-                        // Extract table from returned html (simple)
                         const temp = document.createElement('div');
                         temp.innerHTML = data.html;
-                        // Find the table rows for this class
-                        resultsEl.innerHTML = '<p class=\"text-sm text-gray-600 mb-2\">Showing slots for selected class. Click a time to <strong>Edit</strong> or use <strong>Add</strong> at bottom.</p>' + temp.innerHTML;
-                    } catch(e){ resultsEl.innerHTML = '<p class=\"text-sm text-red-500\">Failed to load.</p>'; }
+                        // Make the time slots inline editable
+                        temp.querySelectorAll('td a[href*=\"/edit\"]').forEach(a => {
+                            const href = a.getAttribute('href');
+                            const timeText = a.textContent.trim();
+                            const slotRow = a.closest('tr') || a.closest('td');
+                            // Replace link with inline form
+                            const form = document.createElement('div');
+                            form.innerHTML = `<form method=\"POST\" action=\"${href.replace('/edit','')}\" class=\"flex gap-1 items-center\">
+                                <input type=\"hidden\" name=\"_token\" value=\"{{ csrf_token() }}\">
+                                <input type=\"hidden\" name=\"_method\" value=\"PATCH\">
+                                <input type=\"text\" name=\"room\" placeholder=\"Room\" value=\"${a.nextElementSibling ? a.nextElementSibling.textContent.trim() : ''}\" class=\"w-16 px-1 py-0.5 border rounded text-xs\">
+                                <button type=\"submit\" class=\"px-2 py-0.5 bg-blue-600 text-white rounded text-xs\">Save</button>
+                                <a href=\"${href}\" class=\"px-2 py-0.5 bg-gray-100 rounded text-xs\">Open</a>
+                            </form>`;
+                            a.parentNode.replaceChild(form, a);
+                        });
+                        resultsEl.innerHTML = '<div class=\"bg-white rounded-xl border border-gray-100 p-4\">' + temp.innerHTML + '<p class=\"text-xs text-gray-400 mt-3\">Tip: Click a time slot to edit, or use <strong>Add Schedule</strong> tab to add new.</p></div>';
+                    } catch(e){ resultsEl.innerHTML = '<p class=\"text-sm text-red-500\">Failed to load. ' + e.message + '</p>'; }
                 });
             </script>
         </div>

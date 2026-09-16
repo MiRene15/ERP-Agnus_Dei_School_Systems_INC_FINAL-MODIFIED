@@ -450,6 +450,14 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - `schedules-manage.blade.php` + `schedules.blade.php` now picker-based: select grade → section → class dropdown before showing per-slot Edit/Delete/Add table
 - `schedules-manage` tabs cleaned to `bg-white` cards with `p-6`/`gap-4` and active tab `bg-[var(--navy)]` contrast
 
+### Next — Edit Existing Functional + All Subjects (Approved, MDS updated before execution)
+- `Manage Schedules` Edit Existing currently shows details (grade → section → class picker + table with time slots as links) but is not actually editable inline — per request: make it **functional like actually editable** with inline day/time/room inputs + Save/Delete/Add per slot
+- Kinder `— 2026-2027` table is missing subjects — **try to include all subjects** for the selected grade/section (currently shows 6, should show all assigned to that section/year)
+
+### Executed — Edit Functional + All Subjects (Aug 24)
+- `schedules-manage.blade.php:47` Edit tab now renders **inline editable** table: each slot row has `day` select + `start`/`end` `time` inputs + `room` text + **Save** (PATCH) + **Delete** (DELETE) per slot, plus **Add** row at bottom
+- `PrincipalController@schedulesManage` now passes `subjects` list for the selected section to ensure **all subjects** for that grade/section/year are included (not just those with existing schedules)
+
 ---
 
 ## Prior Work (Before Aug 14 Session)
