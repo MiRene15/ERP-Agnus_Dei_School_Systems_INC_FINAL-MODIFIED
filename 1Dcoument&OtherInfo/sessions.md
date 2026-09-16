@@ -440,6 +440,16 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 ### Executed — Double Subjects Per Section (Aug 24)
 - `portal/principal/partials/schedules-results.blade.php:15` — now groups `classes` by `section` then by subject, with section headers `Section A (8 subjects)` etc., no term mixing
 
+### Next — All Departments Schedules + Picker Edit + Cleaner Manage (Approved, MDS updated before execution)
+- Class schedules apply for **all departments** (currently `Grade 7-12` only in `PrincipalController@schedules` filter) — expand to `Kinder, Grade 1-12, SHS`
+- Editing: **give options of classes/sections then let me pick before proceeding to edit it per slot** instead of one-by-one per slot — picker-based flow: select grade → section → class → then table with Edit/Delete/Add per slot
+- Fix **schedules page** and **manage schedules** (`Add Schedule` + `Import CSV` + `Edit Existing` tabs per screenshot) to be cleaner for visibility — card padding, header hierarchy, tab contrast
+
+### Executed — All Departments + Picker Edit + Cleaner Manage (Aug 24)
+- `PrincipalController.php:42` gradeLevels expanded to `Kinder, Grade 1-12, SHS` (was 7-12)
+- `schedules-manage.blade.php` + `schedules.blade.php` now picker-based: select grade → section → class dropdown before showing per-slot Edit/Delete/Add table
+- `schedules-manage` tabs cleaned to `bg-white` cards with `p-6`/`gap-4` and active tab `bg-[var(--navy)]` contrast
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

@@ -43,8 +43,8 @@ class PrincipalController extends Controller
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
-        $gradeLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
-        $selectedGrade = request('grade_level', $gradeLevels[0]);
+        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'SHS'];
+        $selectedGrade = request('grade_level', 'Grade 7');
         $selectedYear = request('school_year', active_school_year());
         $schoolYears = all_school_years();
 
@@ -183,7 +183,7 @@ class PrincipalController extends Controller
 
     public function schedulesManage(Request $request)
     {
-        $gradeLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'SHS'];
         $classes = Classes::with('subject', 'teacher')->where('school_year', active_school_year())->where('status','active')->orderBy('grade_level')->get();
         $days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
         return view('portal.principal.schedules-manage', compact('gradeLevels','classes','days'));
@@ -347,7 +347,7 @@ class PrincipalController extends Controller
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
-        $gradeLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'SHS'];
         $selectedGrade = request('grade_level', $gradeLevels[0]);
         $selectedYear = request('school_year', active_school_year());
         $schoolYears = all_school_years();
