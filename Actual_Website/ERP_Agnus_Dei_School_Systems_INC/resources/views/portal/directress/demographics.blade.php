@@ -11,11 +11,12 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 class="font-semibold text-gray-900 mb-4">By Grade Level</h3>
+        <canvas id="chartGrade" height="200"></canvas>
         @foreach($byGrade as $grade => $count)
             @php $pct = $total ? round($count / $total * 100, 1) : 0; @endphp
-            <div class="mb-3">
-                <div class="flex justify-between text-sm mb-1"><span class="text-gray-700">{{ $grade }}</span><span class="font-medium">{{ $count }} ({{ $pct }}%)</span></div>
-                <div class="w-full bg-gray-100 rounded-full h-2"><div class="bg-indigo-500 h-2 rounded-full" style="width: {{ $pct }}%"></div></div>
+            <div class="mb-2">
+                <div class="flex justify-between text-xs mb-1"><span class="text-gray-700">{{ $grade }}</span><span class="font-medium">{{ $count }} ({{ $pct }}%)</span></div>
+                <div class="w-full bg-gray-100 rounded-full h-1.5"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: {{ $pct }}%"></div></div>
             </div>
         @endforeach
     </div>

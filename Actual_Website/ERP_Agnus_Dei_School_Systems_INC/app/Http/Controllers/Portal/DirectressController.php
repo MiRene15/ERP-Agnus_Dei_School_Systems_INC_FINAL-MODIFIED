@@ -286,11 +286,13 @@ class DirectressController extends Controller
 
     public function storeSchoolYear(Request $request)
     {
-        $data = $request->validate(['school_year' => 'required|regex:/^\d{4}-\d{4}$/|unique:fee_schedules,school_year']);
-        // Create a placeholder fee schedule to register the year
-        FeeSchedule::firstOrCreate(['grade_level' => 'Grade 1', 'term' => '1st Term', 'school_year' => $data['school_year']], ['tuition_fee' => 0, 'misc_fee' => 0]);
-        FeeSchedule::where('grade_level','Grade 1')->where('term','1st Term')->where('school_year',$data['school_year'])->delete();
+        $data = $request->validate(['school_year' => 'required|regex:/^\d{4}-\d{4}$/']);
+        if (FeeSchedule::where('school_year', $data['school_year'])->exists() || \App\Models\Setting::getValue('active_school_year') === $data['school_year']) {
+            return back()->with('error', 'School year '.$data['school_year'].' already exists.');
+        }
+        // Create placeholder to make year appear in lists
+        FeeSchedule::create(['grade_level' => 'Grade 1', 'term' => '1st Term', 'school_year' => $data['school_year'], 'tuition_fee' => 0, 'misc_fee' => 0]);
         \App\Models\Setting::setValue('active_school_year', $data['school_year']);
-        return back()->with('success', 'School year '.$data['school_year'].' added.');
+        return back()->with('success', 'School year '.$data['school_year'].' added and set as active.');
     }
 }

@@ -458,6 +458,18 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - `schedules-manage.blade.php:47` Edit tab now renders **inline editable** table: each slot row has `day` select + `start`/`end` `time` inputs + `room` text + **Save** (PATCH) + **Delete** (DELETE) per slot, plus **Add** row at bottom
 - `PrincipalController@schedulesManage` now passes `subjects` list for the selected section to ensure **all subjects** for that grade/section/year are included (not just those with existing schedules)
 
+### Next — Schedule Simplify + School Years Fix + Graphs + Electives Consistency (Approved, MDS updated before execution)
+- Schedule: **include time, teacher assigning, no need to include the class part like the English thingy** since filter already for section A or B — simplify `schedules-results` to `Time` + `Teacher` + `Room` per slot, no `Subject`/`Class` duplicate, and remove 2nd picture functions from `schedules.blade.php` (Add Schedule manual + Import/Edit CSV panel) since `manage` now handles it — make `schedules` page cleaner for visibility
+- Directress **School Years not showing** after add — fix `schoolYears()` to correctly list distinct years from `fee_schedules` + `enrollments` and ensure new year appears after create (was deleting placeholder)
+- Directress **dashboard + demographics actual graphs** — currently text/bars only, need **pie/bar Chart.js** visible with data for payments from tuition vs collected
+- Electives **consistent everywhere** — `SHS Electives` vs `Strands` terms must be consistent in `program-offerings`, `academics`, `admission-apply`, `admissions-show`, `Student` `strand` validation, and `capstone` docs
+
+### Executed — Schedule Simplify + School Years + Graphs + Electives (Aug 24)
+- `schedules-results.blade.php:15` simplified to `Time`/`Teacher`/`Room` per slot (removed `Subject`/`Class` column, since section filter already implies class), `schedules.blade.php:32` removed duplicate Add/Import panel (now only in `manage`), cleaner `Section A/B` headers
+- `DirectressController.php:280` `schoolYears()` now correctly `FeeSchedule::where('school_year', $year)->count()` and `storeSchoolYear` now keeps placeholder (no delete) so new year shows
+- `directress/dashboard` + `demographics` now use `Chart.js` pie/bar with `totalStudents`, `byGrade`, `bySection`, `paymentsCollected` data
+- `grep` for `Strand`/`STEM`/`ABM` replaced with `Elective`/`Arts, Social Sciences, and Humanities`/`Business and Entrepreneurship` across all views/controllers/docs
+
 ---
 
 ## Prior Work (Before Aug 14 Session)

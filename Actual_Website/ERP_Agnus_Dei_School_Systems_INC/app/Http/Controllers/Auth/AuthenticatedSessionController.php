@@ -15,9 +15,9 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create()
     {
-        return view('auth.login');
+        return response()->view('auth.login')->header('Cache-Control', 'no-store, no-cache, must-revalidate')->header('Pragma', 'no-cache')->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
     /**
