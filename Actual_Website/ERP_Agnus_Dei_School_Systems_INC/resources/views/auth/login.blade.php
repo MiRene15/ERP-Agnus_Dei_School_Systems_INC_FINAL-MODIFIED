@@ -8,27 +8,15 @@
     </div>
 </div>
 
-<div x-data="{ loggingIn: false }" x-init="$watch('loggingIn', v => { if(v) setTimeout(() => $refs.loginForm.submit(), 200) })">
-    <!-- Signing In Modal (matches logging-out modal style) -->
-    <div x-show="loggingIn" x-cloak x-transition.opacity
-         style="position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(14,17,36,0.55); backdrop-filter:blur(6px);">
-        <div style="background:#fff; border-radius:16px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); width:100%; max-width:380px; padding:32px; text-align:center; margin:auto;">
-            <div style="width:48px; height:48px; border-radius:50%; background:#24225C; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
-                <svg style="width:24px; height:24px; color:#fff; animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            </div>
-            <h3 style="font-size:18px; font-weight:700; color:#111827;">Signing In</h3>
-            <p style="font-size:14px; color:#6b7280; margin-top:4px;">Please wait...</p>
-        </div>
-    </div>
-
-    <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} [x-cloak]{display:none !important}</style>
+<div x-data>
+    <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}</style>
 
     <div class="container" style="max-width: 480px; margin-bottom: 100px;">
     <div class="card">
 
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
-        <form method="POST" action="{{ route('login') }}" x-ref="loginForm" @submit.prevent="loggingIn = true">
+        <form method="POST" action="{{ route('login') }}" id="loginForm">
             @csrf
 
             <div style="margin-bottom: 20px;">
@@ -63,12 +51,8 @@
                         Forgot your password?
                     </a>
                 @endif
-                <button type="submit" class="btn-primary" style="border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" :disabled="loggingIn">
-                    <span x-show="!loggingIn">Log In</span>
-                    <span x-show="loggingIn" x-cloak style="display: inline-flex; align-items: center; gap: 6px;">
-                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        Signing In...
-                    </span>
+                <button type="submit" id="loginBtn" class="btn-primary" style="border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                    Log In
                 </button>
             </div>
         </form>
@@ -90,15 +74,31 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const passwordInput = document.getElementById('password');
-    const eyeOpen = document.getElementById('eyeOpen');
-    const eyeClosed = document.getElementById('eyeClosed');
+    var passwordInput = document.getElementById('password');
+    var eyeOpen = document.getElementById('eyeOpen');
+    var eyeClosed = document.getElementById('eyeClosed');
+    var loginForm = document.getElementById('loginForm');
+    var loginBtn = document.getElementById('loginBtn');
 
     document.getElementById('togglePassword').addEventListener('click', function () {
-        const isPassword = passwordInput.type === 'password';
+        var isPassword = passwordInput.type === 'password';
         passwordInput.type = isPassword ? 'text' : 'password';
         eyeOpen.style.display = isPassword ? '' : 'none';
         eyeClosed.style.display = isPassword ? 'none' : '';
+    });
+
+    loginForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<svg style="width:16px;height:16px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Signing In...';
+
+        var overlay = document.createElement('div');
+        overlay.setAttribute('style', 'position:fixed !important; top:0 !important; left:0 !important; right:0 !important; bottom:0 !important; width:100vw !important; height:100vh !important; z-index:99999 !important; display:flex !important; align-items:center !important; justify-content:center !important; background:rgba(14,17,36,0.55) !important; backdrop-filter:blur(6px) !important;');
+        overlay.id = 'signinModal';
+        overlay.innerHTML = '<div style="background:#fff;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);width:100%;max-width:380px;padding:32px;text-align:center;"><div style="width:48px;height:48px;border-radius:50%;background:#24225C;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><svg style="width:24px;height:24px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div><h3 style="font-size:18px;font-weight:700;color:#111827;">Signing In</h3><p style="font-size:14px;color:#6b7280;margin-top:4px;">Please wait...</p></div>';
+        document.body.appendChild(overlay);
+
+        setTimeout(function () { loginForm.submit(); }, 200);
     });
 });
 </script>
