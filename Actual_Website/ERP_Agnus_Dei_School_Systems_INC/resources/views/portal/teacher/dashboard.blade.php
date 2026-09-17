@@ -20,7 +20,7 @@
     </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('teacher.dashboard') }}?school_year={{ $schoolYear }}')">
+<div x-data="ajaxTable('{{ route('teacher.dashboard') }}', { school_year: '{{ $schoolYear }}' })">
     <div x-show="loading" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <template x-for="i in 3" :key="i">

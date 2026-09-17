@@ -22,7 +22,7 @@
     </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('student.ledger') }}?school_year={{ $schoolYear }}')">
+<div x-data="ajaxTable('{{ route('student.ledger') }}', { school_year: '{{ $schoolYear }}' })">
     <div x-show="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
             <div class="skelly sk-line-md w-32 mb-4"></div>

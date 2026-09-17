@@ -22,7 +22,7 @@
     </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('teacher.computed-grades') }}?school_year={{ $schoolYear }}', { class_id: '{{ request('class_id') }}', grading_period: '{{ request('grading_period', '1st Term') }}' })">
+<div x-data="ajaxTable('{{ route('teacher.computed-grades') }}', { school_year: '{{ $schoolYear }}', class_id: '{{ request('class_id') }}', grading_period: '{{ request('grading_period', '1st Term') }}' })">
     <div x-show="loading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
         <div class="skelly sk-line-md w-48 mb-4"></div>
         <div class="skelly sk-line-md w-64 mb-4"></div>

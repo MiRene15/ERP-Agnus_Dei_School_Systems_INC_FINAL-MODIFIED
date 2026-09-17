@@ -22,7 +22,7 @@
     </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('teacher.class-list') }}?school_year={{ $schoolYear }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
+<div x-data="ajaxTable('{{ route('teacher.class-list') }}', { school_year: '{{ $schoolYear }}', search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"

@@ -22,7 +22,7 @@
     </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('student.schedule') }}?school_year={{ $schoolYear }}')">
+<div x-data="ajaxTable('{{ route('student.schedule') }}', { school_year: '{{ $schoolYear }}' })">
     <div x-show="loading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div class="grid grid-cols-6 gap-3">
             <template x-for="i in 6" :key="i">
