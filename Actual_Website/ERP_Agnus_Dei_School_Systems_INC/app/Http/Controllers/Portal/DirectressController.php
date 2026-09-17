@@ -293,6 +293,8 @@ class DirectressController extends Controller
         // Create placeholder to make year appear in lists
         FeeSchedule::create(['grade_level' => 'Grade 1', 'term' => '1st Term', 'school_year' => $data['school_year'], 'tuition_fee' => 0, 'misc_fee' => 0]);
         \App\Models\Setting::setValue('active_school_year', $data['school_year']);
-        return back()->with('success', 'School year '.$data['school_year'].' added and set as active.');
+        \Illuminate\Support\Facades\Cache::forget('active_school_year');
+        \Illuminate\Support\Facades\Cache::forget('all_school_years');
+        return back()->with('success', 'School year '.$data['school_year'].' added and set as active. It will now appear in all dropdowns (Admin Settings, Principal Schedules, etc.).');
     }
 }
