@@ -8,18 +8,20 @@
     </div>
 </div>
 
-<div x-data="{ loggingIn: false }" x-init="$watch('loggingIn', v => { if(v) setTimeout(() => $refs.loginForm.submit(), 150) })">
-    <template x-teleport="body">
-        <div x-show="loggingIn" x-cloak style="position:fixed; inset:0; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; background: rgba(14,17,36,0.55); backdrop-filter: blur(6px); z-index: 9999;">
-            <div style="background: #FFFFFF; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); width: 100%; max-width: 380px; padding: 32px; text-align: center;">
-                <div style="width:48px;height:48px;border-radius:50%;background:#24225C;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-                    <svg style="width:24px;height:24px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                </div>
-                <h3 style="font-size:18px;font-weight:700;color:#111827;">Signing In</h3>
-                <p style="font-size:14px;color:#6b7280;margin-top:4px;">Please wait...</p>
+<div x-data="{ loggingIn: false }" x-init="$watch('loggingIn', v => { if(v) setTimeout(() => $refs.loginForm.submit(), 200) })">
+    <!-- Signing In Modal (matches logging-out modal style) -->
+    <div x-show="loggingIn" x-cloak x-transition.opacity
+         class="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+         style="background: rgba(14,17,36,0.55); backdrop-filter: blur(6px);">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-8 text-center border border-gray-100">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style="background: #24225C;">
+                <svg class="w-6 h-6 text-white animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             </div>
+            <h3 class="text-lg font-bold text-gray-900">Signing In</h3>
+            <p class="text-sm text-gray-500 mt-1">Please wait...</p>
         </div>
-    </template>
+    </div>
+
     <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} [x-cloak]{display:none !important}</style>
 
     <div class="container" style="max-width: 480px; margin-bottom: 100px;">
@@ -63,8 +65,11 @@
                     </a>
                 @endif
                 <button type="submit" class="btn-primary" style="border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" :disabled="loggingIn">
-                    <svg x-show="loggingIn" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    <span x-text="loggingIn ? 'Signing In...' : 'Log In'"></span>
+                    <span x-show="!loggingIn">Log In</span>
+                    <span x-show="loggingIn" x-cloak style="display: inline-flex; align-items: center; gap: 6px;">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Signing In...
+                    </span>
                 </button>
             </div>
         </form>
