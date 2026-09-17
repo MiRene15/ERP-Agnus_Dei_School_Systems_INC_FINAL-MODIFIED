@@ -9,7 +9,7 @@ class FeeSchedulesSeeder extends Seeder
 {
     public function run(): void
     {
-        $schoolYear = '2026-2027';
+        $schoolYear = active_school_year();
 
         $feeStructure = [
             'Kinder'   => ['tuition' => 15000, 'misc' => 5000],

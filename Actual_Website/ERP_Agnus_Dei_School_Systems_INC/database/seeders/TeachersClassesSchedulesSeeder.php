@@ -15,7 +15,7 @@ class TeachersClassesSchedulesSeeder extends Seeder
 
     public function run(): void
     {
-        $schoolYear = '2026-2027';
+        $schoolYear = active_school_year();
 
         $teacherEmailsByDept = [
             'Elementary' => [

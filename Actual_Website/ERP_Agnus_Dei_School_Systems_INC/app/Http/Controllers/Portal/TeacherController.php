@@ -22,9 +22,11 @@ class TeacherController extends Controller
         $request->query->remove('ajax');
 
         $teacherId = auth()->id();
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = all_school_years();
         $classes = Classes::with('subject', 'schedules', 'enrollments')
             ->where('teacher_id', $teacherId)
-            ->where('school_year', active_school_year())
+            ->where('school_year', $schoolYear)
             ->where('status', 'active')
             ->get();
 
@@ -39,11 +41,11 @@ class TeacherController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.teacher.partials.dashboard-results', compact('classes', 'todaySchedule', 'totalStudents'))->render(),
+                'html' => view('portal.teacher.partials.dashboard-results', compact('classes', 'todaySchedule', 'totalStudents', 'schoolYear', 'schoolYears'))->render(),
             ]);
         }
 
-        return view('portal.teacher.dashboard', compact('classes', 'todaySchedule', 'totalStudents'));
+        return view('portal.teacher.dashboard', compact('classes', 'todaySchedule', 'totalStudents', 'schoolYear', 'schoolYears'));
     }
 
     public function classes(Request $request)
@@ -52,9 +54,11 @@ class TeacherController extends Controller
         $request->query->remove('ajax');
 
         $teacherId = auth()->id();
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = all_school_years();
         $query = Classes::with('subject', 'schedules', 'teacher')
             ->where('teacher_id', $teacherId)
-            ->where('school_year', active_school_year())
+            ->where('school_year', $schoolYear)
             ->where('status', 'active');
 
         if ($request->filled('search')) {
@@ -74,11 +78,11 @@ class TeacherController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.teacher.partials.classes-results', compact('classes', 'gradeLevels'))->render(),
+                'html' => view('portal.teacher.partials.classes-results', compact('classes', 'gradeLevels', 'schoolYear', 'schoolYears'))->render(),
             ]);
         }
 
-        return view('portal.teacher.classes', compact('classes', 'gradeLevels'));
+        return view('portal.teacher.classes', compact('classes', 'gradeLevels', 'schoolYear', 'schoolYears'));
     }
 
     public function showClass(Classes $class)
@@ -238,17 +242,19 @@ class TeacherController extends Controller
         $request->query->remove('ajax');
 
         $teacherId = auth()->id();
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = all_school_years();
         $classes = Classes::with('subject', 'schedules')
             ->where('teacher_id', $teacherId)
-            ->where('school_year', active_school_year())
+            ->where('school_year', $schoolYear)
             ->where('status', 'active')
             ->get();
 
         $weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-        $allSchedules = Schedule::whereHas('schoolClass', function ($q) use ($teacherId) {
+        $allSchedules = Schedule::whereHas('schoolClass', function ($q) use ($teacherId, $schoolYear) {
             $q->where('teacher_id', $teacherId)
-                ->where('school_year', active_school_year())
+                ->where('school_year', $schoolYear)
                 ->where('status', 'active');
         })
         ->with('schoolClass.subject')
@@ -263,11 +269,11 @@ class TeacherController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.teacher.partials.schedule-results', compact('weekDays', 'schedulesByDay'))->render(),
+                'html' => view('portal.teacher.partials.schedule-results', compact('weekDays', 'schedulesByDay', 'schoolYear', 'schoolYears'))->render(),
             ]);
         }
 
-        return view('portal.teacher.schedule', compact('classes', 'weekDays', 'schedulesByDay'));
+        return view('portal.teacher.schedule', compact('classes', 'weekDays', 'schedulesByDay', 'schoolYear', 'schoolYears'));
     }
 
     // ─── NEW SUB-TAB: List of Classes (Master List) ─────────────────────
@@ -278,9 +284,11 @@ class TeacherController extends Controller
         $request->query->remove('ajax');
 
         $teacherId = auth()->id();
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = all_school_years();
         $query = Classes::with('subject')
             ->where('teacher_id', $teacherId)
-            ->where('school_year', active_school_year())
+            ->where('school_year', $schoolYear)
             ->where('status', 'active');
 
         if ($request->filled('search')) {
@@ -300,11 +308,11 @@ class TeacherController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.teacher.partials.class-list-results', compact('classes', 'gradeLevels'))->render(),
+                'html' => view('portal.teacher.partials.class-list-results', compact('classes', 'gradeLevels', 'schoolYear', 'schoolYears'))->render(),
             ]);
         }
 
-        return view('portal.teacher.class-list', compact('classes', 'gradeLevels'));
+        return view('portal.teacher.class-list', compact('classes', 'gradeLevels', 'schoolYear', 'schoolYears'));
     }
 
     public function classStudents(Request $request, Classes $class)
@@ -342,10 +350,12 @@ class TeacherController extends Controller
         $selectedPeriod = request('grading_period', '1st Term');
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = all_school_years();
 
         $classes = Classes::with('subject')
             ->where('teacher_id', $teacherId)
-            ->where('school_year', active_school_year())
+            ->where('school_year', $schoolYear)
             ->where('status', 'active')
             ->where(function($q) use ($selectedPeriod) { $q->where('term', $selectedPeriod)->orWhereNull('term')->orWhere('term',''); })
             ->get();
@@ -374,14 +384,14 @@ class TeacherController extends Controller
             return response()->json([
                 'html' => view('portal.teacher.partials.grade-assessment-results', compact(
                     'classes', 'class', 'activeEnrollments', 'existingAssessments',
-                    'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes'
+                    'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes', 'schoolYear', 'schoolYears'
                 ))->render(),
             ]);
         }
 
         return view('portal.teacher.grade-assessment', compact(
             'classes', 'class', 'activeEnrollments', 'existingAssessments',
-            'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes'
+            'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes', 'schoolYear', 'schoolYears'
         ));
     }
 
@@ -463,10 +473,12 @@ class TeacherController extends Controller
         $teacherId = auth()->id();
         $selectedPeriod = request('grading_period', '1st Term');
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = all_school_years();
 
         $classes = Classes::with('subject')
             ->where('teacher_id', $teacherId)
-            ->where('school_year', active_school_year())
+            ->where('school_year', $schoolYear)
             ->where('status', 'active')
             ->where(function($q) use ($selectedPeriod) { $q->where('term', $selectedPeriod)->orWhereNull('term')->orWhere('term',''); })
             ->get();
@@ -539,13 +551,13 @@ class TeacherController extends Controller
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.teacher.partials.computed-grades-results', compact(
-                    'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId'
+                    'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'schoolYear', 'schoolYears'
                 ))->render(),
             ]);
         }
 
         return view('portal.teacher.computed-grades', compact(
-            'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId'
+            'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'schoolYear', 'schoolYears'
         ));
     }
 

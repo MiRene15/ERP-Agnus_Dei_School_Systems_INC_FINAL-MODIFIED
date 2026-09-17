@@ -32,6 +32,13 @@
                 <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Search Student</h3>
                 <p class="text-sm text-gray-500 dark:text-[#8A90B0] mt-1">Enter student's name, number, or LRN to process payment.</p>
             </div>
+            <div class="flex gap-2 mb-3">
+                <select x-model="selectedYear" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                    @foreach($schoolYears as $sy)
+                        <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="flex gap-2">
                 <input type="text" x-model="searchQuery" @keydown.enter.prevent="performSearch(); if(searchQuery.length>=2) showModal=false" placeholder="Search by name, student number, or LRN..."
                        class="flex-1 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
@@ -46,7 +53,12 @@
         <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Search Student</h3>
         <button type="button" @click="showModal=true" class="text-xs font-semibold text-blue-600 dark:text-[#60A5FA] hover:underline">Open search prompt</button>
     </div>
-    <div class="flex gap-3">
+    <div class="flex gap-3 items-center">
+        <select x-model="selectedYear" @change="performSearch()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+            @foreach($schoolYears as $sy)
+                <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
+            @endforeach
+        </select>
         <input type="text" x-model="searchQuery" @input.debounce.300ms="performSearch()" placeholder="Search by name, student number, or LRN..."
                class="flex-1 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] placeholder-gray-400 dark:placeholder-[#6A7094] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
         <button type="button" @click="performSearch()" class="px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap" style="background: var(--navy);">Search</button>
@@ -113,6 +125,7 @@ function searchPayments() {
     return {
         showModal: true,
         searchQuery: '',
+        selectedYear: '{{ $schoolYear }}',
         students: [],
         loading: false,
         async performSearch() {
@@ -122,7 +135,7 @@ function searchPayments() {
             }
             this.loading = true;
             try {
-                const response = await fetch(`/cashier/search?search=${encodeURIComponent(this.searchQuery)}`);
+                const response = await fetch(`/cashier/search?search=${encodeURIComponent(this.searchQuery)}&school_year=${encodeURIComponent(this.selectedYear)}`);
                 this.students = await response.json();
             } catch (e) {
                 console.error('Search failed:', e);

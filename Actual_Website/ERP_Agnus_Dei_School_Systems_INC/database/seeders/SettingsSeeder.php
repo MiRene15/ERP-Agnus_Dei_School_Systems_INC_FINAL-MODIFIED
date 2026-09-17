@@ -12,6 +12,7 @@ class SettingsSeeder extends Seeder
         $settings = [
             ['key' => 'school_name', 'value' => 'Agnus Dei School Systems Inc.'],
             ['key' => 'school_address', 'value' => 'Brgy. Catmon, Pandan, Antique'],
+            ['key' => 'active_school_year', 'value' => '2026-2027'],
             ['key' => 'school_year', 'value' => '2026-2027'],
             ['key' => 'current_term', 'value' => '1st Term'],
             ['key' => 'contact_email', 'value' => 'info@agnusdei.edu.ph'],

@@ -7,12 +7,22 @@
 @endsection
 
 @section('content')
-<div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">List of Classes</h2>
-    <p class="text-gray-600 mt-1">Select a class to view its master list of students.</p>
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900">List of Classes</h2>
+        <p class="text-gray-600 mt-1">Select a class to view its master list of students.</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-600 font-medium">School Year:</label>
+        <select onchange="window.location.href='?school_year='+this.value" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            @foreach($schoolYears as $sy)
+                <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
+            @endforeach
+        </select>
+    </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('teacher.class-list') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
+<div x-data="ajaxTable('{{ route('teacher.class-list') }}?school_year={{ $schoolYear }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"

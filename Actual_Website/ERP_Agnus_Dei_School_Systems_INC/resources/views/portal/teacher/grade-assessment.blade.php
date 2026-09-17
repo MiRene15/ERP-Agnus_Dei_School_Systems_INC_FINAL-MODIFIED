@@ -7,12 +7,22 @@
 @endsection
 
 @section('content')
-<div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Grade Assessment</h2>
-    <p class="text-gray-600 mt-1">Enter scores for Written Work, Quiz, Seatwork, and Exam per student.</p>
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900">Grade Assessment</h2>
+        <p class="text-gray-600 mt-1">Enter scores for Written Work, Quiz, Seatwork, and Exam per student.</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-600 font-medium">School Year:</label>
+        <select onchange="window.location.href='?school_year='+this.value+'&grading_period={{ request('grading_period','1st Term') }}&class_id={{ request('class_id','') }}'" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            @foreach($schoolYears as $sy)
+                <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
+            @endforeach
+        </select>
+    </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('teacher.grade-assessment') }}', { class_id: '{{ request('class_id') }}', grading_period: '{{ request('grading_period', '1st Term') }}' })">
+<div x-data="ajaxTable('{{ route('teacher.grade-assessment') }}?school_year={{ $schoolYear }}', { class_id: '{{ request('class_id') }}', grading_period: '{{ request('grading_period', '1st Term') }}' })">
     <div x-show="loading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
         <div class="skelly sk-line-md w-48 mb-4"></div>
         <template x-for="i in 4" :key="i">

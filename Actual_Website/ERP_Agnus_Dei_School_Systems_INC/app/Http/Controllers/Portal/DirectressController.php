@@ -47,11 +47,27 @@ class DirectressController extends Controller
         $bySection = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->section_name ?? 'Unknown')->map->count()->sortKeys();
         $byYear = Enrollment::where('status','Active')->get()->groupBy('school_year')->map->count()->sortKeysDesc();
         $byGender = \App\Models\Student::whereHas('enrollments', fn($q)=>$q->where('status','Active'))->get()->groupBy(fn($s)=>$s->gender ?? 'Unknown')->map->count();
-        // Fallback if gender not collected, show by strand for SHS
         $byStrand = Enrollment::where('status','Active')->whereNotNull('strand')->get()->groupBy('strand')->map->count();
 
         $total = $byGrade->sum();
-        return view('portal.directress.demographics', compact('byGrade','bySection','byYear','byGender','byStrand','total'));
+
+        // Payment collection data
+        $paymentsByMonth = \App\Models\Payment::whereYear('payment_date', date('Y'))
+            ->get()
+            ->groupBy(fn($p) => $p->payment_date->format('M'))
+            ->map(fn($group) => $group->sum('amount_paid'))
+            ->sortKeys();
+        $paymentsByYear = \App\Models\Payment::get()
+            ->groupBy(fn($p) => $p->payment_date->format('Y'))
+            ->map(fn($group) => $group->sum('amount_paid'))
+            ->sortKeys();
+        $totalCollected = \App\Models\Payment::sum('amount_paid');
+        $totalTransactions = \App\Models\Payment::count();
+
+        return view('portal.directress.demographics', compact(
+            'byGrade','bySection','byYear','byGender','byStrand','total',
+            'paymentsByMonth','paymentsByYear','totalCollected','totalTransactions'
+        ));
     }
 
     // ─── Fee Schedule (moved from Admin) ────────────────────────

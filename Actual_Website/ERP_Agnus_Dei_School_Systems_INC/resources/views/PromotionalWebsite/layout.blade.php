@@ -14,6 +14,10 @@
                     document.documentElement.classList.add('dark');
                 }
             } catch (e) {}
+            // Account Portal / Login always light
+            if (window.location.pathname === '/login') {
+                document.documentElement.classList.remove('dark');
+            }
         })();
     </script>
 

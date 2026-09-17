@@ -5,19 +5,31 @@
 @endsection
 
 @section('content')
-<div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Welcome to your Portal</h2>
-    <p class="text-gray-600 mt-1">
-        @if(!$student->student_number && !$pendingAdmission)
-            Please complete your admission application to get started.
-        @elseif(!$student->student_number && $pendingAdmission)
-            Your admission application is being reviewed. Check the status and upload requirements.
-        @elseif($activeEnrollment)
-            You are enrolled in {{ $activeEnrollment->section->grade_level }} - {{ $activeEnrollment->section->section_name }} for {{ $activeEnrollment->school_year }}.
-        @else
-            Welcome back! Please enroll for the upcoming school year.
-        @endif
-    </p>
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900">Welcome to your Portal</h2>
+        <p class="text-gray-600 mt-1">
+            @if(!$student->student_number && !$pendingAdmission)
+                Please complete your admission application to get started.
+            @elseif(!$student->student_number && $pendingAdmission)
+                Your admission application is being reviewed. Check the status and upload requirements.
+            @elseif($activeEnrollment)
+                You are enrolled in {{ $activeEnrollment->section->grade_level }} - {{ $activeEnrollment->section->section_name }} for {{ $activeEnrollment->school_year }}.
+            @else
+                Welcome back! Please enroll for the upcoming school year.
+            @endif
+        </p>
+    </div>
+    @if($schoolYears->count() > 1)
+    <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-600 font-medium">School Year:</label>
+        <select onchange="window.location.href='?school_year='+this.value" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            @foreach($schoolYears as $sy)
+                <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
+            @endforeach
+        </select>
+    </div>
+    @endif
 </div>
 
 @if(session('success'))

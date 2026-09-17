@@ -35,26 +35,23 @@ class CashierController extends Controller
     public function payments(Request $request)
     {
         $search = $request->input('search');
+        $schoolYear = $request->input('school_year', active_school_year());
         $students = collect();
+        $schoolYears = all_school_years();
 
         if ($search && strlen($search) >= 2) {
-            $schoolYear = active_school_year();
-
             $students = Student::where('status', 'enrolled')
-                ->whereHas('enrollments', function ($q) use ($schoolYear) {
-                    $q->where('status', 'Active')->where('school_year', $schoolYear);
+                ->where(function ($q) use ($search) {
+                    $q->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%")
+                        ->orWhere('student_number', 'ilike', "%{$search}%")
+                        ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
                 })
-            ->where(function ($q) use ($search) {
-                $q->where('first_name', 'ilike', "%{$search}%")
-                    ->orWhere('last_name', 'ilike', "%{$search}%")
-                    ->orWhere('student_number', 'ilike', "%{$search}%")
-                    ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
-            })
             ->with(['user', 'enrollments.section', 'ledger'])
             ->limit(20)
                 ->get()
                 ->map(function ($student) use ($schoolYear) {
-                    $enrollment = $student->enrollments->where('status', 'Active')->first();
+                    $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
                     $gradeLevel = $enrollment?->section?->grade_level;
 
                     $totalAssessed = 0;
@@ -72,23 +69,19 @@ class CashierController extends Controller
                 });
         }
 
-        return view('portal.cashier.payments', compact('students', 'search'));
+        return view('portal.cashier.payments', compact('students', 'search', 'schoolYear', 'schoolYears'));
     }
 
     public function searchStudents(Request $request)
     {
         $search = $request->search;
+        $schoolYear = $request->input('school_year', active_school_year());
 
         if (strlen($search) < 2) {
             return response()->json([]);
         }
 
-        $schoolYear = active_school_year();
-
         $students = Student::where('status', 'enrolled')
-            ->whereHas('enrollments', function ($q) use ($schoolYear) {
-                $q->where('status', 'Active')->where('school_year', $schoolYear);
-            })
             ->where(function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
                     ->orWhere('last_name', 'ilike', "%{$search}%")
@@ -99,7 +92,7 @@ class CashierController extends Controller
             ->limit(10)
             ->get()
             ->map(function ($student) use ($schoolYear) {
-                $enrollment = $student->enrollments->where('status', 'Active')->first();
+                $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
                 $gradeLevel = $enrollment?->section?->grade_level;
 
                 $totalAssessed = 0;

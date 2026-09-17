@@ -20,12 +20,15 @@ class StudentController extends Controller
             if ($isAjax) {
                 return response()->json(['html' => '<div class="p-8 text-center text-sm text-red-600">'.$msg.'</div>']);
             }
-            return view('portal.student.dashboard', ['student' => null, 'activeEnrollment' => null, 'pendingAdmission' => null])->with('error', $msg);
+            return view('portal.student.dashboard', ['student' => null, 'activeEnrollment' => null, 'pendingAdmission' => null, 'schoolYear' => null, 'schoolYears' => collect()])->with('error', $msg);
         }
+
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = $student->enrollments()->distinct()->pluck('school_year')->merge(all_school_years())->unique()->sortDesc()->values();
 
         $activeEnrollment = $student->enrollments()
             ->with('section', 'subjects')
-            ->where('status', 'Active')
+            ->where('school_year', $schoolYear)
             ->latest()
             ->first();
 
@@ -35,22 +38,24 @@ class StudentController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission'))->render(),
+                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears'))->render(),
             ]);
         }
 
-        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission'));
+        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears'));
     }
 
-    public function cor()
+    public function cor(Request $request)
     {
         $student = auth()->user()->student;
         if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found. Contact registrar.');
 
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = $student->enrollments()->distinct()->pluck('school_year')->merge(all_school_years())->unique()->sortDesc()->values();
         $currentTerm = Setting::getValue('current_term', '1st Term');
         $enrollment = $student->enrollments()
             ->with(['section', 'subjects.subject', 'subjects.schedules', 'subjects.teacher', 'promotedToEnrollment'])
-            ->where('status', 'Active')
+            ->where('school_year', $schoolYear)
             ->latest()
             ->first();
 
@@ -76,7 +81,7 @@ class StudentController extends Controller
         $directressName = Setting::getValue('directress_name', '');
         $principalName = Setting::getValue('principal_name', '');
 
-        return view('portal.student.cor', compact('student', 'enrollment', 'ledger', 'feeSchedules', 'directressName', 'principalName'));
+        return view('portal.student.cor', compact('student', 'enrollment', 'ledger', 'feeSchedules', 'directressName', 'principalName', 'schoolYear', 'schoolYears'));
     }
 
     public function schedule(Request $request)
@@ -87,9 +92,12 @@ class StudentController extends Controller
         $student = auth()->user()->student;
         if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found.');
 
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = $student->enrollments()->distinct()->pluck('school_year')->merge(all_school_years())->unique()->sortDesc()->values();
+
         $activeEnrollment = $student->enrollments()
             ->with('section', 'subjects.subject', 'subjects.schedules', 'subjects.teacher')
-            ->where('status', 'Active')
+            ->where('school_year', $schoolYear)
             ->latest()
             ->first();
 
@@ -126,11 +134,11 @@ class StudentController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.schedule-results', compact('activeEnrollment', 'scheduleSlots'))->render(),
+                'html' => view('portal.student.partials.schedule-results', compact('activeEnrollment', 'scheduleSlots', 'schoolYear', 'schoolYears'))->render(),
             ]);
         }
 
-        return view('portal.student.schedule', compact('student', 'activeEnrollment', 'scheduleSlots'));
+        return view('portal.student.schedule', compact('student', 'activeEnrollment', 'scheduleSlots', 'schoolYear', 'schoolYears'));
     }
 
     public function ledger(Request $request)
@@ -141,9 +149,12 @@ class StudentController extends Controller
         $student = auth()->user()->student;
         if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found.');
 
+        $schoolYear = $request->input('school_year', active_school_year());
+        $schoolYears = $student->enrollments()->distinct()->pluck('school_year')->merge(all_school_years())->unique()->sortDesc()->values();
+
         $activeEnrollment = $student->enrollments()
             ->with('section')
-            ->where('status', 'Active')
+            ->where('school_year', $schoolYear)
             ->latest()
             ->first();
 
@@ -161,10 +172,10 @@ class StudentController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment', 'feeSchedules'))->render(),
+                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears'))->render(),
             ]);
         }
 
-        return view('portal.student.ledger', compact('student', 'activeEnrollment', 'feeSchedules'));
+        return view('portal.student.ledger', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears'));
     }
 }

@@ -5,12 +5,22 @@
 @endsection
 
 @section('content')
-<div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Faculty Portal</h2>
-    <p class="text-gray-600 mt-1">Manage your classes, submit grades, and view your schedule.</p>
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900">Faculty Portal</h2>
+        <p class="text-gray-600 mt-1">Manage your classes, submit grades, and view your schedule.</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-600 font-medium">School Year:</label>
+        <select onchange="window.location.href='?school_year='+this.value" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            @foreach($schoolYears as $sy)
+                <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
+            @endforeach
+        </select>
+    </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('teacher.dashboard') }}')">
+<div x-data="ajaxTable('{{ route('teacher.dashboard') }}?school_year={{ $schoolYear }}')">
     <div x-show="loading" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <template x-for="i in 3" :key="i">

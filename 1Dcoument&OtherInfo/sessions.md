@@ -472,6 +472,43 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 
 ---
 
+## Session: Sep 17, 2026
+
+### Completed (this session)
+- **Seeders school year consistency** — `FeeSchedulesSeeder` and `TeachersClassesSchedulesSeeder` hardcoded `'2026-2027'` replaced with `active_school_year()` helper so all data adapts to settings; `SettingsSeeder` now seeds `active_school_year` key (was missing, causing default fallback)
+- **Account Portal forced light mode** — `PromotionalWebsite/layout.blade.php:15` added `if (window.location.pathname === '/login') document.documentElement.classList.remove('dark')` so login page always renders white regardless of system dark mode preference
+- **Cashier student search fixed** — `CashierController@searchStudents` and `payments` removed `whereHas('enrollments', status=Active, school_year=active_school_year)` restriction; now searches ALL enrolled students by name/number/LRN regardless of enrollment year
+- **Directress demographics: actual Chart.js graphs** — `demographics.blade.php` now shows 4 charts: bar (By Grade Level), doughnut (By Section), line (By School Year), plus 2 payment charts: bar (Monthly Collections current year), line (Collections by Year all-time); `DirectressController@demographics` passes `paymentsByMonth`, `paymentsByYear`, `totalCollected`, `totalTransactions`
+- **Signing In modal fixed** — `login.blade.php` now uses `@submit.prevent` + `$watch('loggingIn')` with `setTimeout(() => $refs.loginForm.submit(), 150)` so the modal renders center-screen before form submits; text reads "Signing In" with spinner, backdrop blur, centered card
+
+### Files Modified (Sep 17)
+- `database/seeders/SettingsSeeder.php` — added `active_school_year` key
+- `database/seeders/FeeSchedulesSeeder.php` — `'2026-2027'` → `active_school_year()`
+- `database/seeders/TeachersClassesSchedulesSeeder.php` — `'2026-2027'` → `active_school_year()`
+- `resources/views/PromotionalWebsite/layout.blade.php` — force light on `/login`
+- `app/Http/Controllers/Portal/CashierController.php` — removed `whereHas` enrollment year restriction from `searchStudents` + `payments`
+- `app/Http/Controllers/Portal/DirectressController.php` — `demographics()` passes payment data
+- `resources/views/portal/directress/demographics.blade.php` — Chart.js bar/doughnut/line + payment collection charts
+- `resources/views/auth/login.blade.php` — modal centering fix with `x-teleport`, `@submit.prevent`, delayed submit
+
+### Git Commits (Sep 17)
+1. `fix: seeders school year consistency (active_school_year helper) + add active_school_year to SettingsSeeder`
+2. `fix: account portal forced light mode, cashier search widened, demographics Chart.js graphs + payments`
+3. `fix: Signing In modal centering with delayed submit`
+
+### Next — Year Selector for All Roles (Approved, MDS updated before execution)
+- Cashier, Teacher, Student pages all hardcode `active_school_year()` — if active year changes, data disappears. Per request: add **School Year dropdown** to Cashier Payments, Teacher Dashboard/Schedule/Classes/ClassList/GradeAssessment/ComputedGrades, Student Dashboard/Schedule/COR/Ledger so any year's data is visible.
+
+### Executed — Year Selector (Sep 17)
+- `CashierController@payments` + `searchStudents` — now accept `school_year` param, pass `schoolYears` dropdown to view
+- `TeacherController@index/classes/schedule/classList/gradeAssessment/computedGrades` — all accept `school_year` param, pass `schoolYears`
+- `StudentController@index/schedule/cor/ledger` — all accept `school_year` param, filter enrollment by year instead of `status=Active`
+- Teacher views (dashboard/schedule/classes/class-list/grade-assessment/computed-grades) — each has School Year dropdown in header, reloads page with `?school_year=X`
+- Student views (dashboard/schedule/ledger) — School Year dropdown (only shows if student has multiple enrollments)
+- Cashier payments view — School Year dropdown in search bar + floating modal, passes year to `/cashier/search?school_year=X`
+
+---
+
 ## Prior Work (Before Aug 14 Session)
 - **Inquiry 500 fix** — resolved
 - **Admission form fixes** — resolved

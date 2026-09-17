@@ -8,16 +8,18 @@
     </div>
 </div>
 
-<div x-data="{ loggingIn: false }">
-    <div x-show="loggingIn" x-cloak x-teleport="body" style="position:fixed; inset:0; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; background: rgba(14,17,36,0.55); backdrop-filter: blur(6px); z-index: 9999; top:0; left:0; margin:0;">
-        <div style="background: #FFFFFF; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); width: 100%; max-width: 380px; padding: 32px; text-align: center; margin:auto; align-self:center;">
-            <div style="width:48px;height:48px;border-radius:50%;background:#24225C;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-                <svg style="width:24px;height:24px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+<div x-data="{ loggingIn: false }" x-init="$watch('loggingIn', v => { if(v) setTimeout(() => $refs.loginForm.submit(), 150) })">
+    <template x-teleport="body">
+        <div x-show="loggingIn" x-cloak style="position:fixed; inset:0; width:100vw; height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; background: rgba(14,17,36,0.55); backdrop-filter: blur(6px); z-index: 9999;">
+            <div style="background: #FFFFFF; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); width: 100%; max-width: 380px; padding: 32px; text-align: center;">
+                <div style="width:48px;height:48px;border-radius:50%;background:#24225C;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                    <svg style="width:24px;height:24px;color:#fff;animation:spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle style="opacity:0.25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path style="opacity:0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </div>
+                <h3 style="font-size:18px;font-weight:700;color:#111827;">Signing In</h3>
+                <p style="font-size:14px;color:#6b7280;margin-top:4px;">Please wait...</p>
             </div>
-            <h3 style="font-size:18px;font-weight:700;color:#111827;">Signing In</h3>
-            <p style="font-size:14px;color:#6b7280;margin-top:4px;">Please wait...</p>
         </div>
-    </div>
+    </template>
     <style>@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}} [x-cloak]{display:none !important}</style>
 
     <div class="container" style="max-width: 480px; margin-bottom: 100px;">
@@ -25,7 +27,7 @@
 
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
-        <form method="POST" action="{{ route('login') }}" @submit="loggingIn = true">
+        <form method="POST" action="{{ route('login') }}" x-ref="loginForm" @submit.prevent="loggingIn = true">
             @csrf
 
             <div style="margin-bottom: 20px;">
