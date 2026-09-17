@@ -507,6 +507,16 @@ Updates to be made to: `StudentAdmissionController` (enrollment_open gate), `Pro
 - Student views (dashboard/schedule/ledger) — School Year dropdown (only shows if student has multiple enrollments)
 - Cashier payments view — School Year dropdown in search bar + floating modal, passes year to `/cashier/search?school_year=X`
 
+### Executed — Login Button + Signing In Modal (Sep 17)
+- `login.blade.php` — button text fixed: replaced `x-text` with plain `<span x-show>` so "Log In" renders immediately without waiting for Alpine; Signing In modal now matches Logging Out modal style (`fixed inset-0 z-[1000]`, `bg-white rounded-2xl shadow-2xl max-w-sm p-8`, `x-transition.opacity`, spinner + "Signing In" + "Please wait...")
+
+### Git Commits (Sep 17 — full batch)
+1. `fix: seeders school year consistency (active_school_year helper) + add active_school_year to SettingsSeeder`
+2. `fix: account portal forced light mode, cashier search widened, demographics Chart.js graphs + payments`
+3. `fix: Signing In modal centering with delayed submit`
+4. `feat: school year selectors for Cashier/Teacher/Student, demographics payment charts, Signing In modal, seeder fixes`
+5. `fix: login button text + signing in modal matches logging-out style`
+
 ---
 
 ## Prior Work (Before Aug 14 Session)
