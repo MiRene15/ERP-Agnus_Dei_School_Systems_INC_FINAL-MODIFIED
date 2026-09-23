@@ -6,25 +6,25 @@
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Library Management</h2>
-    <p class="text-gray-600 mt-1">Manage library resources, track borrowings, and view holdings.</p>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Library Management</h2>
+    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Manage library resources, track borrowings, and view holdings.</p>
 </div>
 
 <div x-data="ajaxTable('{{ route('librarian.dashboard') }}')">
     <div x-show="loading" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
+            <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 space-y-3">
                 <div class="skelly sk-line-md w-32 mb-4"></div>
                 <div class="grid grid-cols-2 gap-4">
                     <template x-for="i in 4" :key="i">
-                        <div class="bg-gray-50 rounded-lg p-4 text-center">
+                        <div class="bg-gray-50 dark:bg-[#161A33] rounded-lg p-4 text-center">
                             <div class="skelly sk-line-sm w-16 mx-auto mb-2"></div>
                             <div class="skelly sk-line-md w-12 mx-auto"></div>
                         </div>
                     </template>
                 </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
+            <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 space-y-3">
                 <div class="skelly sk-line-md w-32 mb-4"></div>
                 <template x-for="i in 3" :key="i">
                     <div class="skelly sk-card"></div>

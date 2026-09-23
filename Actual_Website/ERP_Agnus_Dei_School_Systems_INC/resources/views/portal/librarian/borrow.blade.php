@@ -10,15 +10,15 @@
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">New Book Loan</h2>
-    <p class="text-gray-600 mt-1">Issue a book to a student.</p>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">New Book Loan</h2>
+    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Issue a book to a student.</p>
 </div>
 
 @if(session('error'))
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-lg" x-data="borrowForm()">
+<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 max-w-lg" x-data="borrowForm()">
     <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
         <p class="text-sm text-blue-800"><span class="font-semibold">Borrowing Limit:</span> Students may borrow up to <span class="font-bold">{{ \App\Models\Setting::getValue('library_max_books_per_student', '5') }}</span> book(s) at a time.</p>
     </div>
@@ -30,7 +30,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Student *</label>
                 <div class="relative">
                     <input type="text" x-model="studentQuery" @input.debounce.300ms="searchStudents()" @focus="showResults = true" placeholder="Type name, student number, or LRN..."
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" autocomplete="off">
+                           class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" autocomplete="off">
                     <input type="hidden" name="student_id" :value="selectedStudentId" required>
 
                     <!-- Loading indicator -->
@@ -53,11 +53,11 @@
 
                     <!-- Search results dropdown -->
                     <div x-show="showResults && students.length > 0 && !selectedStudentId" x-cloak
-                         class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                         class="absolute z-10 w-full mt-1 bg-white dark:bg-[#1A1E3B] border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                         <template x-for="s in students" :key="s.id">
-                            <div @click="selectStudent(s)" class="px-3 py-2 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-0">
-                                <div class="font-medium text-gray-900 text-sm" x-text="s.first_name + ' ' + s.last_name"></div>
-                                <div class="text-xs text-gray-500">
+                            <div @click="selectStudent(s)" class="px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#161A33] border-b border-gray-100 dark:border-[#2A2F58] last:border-0">
+                                <div class="font-medium text-gray-900 dark:text-[#E8EAF6] text-sm" x-text="s.first_name + ' ' + s.last_name"></div>
+                                <div class="text-xs text-gray-500 dark:text-[#8A90B0]">
                                     <span x-text="'No: ' + s.student_number"></span>
                                     <span x-show="s.legacy_lrn" x-text="' | LRN: ' + s.legacy_lrn"></span>
                                 </div>
@@ -67,8 +67,8 @@
 
                     <!-- No results -->
                     <div x-show="showResults && students.length === 0 && !searching && studentQuery.length >= 2 && !selectedStudentId" x-cloak
-                         class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
-                        <div class="px-3 py-2 text-sm text-gray-500">No students found</div>
+                         class="absolute z-10 w-full mt-1 bg-white dark:bg-[#1A1E3B] border border-gray-200 rounded-lg shadow-lg">
+                        <div class="px-3 py-2 text-sm text-gray-500 dark:text-[#8A90B0]">No students found</div>
                     </div>
                 </div>
                 @error('student_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -77,7 +77,7 @@
             <!-- Book Selection -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Book *</label>
-                <select name="book_id" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <select name="book_id" required class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="">Select book</option>
                     @foreach($books as $book)
                     <option value="{{ $book->id }}" {{ old('book_id') == $book->id ? 'selected' : '' }}>
@@ -92,19 +92,19 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Borrow Date *</label>
                     <input type="date" name="borrow_date" value="{{ old('borrow_date', date('Y-m-d')) }}" required
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                           class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     @error('borrow_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Return Date *</label>
                     <input type="date" name="return_date" value="{{ old('return_date') }}" required
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                           class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     @error('return_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Condition at Borrow *</label>
-                <select name="condition_at_borrow" required class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <select name="condition_at_borrow" required class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="Good" {{ old('condition_at_borrow') === 'Good' ? 'selected' : '' }}>Good</option>
                     <option value="Minor Damage" {{ old('condition_at_borrow') === 'Minor Damage' ? 'selected' : '' }}>Minor Damage</option>
                     <option value="Major Damage" {{ old('condition_at_borrow') === 'Major Damage' ? 'selected' : '' }}>Major Damage</option>

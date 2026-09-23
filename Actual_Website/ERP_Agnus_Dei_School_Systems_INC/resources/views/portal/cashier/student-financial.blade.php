@@ -1,4 +1,4 @@
-@extends('portal.layouts.app')
+﻿@extends('portal.layouts.app')
 
 @section('breadcrumbs')
     <a href="{{ route('cashier.dashboard') }}" style="color: var(--muted);">Cashier Dashboard</a>
@@ -8,7 +8,7 @@
 
 @section('content')
 <div x-data="ajaxTable('{{ route('cashier.student-financial', $student) }}')">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
         <div x-show="loading" class="p-4 space-y-3">
             <template x-for="i in 4" :key="i">
                 <div class="skelly sk-card">

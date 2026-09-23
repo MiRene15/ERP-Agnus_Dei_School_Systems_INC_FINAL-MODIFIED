@@ -9,8 +9,8 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h2 class="text-2xl font-bold text-gray-900">Fee Schedule</h2>
-        <p class="text-gray-600 mt-1">Manage tuition and miscellaneous fees per grade level, term, and school year.</p>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Fee Schedule</h2>
+        <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Manage tuition and miscellaneous fees per grade level, term, and school year.</p>
     </div>
     <a href="{{ route('directress.fees.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">+ Add Fee</a>
 </div>
@@ -25,7 +25,7 @@
 <div x-data="ajaxTable('{{ route('directress.fees') }}', { school_year: '{{ request('school_year') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
-            <select x-model="filters.school_year" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.school_year" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="">All School Years</option>
                 @foreach($schoolYears as $sy)
                     <option value="{{ $sy }}">{{ $sy }}</option>

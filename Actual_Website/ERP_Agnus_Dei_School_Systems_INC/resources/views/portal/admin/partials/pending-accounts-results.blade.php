@@ -1,18 +1,18 @@
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" x-data="{ selected: [], allIds: @js($pendingConfirmations->pluck('id')->toArray()) }">
+<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6" x-data="{ selected: [], allIds: @js($pendingConfirmations->pluck('id')->toArray()) }">
     @if($pendingConfirmations->isEmpty())
         <div class="py-12 text-center">
             <svg class="w-12 h-12 mx-auto mb-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p class="text-sm font-medium text-gray-500">No pending accounts found.</p>
+            <p class="text-sm font-medium text-gray-500 dark:text-[#8A90B0]">No pending accounts found.</p>
             <p class="text-xs text-gray-400 mt-1">All student accounts have been verified.</p>
         </div>
     @else
     <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
             <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                <input type="checkbox" class="rounded border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-blue-600 focus:ring-blue-500"
                        :checked="selected.length === allIds.length && allIds.length > 0"
                        @click="selected.length === allIds.length ? selected = [] : selected = [...allIds]">
-                <span class="text-sm text-gray-600">Select All</span>
+                <span class="text-sm text-gray-600 dark:text-[#C1C4DC]">Select All</span>
             </label>
             <span class="text-xs text-gray-400" x-text="selected.length + ' / ' + allIds.length + ' selected'"></span>
         </div>
@@ -33,25 +33,25 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b border-gray-200">
-                    <th class="text-left py-3 px-2 font-medium text-gray-600 w-10"></th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Student No.</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Grade / Section</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Payment Plan</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Total Paid</th>
-                    <th class="text-left py-3 px-2 font-medium text-gray-600">Action</th>
+                    <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC] w-10"></th>
+                    <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Student</th>
+                    <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Student No.</th>
+                    <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Grade / Section</th>
+                    <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Payment Plan</th>
+                    <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Total Paid</th>
+                    <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Action</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($pendingConfirmations as $ledger)
-                <tr class="border-b border-gray-100" :class="selected.includes({{ $ledger->id }}) ? 'bg-blue-50' : ''">
+                <tr class="border-b border-gray-100 dark:border-[#2A2F58]" :class="selected.includes({{ $ledger->id }}) ? 'bg-blue-50' : ''">
                     <td class="py-3 px-2">
-                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        <input type="checkbox" class="rounded border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-blue-600 focus:ring-blue-500"
                                :checked="selected.includes({{ $ledger->id }})"
                                @click="selected.includes({{ $ledger->id }}) ? selected = selected.filter(x => x !== {{ $ledger->id }}) : selected.push({{ $ledger->id }})">
                     </td>
                     <td class="py-3 px-2">
-                        <span class="font-medium text-gray-900">{{ $ledger->student->first_name }} {{ $ledger->student->last_name }}</span>
+                        <span class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $ledger->student->first_name }} {{ $ledger->student->last_name }}</span>
                     </td>
                     <td class="py-3 px-2 text-gray-700">{{ $ledger->student->student_number }}</td>
                     <td class="py-3 px-2 text-gray-700">

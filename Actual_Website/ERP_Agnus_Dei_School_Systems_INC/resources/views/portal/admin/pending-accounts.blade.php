@@ -8,8 +8,8 @@
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Pending Verification</h2>
-    <p class="text-gray-600 mt-1">Confirm student accounts after payment clearance to activate portal access.</p>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Pending Verification</h2>
+    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Confirm student accounts after payment clearance to activate portal access.</p>
 </div>
 
 @if(session('success'))
@@ -21,7 +21,7 @@
 
 <div x-data="ajaxTable('{{ route('admin.pending-accounts') }}')">
     <div x-show="loading" class="space-y-4">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
+        <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 space-y-3">
             <div class="skelly sk-line-md w-32 mb-4"></div>
             <template x-for="i in 5" :key="i">
                 <div class="skelly sk-card"></div>

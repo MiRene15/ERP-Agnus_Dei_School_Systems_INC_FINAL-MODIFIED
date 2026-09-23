@@ -399,6 +399,16 @@
         html.dark .card { background: var(--surface-white); border-color: #2A2F58; }
         html.dark .page-title, html.dark .card h3 { color: var(--text-dark); }
         html.dark .card p { color: var(--text-muted); }
+        html.dark nav { background: #1A1E3B; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border-bottom: 1px solid #2A2F58; }
+        html.dark .dropdown-menu { background: #1A1E3B; border-color: #2A2F58; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        html.dark .portal-option { border-color: #2A2F58; background: #1A1E3B; }
+        html.dark .portal-option:hover { border-color: #A39FE9; }
+        html.dark .portal-divider::before, html.dark .portal-divider::after { background: #2A2F58; }
+        html.dark footer { background: #0E1124; }
+        html.dark #global-skeleton .skeleton-block { background: linear-gradient(90deg, #232852 25%, #2B315E 50%, #232852 75%); }
+        html.dark .skeleton-block { background: linear-gradient(90deg, #232852 25%, #2B315E 50%, #232852 75%); }
+        html.dark input, html.dark select, html.dark textarea { background: #23274C; color: #E8EAF6; border-color: #3B4172; }
+        html.dark input::placeholder, html.dark textarea::placeholder { color: #6A7094; }
         [x-cloak] { display: none !important; }
     </style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

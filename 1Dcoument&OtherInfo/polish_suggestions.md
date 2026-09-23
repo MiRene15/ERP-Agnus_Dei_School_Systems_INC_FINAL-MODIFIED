@@ -23,8 +23,16 @@
 14. **Section IX sync** — Ensure Directress module in doc no longer lists Teachers (we moved to Admin) — already done but double-check after Verification rename.
 15. **Demo seed data** — Add 2 failing students (`GWA 68` with 2 fails) + 1 no-grades new enrollee so promotion Qualified/Not qualified/No grades all show during demo.
 
-## Not Recommended Now (higher risk)
-- Full RBAC matrix page, real-time notifications, dark mode — nice but needs >1 day and can introduce bugs before defense.
+## Dark Mode — In Progress (2026-09-23)
+
+> Full audit in `dark_mode_audit.md` — 28 files with 0 `dark:` classes, `tailwind.config.js` missing `darkMode: 'class'`, 0 `dark:hover:`.
+> Fix: config + global CSS + per-component `dark:` classes + promotional site.
+
+- [x] Audit complete — 32+ files inspected, systemic gaps documented
+- [x] `tailwind.config.js` → `darkMode: 'class'` + `vite build` (59.59 kB CSS)
+- [x] `portal/layouts/app.blade.php` global dark overrides (amber/slate/orange/emerald, borders, hovers, skeleton, sidebar)
+- [x] Portal pages — cards/inputs/tables/hovers/modals (teacher → student → cashier → librarian/nurse/registrar → admin/directress/principal) — 39 files
+- [x] Promotional site — hero overlay, nav dropdown, inquiry inputs, error box, footer, skeleton
 
 ## Suggested Next 3 (do these first)
-If time is short, do **1 + 2 + 7** — they directly prove your new settings + hybrid CSV pattern are not just docs.
+If time is short, do **Dark Mode + 1 + 2** — dark mode readability is now visible in defense.

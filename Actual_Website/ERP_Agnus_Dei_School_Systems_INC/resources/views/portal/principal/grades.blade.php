@@ -8,14 +8,14 @@
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Student Grades</h2>
-    <p class="text-gray-600 mt-1">View student grades by grade level.</p>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Student Grades</h2>
+    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">View student grades by grade level.</p>
 </div>
 
 <div class="mb-4 flex gap-2 flex-wrap">
     @foreach($gradeLevels as $gl)
     <a href="{{ route('principal.grades', array_filter(['grade_level' => $gl, 'school_year' => request('school_year')])) }}"
-       class="px-3 py-1.5 rounded-lg text-sm font-medium transition {{ $selectedGrade === $gl ? 'text-white' : 'text-gray-600 bg-gray-100 hover:bg-gray-200' }}"
+       class="px-3 py-1.5 rounded-lg text-sm font-medium transition {{ $selectedGrade === $gl ? 'text-white' : 'text-gray-600 dark:text-[#C1C4DC] bg-gray-100 hover:bg-gray-200' }}"
        style="{{ $selectedGrade === $gl ? 'background: var(--navy);' : '' }}">
         {{ $gl }}
     </a>
@@ -27,9 +27,9 @@
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
                    placeholder="Search by student name or section..."
-                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
             <select x-model="filters.school_year" @change="reload()"
-                    class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 @foreach($schoolYears as $sy)
                     <option value="{{ $sy }}">{{ $sy }}</option>
                 @endforeach
@@ -39,7 +39,7 @@
         </form>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
         <div x-show="loading" class="p-4 space-y-3">
             <template x-for="i in 5" :key="i">
                 <div class="skelly sk-card">

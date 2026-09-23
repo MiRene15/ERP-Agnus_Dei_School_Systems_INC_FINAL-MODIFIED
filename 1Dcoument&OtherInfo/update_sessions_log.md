@@ -448,7 +448,18 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 60
-- **Time span:** 2026-03-29 → 2026-08-20
-- **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals)
-- **Uncommitted/working changes:** Sessions 15–43 bug fixes + features + docs; modified `phpunit.xml`; untracked planning docs in `1Dcoument&OtherInfo/`
+## 45. Validation Notes — All Phases + Dark Mode (Sep 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-09-21 | 4fc3fb8 | Feat: validation notes 30 items — report card teachers, nurse filters, borrowing limit, payment history, school year lock, auto-fill grades, refund/withdrawal, directress reports, payment emails, batch ops, book replacement, grade table (spreadsheet), seeders, UI polish, audit logs (60 calls) |
+| 2026-09-23 | — | Fix: dark mode readability & contrast — `darkMode: 'class'`, global overrides (amber/slate/hovers), per-component `dark:` classes on all portal pages + promotional site (hero/nav/inquiry/footer) — see `dark_mode_audit.md` |
+
+**Scope:** 30 validation items across 5 phases + full dark mode audit/fix. Every write operation now audit-logged; every page readable in dark.
+
+---
+
+- **Total update sessions (commits):** 62
+- **Time span:** 2026-03-29 → 2026-09-23
+- **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals) → Validation notes all phases (30 items) → Dark mode readability & contrast
+- **Uncommitted/working changes:** Dark mode code fixes (pending build); modified `phpunit.xml`; untracked planning docs in `1Dcoument&OtherInfo/`

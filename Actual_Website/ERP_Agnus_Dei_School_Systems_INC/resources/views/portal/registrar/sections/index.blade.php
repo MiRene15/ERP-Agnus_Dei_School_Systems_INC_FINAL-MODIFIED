@@ -7,8 +7,8 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h2 class="text-2xl font-bold text-gray-900">Sections</h2>
-        <p class="text-gray-600 mt-1">Manage sections/classrooms per grade level.</p>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Sections</h2>
+        <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Manage sections/classrooms per grade level.</p>
     </div>
     <a href="{{ route('registrar.sections.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">+ Add Section</a>
 </div>
@@ -22,8 +22,8 @@
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
                    placeholder="Search by section name..."
-                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="All">All Grade Levels</option>
                 @foreach($gradeLevels as $gl)
                     @if($gl !== 'All')
@@ -37,7 +37,7 @@
     </div>
 
     <!-- Skeleton loading -->
-    <div x-show="loading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
+    <div x-show="loading" class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4 space-y-3">
         <template x-for="i in 5" :key="i">
             <div class="skelly sk-card">
                 <div class="grid grid-cols-4 gap-4 px-2">

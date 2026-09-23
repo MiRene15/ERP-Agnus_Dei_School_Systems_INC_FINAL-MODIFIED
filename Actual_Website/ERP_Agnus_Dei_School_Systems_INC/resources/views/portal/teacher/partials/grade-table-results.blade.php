@@ -1,24 +1,24 @@
-@if(!$class)
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div class="text-center py-12 text-gray-500">
+﻿@if(!$class)
+    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
+        <div class="text-center py-12 text-gray-500 dark:text-[#8A90B0]">
             <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <p class="font-medium">Select a class to start entering grades</p>
-            <p class="text-sm text-gray-400 mt-1">Choose from the dropdown above</p>
+            <p class="text-sm text-gray-400 dark:text-[#8A90B0] mt-1">Choose from the dropdown above</p>
         </div>
     </div>
 @else
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4">
     {{-- Header --}}
     <div class="flex items-center justify-between mb-4">
         <div>
-            <h3 class="text-lg font-bold text-gray-900">{{ $class->subject->name ?? 'N/A' }}</h3>
-            <p class="text-sm text-gray-500">{{ $class->grade_level }} - {{ $class->section }} | {{ $selectedPeriod }}</p>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">{{ $class->subject->name ?? 'N/A' }}</h3>
+            <p class="text-sm text-gray-500 dark:text-[#8A90B0]">{{ $class->grade_level }} - {{ $class->section }} | {{ $selectedPeriod }}</p>
         </div>
         <div class="flex items-center gap-3">
             {{-- Grading Period Tabs --}}
             @foreach($gradingPeriods as $period)
             <a href="{{ route('teacher.grade-table') }}?school_year={{ $schoolYear }}&class_id={{ $class->id }}&grading_period={{ $period }}"
-               class="px-3 py-1 rounded-lg text-sm font-medium transition {{ $selectedPeriod === $period ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}"
+               class="px-3 py-1 rounded-lg text-sm font-medium transition {{ $selectedPeriod === $period ? 'text-white' : 'bg-gray-100 dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58]' }}"
                style="{{ $selectedPeriod === $period ? 'background: var(--navy);' : '' }}">
                 {{ $period }}
             </a>
@@ -31,8 +31,8 @@
         <form method="GET" class="flex items-center gap-3">
             <input type="hidden" name="school_year" value="{{ $schoolYear }}">
             <input type="hidden" name="grading_period" value="{{ $selectedPeriod }}">
-            <label class="text-sm font-medium text-gray-700">Class:</label>
-            <select name="class_id" onchange="this.form.submit()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <label class="text-sm font-medium text-gray-700 dark:text-[#C1C4DC]">Class:</label>
+            <select name="class_id" onchange="this.form.submit()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="">-- Select Class --</option>
                 @foreach($classes as $c)
                     <option value="{{ $c->id }}" {{ $selectedClassId == $c->id ? 'selected' : '' }}>
@@ -44,12 +44,12 @@
     </div>
 
     @if($activeEnrollments->isEmpty())
-        <p class="text-sm text-gray-500 text-center py-8">No active students enrolled in this class.</p>
+        <p class="text-sm text-gray-500 dark:text-[#8A90B0] text-center py-8">No active students enrolled in this class.</p>
     @else
     <div x-data="gradeTable()" x-init="init()">
         {{-- Save Bar --}}
-        <div x-show="hasChanges" x-transition class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
-            <span class="text-sm text-amber-700 font-medium">Unsaved changes</span>
+        <div x-show="hasChanges" x-transition class="mb-4 p-3 bg-amber-50 dark:bg-[rgba(251,191,36,0.12)] border border-amber-200 dark:border-[rgba(251,191,36,0.25)] rounded-lg flex items-center justify-between">
+            <span class="text-sm text-amber-700 dark:text-[#FCD34D] font-medium">Unsaved changes</span>
             <button @click="saveAll()" :disabled="saving" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition">
                 <span x-show="!saving">Save All</span>
                 <span x-show="saving">Saving...</span>
@@ -63,22 +63,22 @@
         <div class="overflow-x-auto">
             <table class="w-full text-sm border-collapse">
                 <thead>
-                    <tr class="border-b-2 border-gray-300">
-                        <th rowspan="2" class="py-2 px-2 text-left font-semibold text-gray-700 bg-gray-50 sticky left-0 z-10 min-w-[180px]">#</th>
-                        <th rowspan="2" class="py-2 px-2 text-left font-semibold text-gray-700 bg-gray-50 sticky left-[48px] z-10 min-w-[180px]">Student</th>
+                    <tr class="border-b-2 border-gray-300 dark:border-[#2A2F58]">
+                        <th rowspan="2" class="py-2 px-2 text-left font-semibold text-gray-700 dark:text-[#C1C4DC] bg-gray-50 dark:bg-[#161A33] sticky left-0 z-10 min-w-[180px]">#</th>
+                        <th rowspan="2" class="py-2 px-2 text-left font-semibold text-gray-700 dark:text-[#C1C4DC] bg-gray-50 dark:bg-[#161A33] sticky left-[48px] z-10 min-w-[180px]">Student</th>
                         @foreach($assessmentTypes as $type)
                         <th colspan="2" class="py-2 px-1 text-center font-semibold text-white text-xs uppercase tracking-wide border-l border-gray-400" style="background: var(--navy);">
                             {{ $type }}
                             <span class="block text-[10px] font-normal opacity-80">{{ number_format(($weights[$type] ?? 0.25) * 100, 0) }}%</span>
                         </th>
                         @endforeach
-                        <th rowspan="2" class="py-2 px-3 text-center font-semibold text-gray-700 bg-gray-50 border-l-2 border-gray-400 min-w-[100px]">Computed</th>
-                        <th rowspan="2" class="py-2 px-2 text-center font-semibold text-gray-700 bg-gray-50 min-w-[90px]">Actions</th>
+                        <th rowspan="2" class="py-2 px-3 text-center font-semibold text-gray-700 dark:text-[#C1C4DC] bg-gray-50 dark:bg-[#161A33] border-l-2 border-gray-400 min-w-[100px]">Computed</th>
+                        <th rowspan="2" class="py-2 px-2 text-center font-semibold text-gray-700 dark:text-[#C1C4DC] bg-gray-50 dark:bg-[#161A33] min-w-[90px]">Actions</th>
                     </tr>
-                    <tr class="border-b border-gray-200 bg-gray-50">
+                    <tr class="border-b border-gray-200 dark:border-[#2A2F58] bg-gray-50 dark:bg-[#161A33]">
                         @foreach($assessmentTypes as $type)
-                        <th class="py-1 px-1 text-center text-[10px] font-medium text-gray-500 border-l border-gray-300">Raw</th>
-                        <th class="py-1 px-1 text-center text-[10px] font-medium text-gray-500">Max</th>
+                        <th class="py-1 px-1 text-center text-[10px] font-medium text-gray-500 dark:text-[#8A90B0] border-l border-gray-300 dark:border-[#2A2F58]">Raw</th>
+                        <th class="py-1 px-1 text-center text-[10px] font-medium text-gray-500 dark:text-[#8A90B0]">Max</th>
                         @endforeach
                     </tr>
                 </thead>
@@ -87,11 +87,11 @@
                     @php
                         $studentAssessments = $existingAssessments->get($enrollment->id, collect());
                     @endphp
-                    <tr class="border-b border-gray-100 hover:bg-blue-50/30 transition">
-                        <td class="py-1.5 px-2 text-gray-400 text-xs sticky left-0 bg-white z-10">{{ $idx + 1 }}</td>
-                        <td class="py-1.5 px-2 sticky left-[48px] bg-white z-10">
-                            <span class="font-medium text-gray-900 text-sm">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
-                            <span class="text-xs text-gray-400 block">{{ $enrollment->student->student_number ?? '' }}</span>
+                    <tr class="border-b border-gray-100 dark:border-[#2A2F58] hover:bg-blue-50/30 dark:hover:bg-[rgba(59,130,246,0.15)] transition">
+                        <td class="py-1.5 px-2 text-gray-400 dark:text-[#8A90B0] text-xs sticky left-0 bg-white dark:bg-[#1A1E3B] z-10">{{ $idx + 1 }}</td>
+                        <td class="py-1.5 px-2 sticky left-[48px] bg-white dark:bg-[#1A1E3B] z-10">
+                            <span class="font-medium text-gray-900 dark:text-[#E8EAF6] text-sm">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
+                            <span class="text-xs text-gray-400 dark:text-[#8A90B0] block">{{ $enrollment->student->student_number ?? '' }}</span>
                         </td>
                         @foreach($assessmentTypes as $type)
                         @php
@@ -100,7 +100,7 @@
                                 $typeItems = collect([['id' => '', 'title' => '', 'raw_score' => '', 'max_score' => '']]);
                             }
                         @endphp
-                        <td class="py-1 px-1 border-l border-gray-200 align-top" colspan="2">
+                        <td class="py-1 px-1 border-l border-gray-200 dark:border-[#2A2F58] align-top" colspan="2">
                             <div class="space-y-1">
                                 @foreach($typeItems as $itemIdx => $item)
                                 <div class="flex items-center gap-0.5">
@@ -109,14 +109,14 @@
                                         value="{{ $item['raw_score'] ?? $item->raw_score ?? '' }}" 
                                         step="0.01" min="0" placeholder="0"
                                         @blur="recalcStudent({{ $enrollment->id }}); hasChanges = true"
-                                        class="w-14 text-center text-xs rounded border border-gray-300 px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <span class="text-gray-400 text-xs">/</span>
+                                        class="w-14 text-center text-xs rounded border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="text-gray-400 dark:text-[#8A90B0] text-xs">/</span>
                                     <input type="number" 
                                         name="assessments[{{ $enrollment->id }}][{{ $type }}][{{ $itemIdx }}][max_score]" 
                                         value="{{ $item['max_score'] ?? $item->max_score ?? '' }}" 
                                         step="0.01" min="0" placeholder="0"
                                         @blur="recalcStudent({{ $enrollment->id }}); hasChanges = true"
-                                        class="w-14 text-center text-xs rounded border border-gray-300 px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                                        class="w-14 text-center text-xs rounded border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
                                     <input type="hidden" name="assessments[{{ $enrollment->id }}][{{ $type }}][{{ $itemIdx }}][type]" value="{{ $type }}">
                                     <input type="hidden" name="assessments[{{ $enrollment->id }}][{{ $type }}][{{ $itemIdx }}][title]" value="{{ $item['title'] ?? $item->title ?? '' }}">
                                 </div>
@@ -125,11 +125,11 @@
                             </div>
                         </td>
                         @endforeach
-                        <td class="py-1.5 px-3 text-center border-l-2 border-gray-300">
+                        <td class="py-1.5 px-3 text-center border-l-2 border-gray-300 dark:border-[#2A2F58]">
                             <span class="font-bold text-sm" :class="getComputed({{ $enrollment->id }}) >= 75 ? 'text-green-600' : 'text-red-600'" x-text="getComputed({{ $enrollment->id }}).toFixed(2)"></span>
                         </td>
                         <td class="py-1.5 px-2 text-center">
-                            <button @click="removeEmptyRows()" class="text-gray-400 hover:text-red-500 text-xs" title="Clear empty rows">
+                            <button @click="removeEmptyRows()" class="text-gray-400 dark:text-[#8A90B0] hover:text-red-500 text-xs" title="Clear empty rows">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
                         </td>
@@ -191,9 +191,9 @@ function gradeTable() {
             const div = document.createElement('div');
             div.className = 'flex items-center gap-0.5';
             div.innerHTML = `
-                <input type="number" name="${newName}[raw_score]" step="0.01" min="0" placeholder="0" class="w-14 text-center text-xs rounded border border-gray-300 px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
-                <span class="text-gray-400 text-xs">/</span>
-                <input type="number" name="${newName}[max_score]" step="0.01" min="0" placeholder="0" class="w-14 text-center text-xs rounded border border-gray-300 px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="number" name="${newName}[raw_score]" step="0.01" min="0" placeholder="0" class="w-14 text-center text-xs rounded border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
+                <span class="text-gray-400 dark:text-[#8A90B0] text-xs">/</span>
+                <input type="number" name="${newName}[max_score]" step="0.01" min="0" placeholder="0" class="w-14 text-center text-xs rounded border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-1 py-1 focus:ring-2 focus:ring-blue-500 outline-none">
                 <input type="hidden" name="${newName}[type]" value="${type}">
                 <input type="hidden" name="${newName}[title]" value="">
             `;

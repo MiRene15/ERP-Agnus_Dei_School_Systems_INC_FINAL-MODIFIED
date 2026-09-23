@@ -9,8 +9,8 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h2 class="text-2xl font-bold text-gray-900">Borrowing & Returns</h2>
-        <p class="text-gray-600 mt-1">Manage book borrowing and returns.</p>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Borrowing & Returns</h2>
+        <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Manage book borrowing and returns.</p>
     </div>
     <a href="{{ route('librarian.loans.borrow') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">+ New Loan</a>
 </div>
@@ -43,9 +43,9 @@
     <!-- Search Form -->
     <form @submit.prevent="performSearch()" class="flex gap-2 flex-1 flex-wrap">
         <input type="text" x-model="filters.search" placeholder="Search by student name or book title..."
-               class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+               class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
         <label class="flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" x-model="filters.overdue" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+            <input type="checkbox" x-model="filters.overdue" class="rounded border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-red-600 focus:ring-red-500">
             Overdue only
         </label>
         <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Filter</button>
@@ -53,7 +53,7 @@
     </form>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
     <!-- Skeleton Loading -->
     <div x-show="loading" class="space-y-3">
         <div class="skelly sk-line-md"></div>
@@ -70,28 +70,28 @@
                 <thead>
                     <tr class="border-b border-gray-200">
                         <th class="w-8 px-2">
-                            <input type="checkbox" @change="toggleAll($event)" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <input type="checkbox" @change="toggleAll($event)" class="rounded border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-blue-600 focus:ring-blue-500">
                         </th>
-                        <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
-                        <th class="text-left py-3 px-2 font-medium text-gray-600">Book Title</th>
-                        <th class="text-left py-3 px-2 font-medium text-gray-600">Borrowed</th>
-                        <th class="text-left py-3 px-2 font-medium text-gray-600">Return Due</th>
-                        <th class="text-left py-3 px-2 font-medium text-gray-600">Status</th>
-                        <th class="text-left py-3 px-2 font-medium text-gray-600">Action</th>
+                        <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Student</th>
+                        <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Book Title</th>
+                        <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Borrowed</th>
+                        <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Return Due</th>
+                        <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Status</th>
+                        <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     <template x-for="txn in transactions" :key="txn.id">
-                        <tr class="border-b border-gray-100" :class="isOverdue(txn) ? 'bg-red-50/50' : ''">
+                        <tr class="border-b border-gray-100 dark:border-[#2A2F58]" :class="isOverdue(txn) ? 'bg-red-50/50' : ''">
                             <td class="py-2 px-2">
                                 <template x-if="txn.status === 'Borrowed'">
-                                    <input type="checkbox" :value="txn.id" x-model="selectedIds" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <input type="checkbox" :value="txn.id" x-model="selectedIds" class="rounded border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-blue-600 focus:ring-blue-500">
                                 </template>
                             </td>
-                            <td class="py-2 px-2 text-gray-900" x-text="(txn.student?.first_name || '') + ' ' + (txn.student?.last_name || '')"></td>
-                            <td class="py-2 px-2 text-gray-600" x-text="txn.book_title"></td>
-                            <td class="py-2 px-2 text-gray-600" x-text="formatDate(txn.borrow_date)"></td>
-                            <td class="py-2 px-2 text-gray-600" x-text="formatDate(txn.return_date)"></td>
+                            <td class="py-2 px-2 text-gray-900 dark:text-[#E8EAF6]" x-text="(txn.student?.first_name || '') + ' ' + (txn.student?.last_name || '')"></td>
+                            <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="txn.book_title"></td>
+                            <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="formatDate(txn.borrow_date)"></td>
+                            <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="formatDate(txn.return_date)"></td>
                              <td class="py-2 px-2">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                       :class="isOverdue(txn) ? 'bg-red-100 text-red-700' : (txn.status === 'Returned' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')"
@@ -112,7 +112,7 @@
         </div>
 
         <!-- Empty State -->
-        <div x-show="transactions.length === 0" class="py-6 text-center text-gray-500 text-sm">
+        <div x-show="transactions.length === 0" class="py-6 text-center text-gray-500 dark:text-[#8A90B0] text-sm">
             No loans found. <span class="block text-xs mt-1 text-gray-400">Try adjusting filters or create a loan via [+ New Loan].</span>
         </div>
 
@@ -130,20 +130,20 @@
 
         <!-- Pagination -->
         <div class="mt-4 flex justify-between items-center" x-show="totalPages > 1">
-            <span class="text-sm text-gray-500">
+            <span class="text-sm text-gray-500 dark:text-[#8A90B0]">
                 Showing <span x-text="from"></span>-<span x-text="to"></span> of <span x-text="total"></span>
             </span>
             <div class="flex gap-1">
                 <button @click="goToPage(currentPage - 1)" :disabled="currentPage <= 1"
-                        class="px-3 py-1 text-sm rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">Previous</button>
+                        class="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-[#161A33]">Previous</button>
                 <template x-for="p in paginationRange" :key="p">
                     <button @click="goToPage(p)"
                             class="px-3 py-1 text-sm rounded-lg border"
-                            :class="p === currentPage ? 'bg-[var(--navy)] text-white border-[var(--navy)]' : 'border-gray-300 hover:bg-gray-50'"
+                            :class="p === currentPage ? 'bg-[var(--navy)] text-white border-[var(--navy)]' : 'border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] hover:bg-gray-50 dark:hover:bg-[#161A33]'"
                             x-text="p"></button>
                 </template>
                 <button @click="goToPage(currentPage + 1)" :disabled="currentPage >= totalPages"
-                        class="px-3 py-1 text-sm rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">Next</button>
+                        class="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-[#161A33]">Next</button>
             </div>
         </div>
     </div>

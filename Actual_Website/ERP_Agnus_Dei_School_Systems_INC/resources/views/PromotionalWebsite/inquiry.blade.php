@@ -46,7 +46,7 @@
     </div>
 
     @if(session('error'))
-        <div style="background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.95rem;">
+        <div class="error-box" style="background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.95rem;">
             {{ session('error') }}
         </div>
     @endif
@@ -139,6 +139,12 @@
         font-size: 0.85rem; font-weight: 700; color: var(--text-muted);
         min-width: 20px;
     }
+
+    html.dark label { color: #A39FE9; }
+    html.dark input, html.dark textarea, html.dark select { background: #23274C; border-color: #3B4172; color: #E8EAF6; }
+    html.dark input::placeholder, html.dark textarea::placeholder { color: #6A7094; }
+    html.dark .error-box { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.25); color: #FCA5A5; }
+    html.dark .modal-card { background: #1A1E3B; }
 </style>
 
 @if(session('success'))

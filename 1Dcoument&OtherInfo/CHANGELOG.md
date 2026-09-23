@@ -1,5 +1,13 @@
 # Release Notes
 
+## [Unreleased] — Dark Mode Readability & Contrast — 2026-09-23
+- Added `darkMode: 'class'` to `tailwind.config.js` (was `media` — `dark:` utilities were dead-code)
+- Extended `portal/layouts/app.blade.php` global dark overrides: amber/slate/blue, hovers, skeleton, sidebar
+- Added explicit `dark:` classes to all portal pages — cards, tables, inputs, modals, badges, hovers
+- Fixed promotional website dark mode — hero overlay, nav dropdown, inquiry inputs, footer
+- Full audit in `dark_mode_audit.md` — 28 files, 120 hovers, systemic gaps → all readable/contrasting
+- See also: Validation Notes (30 items, all phases), Grade Table (spreadsheet), Audit Logs (60 calls)
+
 ## [Unreleased](https://github.com/laravel/laravel/compare/v12.12.1...12.x)
 
 ### Full AJAX Conversion — 2026-08-20

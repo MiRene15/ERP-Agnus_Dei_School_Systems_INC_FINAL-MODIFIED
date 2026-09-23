@@ -1,16 +1,16 @@
 <table class="w-full text-sm">
-    <thead class="bg-gray-50 border-b border-gray-100">
+    <thead class="bg-gray-50 dark:bg-[#161A33] border-b border-gray-100 dark:border-[#2A2F58]">
         <tr>
-            <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Name</th>
-            <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Email</th>
-            <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Role</th>
-            <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Status</th>
-            <th class="text-left px-6 py-3 font-semibold text-gray-600 uppercase tracking-wide text-xs">Actions</th>
+            <th class="text-left px-6 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC] uppercase tracking-wide text-xs">Name</th>
+            <th class="text-left px-6 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC] uppercase tracking-wide text-xs">Email</th>
+            <th class="text-left px-6 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC] uppercase tracking-wide text-xs">Role</th>
+            <th class="text-left px-6 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC] uppercase tracking-wide text-xs">Status</th>
+            <th class="text-left px-6 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC] uppercase tracking-wide text-xs">Actions</th>
         </tr>
     </thead>
     <tbody class="divide-y divide-gray-50">
         @forelse ($users as $user)
-        <tr class="hover:bg-gray-50/50 transition-colors">
+        <tr class="hover:bg-gray-50 dark:hover:bg-[#161A33]/50 transition-colors">
             <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
                     <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-200 shrink-0">
@@ -19,7 +19,7 @@
                     <span class="font-medium text-gray-800">{{ $user->name }}</span>
                 </div>
             </td>
-            <td class="px-6 py-4 text-gray-500">{{ $user->email }}</td>
+            <td class="px-6 py-4 text-gray-500 dark:text-[#8A90B0]">{{ $user->email }}</td>
             <td class="px-6 py-4">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
                     {{ $user->role?->name ?? 'N/A' }}

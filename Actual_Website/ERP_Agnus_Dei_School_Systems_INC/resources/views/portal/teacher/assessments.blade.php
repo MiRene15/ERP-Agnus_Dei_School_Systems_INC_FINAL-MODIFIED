@@ -1,4 +1,4 @@
-@extends('portal.layouts.app')
+﻿@extends('portal.layouts.app')
 
 @section('breadcrumbs')
     <a href="{{ route('teacher.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
@@ -11,10 +11,10 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h2 class="text-2xl font-bold text-gray-900">{{ $class->subject->name ?? 'N/A' }} — Assessments</h2>
-        <p class="text-gray-600 mt-1">{{ $class->grade_level }} - {{ $class->section }} | {{ $class->subject->subject_code ?? '' }}</p>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">{{ $class->subject->name ?? 'N/A' }} — Assessments</h2>
+        <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">{{ $class->grade_level }} - {{ $class->section }} | {{ $class->subject->subject_code ?? '' }}</p>
     </div>
-    <div class="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+    <div class="text-sm text-gray-500 dark:text-[#8A90B0] bg-gray-50 dark:bg-[#161A33] px-3 py-2 rounded-lg">
         {{ $activeEnrollments->count() }} student(s)
     </div>
 </div>
@@ -28,11 +28,11 @@
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
     <form method="GET" class="mb-6">
         <div class="flex items-center gap-3">
-            <label class="text-sm font-medium text-gray-700">Grading Period:</label>
-            <select name="grading_period" onchange="this.form.submit()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <label class="text-sm font-medium text-gray-700 dark:text-[#C1C4DC]">Grading Period:</label>
+            <select name="grading_period" onchange="this.form.submit()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 @foreach($gradingPeriods as $period)
                 <option value="{{ $period }}" {{ $selectedPeriod === $period ? 'selected' : '' }}>{{ $period }}</option>
                 @endforeach
@@ -41,12 +41,12 @@
     </form>
 
     @if($activeEnrollments->isEmpty())
-        <p class="text-sm text-gray-500 text-center py-4">No active students enrolled in this class.</p>
+        <p class="text-sm text-gray-500 dark:text-[#8A90B0] text-center py-4">No active students enrolled in this class.</p>
     @else
     <div x-data="{ tab: 'Written Work' }">
-        <div class="flex gap-1 mb-6 border-b border-gray-200">
+        <div class="flex gap-1 mb-6 border-b border-gray-200 dark:border-[#2A2F58]">
             @foreach($assessmentTypes as $type)
-            <button @click="tab = '{{ $type }}'" :class="tab === '{{ $type }}' ? 'border-b-2 border-blue-600 text-blue-700 font-semibold' : 'text-gray-500 hover:text-gray-700'" class="px-4 py-2 text-sm transition outline-none">
+            <button @click="tab = '{{ $type }}'" :class="tab === '{{ $type }}' ? 'border-b-2 border-blue-600 text-blue-700 font-semibold' : 'text-gray-500 dark:text-[#8A90B0] hover:text-gray-700 dark:hover:text-[#C1C4DC]'" class="px-4 py-2 text-sm transition outline-none">
                 {{ $type }}
             </button>
             @endforeach
@@ -61,13 +61,13 @@
                 <div class="overflow-x-auto mb-4">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="border-b border-gray-200">
-                                <th class="text-left py-3 px-2 font-medium text-gray-600 w-12">#</th>
-                                <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
-                                <th class="text-left py-3 px-2 font-medium text-gray-600">LRN</th>
-                                <th class="text-center py-3 px-2 font-medium text-gray-600 w-40">Title</th>
-                                <th class="text-center py-3 px-2 font-medium text-gray-600 w-28">Raw Score</th>
-                                <th class="text-center py-3 px-2 font-medium text-gray-600 w-28">Max Score</th>
+                            <tr class="border-b border-gray-200 dark:border-[#2A2F58]">
+                                <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC] w-12">#</th>
+                                <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Student</th>
+                                <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">LRN</th>
+                                <th class="text-center py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC] w-40">Title</th>
+                                <th class="text-center py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC] w-28">Raw Score</th>
+                                <th class="text-center py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC] w-28">Max Score</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -76,39 +76,39 @@
                                 $studentAssessments = $existingAssessments->get($enrollment->id, collect())->where('type', $type);
                             @endphp
                             @if($studentAssessments->isEmpty())
-                            <tr class="border-b border-gray-100">
-                                <td class="py-2 px-2 text-gray-400">{{ $idx + 1 }}</td>
+                            <tr class="border-b border-gray-100 dark:border-[#2A2F58]">
+                                <td class="py-2 px-2 text-gray-400 dark:text-[#8A90B0]">{{ $idx + 1 }}</td>
                                 <td class="py-2 px-2">
-                                    <span class="font-medium text-gray-900">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
+                                    <span class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
                                 </td>
-                                <td class="py-2 px-2 text-gray-600">{{ $enrollment->student->student_number ?? 'N/A' }}</td>
+                                <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $enrollment->student->student_number ?? 'N/A' }}</td>
                                 <td class="py-2 px-2">
-                                    <input type="text" name="assessments[{{ $enrollment->id }}][{{ $type }}][title]" placeholder="Assessment title" class="w-full rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <input type="text" name="assessments[{{ $enrollment->id }}][{{ $type }}][title]" placeholder="Assessment title" class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                                 </td>
                                 <td class="py-2 px-2 text-center">
-                                    <input type="number" name="assessments[{{ $enrollment->id }}][{{ $type }}][raw_score]" step="0.01" min="0" placeholder="0" class="w-20 text-center rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <input type="number" name="assessments[{{ $enrollment->id }}][{{ $type }}][raw_score]" step="0.01" min="0" placeholder="0" class="w-20 text-center rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                                 </td>
                                 <td class="py-2 px-2 text-center">
-                                    <input type="number" name="assessments[{{ $enrollment->id }}][{{ $type }}][max_score]" step="0.01" min="0" placeholder="100" class="w-20 text-center rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <input type="number" name="assessments[{{ $enrollment->id }}][{{ $type }}][max_score]" step="0.01" min="0" placeholder="100" class="w-20 text-center rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                                 </td>
                                 <input type="hidden" name="assessments[{{ $enrollment->id }}][{{ $type }}][type]" value="{{ $type }}">
                             </tr>
                             @else
                                 @foreach($studentAssessments as $aIdx => $assessment)
-                                <tr class="border-b border-gray-100">
-                                    <td class="py-2 px-2 text-gray-400">{{ $idx + 1 }}{{ $aIdx > 0 ? '.' . ($aIdx + 1) : '' }}</td>
+                                <tr class="border-b border-gray-100 dark:border-[#2A2F58]">
+                                    <td class="py-2 px-2 text-gray-400 dark:text-[#8A90B0]">{{ $idx + 1 }}{{ $aIdx > 0 ? '.' . ($aIdx + 1) : '' }}</td>
                                     <td class="py-2 px-2">
-                                        <span class="font-medium text-gray-900">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
+                                        <span class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
                                     </td>
-                                    <td class="py-2 px-2 text-gray-600">{{ $enrollment->student->student_number ?? 'N/A' }}</td>
+                                    <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $enrollment->student->student_number ?? 'N/A' }}</td>
                                     <td class="py-2 px-2">
-                                        <input type="text" name="assessments[{{ $enrollment->id }}][{{ $assessment->id }}][title]" value="{{ $assessment->title }}" class="w-full rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <input type="text" name="assessments[{{ $enrollment->id }}][{{ $assessment->id }}][title]" value="{{ $assessment->title }}" class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                                     </td>
                                     <td class="py-2 px-2 text-center">
-                                        <input type="number" name="assessments[{{ $enrollment->id }}][{{ $assessment->id }}][raw_score]" value="{{ $assessment->raw_score }}" step="0.01" min="0" class="w-20 text-center rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <input type="number" name="assessments[{{ $enrollment->id }}][{{ $assessment->id }}][raw_score]" value="{{ $assessment->raw_score }}" step="0.01" min="0" class="w-20 text-center rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                                     </td>
                                     <td class="py-2 px-2 text-center">
-                                        <input type="number" name="assessments[{{ $enrollment->id }}][{{ $assessment->id }}][max_score]" value="{{ $assessment->max_score }}" step="0.01" min="0" class="w-20 text-center rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                        <input type="number" name="assessments[{{ $enrollment->id }}][{{ $assessment->id }}][max_score]" value="{{ $assessment->max_score }}" step="0.01" min="0" class="w-20 text-center rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                                     </td>
                                     <input type="hidden" name="assessments[{{ $enrollment->id }}][{{ $assessment->id }}][type]" value="{{ $type }}">
                                 </tr>
