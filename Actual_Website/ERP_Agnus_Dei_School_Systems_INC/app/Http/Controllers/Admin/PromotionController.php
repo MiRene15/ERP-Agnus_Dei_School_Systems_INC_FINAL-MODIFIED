@@ -110,6 +110,56 @@ class PromotionController extends Controller
         return redirect()->route('admin.promotion.index')->with('success', $message);
     }
 
+    public function batchPromote(Request $request)
+    {
+        $data = $request->validate([
+            'enrollment_ids' => 'required|array',
+            'enrollment_ids.*' => 'exists:enrollments,id',
+            'action' => 'required|in:promote,retain,graduate',
+            'school_year' => 'required|string|max:20',
+        ]);
+
+        $results = ['processed' => 0, 'errors' => []];
+
+        foreach ($data['enrollment_ids'] as $enrollmentId) {
+            $enrollment = Enrollment::with('student.ledger', 'section')->find($enrollmentId);
+            if (!$enrollment || $enrollment->status !== 'Active') {
+                $results['errors'][] = "Enrollment #{$enrollmentId} not found or not active.";
+                continue;
+            }
+
+            $existing = Enrollment::where('student_id', $enrollment->student_id)
+                ->where('school_year', $data['school_year'])
+                ->where('status', 'Active')
+                ->exists();
+
+            if ($existing && in_array($data['action'], ['promote', 'retain'])) {
+                $results['errors'][] = "{$enrollment->student->first_name} {$enrollment->student->last_name}: Already has an active enrollment for {$data['school_year']}.";
+                continue;
+            }
+
+            try {
+                DB::transaction(function () use ($enrollment, $data) {
+                    match ($data['action']) {
+                        'promote' => $this->promote($enrollment, $data['school_year']),
+                        'retain' => $this->retain($enrollment, $data['school_year']),
+                        'graduate' => $this->graduate($enrollment),
+                    };
+                });
+                $results['processed']++;
+            } catch (\Exception $e) {
+                $results['errors'][] = "{$enrollment->student?->first_name} {$enrollment->student?->last_name}: {$e->getMessage()}";
+            }
+        }
+
+        $message = "Batch processed: {$results['processed']} student(s).";
+        if ($results['errors']) {
+            $message .= ' Errors: ' . implode(' | ', $results['errors']);
+        }
+
+        return back()->with('success', $message);
+    }
+
     private function promote(Enrollment $enrollment, string $newSchoolYear)
     {
         $currentGrade = $enrollment->section?->grade_level;

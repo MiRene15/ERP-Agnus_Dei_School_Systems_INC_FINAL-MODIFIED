@@ -35,19 +35,63 @@ class StudentsAndFeesSeeder extends Seeder
     }
 
     protected static array $studentSeeds = [
+        // Kinder
         ['first_name' => 'Juan', 'last_name' => 'dela Cruz',   'middle_name' => 'Bautista',  'grade' => 'Kinder',  'strand' => null],
+        ['first_name' => 'Mia', 'last_name' => 'Aquino',       'middle_name' => 'Reyes',     'grade' => 'Kinder',  'strand' => null],
+        // Grade 1
         ['first_name' => 'Maria', 'last_name' => 'Santos',      'middle_name' => 'Reyes',     'grade' => 'Grade 1', 'strand' => null],
+        ['first_name' => 'Ethan', 'last_name' => 'Rivera',      'middle_name' => 'Garcia',    'grade' => 'Grade 1', 'strand' => null],
+        ['first_name' => 'Chloe', 'last_name' => 'Torres',      'middle_name' => 'Navarro',   'grade' => 'Grade 1', 'strand' => null],
+        // Grade 2
         ['first_name' => 'Jose', 'last_name' => 'Reyes',        'middle_name' => 'Aquino',    'grade' => 'Grade 2', 'strand' => null],
+        ['first_name' => 'Zoe', 'last_name' => 'Fernando',      'middle_name' => 'Santiago',  'grade' => 'Grade 2', 'strand' => null],
+        // Grade 3
         ['first_name' => 'Ana', 'last_name' => 'Gonzales',      'middle_name' => 'Villanueva','grade' => 'Grade 3', 'strand' => null],
+        ['first_name' => 'Liam', 'last_name' => 'Pascual',      'middle_name' => 'Cruz',      'grade' => 'Grade 3', 'strand' => null],
+        ['first_name' => 'Ava', 'last_name' => 'Mercado',       'middle_name' => 'Ramos',     'grade' => 'Grade 3', 'strand' => null],
+        // Grade 4
         ['first_name' => 'Pedro', 'last_name' => 'Fernandez',    'middle_name' => 'Cruz',      'grade' => 'Grade 4', 'strand' => null],
+        ['first_name' => 'Noah', 'last_name' => 'Santiago',      'middle_name' => 'Dela Peña', 'grade' => 'Grade 4', 'strand' => null],
+        // Grade 5
         ['first_name' => 'Luisa', 'last_name' => 'Villanueva',   'middle_name' => 'Garcia',    'grade' => 'Grade 5', 'strand' => null],
+        ['first_name' => 'Ella', 'last_name' => 'Navarro',       'middle_name' => 'Bautista',  'grade' => 'Grade 5', 'strand' => null],
+        ['first_name' => 'James', 'last_name' => 'Ramos',        'middle_name' => 'Torres',    'grade' => 'Grade 5', 'strand' => null],
+        // Grade 6
         ['first_name' => 'Carlos', 'last_name' => 'Mendoza',     'middle_name' => 'Ramos',     'grade' => 'Grade 6', 'strand' => null],
+        ['first_name' => 'Luna', 'last_name' => 'Cruz',          'middle_name' => 'Mercado',   'grade' => 'Grade 6', 'strand' => null],
+        // Grade 7
         ['first_name' => 'Sofia', 'last_name' => 'Garcia',       'middle_name' => 'Torres',    'grade' => 'Grade 7', 'strand' => null],
+        ['first_name' => 'Lucas', 'last_name' => 'Dela Peña',    'middle_name' => 'Rivera',    'grade' => 'Grade 7', 'strand' => null],
+        ['first_name' => 'Chloe', 'last_name' => 'Bautista',     'middle_name' => 'Santiago',  'grade' => 'Grade 7', 'strand' => null],
+        // Grade 8
         ['first_name' => 'Miguel', 'last_name' => 'Lopez',       'middle_name' => 'Dela Peña', 'grade' => 'Grade 8', 'strand' => null],
+        ['first_name' => 'Harper', 'last_name' => 'Garcia',      'middle_name' => 'Pascual',   'grade' => 'Grade 8', 'strand' => null],
+        // Grade 9
         ['first_name' => 'Isabella', 'last_name' => 'Martinez',  'middle_name' => 'Navarro',   'grade' => 'Grade 9', 'strand' => null],
+        ['first_name' => 'Elijah', 'last_name' => 'Rivera',      'middle_name' => 'Aquino',    'grade' => 'Grade 9', 'strand' => null],
+        ['first_name' => 'Amelia', 'last_name' => 'Santos',      'middle_name' => 'Fernando',  'grade' => 'Grade 9', 'strand' => null],
+        // Grade 10
         ['first_name' => 'Rafael', 'last_name' => 'Torres',      'middle_name' => 'Santiago',  'grade' => 'Grade 10','strand' => null],
+        ['first_name' => 'Evelyn', 'last_name' => 'Pascual',     'middle_name' => 'Reyes',     'grade' => 'Grade 10','strand' => null],
+        ['first_name' => 'Daniel', 'last_name' => 'Mercado',     'middle_name' => 'Cruz',      'grade' => 'Grade 10','strand' => null],
+        // Grade 11
         ['first_name' => 'Angela', 'last_name' => 'Ramirez',     'middle_name' => 'Mercado',   'grade' => 'Grade 11','strand' => 'STEM', 'scholarship' => true],
+        ['first_name' => 'Mateo', 'last_name' => 'Villanueva',   'middle_name' => 'Ramos',     'grade' => 'Grade 11','strand' => 'STEM', 'scholarship' => false],
+        ['first_name' => 'Sofia', 'last_name' => 'Reyes',        'middle_name' => 'Garcia',    'grade' => 'Grade 11','strand' => 'ABM', 'scholarship' => false],
+        ['first_name' => 'Sebastian', 'last_name' => 'Cruz',     'middle_name' => 'Torres',    'grade' => 'Grade 11','strand' => 'HUMSS', 'scholarship' => true],
+        ['first_name' => 'Camille', 'last_name' => 'Navarro',    'middle_name' => 'Santiago',  'grade' => 'Grade 11','strand' => 'ABM', 'scholarship' => false],
+        // Grade 12
         ['first_name' => 'Dante', 'last_name' => 'Cruz',         'middle_name' => 'Pascual',   'grade' => 'Grade 12','strand' => 'ABM', 'scholarship' => false],
+        ['first_name' => 'Gabriela', 'last_name' => 'Santos',    'middle_name' => 'Rivera',    'grade' => 'Grade 12','strand' => 'STEM', 'scholarship' => true],
+        ['first_name' => 'Andrei', 'last_name' => 'Torres',      'middle_name' => 'Bautista',  'grade' => 'Grade 12','strand' => 'HUMSS', 'scholarship' => false],
+        ['first_name' => 'Patricia', 'last_name' => 'Garcia',    'middle_name' => 'Navarro',   'grade' => 'Grade 12','strand' => 'GAS', 'scholarship' => false],
+        ['first_name' => 'Mikhail', 'last_name' => 'Rivera',     'middle_name' => 'Aquino',    'grade' => 'Grade 12','strand' => 'STEM', 'scholarship' => false],
+        // Withdrawn students (status = 'withdrawn')
+        ['first_name' => 'Bianca', 'last_name' => 'Lopez',       'middle_name' => 'Fernando',  'grade' => 'Grade 4', 'strand' => null, 'status' => 'withdrawn'],
+        ['first_name' => 'Rico', 'last_name' => 'dela Cruz',     'middle_name' => 'Mercado',   'grade' => 'Grade 8', 'strand' => null, 'status' => 'withdrawn'],
+        // Graduated students (status = 'graduated')
+        ['first_name' => 'Jasmine', 'last_name' => 'Ramos',      'middle_name' => 'Santiago',  'grade' => 'Grade 12','strand' => 'STEM', 'status' => 'graduated'],
+        ['first_name' => 'Victor', 'last_name' => 'Gonzales',    'middle_name' => 'Pascual',   'grade' => 'Grade 12','strand' => 'ABM', 'status' => 'graduated'],
     ];
 
     public function run(): void
@@ -64,11 +108,13 @@ class StudentsAndFeesSeeder extends Seeder
         $cities = ['Quezon City', 'Manila', 'Makati', 'Pasig', 'Mandaluyong', 'Caloocan', 'Pasay', 'Parañaque', 'Las Piñas', 'Taguig'];
         $middleNames = ['Bautista', 'Reyes', 'Aquino', 'Villanueva', 'Cruz', 'Garcia', 'Ramos', 'Torres', 'Dela Peña', 'Navarro', 'Santiago', 'Mercado', 'Pascual', 'Rivera', 'Fernando'];
         $relationships = ['Mother', 'Father', 'Aunt', 'Uncle', 'Grandmother', 'Grandfather', 'Sibling'];
+        $previousSchools = ['Sample Elementary School', 'St. Mary\'s Academy', 'Holy Child School', 'Sacred Heart Academy', 'Don Bosco School', 'La Salle Greenhills', 'Ateneo de Manila', 'St. Scholastica\'s College', 'Immaculate Conception Academy'];
 
         foreach (self::$studentSeeds as $index => $seed) {
             $grade = $seed['grade'];
             $email = $this->resolveEmail($seed['first_name'], $seed['last_name']);
             $middleName = $seed['middle_name'] ?? $middleNames[array_rand($middleNames)];
+            $studentStatus = $seed['status'] ?? 'enrolled';
 
             $user = User::updateOrCreate(
                 ['email' => $email],
@@ -113,21 +159,27 @@ class StudentsAndFeesSeeder extends Seeder
                     'emergency_contact_name' => $seed['first_name'] . ' ' . $middleName . ' ' . $seed['last_name'] . '\'s Emergency Contact',
                     'emergency_contact_number' => '+63919' . str_pad((string) rand(1000000, 9999999), 7, '0', STR_PAD_LEFT),
                     'emergency_contact_relationship' => $relationships[array_rand($relationships)],
-                    'previous_school' => ['Sample Elementary School', 'St. Mary\'s Academy', 'Holy Child School', 'Sacred Heart Academy', 'Don Bosco School'][array_rand([0, 1, 2, 3, 4])],
+                    'previous_school' => $previousSchools[array_rand($previousSchools)],
                     'previous_school_address' => $cities[array_rand($cities)] . ', Philippines',
-                    'status' => 'enrolled',
+                    'status' => $studentStatus,
                     'scholarship' => $seed['scholarship'] ?? false,
+                    'archived_at' => $studentStatus === 'graduated' ? $today->copy()->subMonths(rand(1, 3)) : null,
                 ]
             );
 
-            $admissionTypes = ['New', 'New', 'New', 'Honor', 'Sibling'];
+            // Withdrawn and graduated students get archived_at too
+            if ($studentStatus === 'withdrawn') {
+                $student->update(['archived_at' => $today->copy()->subMonths(rand(1, 6))]);
+            }
+
+            $admissionTypes = ['New', 'New', 'New', 'Honor', 'Sibling', 'Transferee'];
             $admission = Admission::updateOrCreate(
                 ['student_id' => $student->id, 'school_year' => $schoolYear],
                 [
                     'application_type' => $admissionTypes[array_rand($admissionTypes)],
                     'grade_level' => $grade,
                     'strand' => $seed['strand'],
-                    'status' => 'Approved By Registrar',
+                    'status' => $studentStatus === 'graduated' ? 'Approved By Registrar' : 'Approved By Registrar',
                 ]
             );
 
@@ -142,7 +194,7 @@ class StudentsAndFeesSeeder extends Seeder
                 [
                     'section_id' => $section->id,
                     'strand' => $seed['strand'],
-                    'status' => 'Active',
+                    'status' => $studentStatus === 'withdrawn' ? 'Withdrawn' : ($studentStatus === 'graduated' ? 'Graduated' : 'Active'),
                 ]
             );
 
@@ -188,44 +240,62 @@ class StudentsAndFeesSeeder extends Seeder
             } elseif ($index === 3 || $index === 6) {
                 $discountType = 'honor';
                 $discountAmount = round($totalAssessed * 0.10, 2);
-            } elseif ($index === 5) {
+            } elseif ($index === 5 || $index === 14) {
                 $discountType = 'sibling';
                 $discountAmount = round($totalAssessed * 0.05, 2);
             }
 
-            $partialPayment = round($totalAssessed * (rand(30, 60) / 100), 2);
+            // Varied payment behaviors
             $effectiveAssessed = $totalAssessed - $discountAmount;
+            $paymentRatio = match (true) {
+                $index === 0 || $index === 12 => 1.0,    // fully paid
+                $index === 2 || $index === 15 => 0.75,   // mostly paid
+                $index === 4 || $index === 18 => 0.5,    // half paid
+                $index === 7 || $index === 22 => 0.25,   // quarter paid
+                in_array($index, [9, 20, 29]) => 0.0,    // unpaid (overdue)
+                in_array($index, [38, 39, 40, 41]) => 0.0, // withdrawn/graduated unpaid
+                default => rand(30, 60) / 100,
+            };
+            $partialPayment = round($effectiveAssessed * $paymentRatio, 2);
+
+            $clearanceStatus = 'Uncleared';
+            if ($partialPayment >= $effectiveAssessed) {
+                $clearanceStatus = 'Cleared';
+            }
 
             $ledger = StudentLedger::updateOrCreate(
                 ['student_id' => $student->id],
                 [
-                    'payment_plan' => 'installment',
+                    'payment_plan' => $index % 5 === 0 ? 'full' : 'installment',
                     'total_assessed' => $totalAssessed,
                     'discount_type' => $discountType,
                     'discount_applied' => $discountAmount,
                     'total_paid' => $partialPayment,
                     'balance' => max(0, $effectiveAssessed - $partialPayment),
-                    'clearance_status' => 'Uncleared',
+                    'clearance_status' => $clearanceStatus,
                 ]
             );
 
-            Payment::updateOrCreate(
-                ['receipt_number' => 'RCP-' . $student->student_number . '-001'],
-                [
-                    'ledger_id' => $ledger->id,
-                    'cashier_id' => $cashierIds[array_rand($cashierIds)],
-                    'amount_paid' => $partialPayment,
-                    'payment_date' => $today->copy()->subDays(rand(1, 30)),
-                ]
-            );
+            if ($partialPayment > 0) {
+                Payment::updateOrCreate(
+                    ['receipt_number' => 'RCP-' . $student->student_number . '-001'],
+                    [
+                        'ledger_id' => $ledger->id,
+                        'cashier_id' => !empty($cashierIds) ? $cashierIds[array_rand($cashierIds)] : null,
+                        'amount_paid' => $partialPayment,
+                        'payment_date' => $today->copy()->subDays(rand(1, 30)),
+                    ]
+                );
+            }
 
-            if ($index % 2 === 0 && $index > 0) {
-                $extraPayment = round($effectiveAssessed * (rand(10, 20) / 100), 2);
+            // Some students get a second payment
+            if (($index % 3 === 0 && $index > 0 && $paymentRatio < 1.0) || in_array($index, [2, 5, 8, 11, 16, 21, 25])) {
+                $extraPayment = round($effectiveAssessed * (rand(10, 25) / 100), 2);
                 Payment::updateOrCreate(
                     ['receipt_number' => 'RCP-' . $student->student_number . '-002'],
                     [
                         'ledger_id' => $ledger->id,
-                        'cashier_id' => $cashierIds[array_rand($cashierIds)],
+                        'cashier_id' => !empty($cashierIds) ? $cashierIds[array_rand($cashierIds)] : null,
                         'amount_paid' => $extraPayment,
                         'payment_date' => $today->copy()->subDays(rand(3, 15)),
                     ]

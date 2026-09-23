@@ -74,7 +74,7 @@ class ReportCardController extends Controller
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
-        $enrollment->load('student', 'section.adviser', 'subjects.subject');
+        $enrollment->load('student', 'section.adviser', 'subjects.subject', 'subjects.teacher');
 
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $passing = (int) Setting::getValue('passing_grade', '75');
@@ -90,6 +90,8 @@ class ReportCardController extends Controller
         $subjects = $groupedBySubject->map(function ($classes) use ($grades, $gradingPeriods, $passing) {
             $first = $classes->first();
             $row = ['subject' => $first->subject->name ?? 'N/A'];
+            $teacherNames = $classes->pluck('teacher')->filter()->map(fn($t) => $t->name)->unique()->values()->all();
+            $row['teachers'] = implode(', ', $teacherNames) ?: 'N/A';
             $total = 0; $count = 0;
             foreach ($gradingPeriods as $period) {
                 $periodGrades = collect();
@@ -127,7 +129,7 @@ class ReportCardController extends Controller
 
     public function print(Enrollment $enrollment)
     {
-        $enrollment->load('student', 'section.adviser', 'subjects.subject');
+        $enrollment->load('student', 'section.adviser', 'subjects.subject', 'subjects.teacher');
 
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $passing = (int) Setting::getValue('passing_grade', '75');
@@ -142,6 +144,8 @@ class ReportCardController extends Controller
         $subjects = $groupedBySubject->map(function ($classes) use ($grades, $gradingPeriods, $passing) {
             $first = $classes->first();
             $row = ['subject' => $first->subject->name ?? 'N/A'];
+            $teacherNames = $classes->pluck('teacher')->filter()->map(fn($t) => $t->name)->unique()->values()->all();
+            $row['teachers'] = implode(', ', $teacherNames) ?: 'N/A';
             $total = 0; $count = 0;
             foreach ($gradingPeriods as $period) {
                 $periodGrades = collect();
@@ -185,7 +189,7 @@ class ReportCardController extends Controller
         $student = auth()->user()->student;
 
         $enrollment = $student->enrollments()
-            ->with('section.adviser', 'subjects.subject')
+            ->with('section.adviser', 'subjects.subject', 'subjects.teacher')
             ->where('status', 'Active')
             ->where('school_year', active_school_year())
             ->latest()
@@ -211,6 +215,8 @@ class ReportCardController extends Controller
         $subjects = $groupedBySubject->map(function ($classes) use ($grades, $gradingPeriods, $passing) {
             $first = $classes->first();
             $row = ['subject' => $first->subject->name ?? 'N/A'];
+            $teacherNames = $classes->pluck('teacher')->filter()->map(fn($t) => $t->name)->unique()->values()->all();
+            $row['teachers'] = implode(', ', $teacherNames) ?: 'N/A';
             $total = 0; $count = 0;
             foreach ($gradingPeriods as $period) {
                 $periodGrades = collect();

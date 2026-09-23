@@ -19,6 +19,9 @@
 @endif
 
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-lg" x-data="borrowForm()">
+    <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p class="text-sm text-blue-800"><span class="font-semibold">Borrowing Limit:</span> Students may borrow up to <span class="font-bold">{{ \App\Models\Setting::getValue('library_max_books_per_student', '5') }}</span> book(s) at a time.</p>
+    </div>
     <form method="POST" action="{{ route('librarian.loans.store') }}">
         @csrf
         <div class="space-y-4">

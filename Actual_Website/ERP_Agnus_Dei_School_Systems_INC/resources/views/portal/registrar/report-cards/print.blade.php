@@ -51,7 +51,8 @@
     <table class="grades-table">
         <thead>
             <tr>
-                <th style="width:30%; text-align:left;">Learning Areas</th>
+                <th style="width:22%; text-align:left;">Learning Areas</th>
+                <th style="width:15%;">Teacher</th>
                 @foreach($gradingPeriods as $period)
                 <th>{{ $period }}</th>
                 @endforeach
@@ -63,6 +64,7 @@
             @forelse($subjects as $subject)
             <tr>
                 <td class="subject">{{ $subject->subject }}</td>
+                <td style="font-size:9px;">{{ $subject->teachers ?? 'N/A' }}</td>
                 @foreach($gradingPeriods as $period)
                 <td>{{ $subject->{$period} }}</td>
                 @endforeach
@@ -78,13 +80,14 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="6" style="text-align:center; padding:15px;">No grades available.</td></tr>
+            <tr><td colspan="7" style="text-align:center; padding:15px;">No grades available.</td></tr>
             @endforelse
         </tbody>
         @if($subjects->isNotEmpty())
         <tfoot>
             <tr class="average-row">
                 <td style="text-align:left;">General Average</td>
+                <td></td>
                 <td></td><td></td><td></td>
                 <td>{{ $overallAverage ? number_format($overallAverage, 2) : '—' }}</td>
                 <td>

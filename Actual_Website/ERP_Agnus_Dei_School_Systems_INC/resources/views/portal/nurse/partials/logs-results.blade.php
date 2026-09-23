@@ -5,8 +5,9 @@
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Date</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Complaint</th>
-                <th class="text-left py-3 px-2 font-medium text-gray-600">Diagnosis</th>
+                <th class="text-left py-3 px-2 font-medium text-gray-600">Sickness / Injury</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Treatment</th>
+                <th class="text-left py-3 px-2 font-medium text-gray-600">Notes</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Referred To</th>
             </tr>
         </thead>
@@ -20,11 +21,12 @@
                 <td class="py-2 px-2 text-gray-600">{{ $log->complaint ?? $log->symptoms ?? 'N/A' }}</td>
                 <td class="py-2 px-2 text-gray-600">{{ $log->diagnosis ?? 'N/A' }}</td>
                 <td class="py-2 px-2 text-gray-600">{{ $log->treatment ?? 'N/A' }}</td>
+                <td class="py-2 px-2 text-gray-600 max-w-[200px] truncate" title="{{ $log->notes ?? '' }}">{{ \Illuminate\Support\Str::limit($log->notes ?? '', 50) ?: '—' }}</td>
                 <td class="py-2 px-2 text-gray-600">{{ $log->referred_to ?? '—' }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="py-6 text-center text-gray-500 text-sm">No clinic logs found.</td>
+                <td colspan="7" class="py-6 text-center text-gray-500 text-sm">No clinic logs found.</td>
             </tr>
             @endforelse
         </tbody>

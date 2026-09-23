@@ -23,12 +23,34 @@
 
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
     <table class="w-full text-sm">
-        <thead><tr class="border-b bg-gray-50"><th class="text-left py-3 px-4 font-medium text-gray-600">School Year</th><th class="text-right py-3 px-4 font-medium text-gray-600">Fee Schedules</th></tr></thead>
+        <thead><tr class="border-b bg-gray-50"><th class="text-left py-3 px-4 font-medium text-gray-600">School Year</th><th class="text-right py-3 px-4 font-medium text-gray-600">Fee Schedules</th><th class="text-center py-3 px-4 font-medium text-gray-600">Status</th><th class="text-center py-3 px-4 font-medium text-gray-600">Action</th></tr></thead>
         <tbody>
             @forelse($years as $row)
-            <tr class="border-b border-gray-50"><td class="py-3 px-4 font-medium">{{ $row['year'] }}</td><td class="text-right py-3 px-4">{{ $row['count'] }}</td></tr>
+            <tr class="border-b border-gray-50">
+                <td class="py-3 px-4 font-medium">{{ $row['year'] }}</td>
+                <td class="text-right py-3 px-4">{{ $row['count'] }}</td>
+                <td class="text-center py-3 px-4">
+                    @if($row['locked'])
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+                            Locked
+                        </span>
+                    @else
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Open</span>
+                    @endif
+                </td>
+                <td class="text-center py-3 px-4">
+                    <form method="POST" action="{{ route('directress.school-years.toggle-lock') }}" class="inline">
+                        @csrf
+                        <input type="hidden" name="school_year" value="{{ $row['year'] }}">
+                        <button type="submit" class="text-xs font-medium px-3 py-1 rounded-lg transition {{ $row['locked'] ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200' }}">
+                            {{ $row['locked'] ? 'Unlock' : 'Lock' }}
+                        </button>
+                    </form>
+                </td>
+            </tr>
             @empty
-            <tr><td colspan="2" class="py-6 text-center text-gray-400">No school years yet.</td></tr>
+            <tr><td colspan="4" class="py-6 text-center text-gray-400">No school years yet.</td></tr>
             @endforelse
         </tbody>
     </table>

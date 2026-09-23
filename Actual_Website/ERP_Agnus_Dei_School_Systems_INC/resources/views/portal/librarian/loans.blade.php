@@ -19,6 +19,25 @@
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
 
+<div x-data="{ showOverdueBanner: false, overdueCount: 0 }" x-init="
+    const params = new URLSearchParams({ overdue: '1', page: '1' });
+    try {
+        const resp = await fetch('/librarian/loans/search?' + params.toString());
+        const data = await resp.json();
+        overdueCount = data.total || 0;
+        showOverdueBanner = overdueCount > 0;
+    } catch(e) {}
+" x-show="showOverdueBanner" x-transition class="mb-4 p-4 bg-red-50 border-2 border-red-300 rounded-lg flex items-center gap-3">
+    <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    <div>
+        <p class="text-sm font-semibold text-red-800">Urgent: <span x-text="overdueCount"></span> overdue book(s) need attention!</p>
+        <p class="text-xs text-red-600 mt-0.5">Please process returns or send reminders for overdue items.</p>
+    </div>
+    <button @click="showOverdueBanner = false" class="ml-auto text-red-400 hover:text-red-600">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+</div>
+
 <div x-data="loansManager()">
 <div class="mb-4 flex gap-2 flex-wrap items-center">
     <!-- Search Form -->
@@ -50,6 +69,9 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-200">
+                        <th class="w-8 px-2">
+                            <input type="checkbox" @change="toggleAll($event)" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </th>
                         <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
                         <th class="text-left py-3 px-2 font-medium text-gray-600">Book Title</th>
                         <th class="text-left py-3 px-2 font-medium text-gray-600">Borrowed</th>
@@ -61,6 +83,11 @@
                 <tbody>
                     <template x-for="txn in transactions" :key="txn.id">
                         <tr class="border-b border-gray-100" :class="isOverdue(txn) ? 'bg-red-50/50' : ''">
+                            <td class="py-2 px-2">
+                                <template x-if="txn.status === 'Borrowed'">
+                                    <input type="checkbox" :value="txn.id" x-model="selectedIds" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                </template>
+                            </td>
                             <td class="py-2 px-2 text-gray-900" x-text="(txn.student?.first_name || '') + ' ' + (txn.student?.last_name || '')"></td>
                             <td class="py-2 px-2 text-gray-600" x-text="txn.book_title"></td>
                             <td class="py-2 px-2 text-gray-600" x-text="formatDate(txn.borrow_date)"></td>
@@ -87,6 +114,18 @@
         <!-- Empty State -->
         <div x-show="transactions.length === 0" class="py-6 text-center text-gray-500 text-sm">
             No loans found. <span class="block text-xs mt-1 text-gray-400">Try adjusting filters or create a loan via [+ New Loan].</span>
+        </div>
+
+        <!-- Batch Return -->
+        <div x-show="selectedIds.length > 0" class="mt-4 flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <span class="text-sm text-blue-700"><span x-text="selectedIds.length"></span> selected</span>
+            <form method="POST" action="{{ route('librarian.loans.batch-return') }}" onsubmit="return confirm('Return all selected books?')">
+                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                <template x-for="id in selectedIds" :key="id">
+                    <input type="hidden" name="transaction_ids[]" :value="id">
+                </template>
+                <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition">Return Selected</button>
+            </form>
         </div>
 
         <!-- Pagination -->
@@ -116,6 +155,7 @@ function loansManager() {
     return {
         transactions: [],
         loading: true,
+        selectedIds: [],
         currentPage: 1,
         totalPages: 1,
         total: 0,
@@ -186,6 +226,13 @@ function loansManager() {
             const d = new Date(date);
             if (isNaN(d) || d.getFullYear() === 1970) return '—';
             return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        },
+        toggleAll(event) {
+            if (event.target.checked) {
+                this.selectedIds = this.transactions.filter(t => t.status === 'Borrowed').map(t => t.id);
+            } else {
+                this.selectedIds = [];
+            }
         }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PaymentConfirmationMail;
 use App\Models\Enrollment;
 use App\Models\FeeSchedule;
 use App\Models\Payment;
@@ -11,6 +12,7 @@ use App\Models\StudentLedger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class CashierController extends Controller
@@ -303,6 +305,22 @@ class CashierController extends Controller
 
         $lastPayment = Payment::where('ledger_id', $student->ledger?->id ?? 0)->latest()->first();
 
+        if ($lastPayment) {
+            try {
+                $student->load('user');
+                $email = $student->user->email;
+                if ($student->personal_email) {
+                    $email = $student->personal_email;
+                }
+                Mail::to($email)->send(new PaymentConfirmationMail($lastPayment));
+            } catch (\Exception $e) {
+                Log::warning('Failed to send payment confirmation email: ' . $e->getMessage(), [
+                    'student_id' => $student->id,
+                    'payment_id' => $lastPayment->id,
+                ]);
+            }
+        }
+
         return redirect()->route('cashier.payment', $student)
             ->with('payment_success', [
                 'amount' => $data['amount_paid'],
@@ -338,7 +356,7 @@ class CashierController extends Controller
 
         $student->load([
             'user',
-            'enrollments' => fn($q) => $q->where('status', 'Active')->latest(),
+            'enrollments' => fn($q) => $q->latest(),
             'enrollments.section',
             'ledger.payments.cashier',
         ]);
@@ -349,15 +367,24 @@ class CashierController extends Controller
             ->orderBy('term')
             ->get() : collect();
 
-        $payments = $student->ledger?->payments()->latest('payment_date')->get() ?? collect();
+        $allPayments = $student->ledger?->payments()->latest('payment_date')->get() ?? collect();
+
+        $selectedYear = $request->get('payment_year', 'all');
+        if ($selectedYear !== 'all') {
+            $payments = $allPayments->filter(fn($p) => \Carbon\Carbon::parse($p->payment_date)->format('Y') === $selectedYear);
+        } else {
+            $payments = $allPayments;
+        }
+
+        $paymentYears = $allPayments->map(fn($p) => \Carbon\Carbon::parse($p->payment_date)->format('Y'))->unique()->sortDesc()->values()->all();
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments'))->render(),
+                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear'))->render(),
             ]);
         }
 
-        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments'));
+        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear'));
     }
 
     public function collectionsReport(Request $request)
@@ -377,13 +404,23 @@ class CashierController extends Controller
         $byPlan = $payments->groupBy(fn($p) => $p->ledger->payment_plan ?? 'Unknown')
             ->map(fn($group) => ['count' => $group->count(), 'total' => $group->sum('amount_paid')]);
 
+        $dailyBreakdown = $payments->groupBy(fn($p) => \Carbon\Carbon::parse($p->payment_date)->format('Y-m-d'))
+            ->map(fn($group) => [
+                'date' => $group->first()->payment_date,
+                'count' => $group->count(),
+                'total' => $group->sum('amount_paid'),
+            ])
+            ->sortBy('date')
+            ->values()
+            ->all();
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.collections-report-results', compact('payments'))->render(),
+                'html' => view('portal.cashier.partials.collections-report-results', compact('payments', 'dailyBreakdown'))->render(),
             ]);
         }
 
-        return view('portal.cashier.collections-report', compact('payments', 'totalCollected', 'receiptCount', 'byPlan', 'dateFrom', 'dateTo'));
+        return view('portal.cashier.collections-report', compact('payments', 'totalCollected', 'receiptCount', 'byPlan', 'dateFrom', 'dateTo', 'dailyBreakdown'));
     }
 
     public function collectionsReportExport(Request $request)

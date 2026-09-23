@@ -1,3 +1,18 @@
+@if(!empty($dailyBreakdown) && count($dailyBreakdown) > 1)
+<div class="p-4 border-b border-gray-200">
+    <h4 class="text-sm font-semibold text-gray-700 mb-3">Daily Breakdown</h4>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        @foreach($dailyBreakdown as $day)
+        <div class="bg-gray-50 rounded-lg p-3 text-center border border-gray-200 hover:border-blue-300 transition">
+            <p class="text-xs text-gray-500 font-medium">{{ \Carbon\Carbon::parse($day['date'])->format('M d') }}</p>
+            <p class="text-lg font-bold text-gray-900 mt-1">₱ {{ number_format($day['total'], 0) }}</p>
+            <p class="text-xs text-gray-400">{{ $day['count'] }} receipt(s)</p>
+        </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
 <table class="w-full text-sm">
     <thead class="bg-gray-50 border-b border-gray-200">
         <tr>

@@ -55,6 +55,24 @@ class NurseController extends Controller
             });
         }
 
+        if (request('sickness') && request('sickness') !== 'All') {
+            $sickness = request('sickness');
+            $query->where('diagnosis', 'like', "%{$sickness}%");
+        }
+
+        if (request('month') && request('month') !== 'All') {
+            $month = (int) request('month');
+            $query->whereMonth('incident_date', $month);
+        }
+
+        if (request('grade_level') && request('grade_level') !== 'All') {
+            $gradeLevel = request('grade_level');
+            $query->whereHas('student.enrollments.section', function ($q) use ($gradeLevel) {
+                $q->where('grade_level', $gradeLevel)
+                    ->where('school_year', active_school_year());
+            });
+        }
+
         if (request('date_from')) {
             $query->whereDate('incident_date', '>=', request('date_from'));
         }
@@ -100,7 +118,10 @@ class NurseController extends Controller
         $data['symptoms'] = $data['complaint'] ?? '';
         $data['visit_date'] = $data['incident_date'];
 
-        ClinicLog::create($data);
+        $log = ClinicLog::create($data);
+
+        $student = Student::find($data['student_id']);
+        log_activity($log, 'Clinic Log Created', auth()->user()->name . ' recorded a clinic visit for ' . $student->first_name . ' ' . $student->last_name . '. Complaint: ' . ($data['complaint'] ?? 'N/A'));
 
         return redirect()->route('nurse.logs')->with('success', 'Clinic log created successfully.');
     }

@@ -136,6 +136,7 @@ Route::middleware('auth')->group(function () {
         // Promotion / End-of-Year
         Route::get('/admin/promotion', [\App\Http\Controllers\Admin\PromotionController::class, 'index'])->name('admin.promotion.index');
         Route::post('/admin/promotion/process', [\App\Http\Controllers\Admin\PromotionController::class, 'process'])->name('admin.promotion.process');
+        Route::post('/admin/promotion/batch-promote', [\App\Http\Controllers\Admin\PromotionController::class, 'batchPromote'])->name('admin.promotion.batch-promote');
     });
 
     // Sections — Registrar only (moved from Admin per request)
@@ -196,6 +197,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/teacher/grade-assessment/{class}/student/{enrollment}', [TeacherController::class, 'storeGradeAssessmentStudent'])->name('teacher.grade-assessment.student.store');
         Route::get('/teacher/computed-grades', [TeacherController::class, 'computedGrades'])->name('teacher.computed-grades');
         Route::post('/teacher/computed-grades/batch-submit', [TeacherController::class, 'batchSubmitGrades'])->name('teacher.computed-grades.batch-submit');
+
+        // Grade Table (spreadsheet view)
+        Route::get('/teacher/grade-table', [TeacherController::class, 'gradeTable'])->name('teacher.grade-table');
+        Route::post('/teacher/grade-table/save/{class}', [TeacherController::class, 'saveGradeTable'])->name('teacher.grade-table.save');
     });
 
     Route::middleware(['role:5'])->group(function() {
@@ -208,6 +213,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/librarian/books/{book}', [LibrarianController::class, 'destroyBook'])->name('librarian.books.destroy');
         // Inactive Books
         Route::get('/librarian/inactive-logs', [LibrarianController::class, 'inactiveBooks'])->name('librarian.inactive-logs');
+        Route::post('/librarian/books/{book}/replace', [LibrarianController::class, 'replaceBook'])->name('librarian.books.replace');
         Route::patch('/librarian/books/{book}/deactivate', [LibrarianController::class, 'deactivateBook'])->name('librarian.books.deactivate');
         Route::patch('/librarian/books/{book}/reactivate', [LibrarianController::class, 'reactivateBook'])->name('librarian.books.reactivate');
         // Loan Management
@@ -216,6 +222,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/librarian/loans/borrow', [LibrarianController::class, 'storeBorrow'])->name('librarian.loans.store');
         Route::get('/librarian/loans/{transaction}/return', [LibrarianController::class, 'returnForm'])->name('librarian.loans.return-form');
         Route::patch('/librarian/loans/{transaction}/return', [LibrarianController::class, 'processReturn'])->name('librarian.loans.process-return');
+        Route::post('/librarian/loans/batch-return', [LibrarianController::class, 'batchReturn'])->name('librarian.loans.batch-return');
         Route::get('/librarian/students/search', [LibrarianController::class, 'searchStudents'])->name('librarian.students.search');
         Route::get('/librarian/books/search', [LibrarianController::class, 'searchBooks'])->name('librarian.books.search');
         Route::get('/librarian/loans/search', [LibrarianController::class, 'searchLoans'])->name('librarian.loans.search');
@@ -261,6 +268,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/directress/demographics', [DirectressController::class, 'demographics'])->name('directress.demographics');
         Route::get('/directress/school-years', [DirectressController::class, 'schoolYears'])->name('directress.school-years');
         Route::post('/directress/school-years', [DirectressController::class, 'storeSchoolYear'])->name('directress.school-years.store');
+        Route::post('/directress/school-years/toggle-lock', [DirectressController::class, 'toggleLockSchoolYear'])->name('directress.school-years.toggle-lock');
         // Fee Schedule
         Route::get('/directress/fees', [DirectressController::class, 'fees'])->name('directress.fees');
         Route::get('/directress/fees/create', [DirectressController::class, 'feesCreate'])->name('directress.fees.create');
@@ -279,6 +287,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/directress/graduation-fees/{graduationFee}/assign', [DirectressController::class, 'graduationFeesAssignStore'])->name('directress.graduation-fees.assign.store');
         Route::get('/directress/graduation-fees/{graduationFee}/assigned', [DirectressController::class, 'graduationFeesAssigned'])->name('directress.graduation-fees.assigned');
         Route::post('/directress/graduation-fees/{assignment}/toggle-paid', [DirectressController::class, 'graduationFeesTogglePaid'])->name('directress.graduation-fees.toggle-paid');
+
+        Route::get('/directress/library-reports', [DirectressController::class, 'libraryReports'])->name('directress.library-reports');
+        Route::get('/directress/cashier-reports', [DirectressController::class, 'cashierReports'])->name('directress.cashier-reports');
     });
 
     // ─── School Principal (role 9) ─────────────────────────────

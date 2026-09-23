@@ -121,7 +121,9 @@ class DirectressController extends Controller
             return back()->withInput()->with('error', 'A fee schedule already exists for this grade level, term, and school year.');
         }
 
-        FeeSchedule::create($data);
+        $feeSchedule = FeeSchedule::create($data);
+
+        log_activity($feeSchedule, 'Fee Schedule Created', auth()->user()->name . ' created fee schedule for ' . $data['grade_level'] . ' (SY: ' . $data['school_year'] . ').');
 
         return redirect()->route('directress.fees')
             ->with('success', 'Fee schedule created for ' . $data['grade_level'] . ' - ' . $data['term'] . '.');
@@ -147,13 +149,17 @@ class DirectressController extends Controller
 
         $fee->update($data);
 
+        log_activity($fee, 'Fee Schedule Updated', auth()->user()->name . ' updated fee schedule for ' . $fee->grade_level . '.');
+
         return redirect()->route('directress.fees')
             ->with('success', 'Fee schedule updated.');
     }
 
     public function feesDestroy(FeeSchedule $fee)
     {
+        $gradeLevel = $fee->grade_level;
         $fee->delete();
+        log_activity('App\\Models\\FeeSchedule', 'Fee Schedule Deleted', auth()->user()->name . ' deleted fee schedule for ' . $gradeLevel . '.');
         return back()->with('success', 'Fee schedule deleted.');
     }
 
@@ -187,7 +193,9 @@ class DirectressController extends Controller
             return back()->withInput()->with('error', 'A graduation fee already exists for this grade level and school year.');
         }
 
-        GraduationFee::create($data);
+        $graduationFee = GraduationFee::create($data);
+
+        log_activity($graduationFee, 'Graduation Fee Created', auth()->user()->name . ' created graduation fee: ' . $data['grade_level'] . ' (₱' . number_format($data['graduation_fee'], 2) . ').');
 
         return redirect()->route('directress.graduation-fees')
             ->with('success', 'Graduation fee created for ' . $data['grade_level'] . '.');
@@ -210,13 +218,17 @@ class DirectressController extends Controller
 
         $graduationFee->update($data);
 
+        log_activity($graduationFee, 'Graduation Fee Updated', auth()->user()->name . ' updated graduation fee: ' . $graduationFee->grade_level . '.');
+
         return redirect()->route('directress.graduation-fees')
             ->with('success', 'Graduation fee updated.');
     }
 
     public function graduationFeesDestroy(GraduationFee $graduationFee)
     {
+        $name = $graduationFee->grade_level;
         $graduationFee->delete();
+        log_activity('App\\Models\\GraduationFee', 'Graduation Fee Deleted', auth()->user()->name . ' deleted graduation fee: ' . $name . '.');
         return back()->with('success', 'Graduation fee deleted.');
     }
 
@@ -273,6 +285,8 @@ class DirectressController extends Controller
             }
         }
 
+        log_activity('App\\Models\\GraduationFee', 'Graduation Fee Assigned', auth()->user()->name . ' assigned graduation fee to ' . count($request->student_ids) . ' student(s).');
+
         return back()->with('success', 'Graduation fees assigned to selected students.');
     }
 
@@ -290,13 +304,19 @@ class DirectressController extends Controller
         $assignment->paid = !$assignment->paid;
         $assignment->save();
 
+        log_activity($assignment, 'Graduation Fee Payment Toggled', auth()->user()->name . ' toggled paid status for student #' . $assignment->student_id . ' on "' . $assignment->graduationFee->name . '".');
+
         return back()->with('success', 'Payment status updated.');
     }
 
     // ─── School Year ──────────────────────────────────────────────
     public function schoolYears()
     {
-        $years = collect(all_school_years())->map(fn($y) => ['year' => $y, 'count' => FeeSchedule::where('school_year', $y)->count()])->sortByDesc('year');
+        $years = collect(all_school_years())->map(fn($y) => [
+            'year' => $y,
+            'count' => FeeSchedule::where('school_year', $y)->count(),
+            'locked' => in_array($y, $this->getLockedSchoolYears()),
+        ])->sortByDesc('year');
         return view('portal.directress.school-years', compact('years'));
     }
 
@@ -306,11 +326,120 @@ class DirectressController extends Controller
         if (FeeSchedule::where('school_year', $data['school_year'])->exists() || \App\Models\Setting::getValue('active_school_year') === $data['school_year']) {
             return back()->with('error', 'School year '.$data['school_year'].' already exists.');
         }
-        // Create placeholder to make year appear in lists
         FeeSchedule::create(['grade_level' => 'Grade 1', 'term' => '1st Term', 'school_year' => $data['school_year'], 'tuition_fee' => 0, 'misc_fee' => 0]);
         \App\Models\Setting::setValue('active_school_year', $data['school_year']);
         \Illuminate\Support\Facades\Cache::forget('active_school_year');
         \Illuminate\Support\Facades\Cache::forget('all_school_years');
-        return back()->with('success', 'School year '.$data['school_year'].' added and set as active. It will now appear in all dropdowns (Admin Settings, Principal Schedules, etc.).');
+
+        log_activity('App\\Models\\Setting', 'School Year Created', auth()->user()->name . ' created and activated school year: ' . $data['school_year'] . '.');
+
+        return back()->with('success', 'School year '.$data['school_year'].' added and set as active.');
+    }
+
+    public function toggleLockSchoolYear(Request $request)
+    {
+        $data = $request->validate(['school_year' => 'required|string']);
+        $locked = $this->getLockedSchoolYears();
+
+        if (in_array($data['school_year'], $locked)) {
+            $locked = array_values(array_diff($locked, [$data['school_year']]));
+            $msg = 'School year '.$data['school_year'].' unlocked.';
+        } else {
+            $locked[] = $data['school_year'];
+            $msg = 'School year '.$data['school_year'].' locked. Settings for this year can no longer be edited.';
+        }
+
+        \App\Models\Setting::setValue('locked_school_years', implode(',', $locked));
+        \Illuminate\Support\Facades\Cache::forget('setting_locked_school_years');
+
+        $isLocked = in_array($data['school_year'], $locked);
+        log_activity('App\\Models\\SchoolYear', 'School Year Lock Toggled', auth()->user()->name . ' ' . ($isLocked ? 'locked' : 'unlocked') . ' school year: ' . $data['school_year'] . '.');
+
+        return back()->with('success', $msg);
+    }
+
+    private function getLockedSchoolYears(): array
+    {
+        $val = \App\Models\Setting::getValue('locked_school_years', '');
+        return $val ? array_map('trim', explode(',', $val)) : [];
+    }
+
+    public function libraryReports(Request $request)
+    {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+        
+        $totalBooks = \App\Models\Book::where('is_active', true)->count();
+        $totalCopies = \App\Models\Book::where('is_active', true)->sum('quantity');
+        $availableCopies = \App\Models\Book::where('is_active', true)->sum('available_quantity');
+        $borrowedCount = \App\Models\LibraryTransaction::where('status', 'Borrowed')->count();
+        $overdueCount = \App\Models\LibraryTransaction::where('status', 'Borrowed')
+            ->where('return_date', '<', now())
+            ->where('return_date', '>', '1970-01-02')
+            ->whereNotNull('return_date')
+            ->count();
+        $totalTransactions = \App\Models\LibraryTransaction::count();
+        $totalFines = \App\Models\LibraryTransaction::where('fees_assessed', true)->sum('total_fees');
+        
+        $recentTransactions = \App\Models\LibraryTransaction::with('student', 'book')
+            ->latest('borrow_date')
+            ->take(10)
+            ->get();
+        
+        $popularBooks = \App\Models\Book::withCount('borrowings')
+            ->where('is_active', true)
+            ->orderByDesc('borrowings_count')
+            ->take(5)
+            ->get();
+        
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.directress.partials.library-reports-results', compact(
+                    'totalBooks', 'totalCopies', 'availableCopies', 'borrowedCount', 'overdueCount', 'totalTransactions', 'totalFines', 'recentTransactions', 'popularBooks'
+                ))->render(),
+            ]);
+        }
+        
+        return view('portal.directress.library-reports', compact(
+            'totalBooks', 'totalCopies', 'availableCopies', 'borrowedCount', 'overdueCount', 'totalTransactions', 'totalFines', 'recentTransactions', 'popularBooks'
+        ));
+    }
+
+    public function cashierReports(Request $request)
+    {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+        
+        $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $dateTo = $request->date_to ?? now()->format('Y-m-d');
+        
+        $payments = \App\Models\Payment::with('ledger.student', 'cashier')
+            ->whereBetween('payment_date', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->orderBy('payment_date')
+            ->get();
+        
+        $totalCollected = $payments->sum('amount_paid');
+        $receiptCount = $payments->count();
+        $avgPayment = $receiptCount > 0 ? $totalCollected / $receiptCount : 0;
+        
+        $totalAssessed = \App\Models\StudentLedger::sum('total_assessed');
+        $totalPaid = \App\Models\StudentLedger::sum('total_paid');
+        $totalBalance = \App\Models\StudentLedger::sum('balance');
+        
+        $monthlyData = $payments->groupBy(fn($p) => \Carbon\Carbon::parse($p->payment_date)->format('Y-m'))
+            ->map(fn($group) => ['count' => $group->count(), 'total' => $group->sum('amount_paid')])
+            ->sortKeysDesc();
+        
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.directress.partials.cashier-reports-results', compact(
+                    'totalCollected', 'receiptCount', 'avgPayment', 'totalAssessed', 'totalPaid', 'totalBalance', 'monthlyData', 'dateFrom', 'dateTo', 'payments'
+                ))->render(),
+            ]);
+        }
+        
+        return view('portal.directress.cashier-reports', compact(
+            'totalCollected', 'receiptCount', 'avgPayment', 'totalAssessed', 'totalPaid', 'totalBalance', 'monthlyData', 'dateFrom', 'dateTo', 'payments'
+        ));
     }
 }

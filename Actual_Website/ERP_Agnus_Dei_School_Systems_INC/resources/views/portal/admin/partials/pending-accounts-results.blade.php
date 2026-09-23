@@ -1,6 +1,10 @@
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" x-data="{ selected: [], allIds: @js($pendingConfirmations->pluck('id')->toArray()) }">
     @if($pendingConfirmations->isEmpty())
-        <p class="text-sm text-gray-500 text-center py-4">No pending verification. All students have been confirmed.</p>
+        <div class="py-12 text-center">
+            <svg class="w-12 h-12 mx-auto mb-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <p class="text-sm font-medium text-gray-500">No pending accounts found.</p>
+            <p class="text-xs text-gray-400 mt-1">All student accounts have been verified.</p>
+        </div>
     @else
     <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">

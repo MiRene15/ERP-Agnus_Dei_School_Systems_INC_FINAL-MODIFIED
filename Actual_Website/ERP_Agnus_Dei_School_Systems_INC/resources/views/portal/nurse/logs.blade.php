@@ -22,7 +22,7 @@
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
 
-<div x-data="ajaxTable('{{ route('nurse.logs') }}', { search: '{{ request('search') }}', incident_type: '{{ request('incident_type') }}', date_from: '{{ request('date_from') }}', date_to: '{{ request('date_to') }}' })">
+<div x-data="ajaxTable('{{ route('nurse.logs') }}', { search: '{{ request('search') }}', incident_type: '{{ request('incident_type') }}', sickness: '{{ request('sickness') }}', month: '{{ request('month') }}', grade_level: '{{ request('grade_level') }}', date_from: '{{ request('date_from') }}', date_to: '{{ request('date_to') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" name="search" x-model="filters.search" @input.debounce.300ms="reload()" placeholder="Search by student name..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
@@ -33,6 +33,37 @@
                 <option value="Headache">Headache</option>
                 <option value="Stomachache">Stomachache</option>
                 <option value="Allergy">Allergy</option>
+            </select>
+            <select name="month" x-model="filters.month" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="All">All Months</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            <select name="grade_level" x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="All">All Grades</option>
+                <option value="Kinder">Kinder</option>
+                <option value="Grade 1">Grade 1</option>
+                <option value="Grade 2">Grade 2</option>
+                <option value="Grade 3">Grade 3</option>
+                <option value="Grade 4">Grade 4</option>
+                <option value="Grade 5">Grade 5</option>
+                <option value="Grade 6">Grade 6</option>
+                <option value="Grade 7">Grade 7</option>
+                <option value="Grade 8">Grade 8</option>
+                <option value="Grade 9">Grade 9</option>
+                <option value="Grade 10">Grade 10</option>
+                <option value="Grade 11">Grade 11</option>
+                <option value="Grade 12">Grade 12</option>
             </select>
             <input type="date" name="date_from" x-model="filters.date_from" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="From">
             <input type="date" name="date_to" x-model="filters.date_to" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="To">

@@ -87,6 +87,9 @@
             </table>
         </div>
         <div class="flex items-center gap-2">
+            <button type="button" onclick="autoFillComputed()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-blue-50 hover:bg-blue-100 text-blue-700 transition" title="Fill final grades with computed assessment scores">
+                Auto-fill from Assessments
+            </button>
             <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Save Grades</button>
             <button type="submit" form="submitForm" class="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition">Submit All</button>
         </div>
@@ -95,6 +98,19 @@
         @csrf
         <input type="hidden" name="grading_period" value="{{ $selectedPeriod }}">
     </form>
+    <script>
+    function autoFillComputed() {
+        const computed = @json($computedMap);
+        for (const [enrollmentId, grade] of Object.entries(computed)) {
+            const input = document.querySelector('input[name="grades[' + enrollmentId + ']"]');
+            if (input && !input.disabled && grade > 0) {
+                input.value = grade;
+                input.classList.add('ring-2', 'ring-blue-300');
+                setTimeout(() => input.classList.remove('ring-2', 'ring-blue-300'), 1500);
+            }
+        }
+    }
+    </script>
     @endif
 </div>
 @endsection

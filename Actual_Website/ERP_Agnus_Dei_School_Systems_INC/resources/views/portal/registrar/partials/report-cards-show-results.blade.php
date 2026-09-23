@@ -20,6 +20,7 @@
             <thead>
                 <tr class="bg-gray-50">
                     <th class="text-left py-3 px-3 font-medium text-gray-600 border border-gray-200">Subject</th>
+                    <th class="text-left py-3 px-2 font-medium text-gray-600 border border-gray-200">Teacher</th>
                     @foreach($gradingPeriods as $period)
                     <th class="text-center py-3 px-2 font-medium text-gray-600 border border-gray-200">{{ $period }}</th>
                     @endforeach
@@ -31,6 +32,7 @@
                 @forelse($subjects as $subject)
                 <tr class="border-b border-gray-100">
                     <td class="py-3 px-3 font-medium text-gray-900 border border-gray-200">{{ $subject->subject }}</td>
+                    <td class="py-3 px-2 text-xs text-gray-600 border border-gray-200">{{ $subject->teachers ?? 'N/A' }}</td>
                     @foreach($gradingPeriods as $period)
                     <td class="py-3 px-2 text-center text-gray-700 border border-gray-200">{{ $subject->{$period} }}</td>
                     @endforeach
@@ -43,7 +45,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="py-6 text-center text-sm text-gray-400 border border-gray-200">No grades available.</td>
+                    <td colspan="7" class="py-6 text-center text-sm text-gray-400 border border-gray-200">No grades available.</td>
                 </tr>
                 @endforelse
             </tbody>

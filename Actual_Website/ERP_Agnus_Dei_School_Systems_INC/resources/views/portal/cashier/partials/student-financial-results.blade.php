@@ -69,25 +69,33 @@
             <h3 class="font-semibold text-gray-900 mb-4">Fee Summary</h3>
             <div class="space-y-3 text-sm">
                 @foreach($feeSchedules as $fs)
+                @php $termTotal = $fs->tuition_fee + $fs->misc_fee; @endphp
                 <div class="bg-gray-50 dark:bg-[#23274C] rounded-lg p-3 border border-gray-100 dark:border-[#2A2F58]">
                     <div class="flex justify-between items-center mb-2">
                         <span class="font-medium text-gray-800 dark:text-[#E8EAF6]">{{ $fs->term ?: $enrollment->school_year }}</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">₱ {{ number_format($fs->tuition_fee + $fs->misc_fee, 2) }}</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">₱ {{ number_format($termTotal, 2) }}</span>
                     </div>
-                    <div class="flex justify-between text-xs text-gray-500 dark:text-[#8A90B0]">
-                        <span>Tuition: ₱ {{ number_format($fs->tuition_fee, 2) }}</span>
-                        <span>Misc: ₱ {{ number_format($fs->misc_fee, 2) }}</span>
+                    <div class="space-y-1.5">
+                        @if($termTotal > 0)
+                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="h-2 rounded-full bg-blue-500" style="width: {{ round($fs->tuition_fee / $termTotal * 100) }}%"></div>
+                        </div>
+                        @endif
+                        <div class="flex justify-between text-xs text-gray-500 dark:text-[#8A90B0]">
+                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Tuition: ₱ {{ number_format($fs->tuition_fee, 2) }}</span>
+                            <span>Misc: ₱ {{ number_format($fs->misc_fee, 2) }}</span>
+                        </div>
                     </div>
                     @if(!empty($fs->misc_fee_items))
-                        <div class="mt-1 text-xs text-gray-400 dark:text-[#6A7094]">Breakdown: @foreach((is_string($fs->misc_fee_items) ? json_decode($fs->misc_fee_items, true) : $fs->misc_fee_items) as $k => $v) {{ ucfirst($k) }} ₱{{ number_format($v,2) }}@if(!$loop->last) · @endif @endforeach</div>
+                        <div class="mt-2 text-xs text-gray-400 dark:text-[#6A7094] border-t border-gray-100 dark:border-[#2A2F58] pt-2">Breakdown: @foreach((is_string($fs->misc_fee_items) ? json_decode($fs->misc_fee_items, true) : $fs->misc_fee_items) as $k => $v) {{ ucfirst($k) }} ₱{{ number_format($v,2) }}@if(!$loop->last) · @endif @endforeach</div>
                     @endif
                 </div>
                 @endforeach
 
                 @php $libraryFees = \App\Models\LibraryTransaction::where('student_id', $student->id)->where('fees_assessed', true)->sum('total_fees'); @endphp
                 @if($libraryFees > 0)
-                <div class="flex justify-between py-1 text-xs">
-                    <span class="text-gray-500">Library Fees</span>
+                <div class="flex justify-between py-1 text-xs items-center">
+                    <span class="text-gray-500 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400 inline-block"></span> Library Fees</span>
                     <span class="font-medium text-orange-600">₱ {{ number_format($libraryFees, 2) }}</span>
                 </div>
                 @endif
@@ -98,15 +106,16 @@
                 </div>
 
                 @if($student->ledger->discount_applied > 0)
-                <div class="bg-blue-50 rounded-lg p-3">
+                <div class="bg-blue-50 rounded-lg p-3 border border-blue-100">
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-blue-700">
+                        <span class="text-sm font-medium text-blue-700 flex items-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                             Discount
                             @if($student->ledger->discount_type)
-                            <span class="text-xs">({{ ucfirst($student->ledger->discount_type) }})</span>
+                            <span class="text-xs font-normal">({{ ucfirst($student->ledger->discount_type) }})</span>
                             @endif
                             @if($student->ledger->total_assessed > 0)
-                            <span class="text-xs text-blue-500">{{ round($student->ledger->discount_applied / $student->ledger->total_assessed * 100) }}%</span>
+                            <span class="text-xs bg-blue-100 px-1.5 py-0.5 rounded-full text-blue-600">{{ round($student->ledger->discount_applied / $student->ledger->total_assessed * 100) }}%</span>
                             @endif
                         </span>
                         <span class="font-semibold text-blue-700">-₱ {{ number_format($student->ledger->discount_applied, 2) }}</span>
@@ -115,7 +124,7 @@
                 @endif
 
                 <div class="flex justify-between py-2">
-                    <span class="text-gray-600">Total Paid</span>
+                    <span class="text-gray-600 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Total Paid</span>
                     <span class="font-medium text-green-600">₱ {{ number_format($student->ledger->total_paid, 2) }}</span>
                 </div>
                 <div class="flex justify-between py-2 border-t border-gray-200 font-bold">
@@ -124,6 +133,20 @@
                         ₱ {{ number_format($student->ledger->balance, 2) }}
                     </span>
                 </div>
+
+                @if($student->ledger->total_assessed > 0)
+                <div class="mt-2 pt-2 border-t border-gray-100">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1.5">
+                        <span>Payment Progress</span>
+                        <span class="font-medium {{ $student->ledger->balance <= 0 ? 'text-green-600' : 'text-blue-600' }}">{{ round(($student->ledger->total_paid / $student->ledger->total_assessed) * 100) }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                        <div class="h-2.5 rounded-full transition-all duration-500 {{ $student->ledger->balance <= 0 ? 'bg-green-500' : 'bg-blue-500' }}" 
+                             style="width: {{ min(100, round(($student->ledger->total_paid / $student->ledger->total_assessed) * 100)) }}%"></div>
+                    </div>
+                </div>
+                @endif
+
                 @else
                 <div class="text-center py-3 text-gray-400 text-xs">No ledger record yet.</div>
                 @endif
@@ -135,13 +158,27 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-gray-900">Payment History</h3>
-                @if(!(($student->ledger?->balance ?? 0) <= 0 && $student->ledger?->payment_plan === 'full' && $student->ledger?->total_paid > 0))
-                <a href="{{ route('cashier.payment', $student) }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Process Payment</a>
-                @endif
+                <div class="flex items-center gap-3">
+                    @if(!empty($paymentYears) && count($paymentYears) > 1)
+                    <select onchange="window.location.href='{{ route('cashier.student-financial', $student) }}?payment_year='+this.value" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="all" {{ ($selectedYear ?? 'all') === 'all' ? 'selected' : '' }}>All Years</option>
+                        @foreach($paymentYears as $year)
+                        <option value="{{ $year }}" {{ ($selectedYear ?? 'all') === $year ? 'selected' : '' }}>{{ $year }}</option>
+                        @endforeach
+                    </select>
+                    @endif
+                    @if(!(($student->ledger?->balance ?? 0) <= 0 && $student->ledger?->payment_plan === 'full' && $student->ledger?->total_paid > 0))
+                    <a href="{{ route('cashier.payment', $student) }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Process Payment</a>
+                    @endif
+                </div>
             </div>
 
             @if($payments->isEmpty())
-                <p class="text-sm text-gray-500 text-center py-4">No payments recorded.</p>
+                <div class="py-12 text-center">
+                    <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <p class="text-sm font-medium text-gray-500">No payments recorded yet.</p>
+                    <p class="text-xs text-gray-400 mt-1">Payment history will appear here once payments are processed.</p>
+                </div>
             @else
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">

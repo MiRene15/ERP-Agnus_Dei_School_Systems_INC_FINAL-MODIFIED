@@ -24,6 +24,7 @@ class Book extends Model
         'inactive_at',
         'deactivated_by',
         'condition',
+        'replacement_of',
     ];
 
     protected $casts = [
@@ -33,6 +34,11 @@ class Book extends Model
     public function borrowings()
     {
         return $this->hasMany(LibraryTransaction::class, 'book_id');
+    }
+
+    public function replacementOf()
+    {
+        return $this->belongsTo(Book::class, 'replacement_of');
     }
 
     public function deactivator()

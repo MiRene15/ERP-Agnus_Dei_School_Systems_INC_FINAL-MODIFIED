@@ -6,6 +6,7 @@
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Section</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Reason</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Status</th>
+                <th class="text-left py-3 px-2 font-medium text-gray-600">Refund</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Actions</th>
             </tr>
         </thead>
@@ -22,6 +23,18 @@
                         {{ $w->status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : ($w->status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') }}">
                         {{ $w->status }}
                     </span>
+                </td>
+                <td class="py-3 px-2">
+                    @if($w->status === 'Approved' && $w->refund_amount !== null)
+                        @if($w->refund_amount > 0)
+                            <span class="text-green-600 font-medium">₱{{ number_format($w->refund_amount, 2) }}</span>
+                            <span class="text-xs text-gray-400 block">Refunded {{ $w->refund_processed_at?->format('M d, Y') }}</span>
+                        @else
+                            <span class="text-gray-400 text-xs">No refund</span>
+                        @endif
+                    @else
+                        <span class="text-gray-400 text-xs">—</span>
+                    @endif
                 </td>
                 <td class="py-3 px-2">
                     @if($w->status === 'Pending')
@@ -42,7 +55,13 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="5" class="py-8 text-center text-gray-400">No withdrawal requests.</td></tr>
+            <tr>
+                <td colspan="6" class="px-4 py-12 text-center">
+                    <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <p class="text-sm font-medium text-gray-500">No withdrawal requests found.</p>
+                    <p class="text-xs text-gray-400 mt-1">No students have requested withdrawal for this period.</p>
+                </td>
+            </tr>
             @endforelse
         </tbody>
     </table>

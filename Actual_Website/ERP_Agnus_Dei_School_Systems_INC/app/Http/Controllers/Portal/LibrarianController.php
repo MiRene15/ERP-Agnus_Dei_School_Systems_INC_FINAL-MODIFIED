@@ -97,7 +97,9 @@ class LibrarianController extends Controller
         $data['available_quantity'] = $data['quantity'];
         $data['is_active'] = true;
 
-        Book::create($data);
+        $book = Book::create($data);
+
+        log_activity($book, 'Book Created', auth()->user()->name . ' added book: "' . $book->title . '" (Qty: ' . $book->quantity . ').');
 
         return redirect()->route('librarian.books')->with('success', 'Book "' . $data['title'] . '" added successfully.');
     }
@@ -125,13 +127,43 @@ class LibrarianController extends Controller
 
         $book->update($data);
 
+        log_activity($book, 'Book Updated', auth()->user()->name . ' updated book: "' . $book->title . '".');
+
         return redirect()->route('librarian.books')->with('success', 'Book "' . $book->title . '" updated.');
     }
 
     public function destroyBook(Book $book)
     {
+        log_activity($book, 'Book Deleted', auth()->user()->name . ' deleted book: "' . $book->title . '".');
         $book->delete();
         return back()->with('success', 'Book deleted.');
+    }
+
+    public function replaceBook(Request $request, Book $book)
+    {
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'author' => 'required|string|max:255',
+            'isbn' => 'nullable|string|max:20',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $newBook = Book::create([
+            'title' => $data['title'],
+            'author' => $data['author'],
+            'isbn' => $data['isbn'] ?? null,
+            'quantity' => $data['quantity'],
+            'available_quantity' => $data['quantity'],
+            'is_active' => true,
+            'replacement_of' => $book->id,
+        ]);
+
+        $book->update(['is_active' => false, 'inactive_reason' => 'Replaced with book #' . $newBook->id, 'inactive_at' => now(), 'deactivated_by' => auth()->id()]);
+
+        log_activity($newBook, 'Created', 'Book replacement for "' . $book->title . '" (Book #' . $book->id . ')');
+        log_activity($book, 'Deactivated', 'Replaced with book #' . $newBook->id);
+
+        return back()->with('success', 'Replacement book "' . $newBook->title . '" created. Original book deactivated.');
     }
 
     // ─── Inactive Books ──────────────────────────────────────────
@@ -257,6 +289,15 @@ class LibrarianController extends Controller
             return back()->with('error', 'This book is not available for borrowing.');
         }
 
+        $maxBooks = (int) \App\Models\Setting::getValue('library_max_books_per_student', '5');
+        $currentBorrowed = LibraryTransaction::where('student_id', $data['student_id'])
+            ->where('status', 'Borrowed')
+            ->count();
+
+        if ($currentBorrowed >= $maxBooks) {
+            return back()->with('error', "Student has reached the borrowing limit ({$maxBooks} books). Please return a book before borrowing another.");
+        }
+
         LibraryTransaction::create([
             'student_id' => $data['student_id'],
             'librarian_id' => auth()->id(),
@@ -269,6 +310,14 @@ class LibrarianController extends Controller
         ]);
 
         $book->decrement('available_quantity');
+
+        $transaction = LibraryTransaction::where('student_id', $data['student_id'])
+            ->where('book_id', $book->id)
+            ->where('status', 'Borrowed')
+            ->latest()
+            ->first();
+
+        log_activity($transaction, 'Book Borrowed', auth()->user()->name . ' recorded borrow of "' . $book->title . '" by student #' . $data['student_id'] . '. Due: ' . $data['return_date'] . '.');
 
         return redirect()->route('librarian.loans')->with('success', 'Book borrowed successfully.');
     }
@@ -429,12 +478,18 @@ class LibrarianController extends Controller
             'time_in' => now(),
         ]);
 
+        $visit = LibraryVisit::where('student_id', $student->id)->whereNull('time_out')->latest('time_in')->first();
+        log_activity($visit, 'Library Clock In', auth()->user()->name . ' clocked in student #' . $data['student_id'] . ' for library visit.');
+
         return back()->with('success', $student->first_name . ' ' . $student->last_name . ' clocked in.');
     }
 
     public function clockOut(LibraryVisit $visit)
     {
         $visit->update(['time_out' => now()]);
+
+        log_activity($visit, 'Library Clock Out', auth()->user()->name . ' clocked out student #' . $visit->student_id . ' from library visit.');
+
         return back()->with('success', 'Student clocked out.');
     }
 
@@ -509,6 +564,51 @@ class LibrarianController extends Controller
             return response()->json(['html' => view('portal.librarian.partials.history-results', compact('transactions'))->render()]);
         }
         return view('portal.librarian.history', compact('transactions'));
+    }
+
+    public function batchReturn(Request $request)
+    {
+        $data = $request->validate([
+            'transaction_ids' => 'required|array',
+            'transaction_ids.*' => 'exists:library_transactions,id',
+        ]);
+
+        $returned = 0;
+        foreach ($data['transaction_ids'] as $txnId) {
+            $transaction = LibraryTransaction::with('book')->find($txnId);
+            if (!$transaction || $transaction->status !== 'Borrowed') continue;
+
+            $lateDays = max(0, now()->diffInDays($transaction->return_date, false) * -1);
+            $lateFeePerDay = (float) \App\Models\Setting::getValue('library_late_fee_per_day', '5.00');
+            $totalFees = $lateDays * $lateFeePerDay;
+
+            $transaction->update([
+                'status' => 'Returned',
+                'actual_return_date' => now(),
+                'late_days' => $lateDays,
+                'total_fees' => $totalFees,
+                'fees_assessed' => $totalFees > 0,
+                'condition_at_return' => 'Good',
+            ]);
+
+            if ($transaction->book) {
+                $transaction->book->increment('available_quantity');
+            }
+
+            if ($totalFees > 0 && $transaction->student) {
+                $ledger = \App\Models\StudentLedger::firstOrCreate(
+                    ['student_id' => $transaction->student_id],
+                    ['total_assessed' => 0, 'total_paid' => 0, 'balance' => 0]
+                );
+                $ledger->increment('total_assessed', $totalFees);
+                $ledger->increment('balance', $totalFees);
+            }
+
+            log_activity($transaction, 'Returned', 'Book returned via batch processing. Late days: ' . $lateDays . ', Fees: ₱' . $totalFees);
+            $returned++;
+        }
+
+        return back()->with('success', $returned . ' book(s) returned successfully.');
     }
 
     public function searchLoans(Request $request)

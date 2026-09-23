@@ -1,3 +1,4 @@
+<div x-data="{ selectedIds: [], toggleAllPromo(event) { const checkboxes = document.querySelectorAll('.promo-checkbox'); if (event.target.checked) { this.selectedIds = Array.from(checkboxes).map(cb => cb.value); } else { this.selectedIds = []; } checkboxes.forEach(cb => cb.checked = event.target.checked); } }">
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">End-of-Year Promotion</h2>
     <p class="text-gray-600 mt-1">Select an action for each student to process end-of-year promotion, retention, graduation, or transfer.</p>
@@ -36,6 +37,9 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-200">
+                        <th class="w-8 px-2">
+                            <input type="checkbox" @change="toggleAllPromo($event)" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        </th>
                         <th class="text-left py-3 px-2 font-medium text-gray-600">Student</th>
                         <th class="text-left py-3 px-2 font-medium text-gray-600">Section</th>
                         <th class="text-left py-3 px-2 font-medium text-gray-600">GWA</th>
@@ -60,6 +64,9 @@
                         $balVal = $enrollment->student->ledger?->balance ?? 0;
                     @endphp
                     <tr class="border-b border-gray-100" x-show="filter==='all' || (filter==='qualified' && {{ $qualified ? 'true':'false' }}) || (filter==='not' && {{ (!$qualified && $avg!==null) ? 'true':'false' }}) || (filter==='none' && {{ $avg===null ? 'true':'false' }}) || (filter==='balance' && {{ $balVal>0 ? 'true':'false' }})" x-data="{ open: false }">
+                        <td class="py-3 px-2">
+                            <input type="checkbox" class="promo-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="{{ $enrollment->id }}" x-model="selectedIds">
+                        </td>
                         <td class="py-3 px-2">
                             <span class="font-medium text-gray-900">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
                             <span class="block text-xs text-gray-400">{{ $enrollment->student->student_number }} · {{ $subjectCount }} subject(s)</span>
@@ -122,10 +129,30 @@
     @endforeach
 
     <div class="flex justify-between items-center mt-4">
-        <a href="{{ route('admin.audit-logs', ['event' => 'Promoted']) }}" class="text-xs text-gray-500 hover:text-blue-600 underline">View promotion audit logs &rarr;</a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.audit-logs', ['event' => 'Promoted']) }}" class="text-xs text-gray-500 hover:text-blue-600 underline">View promotion audit logs &rarr;</a>
+            <template x-if="selectedIds.length > 0">
+                <form method="POST" action="{{ route('admin.promotion.batch-promote') }}" onsubmit="return confirm('Batch promote all selected students?')" class="flex items-center gap-2">
+                    @csrf
+                    <template x-for="id in selectedIds" :key="id">
+                        <input type="hidden" name="enrollment_ids[]" :value="id">
+                    </template>
+                    <select name="action" required class="rounded-lg border border-gray-300 px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="promote">Promote</option>
+                        <option value="retain">Retain</option>
+                        <option value="graduate">Graduate</option>
+                    </select>
+                    <input type="hidden" name="school_year" value="">
+                    <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition">
+                        Batch <span x-text="selectedIds.length"></span> selected
+                    </button>
+                </form>
+            </template>
+        </div>
         <button type="submit" class="px-6 py-3 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
             Process All Actions
         </button>
     </div>
 </form>
+</div>
 @endif

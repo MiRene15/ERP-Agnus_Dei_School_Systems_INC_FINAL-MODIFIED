@@ -8,6 +8,7 @@ class Withdrawal extends Model
 {
     protected $fillable = [
         'enrollment_id', 'student_id', 'reason', 'status', 'processed_by', 'remarks',
+        'refund_amount', 'refund_processed_at',
     ];
 
     public function enrollment()

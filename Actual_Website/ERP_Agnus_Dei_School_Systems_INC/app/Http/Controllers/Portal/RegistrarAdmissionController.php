@@ -92,6 +92,10 @@ class RegistrarAdmissionController extends Controller
         $requirement->status = $request->input('verify') ? 'Verified' : 'Under Review';
         $requirement->save();
 
+        $admission = $requirement->admission;
+
+        log_activity($requirement, 'Requirement Verified', auth()->user()->name . ' ' . ($request->input('verify') ? 'verified' : 'unverified') . ' requirement: ' . ($requirement->requirement_type ?? $requirement->name) . ' for admission #' . $admission->id . '.');
+
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -108,6 +112,8 @@ class RegistrarAdmissionController extends Controller
         $updated = $admission->requirements()
             ->where('status', 'Under Review')
             ->update(['status' => 'Verified']);
+
+        log_activity($admission, 'All Requirements Verified', auth()->user()->name . ' verified all requirements for admission #' . $admission->id . '.');
 
         if (request()->wantsJson()) {
             return response()->json([
@@ -199,6 +205,8 @@ class RegistrarAdmissionController extends Controller
 
         $admission->status = 'Rejected';
         $admission->save();
+
+        log_activity($admission, 'Admission Rejected', auth()->user()->name . ' rejected admission for student #' . $admission->student_id . '.');
 
         return redirect()->route('registrar.admissions.index')
             ->with('success', 'Admission application has been rejected.');

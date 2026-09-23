@@ -18,9 +18,9 @@
     </script>
 
     @php $layoutRoleName = auth()->check() ? match(auth()->user()->role_id){1=>'Admin',2=>'Registrar',3=>'Cashier',4=>'Teacher',5=>'Librarian',6=>'Nurse',7=>'Student',8=>'Directress',9=>'Principal',default=>'Portal'} : 'Portal'; @endphp
-    <title>{{ config('app.name', 'Agnus Dei ERP') }} — {{ $layoutRoleName }}</title>
+    <title>{{ $pageTitle ?? config('app.name', 'Agnus Dei ERP') }} — {{ $layoutRoleName }}</title>
 
-    <link rel="icon" type="image/png" href="{{ asset('images/agnus_logo.png') }}">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

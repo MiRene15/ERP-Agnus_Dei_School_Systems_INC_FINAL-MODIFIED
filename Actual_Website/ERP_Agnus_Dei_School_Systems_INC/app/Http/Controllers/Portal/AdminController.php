@@ -88,6 +88,9 @@ class AdminController extends Controller
     {
         $activeSY = active_school_year();
         $schoolYears = all_school_years();
+        $lockedYears = Setting::getValue('locked_school_years', '');
+        $lockedYearsList = $lockedYears ? array_map('trim', explode(',', $lockedYears)) : [];
+        $isCurrentYearLocked = in_array($activeSY, $lockedYearsList);
         return view('portal.admin.settings', [
             'activeSY' => $activeSY,
             'schoolYears' => $schoolYears,
@@ -104,6 +107,8 @@ class AdminController extends Controller
             'loanDuration' => Setting::getValue('library_loan_duration_days', '7'),
             'maxBooks' => Setting::getValue('library_max_books_per_student', '3'),
             'enrollmentOpen' => Setting::getValue('enrollment_open', '1'),
+            'isCurrentYearLocked' => $isCurrentYearLocked,
+            'lockedYearsList' => $lockedYearsList,
         ]);
     }
 
@@ -125,6 +130,13 @@ class AdminController extends Controller
             'library_max_books_per_student' => 'required|integer|min:1|max:20',
             'enrollment_open'    => 'required|in:0,1',
         ]);
+
+        $lockedYears = Setting::getValue('locked_school_years', '');
+        $lockedYearsList = $lockedYears ? array_map('trim', explode(',', $lockedYears)) : [];
+
+        if (in_array($data['active_school_year'], $lockedYearsList)) {
+            return back()->with('error', 'School year '.$data['active_school_year'].' is locked and cannot be set as active. Unlock it first via Directress > School Years.');
+        }
 
         Setting::setValue('active_school_year', $data['active_school_year']);
         Setting::setValue('directress_name', $data['directress_name'] ?? '');
