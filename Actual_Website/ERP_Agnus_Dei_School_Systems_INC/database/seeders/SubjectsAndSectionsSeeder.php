@@ -153,27 +153,60 @@ class SubjectsAndSectionsSeeder extends Seeder
         }
 
         $sectionData = [
-            'Kinder' => ['A', 'B'],
-            'Grade 1' => ['A', 'B'],
-            'Grade 2' => ['A', 'B'],
-            'Grade 3' => ['A', 'B'],
-            'Grade 4' => ['A', 'B'],
-            'Grade 5' => ['A', 'B'],
-            'Grade 6' => ['A', 'B'],
-            'Grade 7' => ['A', 'B'],
-            'Grade 8' => ['A', 'B'],
-            'Grade 9' => ['A', 'B'],
-            'Grade 10' => ['A', 'B'],
-            'Grade 11' => ['STEM-A', 'ABM-A', 'HUMSS-A', 'GAS-A'],
-            'Grade 12' => ['STEM-A', 'ABM-A', 'HUMSS-A', 'GAS-A'],
+            'Kinder' => ['St. Agnes', 'St. Clare'],
+            'Grade 1' => ['St. Francis', 'St. Dominic'],
+            'Grade 2' => ['St. Catherine', 'St. Therese'],
+            'Grade 3' => ['St. Augustine', 'St. Benedict'],
+            'Grade 4' => ['St. Joseph', 'St. Michael'],
+            'Grade 5' => ['St. John', 'St. Paul'],
+            'Grade 6' => ['St. Peter', 'St. Andrew'],
+            'Grade 7' => ['Charity', 'Hope'],
+            'Grade 8' => ['Faith', 'Love'],
+            'Grade 9' => ['Wisdom', 'Courage'],
+            'Grade 10' => ['Justice', 'Temperance'],
+            'Grade 11' => ['STEM - St. Thomas Aquinas', 'ABM - St. Matthew', 'HUMSS - St. Augustine', 'GAS - St. Scholastica'],
+            'Grade 12' => ['STEM - St. Albert', 'ABM - St. Luke', 'HUMSS - St. Jerome', 'GAS - St. Benedict'],
         ];
 
+        // Migrate old generic names (A/B/STEM-A etc) to new saint names by index, then create missing
         foreach ($sectionData as $gradeLevel => $sections) {
-            foreach ($sections as $sectionName) {
-                Section::updateOrCreate(
-                    ['grade_level' => $gradeLevel, 'section_name' => $sectionName],
-                    ['is_active' => true]
-                );
+            $existing = Section::where('grade_level', $gradeLevel)->orderBy('section_name')->get();
+            foreach ($sections as $idx => $sectionName) {
+                if (isset($existing[$idx])) {
+                    $existing[$idx]->update(['section_name' => $sectionName, 'is_active' => true]);
+                } else {
+                    Section::updateOrCreate(
+                        ['grade_level' => $gradeLevel, 'section_name' => $sectionName],
+                        ['is_active' => true]
+                    );
+                }
+            }
+            // Deactivate any extra old sections beyond new count
+            if ($existing->count() > count($sections)) {
+                foreach ($existing->slice(count($sections)) as $extra) {
+                    $extra->update(['is_active' => false]);
+                }
+            }
+        }
+
+        // Ensure no leftover generic-named active sections (A,B,STEM-A etc) remain after rename
+        $allNewNames = collect($sectionData)->flatten()->toArray();
+        Section::where('is_active', true)->whereNotIn('section_name', $allNewNames)->update(['is_active' => false]);
+
+        // Assign advisers round-robin from active teachers (role 4)
+        $teacherIds = \App\Models\User::where('role_id', 4)->where('status', 'active')->pluck('id')->toArray();
+        if (!empty($teacherIds)) {
+            $sectionsNeeding = Section::where('is_active', true)->whereNull('adviser_id')->orderBy('grade_level')->orderBy('section_name')->get();
+            // Also rebalance if some have null due to rename, assign in order
+            foreach ($sectionsNeeding as $idx => $section) {
+                $section->update(['adviser_id' => $teacherIds[$idx % count($teacherIds)]]);
+            }
+            // Ensure every active section has an adviser (even if already set, verify valid)
+            $allActive = Section::where('is_active', true)->get();
+            foreach ($allActive as $idx => $sec) {
+                if (!$sec->adviser_id || !in_array($sec->adviser_id, $teacherIds, true)) {
+                    $sec->update(['adviser_id' => $teacherIds[$idx % count($teacherIds)]]);
+                }
             }
         }
     }

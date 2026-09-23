@@ -20,6 +20,8 @@ class PromotionController extends Controller
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
+        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
+
         $enrollments = Enrollment::with(['student.ledger', 'student', 'section', 'grades.schoolClass.subject'])
             ->where('status', 'Active')
             ->where('school_year', active_school_year())
@@ -28,7 +30,8 @@ class PromotionController extends Controller
                 ->whereColumn('students.id', 'enrollments.student_id')
             )
             ->get()
-            ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown');
+            ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown')
+            ->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
 
         $actions = [
             'promote' => 'Promote to next grade',
@@ -119,10 +122,11 @@ class PromotionController extends Controller
             'school_year' => 'required|string|max:20',
         ]);
 
+        $passingGrade = (int) \App\Models\Setting::getValue('passing_grade', '75');
         $results = ['processed' => 0, 'errors' => []];
 
         foreach ($data['enrollment_ids'] as $enrollmentId) {
-            $enrollment = Enrollment::with('student.ledger', 'section')->find($enrollmentId);
+            $enrollment = Enrollment::with(['student.ledger', 'section', 'grades'])->find($enrollmentId);
             if (!$enrollment || $enrollment->status !== 'Active') {
                 $results['errors'][] = "Enrollment #{$enrollmentId} not found or not active.";
                 continue;
@@ -135,6 +139,18 @@ class PromotionController extends Controller
 
             if ($existing && in_array($data['action'], ['promote', 'retain'])) {
                 $results['errors'][] = "{$enrollment->student->first_name} {$enrollment->student->last_name}: Already has an active enrollment for {$data['school_year']}.";
+                continue;
+            }
+
+            // Only promote qualified students in batch
+            $grades = $enrollment->grades ?? collect();
+            $grouped = $grades->groupBy('class_id');
+            $finals = $grouped->map(fn($g) => round($g->avg('final_grade'), 2));
+            $avg = $finals->isNotEmpty() ? round($finals->avg(), 2) : null;
+            $failCount = $finals->filter(fn($f) => $f < $passingGrade)->count();
+            $qualified = $avg !== null && $avg >= $passingGrade && $failCount === 0;
+            if (!$qualified && $data['action'] === 'promote') {
+                $results['errors'][] = "{$enrollment->student->first_name} {$enrollment->student->last_name}: Not qualified (GWA ".($avg ?? 'N/A')."), skipped.";
                 continue;
             }
 

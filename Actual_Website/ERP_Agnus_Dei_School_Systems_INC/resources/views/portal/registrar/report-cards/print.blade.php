@@ -85,12 +85,10 @@
         </tbody>
         @if($subjects->isNotEmpty())
         <tfoot>
-            <tr class="average-row">
-                <td style="text-align:left;">General Average</td>
-                <td></td>
-                <td></td><td></td><td></td>
-                <td>{{ $overallAverage ? number_format($overallAverage, 2) : '—' }}</td>
-                <td>
+            <tr class="average-row font-bold border-t-2 border-gray-800">
+                <td colspan="5" style="text-align:right; font-weight:bold;">GENERAL AVERAGE</td>
+                <td style="text-align:center; font-weight:bold;">{{ $overallAverage ? number_format($overallAverage, 2) : '—' }}</td>
+                <td style="text-align:center;">
                     @if(($overallAverage ?? 0) >= 75)
                         <span class="passed">PASSED</span>
                     @elseif($overallAverage > 0)

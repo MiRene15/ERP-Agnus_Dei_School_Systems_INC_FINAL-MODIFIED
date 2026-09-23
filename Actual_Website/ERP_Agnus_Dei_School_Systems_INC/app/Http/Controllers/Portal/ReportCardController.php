@@ -99,6 +99,7 @@ class ReportCardController extends Controller
                     $g = $grades->get($cls->id, collect())->firstWhere('grading_period', $period);
                     if ($g) $periodGrades->push($g);
                 }
+                // Use stored final_grade verbatim from grades table (teacher's actual input)
                 $avgPeriod = $periodGrades->isNotEmpty() ? round($periodGrades->avg('final_grade'), 2) : null;
                 $row[$period] = $avgPeriod !== null ? number_format($avgPeriod, 2) : '—';
                 if ($avgPeriod !== null) { $total += $avgPeriod; $count++; }
@@ -107,9 +108,10 @@ class ReportCardController extends Controller
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
             $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
-        })->values();
+        })->sortBy(fn($s) => strtolower($s->subject))->values();
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
+        $overallAverage = $overallAverage ? round($overallAverage, 2) : null;
 
         $feeSchedules = FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
@@ -153,6 +155,7 @@ class ReportCardController extends Controller
                     $g = $grades->get($cls->id, collect())->firstWhere('grading_period', $period);
                     if ($g) $periodGrades->push($g);
                 }
+                // Use stored final_grade verbatim from grades table (teacher's actual input)
                 $avgPeriod = $periodGrades->isNotEmpty() ? round($periodGrades->avg('final_grade'), 2) : null;
                 $row[$period] = $avgPeriod !== null ? number_format($avgPeriod, 2) : '—';
                 if ($avgPeriod !== null) { $total += $avgPeriod; $count++; }
@@ -161,9 +164,10 @@ class ReportCardController extends Controller
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
             $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
-        })->values();
+        })->sortBy(fn($s) => strtolower($s->subject))->values();
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
+        $overallAverage = $overallAverage ? round($overallAverage, 2) : null;
 
         $feeSchedules = FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
@@ -224,6 +228,7 @@ class ReportCardController extends Controller
                     $g = $grades->get($cls->id, collect())->firstWhere('grading_period', $period);
                     if ($g) $periodGrades->push($g);
                 }
+                // Use stored final_grade verbatim from grades table (teacher's actual input)
                 $avgPeriod = $periodGrades->isNotEmpty() ? round($periodGrades->avg('final_grade'), 2) : null;
                 $row[$period] = $avgPeriod !== null ? number_format($avgPeriod, 2) : '—';
                 if ($avgPeriod !== null) { $total += $avgPeriod; $count++; }
@@ -232,9 +237,10 @@ class ReportCardController extends Controller
             $row['final'] = $avg > 0 ? number_format($avg, 2) : '—';
             $row['remarks'] = $avg >= $passing ? 'Passed' : ($avg > 0 ? 'Failed' : '—');
             return (object) $row;
-        })->values();
+        })->sortBy(fn($s) => strtolower($s->subject))->values();
 
         $overallAverage = $subjects->filter(fn($s) => is_numeric(str_replace(',', '', $s->final)))->avg(fn($s) => (float) str_replace(',', '', $s->final));
+        $overallAverage = $overallAverage ? round($overallAverage, 2) : null;
 
         if ($isAjax) {
             return response()->json([

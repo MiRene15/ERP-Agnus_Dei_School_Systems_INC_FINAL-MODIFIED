@@ -57,15 +57,37 @@ class TeachersClassesSchedulesSeeder extends Seeder
             'Grade 10' => ['G10-ENG', 'G10-FIL', 'G10-MAT', 'G10-SCI', 'G10-AP', 'G10-ESP', 'G10-MAPEH', 'G10-TLE'],
         ];
 
+        // Map legacy generic section names to new saint/strand names for existing DB migration
+        $legacySectionMap = [
+            'Kinder' => ['A' => 'St. Agnes', 'B' => 'St. Clare'],
+            'Grade 1' => ['A' => 'St. Francis', 'B' => 'St. Dominic'],
+            'Grade 2' => ['A' => 'St. Catherine', 'B' => 'St. Therese'],
+            'Grade 3' => ['A' => 'St. Augustine', 'B' => 'St. Benedict'],
+            'Grade 4' => ['A' => 'St. Joseph', 'B' => 'St. Michael'],
+            'Grade 5' => ['A' => 'St. John', 'B' => 'St. Paul'],
+            'Grade 6' => ['A' => 'St. Peter', 'B' => 'St. Andrew'],
+            'Grade 7' => ['A' => 'Charity', 'B' => 'Hope'],
+            'Grade 8' => ['A' => 'Faith', 'B' => 'Love'],
+            'Grade 9' => ['A' => 'Wisdom', 'B' => 'Courage'],
+            'Grade 10' => ['A' => 'Justice', 'B' => 'Temperance'],
+            'Grade 11' => ['STEM-A' => 'STEM - St. Thomas Aquinas', 'ABM-A' => 'ABM - St. Matthew', 'HUMSS-A' => 'HUMSS - St. Augustine', 'GAS-A' => 'GAS - St. Scholastica'],
+            'Grade 12' => ['STEM-A' => 'STEM - St. Albert', 'ABM-A' => 'ABM - St. Luke', 'HUMSS-A' => 'HUMSS - St. Jerome', 'GAS-A' => 'GAS - St. Benedict'],
+        ];
+        foreach ($legacySectionMap as $gl => $map) {
+            foreach ($map as $old => $new) {
+                Classes::where('grade_level', $gl)->where('section', $old)->update(['section' => $new]);
+            }
+        }
+
         $seniorHighPlans = [
-            ['grade_level' => 'Grade 11', 'section' => 'STEM-A', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-GMATH', 'SHS-ELS', 'SHS-PD', 'SHS-PEH', 'STEM-PCAL', 'STEM-BCAL']],
-            ['grade_level' => 'Grade 12', 'section' => 'STEM-A', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-PR2', 'SHS-EMTECH', 'SHS-III', 'STEM-BIO1', 'STEM-CHEM1', 'STEM-PHY1']],
-            ['grade_level' => 'Grade 11', 'section' => 'ABM-A', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-GMATH', 'SHS-UCSP', 'SHS-PEH', 'ABM-BMATH', 'ABM-OAM', 'ABM-FABM1']],
-            ['grade_level' => 'Grade 12', 'section' => 'ABM-A', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-FPL', 'SHS-ENTREP', 'SHS-III', 'ABM-FABM2', 'SHS-PR2']],
-            ['grade_level' => 'Grade 11', 'section' => 'HUMSS-A', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-21CL', 'SHS-UCSP', 'SHS-PEH', 'HUMSS-DISS', 'HUMSS-DIASS', 'SHS-PR1']],
-            ['grade_level' => 'Grade 12', 'section' => 'HUMSS-A', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-FPL', 'HUMSS-CREW', 'HUMSS-TNCT', 'SHS-III', 'SHS-PR2']],
-            ['grade_level' => 'Grade 11', 'section' => 'GAS-A', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-MIL', 'SHS-UCSP', 'SHS-PEH', 'GAS-HGP']],
-            ['grade_level' => 'Grade 12', 'section' => 'GAS-A', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-ENTREP', 'SHS-EMTECH', 'SHS-III', 'GAS-ORG']],
+            ['grade_level' => 'Grade 11', 'section' => 'STEM - St. Thomas Aquinas', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-GMATH', 'SHS-ELS', 'SHS-PD', 'SHS-PEH', 'STEM-PCAL', 'STEM-BCAL']],
+            ['grade_level' => 'Grade 12', 'section' => 'STEM - St. Albert', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-PR2', 'SHS-EMTECH', 'SHS-III', 'STEM-BIO1', 'STEM-CHEM1', 'STEM-PHY1']],
+            ['grade_level' => 'Grade 11', 'section' => 'ABM - St. Matthew', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-GMATH', 'SHS-UCSP', 'SHS-PEH', 'ABM-BMATH', 'ABM-OAM', 'ABM-FABM1']],
+            ['grade_level' => 'Grade 12', 'section' => 'ABM - St. Luke', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-FPL', 'SHS-ENTREP', 'SHS-III', 'ABM-FABM2', 'SHS-PR2']],
+            ['grade_level' => 'Grade 11', 'section' => 'HUMSS - St. Augustine', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-21CL', 'SHS-UCSP', 'SHS-PEH', 'HUMSS-DISS', 'HUMSS-DIASS', 'SHS-PR1']],
+            ['grade_level' => 'Grade 12', 'section' => 'HUMSS - St. Jerome', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-FPL', 'HUMSS-CREW', 'HUMSS-TNCT', 'SHS-III', 'SHS-PR2']],
+            ['grade_level' => 'Grade 11', 'section' => 'GAS - St. Scholastica', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-MIL', 'SHS-UCSP', 'SHS-PEH', 'GAS-HGP']],
+            ['grade_level' => 'Grade 12', 'section' => 'GAS - St. Benedict', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-ENTREP', 'SHS-EMTECH', 'SHS-III', 'GAS-ORG']],
         ];
 
         $plans = [];
@@ -158,6 +180,36 @@ class TeachersClassesSchedulesSeeder extends Seeder
                     );
                 }
             }
+        }
+
+        // Post-repair: ensure every active Section has an adviser and every active Class has a teacher
+        $allTeacherIds = User::where('role_id', 4)->where('status', 'active')->pluck('id')->toArray();
+        if (!empty($allTeacherIds)) {
+            $orphanSections = Section::where('is_active', true)->whereNull('adviser_id')->get();
+            foreach ($orphanSections as $idx => $sec) {
+                $sec->update(['adviser_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
+            }
+            // Fix any section with invalid adviser (e.g., deleted teacher)
+            $invalidAdviserSections = Section::where('is_active', true)->whereNotIn('adviser_id', $allTeacherIds)->whereNotNull('adviser_id')->get();
+            foreach ($invalidAdviserSections as $idx => $sec) {
+                $sec->update(['adviser_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
+            }
+            $orphanClasses = Classes::where('status', 'active')->whereNull('teacher_id')->get();
+            foreach ($orphanClasses as $idx => $cls) {
+                $cls->update(['teacher_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
+            }
+            $invalidTeacherClasses = Classes::where('status', 'active')->whereNotIn('teacher_id', $allTeacherIds)->whereNotNull('teacher_id')->get();
+            foreach ($invalidTeacherClasses as $idx => $cls) {
+                $cls->update(['teacher_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
+            }
+        }
+        // Ensure every Class has at least one Schedule entry
+        $classesWithoutSchedule = Classes::where('status', 'active')->whereDoesntHave('schedules')->get();
+        foreach ($classesWithoutSchedule as $cls) {
+            Schedule::updateOrCreate(
+                ['class_id' => $cls->id, 'day_of_week' => 'Monday'],
+                ['start_time' => '07:00:00', 'end_time' => '08:00:00', 'room' => $cls->room]
+            );
         }
     }
 

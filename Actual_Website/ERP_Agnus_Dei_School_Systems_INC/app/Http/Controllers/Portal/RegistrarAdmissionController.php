@@ -94,7 +94,7 @@ class RegistrarAdmissionController extends Controller
 
         $admission = $requirement->admission;
 
-        log_activity($requirement, 'Requirement Verified', auth()->user()->name . ' ' . ($request->input('verify') ? 'verified' : 'unverified') . ' requirement: ' . ($requirement->requirement_type ?? $requirement->name) . ' for admission #' . $admission->id . '.');
+        log_activity($requirement, 'Requirement Verified', auth()->user()->name . ' ' . ($request->input('verify') ? 'verified' : 'unverified') . ' requirement: ' . ($requirement->document_type ?? $requirement->requirement_type ?? $requirement->name ?? $requirement->original_filename ?? 'Requirement') . ' for admission #' . $admission->id . '.');
 
         if ($request->wantsJson()) {
             return response()->json([

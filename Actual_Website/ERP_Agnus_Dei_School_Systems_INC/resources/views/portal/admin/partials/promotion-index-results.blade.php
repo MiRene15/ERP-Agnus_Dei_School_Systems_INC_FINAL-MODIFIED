@@ -7,10 +7,28 @@
 <div class="mb-4">
     <div class="flex gap-1.5 flex-wrap mb-3">
         <button type="button" @click="selectedGrade = 'all'" :class="selectedGrade === 'all' ? 'bg-gray-900 dark:bg-[#1A1E3B] text-white border-gray-900' : 'bg-white dark:bg-[#1A1E3B] text-gray-600 dark:text-[#C1C4DC] border-gray-200 dark:border-[#2A2F58] hover:bg-gray-50 dark:hover:bg-[#23274C]'" class="px-3 py-1.5 rounded-full text-xs font-semibold border transition">All Grades</button>
-        @foreach($enrollments->keys()->sort()->values() as $gl)
+        @foreach($enrollments->keys() as $gl)
         <button type="button" @click="selectedGrade = '{{ $gl }}'" :class="selectedGrade === '{{ $gl }}' ? 'bg-gray-900 dark:bg-[#1A1E3B] text-white border-gray-900' : 'bg-white dark:bg-[#1A1E3B] text-gray-600 dark:text-[#C1C4DC] border-gray-200 dark:border-[#2A2F58] hover:bg-gray-50 dark:hover:bg-[#23274C]'" class="px-3 py-1.5 rounded-full text-xs font-semibold border transition">{{ $gl }}</button>
         @endforeach
     </div>
+</div>
+
+<div x-show="selectedIds.length > 0" x-transition class="mb-4 flex items-center justify-between p-3 bg-blue-50 dark:bg-[rgba(96,165,250,0.12)] border border-blue-200 dark:border-[rgba(96,165,250,0.25)] rounded-lg sticky top-2 z-10">
+    <span class="text-sm font-medium text-blue-700 dark:text-[#60A5FA]"><span x-text="selectedIds.length"></span> selected</span>
+    <form method="POST" action="{{ route('admin.promotion.batch-promote') }}" onsubmit="return confirm('Batch promote selected qualified students?')" class="flex items-center gap-2">
+        @csrf
+        <template x-for="id in selectedIds" :key="id">
+            <input type="hidden" name="enrollment_ids[]" :value="id">
+        </template>
+        <input type="hidden" name="school_year" :value="document.querySelector('select[name=school_year]')?.value || '{{ date('Y') . '-' . (date('Y')+1) }}'">
+        <select name="action" required class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1 text-sm">
+            <option value="promote">Promote</option>
+            <option value="retain">Retain</option>
+            <option value="graduate">Graduate</option>
+        </select>
+        <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-green-600 hover:bg-green-700">Batch Promote</button>
+    </form>
+</div>
 
 @if($enrollments->isEmpty())
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 text-center">
@@ -32,7 +50,10 @@
 
     @foreach($enrollments as $gradeLevel => $gradeEnrollments)
     <div x-show="selectedGrade === 'all' || selectedGrade === '{{ $gradeLevel }}'" class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-4">
-        <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-3">{{ $gradeLevel }} <span class="text-sm font-normal text-gray-500 dark:text-[#8A90B0]">({{ $gradeEnrollments->count() }} student(s))</span></h3>
+        <div class="flex items-center flex-wrap gap-2 mb-3">
+            <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">{{ $gradeLevel }} <span class="text-sm font-normal text-gray-500 dark:text-[#8A90B0]">({{ $gradeEnrollments->count() }} student(s))</span></h3>
+            <button type="button" @click="document.querySelectorAll('tr[x-show]').forEach(row => { if(row.style.display !== 'none') { const cb = row.querySelector('.promo-checkbox'); const qual = row.querySelector('[data-qualified]'); if(qual && qual.dataset.qualified === '1' && cb) cb.checked = true; }}); selectedIds = Array.from(document.querySelectorAll('.promo-checkbox:checked')).map(cb=>cb.value)" class="ml-2 text-xs text-blue-600 dark:text-[#60A5FA] hover:underline">Select qualified in {{ $gradeLevel }}</button>
+        </div>
         <div class="overflow-x-auto" x-data="{ filter: 'all' }">
             <p class="text-xs text-gray-400 mb-2">GWA &ge;{{ $passingGrade ?? 75 }} and no failing subject (&lt;{{ $passingGrade ?? 75 }}) = qualified. Failing or no grades = not qualified — review manually.</p>
             <div class="flex gap-1.5 mb-3 flex-wrap">
@@ -71,7 +92,7 @@
                         $qualified = $avg !== null && $avg >= $passing && $failCount === 0;
                         $balVal = $enrollment->student->ledger?->balance ?? 0;
                     @endphp
-                    <tr class="border-b border-gray-100 dark:border-[#2A2F58]" x-show="filter==='all' || (filter==='qualified' && {{ $qualified ? 'true':'false' }}) || (filter==='not' && {{ (!$qualified && $avg!==null) ? 'true':'false' }}) || (filter==='none' && {{ $avg===null ? 'true':'false' }}) || (filter==='balance' && {{ $balVal>0 ? 'true':'false' }})" x-data="{ open: false }">
+                    <tr data-qualified="{{ $qualified ? '1' : '0' }}" class="border-b border-gray-100 dark:border-[#2A2F58]" x-show="filter==='all' || (filter==='qualified' && {{ $qualified ? 'true':'false' }}) || (filter==='not' && {{ (!$qualified && $avg!==null) ? 'true':'false' }}) || (filter==='none' && {{ $avg===null ? 'true':'false' }}) || (filter==='balance' && {{ $balVal>0 ? 'true':'false' }})" x-data="{ open: false }">
                         <td class="py-3 px-2">
                             <input type="checkbox" class="promo-checkbox rounded border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-blue-600 focus:ring-blue-500" value="{{ $enrollment->id }}" x-model="selectedIds">
                         </td>

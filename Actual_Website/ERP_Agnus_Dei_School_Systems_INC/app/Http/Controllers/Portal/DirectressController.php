@@ -22,8 +22,9 @@ class DirectressController extends Controller
         $graduationFees = GraduationFee::count();
 
         // Demographics (light for dashboard)
+        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
         $totalStudents = Enrollment::where('status', 'Active')->count();
-        $byGrade = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->grade_level ?? 'Unknown')->map->count()->sortKeys();
+        $byGrade = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->grade_level ?? 'Unknown')->map->count()->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
         $bySection = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->section_name ?? 'Unknown')->map->count();
         $byYear = Enrollment::where('status','Active')->get()->groupBy('school_year')->map->count()->sortKeysDesc();
         $totalFeesAssessed = \App\Models\FeeSchedule::sum(\DB::raw('tuition_fee + misc_fee'));
@@ -43,7 +44,8 @@ class DirectressController extends Controller
 
     public function demographics(Request $request)
     {
-        $byGrade = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->grade_level ?? 'Unknown')->map->count()->sortKeys();
+        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
+        $byGrade = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->grade_level ?? 'Unknown')->map->count()->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
         $bySection = Enrollment::with('section')->where('status','Active')->get()->groupBy(fn($e)=>$e->section?->section_name ?? 'Unknown')->map->count()->sortKeys();
         $byYear = Enrollment::where('status','Active')->get()->groupBy('school_year')->map->count()->sortKeysDesc();
         $byGender = \App\Models\Student::whereHas('enrollments', fn($q)=>$q->where('status','Active'))->get()->groupBy(fn($s)=>$s->gender ?? 'Unknown')->map->count();

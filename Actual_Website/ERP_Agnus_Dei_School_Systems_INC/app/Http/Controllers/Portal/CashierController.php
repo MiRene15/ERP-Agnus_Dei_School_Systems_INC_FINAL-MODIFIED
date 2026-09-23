@@ -367,6 +367,9 @@ class CashierController extends Controller
             ->orderBy('term')
             ->get() : collect();
 
+        $libraryFees = \App\Models\LibraryTransaction::with('book')->where('student_id', $student->id)->where(function($q){$q->where('fees_assessed', true)->orWhere('total_fees','>',0);})->orderBy('borrow_date','desc')->get();
+        $libraryTotal = $libraryFees->sum('total_fees');
+
         $allPayments = $student->ledger?->payments()->latest('payment_date')->get() ?? collect();
 
         $selectedYear = $request->get('payment_year', 'all');
@@ -380,11 +383,11 @@ class CashierController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear'))->render(),
+                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal'))->render(),
             ]);
         }
 
-        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear'));
+        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal'));
     }
 
     public function collectionsReport(Request $request)
@@ -421,6 +424,20 @@ class CashierController extends Controller
         }
 
         return view('portal.cashier.collections-report', compact('payments', 'totalCollected', 'receiptCount', 'byPlan', 'dateFrom', 'dateTo', 'dailyBreakdown'));
+    }
+
+    public function receivablesReport(Request $request) {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+        $receivables = \App\Models\StudentLedger::with('student.enrollments.section')->where('balance','>',0)->orderByDesc('balance')->get()->groupBy(fn($l)=>$l->student->enrollments->where('status','Active')->first()?->section?->grade_level ?? 'Unknown');
+        $totalReceivable = \App\Models\StudentLedger::where('balance','>',0)->sum('balance');
+        $countReceivable = \App\Models\StudentLedger::where('balance','>',0)->count();
+        if ($isAjax) return response()->json(['html'=>view('portal.cashier.partials.receivables-results', compact('receivables','totalReceivable','countReceivable'))->render()]);
+        return view('portal.cashier.reports', compact('receivables','totalReceivable','countReceivable'));
+    }
+    public function reports(Request $request) {
+        // just show the tabbed wrapper, data loaded via AJAX for each tab
+        return view('portal.cashier.reports');
     }
 
     public function collectionsReportExport(Request $request)

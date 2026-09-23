@@ -54,9 +54,25 @@
                 <tfoot><tr class="border-t-2 border-gray-200 font-bold"><td class="py-2 px-2">Total Assessed</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('tuition_fee'),2) }}</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('misc_fee'),2) }}</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'),2) }}</td></tr></tfoot>
             </table>
         </div>
-        @php $libraryFees = \App\Models\LibraryTransaction::where('student_id', $student->id)->where('fees_assessed', true)->sum('total_fees'); @endphp
+        @php
+            $libraryTxns = \App\Models\LibraryTransaction::with('book')->where('student_id', $student->id)->where(function($q){$q->where('fees_assessed', true)->orWhere('total_fees','>',0);})->orderBy('borrow_date','desc')->get();
+            $libraryFees = $libraryTxns->sum('total_fees');
+        @endphp
         @if($libraryFees > 0)
-            <p class="text-sm text-orange-600 mt-2 text-right">Library Fees: ₱{{ number_format($libraryFees,2) }} (included in Balance)</p>
+        <div class="mt-4 p-3 bg-orange-50 dark:bg-[rgba(251,146,60,0.12)] border border-orange-200 dark:border-[rgba(251,146,60,0.25)] rounded-lg">
+            <p class="text-sm font-semibold text-orange-700 dark:text-[#FB923C]">Library Fees: ₱{{ number_format($libraryFees,2) }}</p>
+            <div class="mt-2 overflow-x-auto">
+                <table class="w-full text-xs">
+                    <thead><tr class="border-b border-orange-200 dark:border-[rgba(251,146,60,0.25)]"><th class="text-left py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">Book</th><th class="text-left py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">Dates</th><th class="text-right py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">Fee</th></tr></thead>
+                    <tbody>
+                        @foreach($libraryTxns as $lt)
+                        <tr class="border-b border-orange-100 dark:border-[rgba(251,146,60,0.15)]"><td class="py-1 px-1 text-gray-700 dark:text-[#C1C4DC]">{{ $lt->book->title ?? $lt->book_title }}</td><td class="py-1 px-1 text-gray-500 dark:text-[#8A90B0]">{{ $lt->borrow_date }} → {{ $lt->actual_return_date ?? $lt->return_date ?? 'Not returned' }}</td><td class="py-1 px-1 text-right font-medium text-orange-600">₱{{ number_format($lt->total_fees,2) }}</td></tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-orange-600 dark:text-[#FB923C] mt-2">Included in Balance</p>
+        </div>
         @endif
         @if($student->ledger && $student->ledger->discount_applied > 0)
             <p class="text-sm text-green-600 mt-2 text-right">Discount ({{ ucfirst($student->ledger->discount_type) }}): -₱{{ number_format($student->ledger->discount_applied,2) }}</p>

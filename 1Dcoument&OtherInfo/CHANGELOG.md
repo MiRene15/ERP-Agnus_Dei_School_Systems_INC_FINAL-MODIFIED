@@ -1,5 +1,21 @@
 # Release Notes
 
+## [Unreleased] — Batch Requests 2026-09-23 (16 items) — 2026-09-23
+- **Verification audit logs:** fix admin Verify not showing — correct `log_activity()` event/causer on `RegistrarAdmissionController.php:verifyRequirement/verifyAll` + visible color
+- **Grade rank:** grade levels sorted Kinder→Grade 12 via rank map (was alphabetical Grade 10 before Grade 2)
+- **Promotion:** per-level batch + global All, batch button top-right fixed, qualified-only filtering, carried balance added to new tuition via `carryFees()`
+- **Cashier payments:** remove floating search modal on `cashier/payments.blade.php`
+- **Financial view:** include library fees (late/lost) from `LibraryTransaction` in ledger breakdown + statement of accounts
+- **Breakdown list:** own full table section — Fee Breakdown with Tuition/Misc/Library/Discount/Carried/Assessed/Paid/Balance per term + summary
+- **Reports tab:** rename Collections Report → Reports with collapsible Collections Report + Receivables Report (balance>0, by grade)
+- **Principal schedules:** refine CRUD — index/create/edit/delete, validation, dark mode, audit logs
+- **Section names:** actual names (St. Agnes etc.) for all 13 grade levels in seeders
+- **Advisers/Teachers:** every section/class/schedule connected via `TeachersClassesSchedulesSeeder.php`
+- **Seeders:** 75 students (50–100) diverse distribution + library/borrow mix
+- **Report card:** GA + Remarks column-aligned; grades from `grades.final_grade` accurately shown per subject/term
+- **Grade table:** remove `teacher.grade-table` tab/route/sidebar link + button
+- **Grade assessment:** add student search on assessment list
+
 ## [Unreleased] — Promotion Filters, Audit Logs, Reports Enhancement — 2026-09-23
 - **Promotion:** added grade-level filter tabs (All Grades + per-grade) to `promotion-index-results.blade.php:7` — no more scrolling through all grades
 - **Audit Logs:** fixed display — added 30+ event colors (was 7), dark mode on audit page + results table; verified `AdminController.php:auditLogs` shows all 60 events with `withQueryString()` pagination

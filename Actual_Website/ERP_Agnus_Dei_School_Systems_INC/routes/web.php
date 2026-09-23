@@ -148,7 +148,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/registrar/requirements/{requirement}/view', [StudentAdmissionController::class, 'viewRequirement'])->name('registrar.requirements.view');
     });
 
-    Route::middleware(['role:2'])->group(function() {
+    Route::middleware(['role:1,2'])->group(function() {
         Route::get('/registrar/dashboard', [RegistrarController::class, 'index'])->name('registrar.dashboard');
         Route::get('/registrar/admissions', [RegistrarAdmissionController::class, 'index'])->name('registrar.admissions.index');
         Route::get('/registrar/admissions/{admission}', [RegistrarAdmissionController::class, 'show'])->name('registrar.admissions.show');
@@ -175,6 +175,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/cashier/receipt/{payment}', [CashierController::class, 'printReceipt'])->name('cashier.receipt.print');
         Route::get('/cashier/collections', [CashierController::class, 'collectionsReport'])->name('cashier.collections-report');
         Route::get('/cashier/collections/export', [CashierController::class, 'collectionsReportExport'])->name('cashier.collections-report.export');
+        Route::get('/cashier/reports', [CashierController::class, 'reports'])->name('cashier.reports');
+        Route::get('/cashier/reports/receivables', [CashierController::class, 'receivablesReport'])->name('cashier.reports.receivables');
         Route::get('/cashier/discounts', [CashierController::class, 'discounts'])->name('cashier.discounts');
         Route::post('/cashier/discounts/{ledger}', [CashierController::class, 'updateDiscount'])->name('cashier.discounts.update');
     });
@@ -197,10 +199,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/teacher/grade-assessment/{class}/student/{enrollment}', [TeacherController::class, 'storeGradeAssessmentStudent'])->name('teacher.grade-assessment.student.store');
         Route::get('/teacher/computed-grades', [TeacherController::class, 'computedGrades'])->name('teacher.computed-grades');
         Route::post('/teacher/computed-grades/batch-submit', [TeacherController::class, 'batchSubmitGrades'])->name('teacher.computed-grades.batch-submit');
-
-        // Grade Table (spreadsheet view)
-        Route::get('/teacher/grade-table', [TeacherController::class, 'gradeTable'])->name('teacher.grade-table');
-        Route::post('/teacher/grade-table/save/{class}', [TeacherController::class, 'saveGradeTable'])->name('teacher.grade-table.save');
     });
 
     Route::middleware(['role:5'])->group(function() {

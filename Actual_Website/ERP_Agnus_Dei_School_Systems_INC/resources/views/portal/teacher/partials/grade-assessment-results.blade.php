@@ -40,21 +40,27 @@
     </div>
 
     @if($activeEnrollments->isEmpty())
-    <p class="text-sm text-gray-500">No students enrolled.</p>
+    <p class="text-sm text-gray-500 dark:text-[#8A90B0]">No students enrolled.</p>
     @else
-    <p class="text-sm text-gray-500 mb-3">Click a student to enter their assessment scores.</p>
-    <div class="space-y-2">
-        @foreach($activeEnrollments as $enrollment)
-        @php
-            $totalRaw = 0;
-            $totalMax = 0;
-            if(isset($existingAssessments[$enrollment->id])) {
-                $totalRaw = $existingAssessments[$enrollment->id]->sum('raw_score');
-                $totalMax = $existingAssessments[$enrollment->id]->sum('max_score');
-            }
-        @endphp
-        <a href="{{ route('teacher.grade-assessment.student', [$class, $enrollment->id]) }}?grading_period={{ $selectedPeriod }}"
-           class="flex items-center justify-between p-3 bg-gray-50 hover:bg-blue-50 rounded-lg transition">
+    <div x-data="{ search: '' }">
+        <input type="text" x-model="search" placeholder="Search student..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm w-full mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+
+        <p class="text-sm text-gray-500 dark:text-[#8A90B0] mb-3">Click a student to enter their assessment scores.</p>
+        <div class="space-y-2">
+            @foreach($activeEnrollments as $enrollment)
+            @php
+                $totalRaw = 0;
+                $totalMax = 0;
+                if(isset($existingAssessments[$enrollment->id])) {
+                    $totalRaw = $existingAssessments[$enrollment->id]->sum('raw_score');
+                    $totalMax = $existingAssessments[$enrollment->id]->sum('max_score');
+                }
+                $studentNameLower = strtolower($enrollment->student->first_name . ' ' . $enrollment->student->last_name);
+                $studentNumberLower = strtolower($enrollment->student->student_number ?? '');
+            @endphp
+            <a href="{{ route('teacher.grade-assessment.student', [$class, $enrollment->id]) }}?grading_period={{ $selectedPeriod }}"
+               x-show="search === '' || '{{ $studentNameLower }}'.includes(search.toLowerCase()) || '{{ $studentNumberLower }}'.includes(search.toLowerCase())"
+               class="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#23274C] hover:bg-blue-50 dark:hover:bg-[#2A2F58] rounded-lg transition border border-transparent dark:border-[#2A2F58]">
             <div>
                 <p class="font-medium text-gray-900">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</p>
                 <p class="text-xs text-gray-500">{{ $enrollment->student->student_number }}</p>
@@ -68,6 +74,7 @@
             </div>
         </a>
         @endforeach
+        </div>
     </div>
     @endif
 </div>

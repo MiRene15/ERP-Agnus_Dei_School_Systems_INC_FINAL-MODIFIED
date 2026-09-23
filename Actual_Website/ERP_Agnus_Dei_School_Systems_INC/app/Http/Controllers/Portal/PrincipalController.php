@@ -81,6 +81,10 @@ class PrincipalController extends Controller
     public function schedulesStore(Request $request)
     {
         $data = $request->validate([
+            'grade_level' => 'nullable|string|max:50',
+            'section' => 'nullable|string|max:100',
+            'teacher_id' => 'nullable|exists:users,id',
+            'subject_id' => 'nullable|exists:subjects,id',
             'class_id' => 'required|exists:classes,id',
             'day_of_week' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday',
             'start_time' => 'required|date_format:H:i',
@@ -88,11 +92,16 @@ class PrincipalController extends Controller
             'room' => 'nullable|string|max:50',
         ]);
 
+        // Normalize times to H:i:s for overlap comparison
+        $start = $data['start_time'] . ':00';
+        $end = $data['end_time'] . ':00';
+        if (strlen($data['start_time']) === 8) $start = $data['start_time'];
+        if (strlen($data['end_time']) === 8) $end = $data['end_time'];
+
         $conflict = Schedule::where('class_id', $data['class_id'])
             ->where('day_of_week', $data['day_of_week'])
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
-                    ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_time', '<', $end)->where('end_time', '>', $start);
             })
             ->exists();
 
@@ -104,9 +113,8 @@ class PrincipalController extends Controller
         if ($class && $class->teacher_id) {
             $teacherConflict = Schedule::where('day_of_week', $data['day_of_week'])
                 ->whereHas('schoolClass', fn($q) => $q->where('teacher_id', $class->teacher_id))
-                ->where(function ($q) use ($data) {
-                    $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
-                      ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+                ->where(function ($q) use ($start, $end) {
+                    $q->where('start_time', '<', $end)->where('end_time', '>', $start);
                 })->exists();
             if ($teacherConflict) {
                 return back()->with('error', 'Teacher is already booked at this time on ' . $data['day_of_week'] . '.');
@@ -116,16 +124,22 @@ class PrincipalController extends Controller
         if (!empty($data['room'])) {
             $roomConflict = Schedule::where('day_of_week', $data['day_of_week'])
                 ->where('room', $data['room'])
-                ->where(function ($q) use ($data) {
-                    $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
-                      ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+                ->where(function ($q) use ($start, $end) {
+                    $q->where('start_time', '<', $end)->where('end_time', '>', $start);
                 })->exists();
             if ($roomConflict) {
                 return back()->with('error', 'Room ' . $data['room'] . ' is already booked at this time on ' . $data['day_of_week'] . '.');
             }
         }
 
-        Schedule::create($data);
+        $schedule = Schedule::create([
+            'class_id' => $data['class_id'],
+            'day_of_week' => $data['day_of_week'],
+            'start_time' => $data['start_time'],
+            'end_time' => $data['end_time'],
+            'room' => $data['room'] ?? null,
+        ]);
+        log_activity($schedule, 'Schedule Created', auth()->user()->name . ' created schedule for class #' . $data['class_id'] . ' on ' . $data['day_of_week'] . ' ' . $data['start_time'] . '-' . $data['end_time']);
 
         return back()->with('success', 'Schedule added.');
     }
@@ -145,12 +159,16 @@ class PrincipalController extends Controller
             'room' => 'nullable|string|max:50',
         ]);
 
+        $start = $data['start_time'] . ':00';
+        $end = $data['end_time'] . ':00';
+        if (strlen($data['start_time']) === 8) $start = $data['start_time'];
+        if (strlen($data['end_time']) === 8) $end = $data['end_time'];
+
         $conflict = Schedule::where('id', '!=', $schedule->id)
             ->where('class_id', $schedule->class_id)
             ->where('day_of_week', $data['day_of_week'])
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
-                  ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_time', '<', $end)->where('end_time', '>', $start);
             })->exists();
         if ($conflict) return back()->with('error', 'Time conflict for this class.');
 
@@ -159,9 +177,8 @@ class PrincipalController extends Controller
             $teacherConflict = Schedule::where('id', '!=', $schedule->id)
                 ->where('day_of_week', $data['day_of_week'])
                 ->whereHas('schoolClass', fn($q) => $q->where('teacher_id', $class->teacher_id))
-                ->where(function ($q) use ($data) {
-                    $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
-                      ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+                ->where(function ($q) use ($start, $end) {
+                    $q->where('start_time', '<', $end)->where('end_time', '>', $start);
                 })->exists();
             if ($teacherConflict) return back()->with('error', 'Teacher already booked at this time.');
         }
@@ -170,14 +187,14 @@ class PrincipalController extends Controller
             $roomConflict = Schedule::where('id', '!=', $schedule->id)
                 ->where('day_of_week', $data['day_of_week'])
                 ->where('room', $data['room'])
-                ->where(function ($q) use ($data) {
-                    $q->whereBetween('start_time', [$data['start_time'], $data['end_time']])
-                      ->orWhereBetween('end_time', [$data['start_time'], $data['end_time']]);
+                ->where(function ($q) use ($start, $end) {
+                    $q->where('start_time', '<', $end)->where('end_time', '>', $start);
                 })->exists();
             if ($roomConflict) return back()->with('error', 'Room already booked at this time.');
         }
 
         $schedule->update($data);
+        log_activity($schedule, 'Schedule Updated', auth()->user()->name . ' updated schedule #' . $schedule->id . ' to ' . $data['day_of_week'] . ' ' . $data['start_time'] . '-' . $data['end_time']);
         return redirect()->route('principal.schedules')->with('success', 'Schedule updated.');
     }
 
@@ -191,6 +208,8 @@ class PrincipalController extends Controller
 
     public function schedulesDestroy(Schedule $schedule)
     {
+        $info = 'Schedule #' . $schedule->id . ' (' . $schedule->day_of_week . ' ' . substr($schedule->start_time,0,5) . '-' . substr($schedule->end_time,0,5) . ') deleted';
+        log_activity($schedule, 'Schedule Deleted', auth()->user()->name . ' deleted ' . $info);
         $schedule->delete();
         return back()->with('success', 'Schedule removed.');
     }
@@ -201,8 +220,8 @@ class PrincipalController extends Controller
         $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="schedules_template.csv"'];
         $columns = ['grade_level', 'section', 'subject_code', 'day_of_week', 'start_time', 'end_time', 'room'];
         $examples = [
-            ['Grade 7', 'A', 'ENG7', 'Monday', '08:00', '09:00', 'J-101'],
-            ['Grade 7', 'A', 'MATH7', 'Tuesday', '09:00', '10:00', 'J-101'],
+            ['Grade 7', 'Charity', 'G7-ENG', 'Monday', '08:00', '09:00', 'J-101'],
+            ['Grade 7', 'Hope', 'G7-MAT', 'Tuesday', '09:00', '10:00', 'J-102'],
         ];
         return response()->stream(function () use ($columns, $examples) {
             $out = fopen('php://output', 'w');
@@ -280,11 +299,14 @@ class PrincipalController extends Controller
                 continue;
             }
 
+            $rStart = $r['start_time'] . ':00';
+            $rEnd = $r['end_time'] . ':00';
+            if (strlen($r['start_time']) === 8) $rStart = $r['start_time'];
+            if (strlen($r['end_time']) === 8) $rEnd = $r['end_time'];
             $conflict = Schedule::where('class_id', $r['class_id'])
                 ->where('day_of_week', $r['day_of_week'])
-                ->where(function ($q) use ($r) {
-                    $q->whereBetween('start_time', [$r['start_time'], $r['end_time']])
-                      ->orWhereBetween('end_time', [$r['start_time'], $r['end_time']]);
+                ->where(function ($q) use ($rStart, $rEnd) {
+                    $q->where('start_time', '<', $rEnd)->where('end_time', '>', $rStart);
                 })->exists();
 
             if ($conflict) {
@@ -296,9 +318,8 @@ class PrincipalController extends Controller
             if ($class && $class->teacher_id) {
                 $teacherConflict = Schedule::where('day_of_week', $r['day_of_week'])
                     ->whereHas('schoolClass', fn($q) => $q->where('teacher_id', $class->teacher_id))
-                    ->where(function ($q) use ($r) {
-                        $q->whereBetween('start_time', [$r['start_time'], $r['end_time']])
-                          ->orWhereBetween('end_time', [$r['start_time'], $r['end_time']]);
+                    ->where(function ($q) use ($rStart, $rEnd) {
+                        $q->where('start_time', '<', $rEnd)->where('end_time', '>', $rStart);
                     })->exists();
                 if ($teacherConflict) {
                     $skipped[] = "Line {$r['line']}: teacher already booked on {$r['day_of_week']} {$r['start_time']}-{$r['end_time']} — skipped.";
@@ -308,9 +329,8 @@ class PrincipalController extends Controller
             if (!empty($r['room'])) {
                 $roomConflict = Schedule::where('day_of_week', $r['day_of_week'])
                     ->where('room', $r['room'])
-                    ->where(function ($q) use ($r) {
-                        $q->whereBetween('start_time', [$r['start_time'], $r['end_time']])
-                          ->orWhereBetween('end_time', [$r['start_time'], $r['end_time']]);
+                    ->where(function ($q) use ($rStart, $rEnd) {
+                        $q->where('start_time', '<', $rEnd)->where('end_time', '>', $rStart);
                     })->exists();
                 if ($roomConflict) {
                     $skipped[] = "Line {$r['line']}: room {$r['room']} already booked on {$r['day_of_week']} — skipped.";
@@ -319,13 +339,14 @@ class PrincipalController extends Controller
             }
 
             try {
-                Schedule::create([
+                $created = Schedule::create([
                     'class_id' => $r['class_id'],
                     'day_of_week' => $r['day_of_week'],
                     'start_time' => $r['start_time'],
                     'end_time' => $r['end_time'],
                     'room' => $r['room'] ?: null,
                 ]);
+                log_activity($created, 'Schedule Imported', 'Imported schedule for class #' . $r['class_id'] . ' on ' . $r['day_of_week'] . ' ' . $r['start_time'] . '-' . $r['end_time']);
                 $imported++;
             } catch (\Exception $e) {
                 $errors[] = "Line {$r['line']}: " . $e->getMessage();

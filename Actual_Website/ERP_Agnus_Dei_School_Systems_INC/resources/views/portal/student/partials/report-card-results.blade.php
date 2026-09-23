@@ -42,13 +42,12 @@
             </tbody>
             @if($subjects->isNotEmpty())
             <tfoot>
-                <tr class="bg-gray-50 font-semibold">
-                    <td class="py-3 px-3 text-gray-900 border border-gray-200">General Average</td>
-                    <td colspan="{{ count($gradingPeriods) }}" class="py-3 px-2 text-center text-gray-900 border border-gray-200"></td>
-                    <td class="py-3 px-2 text-center text-gray-900 border border-gray-200">{{ $overallAverage ? number_format($overallAverage, 2) : '—' }}</td>
-                    <td class="py-3 px-2 text-center border border-gray-200">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ ($overallAverage ?? 0) >= 75 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                            {{ ($overallAverage ?? 0) >= 75 ? 'Passed' : 'Failed' }}
+                <tr class="bg-gray-50 dark:bg-[#23274C] font-semibold border-t-2 border-gray-800 dark:border-[#3B4172]">
+                    <td colspan="5" class="py-3 px-3 text-right text-gray-900 dark:text-[#E8EAF6] border border-gray-200 dark:border-[#3B4172]">GENERAL AVERAGE</td>
+                    <td class="py-3 px-2 text-center text-gray-900 dark:text-[#E8EAF6] border border-gray-200 dark:border-[#3B4172]">{{ $overallAverage ? number_format($overallAverage, 2) : '—' }}</td>
+                    <td class="py-3 px-2 text-center border border-gray-200 dark:border-[#3B4172]">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ ($overallAverage ?? 0) >= 75 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : (($overallAverage ?? 0) > 0 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400') }}">
+                            @if(($overallAverage ?? 0) >= 75) Passed @elseif(($overallAverage ?? 0) > 0) Failed @else — @endif
                         </span>
                     </td>
                 </tr>

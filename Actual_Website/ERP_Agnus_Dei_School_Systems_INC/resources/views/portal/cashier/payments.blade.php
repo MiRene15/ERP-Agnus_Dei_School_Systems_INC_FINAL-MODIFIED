@@ -17,41 +17,9 @@
 @endif
 
 <div x-data="searchPayments()">
-    <!-- Floating Search Modal -->
-    <div x-show="showModal" x-cloak x-transition.opacity
-         class="fixed inset-0 z-[997] flex items-center justify-center p-4"
-         style="background: rgba(14,17,36,0.55); backdrop-filter: blur(6px);">
-        <div class="bg-white dark:bg-[#1A1E3B] rounded-2xl shadow-2xl w-full max-w-lg p-6 relative border border-gray-100 dark:border-[#2A2F58]" @click.stop>
-            <button @click="showModal=false" class="absolute top-4 right-4 text-gray-400 dark:text-[#6A7094] hover:text-gray-600 dark:hover:text-[#E8EAF6]">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-            <div class="text-center mb-5">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style="background: var(--navy);">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Search Student</h3>
-                <p class="text-sm text-gray-500 dark:text-[#8A90B0] mt-1">Enter student's name, number, or LRN to process payment.</p>
-            </div>
-            <div class="flex gap-2 mb-3">
-                <select x-model="selectedYear" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
-                    @foreach($schoolYears as $sy)
-                        <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="flex gap-2">
-                <input type="text" x-model="searchQuery" @keydown.enter.prevent="performSearch(); if(searchQuery.length>=2) showModal=false" placeholder="Search by name, student number, or LRN..."
-                       class="flex-1 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
-                <button type="button" @click="performSearch(); if(searchQuery.length>=2) showModal=false" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white whitespace-nowrap" style="background: var(--navy);">Search</button>
-            </div>
-            <p class="text-xs text-gray-400 dark:text-[#6A7094] mt-2 text-center">Press Enter or click Search — results will appear on the page.</p>
-        </div>
-    </div>
-
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
     <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Search Student</h3>
-        <button type="button" @click="showModal=true" class="text-xs font-semibold text-blue-600 dark:text-[#60A5FA] hover:underline">Open search prompt</button>
     </div>
     <div class="flex gap-3 items-center">
         <select x-model="selectedYear" @change="performSearch()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
@@ -127,7 +95,6 @@
 <script>
 function searchPayments() {
     return {
-        showModal: true,
         searchQuery: '',
         selectedYear: '{{ $schoolYear }}',
         students: [],

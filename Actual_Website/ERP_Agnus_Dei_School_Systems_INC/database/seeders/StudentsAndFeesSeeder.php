@@ -92,6 +92,53 @@ class StudentsAndFeesSeeder extends Seeder
         // Graduated students (status = 'graduated')
         ['first_name' => 'Jasmine', 'last_name' => 'Ramos',      'middle_name' => 'Santiago',  'grade' => 'Grade 12','strand' => 'STEM', 'status' => 'graduated'],
         ['first_name' => 'Victor', 'last_name' => 'Gonzales',    'middle_name' => 'Pascual',   'grade' => 'Grade 12','strand' => 'ABM', 'status' => 'graduated'],
+        // --- Additional 33 students to reach 75 total (diverse, realistic Filipino names) ---
+        // Kinder (+3)
+        ['first_name' => 'Amara', 'last_name' => 'Reyes',        'middle_name' => 'Santos',    'grade' => 'Kinder',  'strand' => null],
+        ['first_name' => 'Ethan', 'last_name' => 'Dela Rosa',    'middle_name' => 'Cruz',      'grade' => 'Kinder',  'strand' => null],
+        ['first_name' => 'Sofia', 'last_name' => 'Alonzo',       'middle_name' => 'Garcia',    'grade' => 'Kinder',  'strand' => null],
+        // Grade 1 (+2)
+        ['first_name' => 'Bianca', 'last_name' => 'Navarro',     'middle_name' => 'Lim',       'grade' => 'Grade 1', 'strand' => null],
+        ['first_name' => 'Rafael', 'last_name' => 'Domingo',     'middle_name' => 'Reyes',     'grade' => 'Grade 1', 'strand' => null],
+        // Grade 2 (+3)
+        ['first_name' => 'Marco', 'last_name' => 'Santos',       'middle_name' => 'Villanueva','grade' => 'Grade 2', 'strand' => null],
+        ['first_name' => 'Isabella', 'last_name' => 'Villanueva','middle_name' => 'Aquino',   'grade' => 'Grade 2', 'strand' => null],
+        ['first_name' => 'Nathan', 'last_name' => 'Cruz',        'middle_name' => 'Torres',    'grade' => 'Grade 2', 'strand' => null],
+        // Grade 3 (+2)
+        ['first_name' => 'Miguel', 'last_name' => 'De Guzman',   'middle_name' => 'Ramos',     'grade' => 'Grade 3', 'strand' => null],
+        ['first_name' => 'Hannah', 'last_name' => 'Flores',      'middle_name' => 'Mendoza',   'grade' => 'Grade 3', 'strand' => null],
+        // Grade 4 (+2) — one withdrawn
+        ['first_name' => 'Sabrina', 'last_name' => 'Ortega',     'middle_name' => 'Bautista',  'grade' => 'Grade 4', 'strand' => null],
+        ['first_name' => 'Joaquin', 'last_name' => 'Ramos',      'middle_name' => 'Mercado',   'grade' => 'Grade 4', 'strand' => null, 'status' => 'withdrawn'],
+        // Grade 5 (+3)
+        ['first_name' => 'Andre', 'last_name' => 'Bautista',     'middle_name' => 'Soriano',   'grade' => 'Grade 5', 'strand' => null],
+        ['first_name' => 'Juliana', 'last_name' => 'Soriano',    'middle_name' => 'Delgado',   'grade' => 'Grade 5', 'strand' => null],
+        ['first_name' => 'Francis', 'last_name' => 'Delgado',    'middle_name' => 'Aquino',    'grade' => 'Grade 5', 'strand' => null],
+        // Grade 6 (+3) — one transferred
+        ['first_name' => 'Alyssa', 'last_name' => 'Mercado',     'middle_name' => 'Santiago',  'grade' => 'Grade 6', 'strand' => null],
+        ['first_name' => 'Tristan', 'last_name' => 'Rivera',     'middle_name' => 'Cruz',      'grade' => 'Grade 6', 'strand' => null],
+        ['first_name' => 'Diego', 'last_name' => 'Hernandez',    'middle_name' => 'Reyes',     'grade' => 'Grade 6', 'strand' => null, 'status' => 'transferred'],
+        // Grade 7 (+3)
+        ['first_name' => 'Janelle', 'last_name' => 'Cruz',       'middle_name' => 'Villanueva','grade' => 'Grade 7', 'strand' => null],
+        ['first_name' => 'Jerome', 'last_name' => 'Aquino',      'middle_name' => 'Dela Peña', 'grade' => 'Grade 7', 'strand' => null],
+        ['first_name' => 'Kiera', 'last_name' => 'Santos',       'middle_name' => 'Fernando',  'grade' => 'Grade 7', 'strand' => null],
+        // Grade 8 (+2)
+        ['first_name' => 'Paolo', 'last_name' => 'Santos',       'middle_name' => 'Garcia',    'grade' => 'Grade 8', 'strand' => null],
+        ['first_name' => 'Nina', 'last_name' => 'Esquivel',      'middle_name' => 'Ramos',     'grade' => 'Grade 8', 'strand' => null],
+        // Grade 9 (+2)
+        ['first_name' => 'Nathaniel', 'last_name' => 'De Leon',  'middle_name' => 'Cruz',      'grade' => 'Grade 9', 'strand' => null],
+        ['first_name' => 'Elise', 'last_name' => 'Tan',          'middle_name' => 'Lim',       'grade' => 'Grade 9', 'strand' => null],
+        // Grade 10 (+2)
+        ['first_name' => 'Julian', 'last_name' => 'Perez',       'middle_name' => 'Santiago',  'grade' => 'Grade 10','strand' => null],
+        ['first_name' => 'Andrea', 'last_name' => 'Lim',         'middle_name' => 'Villanueva','grade' => 'Grade 10','strand' => null],
+        // Grade 11 (+3) — mix strands
+        ['first_name' => 'Lorenzo', 'last_name' => 'Valdez',     'middle_name' => 'Santos',    'grade' => 'Grade 11','strand' => 'STEM', 'scholarship' => false],
+        ['first_name' => 'Mariel', 'last_name' => 'De Vera',     'middle_name' => 'Cruz',      'grade' => 'Grade 11','strand' => 'ABM', 'scholarship' => true],
+        ['first_name' => 'Clarisse', 'last_name' => 'Abad',      'middle_name' => 'Reyes',     'grade' => 'Grade 11','strand' => 'HUMSS', 'scholarship' => false],
+        // Grade 12 (+3) — mix strands including one graduated, one transferred
+        ['first_name' => 'Enzo', 'last_name' => 'Santiago',      'middle_name' => 'Ramos',     'grade' => 'Grade 12','strand' => 'STEM', 'scholarship' => false],
+        ['first_name' => 'Katrina', 'last_name' => 'Dizon',      'middle_name' => 'Mercado',   'grade' => 'Grade 12','strand' => 'GAS', 'status' => 'graduated'],
+        ['first_name' => 'Samuel', 'last_name' => 'Ortiz',       'middle_name' => 'Garcia',    'grade' => 'Grade 12','strand' => 'HUMSS', 'status' => 'transferred'],
     ];
 
     public function run(): void
@@ -167,9 +214,13 @@ class StudentsAndFeesSeeder extends Seeder
                 ]
             );
 
-            // Withdrawn and graduated students get archived_at too
-            if ($studentStatus === 'withdrawn') {
-                $student->update(['archived_at' => $today->copy()->subMonths(rand(1, 6))]);
+            // Withdrawn/transferred and graduated students get archived_at too
+            if (in_array($studentStatus, ['withdrawn', 'transferred'], true)) {
+                $student->update([
+                    'archived_at' => $today->copy()->subMonths(rand(1, 6)),
+                    'archive_action' => $studentStatus === 'transferred' ? 'transferred' : 'withdrawn',
+                    'archive_reason' => $studentStatus === 'transferred' ? 'Transferred to another school' : 'Voluntary withdrawal',
+                ]);
             }
 
             $admissionTypes = ['New', 'New', 'New', 'Honor', 'Sibling', 'Transferee'];
@@ -194,7 +245,7 @@ class StudentsAndFeesSeeder extends Seeder
                 [
                     'section_id' => $section->id,
                     'strand' => $seed['strand'],
-                    'status' => $studentStatus === 'withdrawn' ? 'Withdrawn' : ($studentStatus === 'graduated' ? 'Graduated' : 'Active'),
+                    'status' => $studentStatus === 'withdrawn' ? 'Withdrawn' : ($studentStatus === 'transferred' ? 'Transferred' : ($studentStatus === 'graduated' ? 'Graduated' : 'Active')),
                 ]
             );
 
@@ -237,23 +288,23 @@ class StudentsAndFeesSeeder extends Seeder
             if ($seed['scholarship'] ?? false) {
                 $discountType = 'esc';
                 $discountAmount = $schedules->sum('tuition_fee');
-            } elseif ($index === 3 || $index === 6) {
+            } elseif (in_array($index, [3, 6, 45, 67], true)) {
                 $discountType = 'honor';
                 $discountAmount = round($totalAssessed * 0.10, 2);
-            } elseif ($index === 5 || $index === 14) {
+            } elseif (in_array($index, [5, 14, 50, 62], true)) {
                 $discountType = 'sibling';
                 $discountAmount = round($totalAssessed * 0.05, 2);
             }
 
-            // Varied payment behaviors
+            // Varied payment behaviors - expanded for 75 students
             $effectiveAssessed = $totalAssessed - $discountAmount;
             $paymentRatio = match (true) {
-                $index === 0 || $index === 12 => 1.0,    // fully paid
-                $index === 2 || $index === 15 => 0.75,   // mostly paid
-                $index === 4 || $index === 18 => 0.5,    // half paid
-                $index === 7 || $index === 22 => 0.25,   // quarter paid
-                in_array($index, [9, 20, 29]) => 0.0,    // unpaid (overdue)
-                in_array($index, [38, 39, 40, 41]) => 0.0, // withdrawn/graduated unpaid
+                in_array($index, [0, 12, 42, 60], true) => 1.0,    // fully paid
+                in_array($index, [2, 15, 47, 65], true) => 0.75,   // mostly paid
+                in_array($index, [4, 18, 52, 68], true) => 0.5,    // half paid
+                in_array($index, [7, 22, 57, 70], true) => 0.25,   // quarter paid
+                in_array($index, [9, 20, 29, 44, 54, 63], true) => 0.0,    // unpaid (overdue)
+                in_array($index, [38, 39, 40, 41, 53, 59, 73, 74], true) => 0.0, // withdrawn/graduated/transferred unpaid
                 default => rand(30, 60) / 100,
             };
             $partialPayment = round($effectiveAssessed * $paymentRatio, 2);
