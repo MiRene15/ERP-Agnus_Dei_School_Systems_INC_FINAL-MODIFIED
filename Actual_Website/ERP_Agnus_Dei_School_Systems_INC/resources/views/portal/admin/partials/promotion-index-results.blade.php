@@ -1,8 +1,16 @@
-<div x-data="{ selectedIds: [], toggleAllPromo(event) { const checkboxes = document.querySelectorAll('.promo-checkbox'); if (event.target.checked) { this.selectedIds = Array.from(checkboxes).map(cb => cb.value); } else { this.selectedIds = []; } checkboxes.forEach(cb => cb.checked = event.target.checked); } }">
+<div x-data="{ selectedGrade: 'all', selectedIds: [], toggleAllPromo(event) { const checkboxes = document.querySelectorAll('.promo-checkbox'); if (event.target.checked) { this.selectedIds = Array.from(checkboxes).map(cb => cb.value); } else { this.selectedIds = []; } checkboxes.forEach(cb => cb.checked = event.target.checked); } }">
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">End-of-Year Promotion</h2>
     <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Select an action for each student to process end-of-year promotion, retention, graduation, or transfer.</p>
 </div>
+
+<div class="mb-4">
+    <div class="flex gap-1.5 flex-wrap mb-3">
+        <button type="button" @click="selectedGrade = 'all'" :class="selectedGrade === 'all' ? 'bg-gray-900 dark:bg-[#1A1E3B] text-white border-gray-900' : 'bg-white dark:bg-[#1A1E3B] text-gray-600 dark:text-[#C1C4DC] border-gray-200 dark:border-[#2A2F58] hover:bg-gray-50 dark:hover:bg-[#23274C]'" class="px-3 py-1.5 rounded-full text-xs font-semibold border transition">All Grades</button>
+        @foreach($enrollments->keys()->sort()->values() as $gl)
+        <button type="button" @click="selectedGrade = '{{ $gl }}'" :class="selectedGrade === '{{ $gl }}' ? 'bg-gray-900 dark:bg-[#1A1E3B] text-white border-gray-900' : 'bg-white dark:bg-[#1A1E3B] text-gray-600 dark:text-[#C1C4DC] border-gray-200 dark:border-[#2A2F58] hover:bg-gray-50 dark:hover:bg-[#23274C]'" class="px-3 py-1.5 rounded-full text-xs font-semibold border transition">{{ $gl }}</button>
+        @endforeach
+    </div>
 
 @if($enrollments->isEmpty())
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 text-center">
@@ -23,7 +31,7 @@
     </div>
 
     @foreach($enrollments as $gradeLevel => $gradeEnrollments)
-    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-4">
+    <div x-show="selectedGrade === 'all' || selectedGrade === '{{ $gradeLevel }}'" class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-4">
         <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-3">{{ $gradeLevel }} <span class="text-sm font-normal text-gray-500 dark:text-[#8A90B0]">({{ $gradeEnrollments->count() }} student(s))</span></h3>
         <div class="overflow-x-auto" x-data="{ filter: 'all' }">
             <p class="text-xs text-gray-400 mb-2">GWA &ge;{{ $passingGrade ?? 75 }} and no failing subject (&lt;{{ $passingGrade ?? 75 }}) = qualified. Failing or no grades = not qualified — review manually.</p>
@@ -154,5 +162,6 @@
         </button>
     </div>
 </form>
-</div>
 @endif
+</div>
+</div>

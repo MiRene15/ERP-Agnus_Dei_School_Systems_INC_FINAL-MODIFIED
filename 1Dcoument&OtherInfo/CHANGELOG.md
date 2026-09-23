@@ -1,5 +1,11 @@
 # Release Notes
 
+## [Unreleased] — Promotion Filters, Audit Logs, Reports Enhancement — 2026-09-23
+- **Promotion:** added grade-level filter tabs (All Grades + per-grade) to `promotion-index-results.blade.php:7` — no more scrolling through all grades
+- **Audit Logs:** fixed display — added 30+ event colors (was 7), dark mode on audit page + results table; verified `AdminController.php:auditLogs` shows all 60 events with `withQueryString()` pagination
+- **Library Reports:** export CSV (`DirectressController.php:exportLibraryReports` + `web.php:library-reports.export`) + Chart.js doughnut (Available/Borrowed/Overdue) + bar (Popular Books)
+- **Cashier Reports:** export CSV (`DirectressController.php:exportCashierReports` + `web.php:cashier-reports.export`) + Chart.js bar (Monthly Collected + Receipts) with dark-aware colors
+
 ## [Unreleased] — Dark Mode Readability & Contrast — 2026-09-23
 - Added `darkMode: 'class'` to `tailwind.config.js` (was `media` — `dark:` utilities were dead-code)
 - Extended `portal/layouts/app.blade.php` global dark overrides: amber/slate/blue, hovers, skeleton, sidebar

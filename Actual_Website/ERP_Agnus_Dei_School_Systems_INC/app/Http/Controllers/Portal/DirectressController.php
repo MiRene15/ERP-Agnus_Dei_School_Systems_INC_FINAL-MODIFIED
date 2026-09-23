@@ -442,4 +442,45 @@ class DirectressController extends Controller
             'totalCollected', 'receiptCount', 'avgPayment', 'totalAssessed', 'totalPaid', 'totalBalance', 'monthlyData', 'dateFrom', 'dateTo', 'payments'
         ));
     }
+
+    public function exportLibraryReports(Request $request)
+    {
+        $transactions = \App\Models\LibraryTransaction::with('student', 'book')->latest('borrow_date')->get();
+        $filename = 'library_report_' . now()->format('Ymd_His') . '.csv';
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
+        $callback = function() use ($transactions) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Student', 'Book', 'Status', 'Borrow Date', 'Return Date', 'Fees']);
+            foreach ($transactions as $t) {
+                fputcsv($file, [
+                    ($t->student->first_name ?? '') . ' ' . ($t->student->last_name ?? ''),
+                    $t->book->title ?? $t->book_title,
+                    $t->status,
+                    $t->borrow_date,
+                    $t->return_date,
+                    $t->total_fees ?? 0,
+                ]);
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportCashierReports(Request $request)
+    {
+        $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $dateTo = $request->date_to ?? now()->format('Y-m-d');
+        $payments = \App\Models\Payment::with('ledger.student')->whereBetween('payment_date', [$dateFrom, $dateTo . ' 23:59:59'])->orderBy('payment_date')->get();
+        $filename = 'cashier_report_' . $dateFrom . '_to_' . $dateTo . '.csv';
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
+        $callback = function() use ($payments) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Date', 'Student', 'Amount', 'Receipt', 'AR Number']);
+            foreach ($payments as $p) {
+                fputcsv($file, [$p->payment_date, ($p->ledger->student->first_name ?? '') . ' ' . ($p->ledger->student->last_name ?? ''), $p->amount_paid, $p->receipt_number, $p->ar_number ?? '']);
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
 }

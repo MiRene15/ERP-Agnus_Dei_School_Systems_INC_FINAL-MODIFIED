@@ -289,7 +289,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/directress/graduation-fees/{assignment}/toggle-paid', [DirectressController::class, 'graduationFeesTogglePaid'])->name('directress.graduation-fees.toggle-paid');
 
         Route::get('/directress/library-reports', [DirectressController::class, 'libraryReports'])->name('directress.library-reports');
+        Route::get('/directress/library-reports/export', [DirectressController::class, 'exportLibraryReports'])->name('directress.library-reports.export');
         Route::get('/directress/cashier-reports', [DirectressController::class, 'cashierReports'])->name('directress.cashier-reports');
+        Route::get('/directress/cashier-reports/export', [DirectressController::class, 'exportCashierReports'])->name('directress.cashier-reports.export');
     });
 
     // ─── School Principal (role 9) ─────────────────────────────
