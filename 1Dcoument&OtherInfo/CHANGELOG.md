@@ -1,5 +1,9 @@
 # Release Notes
 
+## [Unreleased] — Strands→Electives + Directress Demographics — 2026-09-23
+- **Strands → Electives:** renamed user-facing labels Strand → Elective across admissions, COR, report cards, demographics (`byStrand`→`byElective`), validation enum kept (Arts/SocSci/Humanities + Business/Entrepreneurship)
+- **Directress Demographics:** ensured Demographics page accessible via `directress.demographics` route + sidebar `Demographics` link (first item) + chart views (By Grade/Section/Year/Elective)
+
 ## [Unreleased] — Batch Requests 2026-09-23 (16 items) — 2026-09-23
 - **Verification audit logs:** fix admin Verify not showing — correct `log_activity()` event/causer on `RegistrarAdmissionController.php:verifyRequirement/verifyAll` + visible color
 - **Grade rank:** grade levels sorted Kinder→Grade 12 via rank map (was alphabetical Grade 10 before Grade 2)

@@ -5,7 +5,7 @@
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">Demographics</h2>
-    <p class="text-gray-600 mt-1">Enrollments categorized by grade, section, year, and strand. Total active: {{ $total }}</p>
+    <p class="text-gray-600 mt-1">Enrollments categorized by grade, section, year, and elective. Total active: {{ $total }}</p>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -25,16 +25,16 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 class="font-semibold text-gray-900 mb-4">By Strand (SHS)</h3>
+        <h3 class="font-semibold text-gray-900 mb-4">By Elective (SHS)</h3>
         <div style="height: 280px; position: relative;">
             @forelse($byStrand as $strand => $count)
                 @php $pct = $total ? round($count / $total * 100, 1) : 0; @endphp
                 <div class="mb-3">
-                    <div class="flex justify-between text-sm mb-1"><span class="text-gray-700">{{ $strand ?: 'No Strand' }}</span><span class="font-medium">{{ $count }}</span></div>
+                    <div class="flex justify-between text-sm mb-1"><span class="text-gray-700">{{ $strand ?: 'No Elective' }}</span><span class="font-medium">{{ $count }}</span></div>
                     <div class="w-full bg-gray-100 rounded-full h-2"><div class="bg-purple-500 h-2 rounded-full" style="width: {{ $pct }}%"></div></div>
                 </div>
             @empty
-                <p class="text-sm text-gray-400">No strand data (non-SHS grades).</p>
+                <p class="text-sm text-gray-400">No elective data (non-SHS grades).</p>
             @endforelse
         </div>
     </div>

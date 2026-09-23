@@ -73,7 +73,7 @@
                 <p><span class="lbl">LRN:</span> {{ $student->legacy_lrn ?? 'N/A' }}</p>
                 <p><span class="lbl">School Year:</span> {{ $enrollment->school_year }}</p>
                 @if($enrollment->strand)
-                <p><span class="lbl">Strand:</span> {{ $enrollment->strand }}</p>
+                <p><span class="lbl">Elective:</span> {{ $enrollment->strand }}</p>
                 @endif
             </div>
             <p class="section-title">Enrolled Subjects</p>

@@ -5,7 +5,7 @@
             <th class="text-left px-4 py-3 font-semibold text-gray-700">Applicant</th>
             <th class="text-left px-4 py-3 font-semibold text-gray-700">Type</th>
             <th class="text-left px-4 py-3 font-semibold text-gray-700">Grade Level</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">Strand</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-700">Elective</th>
             <th class="text-left px-4 py-3 font-semibold text-gray-700">School Year</th>
             <th class="text-left px-4 py-3 font-semibold text-gray-700">Submitted</th>
             <th class="text-left px-4 py-3 font-semibold text-gray-700">Status</th>

@@ -43,7 +43,7 @@
         <tr><td>Section:</td><td>{{ $enrollment->section->section_name ?? 'N/A' }}</td></tr>
         <tr><td>LRN:</td><td>{{ $enrollment->student->student_number ?? 'N/A' }}</td></tr>
         @if($enrollment->strand)
-        <tr><td>Strand:</td><td>{{ $enrollment->strand }}</td></tr>
+        <tr><td>Elective:</td><td>{{ $enrollment->strand }}</td></tr>
         @endif
         <tr><td>Adviser:</td><td>{{ $enrollment->section?->adviser?->name ?? 'N/A' }}</td></tr>
     </table>
