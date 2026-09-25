@@ -462,7 +462,17 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 65
-- **Time span:** 2026-03-29 → 2026-09-23
+## 46. Audit Logs — Missing Events + Filter Fixes (Sep 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-09-25 | — | Fix: admin student account confirmation (single + batch) and settings save now log activity; audit log search covers user name/subject type; System filter option; `@js()` initial filter state; advanced panel auto-opens; new event badge colors |
+
+**Scope:** User reported no audit entry after verifying a student as admin. Cause: `AdminController::confirmAccount()` / `confirmBatch()` never called `log_activity()` (only registrar requirement verification did). Added `Account Confirmed`, `Accounts Confirmed`, `Settings Updated` events with causer + student names. Filters: search now matches causer name and subject type and is trimmed; `user_id=system` filters logs without a causer; audit-logs view passes initial filters through `@js([...])` (unescaped Blade quotes previously broke the Alpine component for text containing `'`); `app.js` `ajaxTable.showAdvanced` now defaults open when filters are preset. Verified with `php -l`, `php artisan view:cache`, `npm run build`.
+
+---
+
+- **Total update sessions (commits):** 66
+- **Time span:** 2026-03-29 → 2026-09-25
 - **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals) → Validation notes all phases (30 items) → Dark mode readability & contrast → Promotion grade filter + Audit logs fix + Reports export & graphs → Batch requests 16 items (seeders, report card, cashier, schedules) → Strands→Electives + Directress demographics
-- **Uncommitted/working changes:** Strands→Electives code fixes pending; modified `phpunit.xml`; untracked planning docs in `1Dcoument&OtherInfo/`
+- **Uncommitted/working changes:** none — all work committed through session 66

@@ -29,7 +29,7 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
     loading: true,
     html: '',
     lastKey: null,
-    showAdvanced: false,
+    showAdvanced: Object.values(initialFilters || {}).some((v) => v !== '' && v !== null && v !== undefined),
     init() {
         this.reload();
     },

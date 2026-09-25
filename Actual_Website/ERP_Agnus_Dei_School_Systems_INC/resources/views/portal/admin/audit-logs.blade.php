@@ -10,7 +10,13 @@
     <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Track all user activity across the system.</p>
 </div>
 
-<div x-data="ajaxTable('{{ route('admin.audit-logs') }}', { user_id: '{{ request('user_id') }}', event: '{{ request('event') }}', date_from: '{{ request('date_from') }}', date_to: '{{ request('date_to') }}', search: '{{ request('search') }}' })">
+<div x-data="ajaxTable('{{ route('admin.audit-logs') }}', @js([
+        'user_id' => (string) request('user_id'),
+        'event' => (string) request('event'),
+        'date_from' => (string) request('date_from'),
+        'date_to' => (string) request('date_to'),
+        'search' => (string) request('search'),
+    ]))">
     <!-- Basic Filters -->
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
         <form @submit.prevent="reload()">
@@ -31,6 +37,7 @@
                         <label class="block text-xs font-semibold text-gray-500 dark:text-[#8A90B0] uppercase mb-1">User</label>
                         <select x-model="filters.user_id" @change="reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
                             <option value="">All Users</option>
+                            <option value="system">System (no user)</option>
                             @foreach($users as $u)
                                 <option value="{{ $u->id }}">{{ $u->name }}</option>
                             @endforeach

@@ -38,6 +38,11 @@
                             'Admission Rejected', 'Requirement Verified', 'All Requirements Verified' => 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
                             'Fee Schedule Created', 'Graduation Fee Assigned', 'Graduation Fee Payment Toggled', 'School Year Lock Toggled' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
                             'Status Changed' => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+                            'Account Confirmed', 'Accounts Confirmed' => 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+                            'Settings Updated' => 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-300',
+                            'API Token Created' => 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
+                            'Schedule Created', 'Schedule Updated', 'Schedule Imported' => 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+                            'Schedule Deleted' => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
                             default => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
                         };
                     @endphp

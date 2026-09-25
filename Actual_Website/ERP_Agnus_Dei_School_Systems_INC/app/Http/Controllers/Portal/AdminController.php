@@ -60,7 +60,12 @@ class AdminController extends Controller
         $ledger->clearance_status = 'Cleared';
         $ledger->save();
 
-        return back()->with('success', 'Account confirmed for ' . $ledger->student->first_name . ' ' . $ledger->student->last_name . '.');
+        $student = $ledger->student;
+        $studentName = $student ? trim($student->first_name . ' ' . $student->last_name) : 'Student #' . $ledger->student_id;
+
+        log_activity($student ?? $ledger, 'Account Confirmed', auth()->user()->name . ' confirmed the student account of ' . $studentName . '.');
+
+        return back()->with('success', 'Account confirmed for ' . $studentName . '.');
     }
 
     public function confirmBatch(Request $request)
@@ -71,15 +76,22 @@ class AdminController extends Controller
         ]);
 
         $count = 0;
+        $names = [];
         StudentLedger::whereIn('id', $data['ledger_ids'])
             ->whereNull('it_confirmed_at')
             ->where('total_paid', '>', 0)
-            ->each(function ($ledger) use (&$count) {
+            ->with('student')
+            ->each(function ($ledger) use (&$count, &$names) {
                 $ledger->it_confirmed_at = now();
                 $ledger->clearance_status = 'Cleared';
                 $ledger->save();
                 $count++;
+                if ($ledger->student) {
+                    $names[] = trim($ledger->student->first_name . ' ' . $ledger->student->last_name);
+                }
             });
+
+        log_activity(new StudentLedger, 'Accounts Confirmed', auth()->user()->name . ' confirmed ' . $count . ' student account(s): ' . (count($names) ? implode(', ', $names) : 'no names available') . '.');
 
         return back()->with('success', "{$count} student account(s) confirmed successfully.");
     }
@@ -153,6 +165,8 @@ class AdminController extends Controller
         Setting::setValue('library_max_books_per_student', (string) $data['library_max_books_per_student']);
         Setting::setValue('enrollment_open', $data['enrollment_open']);
 
+        log_activity(new Setting, 'Settings Updated', auth()->user()->name . ' updated system settings (active school year: ' . $data['active_school_year'] . ').');
+
         return back()->with('success', 'Settings saved successfully.');
     }
 
@@ -163,7 +177,11 @@ class AdminController extends Controller
         $query = \App\Models\ActivityLog::with('causer');
 
         if ($request->filled('user_id')) {
-            $query->where('causer_id', $request->user_id);
+            if ($request->user_id === 'system') {
+                $query->whereNull('causer_id');
+            } else {
+                $query->where('causer_id', $request->user_id);
+            }
         }
         if ($request->filled('event')) {
             $query->where('event', $request->event);
@@ -174,11 +192,15 @@ class AdminController extends Controller
         if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
         }
-        if ($request->filled('search')) {
-            $search = $request->search;
+        $search = trim((string) $request->input('search', ''));
+        if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('description', 'like', "%{$search}%")
-                    ->orWhere('event', 'like', "%{$search}%");
+                    ->orWhere('event', 'like', "%{$search}%")
+                    ->orWhere('subject_type', 'like', "%{$search}%")
+                    ->orWhereHas('causer', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 

@@ -1,5 +1,13 @@
 # Release Notes
 
+## [Unreleased] — Audit Logs: Missing Events + Filter Fixes — 2026-09-25
+- **Root cause:** admin "confirm student account" actions wrote **no** audit log — `AdminController::confirmAccount()` and `confirmBatch()` had zero `log_activity()` calls, so verifying a student produced no event (registrar requirement verification was already logged)
+- **New events:** `Account Confirmed` (single), `Accounts Confirmed` (batch, with student names), `Settings Updated` (admin settings save) — `AdminController.php`
+- **Filter fixes (`AdminController::auditLogs`):** search now also matches **causer name** and **subject type** (was description/event only), input is trimmed, new **System (no user)** user option filters `causer_id IS NULL`
+- **Filter UX (`admin/audit-logs.blade.php`):** initial filter state passed via `@js([...])` instead of unescaped Blade interpolation inside a JS object (quotes in search text/event names could break the component); filter panel auto-opens when any filter is preset via URL/pagination
+- **Filter UX (`resources/js/app.js`):** `showAdvanced` is now derived from `initialFilters` (affects audit logs + librarian books) — `vite build` rerun
+- **Colors:** added `Account Confirmed`, `Accounts Confirmed`, `Settings Updated`, `API Token Created`, `Schedule Created/Updated/Imported/Deleted` to the event badge map
+
 ## [Unreleased] — Strands→Electives + Directress Demographics — 2026-09-23
 - **Strands → Electives:** renamed user-facing labels Strand → Elective across admissions, COR, report cards, demographics (`byStrand`→`byElective`), validation enum kept (Arts/SocSci/Humanities + Business/Entrepreneurship)
 - **Directress Demographics:** ensured Demographics page accessible via `directress.demographics` route + sidebar `Demographics` link (first item) + chart views (By Grade/Section/Year/Elective)
