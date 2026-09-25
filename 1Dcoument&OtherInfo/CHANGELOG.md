@@ -1,5 +1,12 @@
 # Release Notes
 
+## [Unreleased] — Cashier Reports: Total Collections + Dual Export — 2026-09-25
+- **Total collections in report body:** `collectionsReport()` now passes `totalCollected/receiptCount/byPlan/dateFrom/dateTo` to the AJAX partial (was only `payments` + `dailyBreakdown`) — the injected report now has a **summary strip** (Total Collections ₱, Receipts, By Payment Plan) and a **`<tfoot>` TOTAL row** under the payments table
+- **Stale-summary fix:** removed the static summary grid from `collections-report.blade.php` (it never refreshed on date-filter changes); summary now lives inside the partial
+- **Collections export:** Export CSV button added to the Reports page Collections tab; export href is now Alpine-driven from `filters.date_from/date_to` so it always exports the visible range (was the initially rendered range)
+- **Receivables export (new):** `CashierController::receivablesReportExport()` + route `cashier.reports.receivables.export` — CSV grouped by grade (Grade/Student/LRN/Section/Balance) with a TOTAL row + `Exported` audit log; Export CSV button on the Receivables tab
+- See `cashier_reports_total_export_20260925.md`
+
 ## [Unreleased] — Full Audit-Log Coverage (27 gaps) + Promotion Margins — 2026-09-25
 - **Coverage:** scanned all 37 controllers → added `log_activity()` to all **27 gaps** (28 new call sites; now **94 total calls**, was 66)
   - **Student flows:** `Admission Submitted`, `Admission Draft Saved`, `Admission Draft Discarded`, `Requirements Uploaded`, `Enrollment Request Submitted`, public inquiry `Account Created`

@@ -177,6 +177,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/cashier/collections/export', [CashierController::class, 'collectionsReportExport'])->name('cashier.collections-report.export');
         Route::get('/cashier/reports', [CashierController::class, 'reports'])->name('cashier.reports');
         Route::get('/cashier/reports/receivables', [CashierController::class, 'receivablesReport'])->name('cashier.reports.receivables');
+        Route::get('/cashier/reports/receivables/export', [CashierController::class, 'receivablesReportExport'])->name('cashier.reports.receivables.export');
         Route::get('/cashier/discounts', [CashierController::class, 'discounts'])->name('cashier.discounts');
         Route::post('/cashier/discounts/{ledger}', [CashierController::class, 'updateDiscount'])->name('cashier.discounts.update');
     });

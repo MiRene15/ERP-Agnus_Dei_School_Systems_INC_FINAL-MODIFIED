@@ -26,6 +26,8 @@
                     </div>
                     <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Generate Report</button>
                     <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 dark:bg-[#23274C] text-gray-700 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58]">Clear</button>
+                    <a :href="'{{ route('cashier.collections-report.export') }}?date_from=' + filters.date_from + '&date_to=' + filters.date_to"
+                       class="px-4 py-2 rounded-lg text-sm font-semibold bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 transition">Export CSV</a>
                 </form>
             </div>
             <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
@@ -49,6 +51,10 @@
         </div>
     </div>
     <div x-show="tab==='receivables'" x-cloak>
+        <div class="flex justify-end mb-4">
+            <a href="{{ route('cashier.reports.receivables.export') }}"
+               class="px-4 py-2 rounded-lg text-sm font-semibold bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 transition">Export CSV</a>
+        </div>
         <div x-data="ajaxTable('{{ route('cashier.reports.receivables') }}')">
             <div x-show="loading" class="p-4">
                 <div class="space-y-3">

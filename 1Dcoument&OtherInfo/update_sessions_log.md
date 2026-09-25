@@ -492,7 +492,17 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 68
+## 49. Cashier Reports — Total Collections + Dual Export (Sep 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-09-25 | — | Feat: collections report shows Total Collections summary strip + tfoot TOTAL row (summary vars now passed into the AJAX partial); removed stale static summary grid; collections export button on Reports page with date-driven href; new receivables CSV export (route + controller + button, TOTAL row + audit log) |
+
+**Scope:** `CashierController::collectionsReport()` AJAX branch + new `receivablesReportExport()`, `routes/web.php` +1 route, 3 cashier blades. See `cashier_reports_total_export_20260925.md`.
+
+---
+
+- **Total update sessions (commits):** 69
 - **Time span:** 2026-03-29 → 2026-09-25
 - **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals) → Validation notes all phases (30 items) → Dark mode readability & contrast → Promotion grade filter + Audit logs fix + Reports export & graphs → Batch requests 16 items (seeders, report card, cashier, schedules) → Strands→Electives + Directress demographics
 - **Uncommitted/working changes:** none — all work committed through session 67

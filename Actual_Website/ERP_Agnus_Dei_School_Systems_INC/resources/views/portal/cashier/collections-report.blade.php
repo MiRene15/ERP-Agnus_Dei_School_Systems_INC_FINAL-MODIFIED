@@ -25,33 +25,9 @@
             </div>
             <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Generate Report</button>
             <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Clear</button>
-            @if($payments->isNotEmpty())
-            <a href="{{ route('cashier.collections-report.export', ['date_from' => $dateFrom, 'date_to' => $dateTo]) }}"
+            <a :href="'{{ route('cashier.collections-report.export') }}?date_from=' + filters.date_from + '&date_to=' + filters.date_to"
                class="px-4 py-2 rounded-lg text-sm font-semibold bg-green-50 text-green-700 hover:bg-green-100 transition">Export CSV</a>
-            @endif
         </form>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <p class="text-sm text-gray-500 font-medium">Total Collected</p>
-            <p class="text-2xl font-bold text-gray-900">₱ {{ number_format($totalCollected, 2) }}</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <p class="text-sm text-gray-500 font-medium">Total Receipts</p>
-            <p class="text-2xl font-bold text-gray-900">{{ $receiptCount }}</p>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <p class="text-sm text-gray-500 font-medium">By Payment Plan</p>
-            <div class="mt-2 space-y-1 text-sm">
-                @foreach($byPlan as $plan => $data)
-                <div class="flex justify-between">
-                    <span class="text-gray-600">{{ ucfirst($plan) }}</span>
-                    <span class="font-medium text-gray-900">{{ $data['count'] }} receipts — ₱ {{ number_format($data['total'], 2) }}</span>
-                </div>
-                @endforeach
-            </div>
-        </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

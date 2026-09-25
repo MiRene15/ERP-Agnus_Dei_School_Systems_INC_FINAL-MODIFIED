@@ -419,7 +419,7 @@ class CashierController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.collections-report-results', compact('payments', 'dailyBreakdown'))->render(),
+                'html' => view('portal.cashier.partials.collections-report-results', compact('payments', 'dailyBreakdown', 'totalCollected', 'receiptCount', 'byPlan', 'dateFrom', 'dateTo'))->render(),
             ]);
         }
 
@@ -468,6 +468,40 @@ class CashierController extends Controller
                     $p->cashier?->name ?? '',
                 ]);
             }
+            fclose($fh);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function receivablesReportExport()
+    {
+        $ledgers = \App\Models\StudentLedger::with('student.enrollments.section')
+            ->where('balance', '>', 0)
+            ->orderByDesc('balance')
+            ->get();
+
+        $total = $ledgers->sum('balance');
+        $filename = 'receivables-' . now()->format('Y-m-d') . '.csv';
+
+        log_activity(\App\Models\StudentLedger::class, 'Exported', auth()->user()->name . ' exported the receivables report CSV (' . $ledgers->count() . ' student(s), total ₱' . number_format($total, 2) . ').');
+
+        return response()->stream(function () use ($ledgers, $total) {
+            $fh = fopen('php://output', 'w');
+            fputcsv($fh, ['Grade Level', 'Student', 'LRN', 'Section', 'Balance']);
+            foreach ($ledgers as $ledger) {
+                $student = $ledger->student;
+                $enrollment = $student?->enrollments->where('status', 'Active')->first();
+                fputcsv($fh, [
+                    $enrollment?->section?->grade_level ?? 'Unknown',
+                    trim(($student?->first_name ?? '') . ' ' . ($student?->last_name ?? '')),
+                    $student?->student_number ?? '',
+                    $enrollment?->section?->section_name ?? '—',
+                    number_format($ledger->balance, 2),
+                ]);
+            }
+            fputcsv($fh, ['', 'TOTAL', '', '', number_format($total, 2)]);
             fclose($fh);
         }, 200, [
             'Content-Type' => 'text/csv',
