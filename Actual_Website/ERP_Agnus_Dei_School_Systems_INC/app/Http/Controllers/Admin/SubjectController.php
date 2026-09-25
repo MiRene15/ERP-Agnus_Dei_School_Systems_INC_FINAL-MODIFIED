@@ -130,6 +130,7 @@ class SubjectController extends Controller
         $msg = "$imported subject(s) imported.";
         if ($skipped) $msg .= ' '.count($skipped).' skipped.';
         if ($errors) $msg .= ' Errors: '.implode(' | ',array_slice($errors,0,5)).(count($errors)>5?' (+'.(count($errors)-5).' more)':'');
+        log_activity(Subject::class, 'Subjects Imported', auth()->user()->name . ' imported ' . $imported . ' subject(s) via CSV' . ($skipped ? ' (' . count($skipped) . ' skipped)' : '') . ($errors ? ' (' . count($errors) . ' error(s))' : '') . '.');
         return back()->with($imported>0?'success':'error',$msg)->with('import_errors',$errors)->with('import_skipped',$skipped);
     }
 

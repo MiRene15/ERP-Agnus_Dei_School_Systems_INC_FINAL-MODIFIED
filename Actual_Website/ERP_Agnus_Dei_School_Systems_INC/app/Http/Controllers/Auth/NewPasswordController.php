@@ -40,17 +40,23 @@ class NewPasswordController extends Controller
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
         // database. Otherwise we will parse the error and return the response.
+        $resetUser = null;
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
+            function (User $user) use ($request, &$resetUser) {
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                 ])->save();
 
+                $resetUser = $user;
                 event(new PasswordReset($user));
             }
         );
+
+        if ($resetUser) {
+            log_activity($resetUser, 'Password Reset', $resetUser->name . ' reset their password using an emailed reset link.');
+        }
 
         // If the password was successfully reset, we will redirect the user back to
         // the application's home authenticated view. If there is an error we can

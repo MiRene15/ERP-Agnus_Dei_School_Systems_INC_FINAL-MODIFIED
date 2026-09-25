@@ -462,7 +462,9 @@ class PrincipalController extends Controller
         $data['admin_id'] = auth()->id();
         $data['is_published'] = $request->boolean('is_published');
 
-        Announcement::create($data);
+        $announcement = Announcement::create($data);
+
+        log_activity($announcement, 'Announcement Created', auth()->user()->name . ' created ' . $announcement->type . ': "' . $announcement->title . '" (' . ($announcement->is_published ? 'published' : 'draft') . ').');
 
         return redirect()->route('principal.announcements')
             ->with('success', 'Announcement/event created successfully.');
@@ -487,12 +489,15 @@ class PrincipalController extends Controller
 
         $announcement->update($data);
 
+        log_activity($announcement, 'Announcement Updated', auth()->user()->name . ' updated ' . $announcement->type . ': "' . $announcement->title . '".');
+
         return redirect()->route('principal.announcements')
             ->with('success', 'Announcement updated.');
     }
 
     public function announcementsDestroy(Announcement $announcement)
     {
+        log_activity($announcement, 'Announcement Deleted', auth()->user()->name . ' deleted ' . $announcement->type . ': "' . $announcement->title . '".');
         $announcement->delete();
         return back()->with('success', 'Announcement deleted.');
     }

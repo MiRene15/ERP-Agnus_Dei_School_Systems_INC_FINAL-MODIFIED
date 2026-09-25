@@ -43,6 +43,13 @@
                             'API Token Created' => 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
                             'Schedule Created', 'Schedule Updated', 'Schedule Imported' => 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
                             'Schedule Deleted' => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+                            'Login Failed', 'Login Locked Out' => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+                            'Password Confirmed', 'Password Reset Requested', 'Email Verified', 'Verification Email Sent' => 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+                            'Profile Updated', 'Account Created', 'Admission Submitted', 'Admission Draft Saved', 'Admission Draft Discarded', 'Requirements Uploaded', 'Enrollment Request Submitted' => 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+                            'Exported', 'Report Card Exported', 'Subjects Imported' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+                            'Announcement Created' => 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+                            'Announcement Updated' => 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+                            'Announcement Deleted' => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
                             default => 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
                         };
                     @endphp

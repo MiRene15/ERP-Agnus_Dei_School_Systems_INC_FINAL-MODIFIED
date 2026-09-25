@@ -49,10 +49,12 @@ class ApiController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            log_activity($user, 'Login Failed', 'Failed API token request for ' . $request->email . ' from IP ' . $request->ip() . '.');
             return $this->error('Invalid credentials.', 401);
         }
 
         if ($user->status !== 'active') {
+            log_activity($user, 'Login Failed', 'API token denied — inactive account (' . $user->name . ').');
             return $this->error('Account is inactive.', 403);
         }
 

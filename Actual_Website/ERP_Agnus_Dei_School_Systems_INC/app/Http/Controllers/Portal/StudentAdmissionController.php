@@ -123,6 +123,8 @@ class StudentAdmissionController extends Controller
             ]);
         }
 
+        log_activity($admission, 'Admission Draft Saved', auth()->user()->name . ' saved admission draft at step ' . $data['_step'] . '.');
+
         return response()->json(['success' => true, 'step' => $data['_step']]);
     }
 
@@ -225,6 +227,8 @@ class StudentAdmissionController extends Controller
             ]);
         }
 
+        log_activity($admission, 'Admission Submitted', $student->first_name . ' ' . $student->last_name . ' submitted admission application ' . ($admission->application_number ?? '#' . $admission->id) . ' (' . $data['application_type'] . ', ' . $data['grade_level'] . ', SY ' . $data['school_year'] . ').');
+
         return redirect()->route('student.admission.status')
             ->with('success', 'Application submitted! Your application number is ' . $admission->application_number);
     }
@@ -236,6 +240,7 @@ class StudentAdmissionController extends Controller
         $draft = $student->admissions()->where('status', 'Draft')->latest()->first();
 
         if ($draft) {
+            log_activity($draft, 'Admission Draft Discarded', $student->first_name . ' ' . $student->last_name . ' discarded admission draft #' . $draft->id . '.');
             $draft->delete();
         }
 
@@ -305,6 +310,8 @@ class StudentAdmissionController extends Controller
 
             $count++;
         }
+
+        log_activity($admission, 'Requirements Uploaded', auth()->user()->name . ' uploaded ' . $count . ' admission document(s) for admission #' . $admission->id . '.');
 
         return back()->with('success', $count . ' document(s) uploaded successfully.');
     }

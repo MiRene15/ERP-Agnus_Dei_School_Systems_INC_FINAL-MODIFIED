@@ -85,7 +85,7 @@
             <input type="hidden" name="enrollment_ids[]" :value="id">
         </template>
         <input type="hidden" name="school_year" :value="schoolYear">
-        <select name="action" required class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <select name="action" required class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="promote">Promote</option>
             <option value="retain">Retain</option>
             <option value="graduate">Graduate</option>
@@ -133,15 +133,18 @@
             <button type="button" @click="selectQualified('{{ $gradeLevel }}')" class="text-xs text-blue-600 dark:text-[#60A5FA] hover:underline">Select qualified in {{ $gradeLevel }}</button>
             <button type="button" @click="clearGrade('{{ $gradeLevel }}')" class="text-xs text-gray-500 dark:text-[#8A90B0] hover:underline">Clear {{ $gradeLevel }}</button>
         </div>
-        <div class="overflow-x-auto rounded-lg border border-gray-100 dark:border-[#2A2F58]" x-data="{ filter: 'all' }">
-            <p class="text-xs text-gray-400 dark:text-[#8A90B0] px-4 py-2 bg-gray-50 dark:bg-[#161A33] rounded-t-lg">GWA &ge;{{ $passingGrade ?? 75 }} and no failing subject (&lt;{{ $passingGrade ?? 75 }}) = qualified. Failing or no grades = not qualified — review manually.</p>
-            <div class="flex gap-1.5 my-3 flex-wrap px-1">
-                <button type="button" @click="filter='all'" :class="filter==='all' ? 'bg-gray-900 dark:bg-[#1A1E3B] text-white' : 'bg-gray-100 dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">All</button>
-                <button type="button" @click="filter='qualified'" :class="filter==='qualified' ? 'bg-green-600 text-white' : 'bg-gray-100 dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">Qualified</button>
-                <button type="button" @click="filter='not'" :class="filter==='not' ? 'bg-red-600 text-white' : 'bg-gray-100 dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">Not qualified</button>
-                <button type="button" @click="filter='none'" :class="filter==='none' ? 'bg-gray-900 dark:bg-[#1A1E3B] text-white' : 'bg-gray-100 dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">No grades</button>
-                <button type="button" @click="filter='balance'" :class="filter==='balance' ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">With balance</button>
+        <div class="rounded-lg border border-gray-100 dark:border-[#2A2F58] overflow-hidden" x-data="{ filter: 'all' }">
+            <div class="bg-gray-50 dark:bg-[#161A33] px-4 pt-3 pb-3 border-b border-gray-100 dark:border-[#2A2F58]">
+                <p class="text-xs text-gray-400 dark:text-[#8A90B0]">GWA &ge;{{ $passingGrade ?? 75 }} and no failing subject (&lt;{{ $passingGrade ?? 75 }}) = qualified. Failing or no grades = not qualified — review manually.</p>
+                <div class="flex gap-1.5 mt-2.5 flex-wrap">
+                    <button type="button" @click="filter='all'" :class="filter==='all' ? 'bg-gray-900 dark:bg-[#1A1E3B] text-white' : 'bg-white dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58] border border-gray-200 dark:border-[#3B4172]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">All</button>
+                    <button type="button" @click="filter='qualified'" :class="filter==='qualified' ? 'bg-green-600 text-white' : 'bg-white dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58] border border-gray-200 dark:border-[#3B4172]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">Qualified</button>
+                    <button type="button" @click="filter='not'" :class="filter==='not' ? 'bg-red-600 text-white' : 'bg-white dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58] border border-gray-200 dark:border-[#3B4172]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">Not qualified</button>
+                    <button type="button" @click="filter='none'" :class="filter==='none' ? 'bg-gray-900 dark:bg-[#1A1E3B] text-white' : 'bg-white dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58] border border-gray-200 dark:border-[#3B4172]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">No grades</button>
+                    <button type="button" @click="filter='balance'" :class="filter==='balance' ? 'bg-amber-600 text-white' : 'bg-white dark:bg-[#23274C] text-gray-600 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58] border border-gray-200 dark:border-[#3B4172]'" class="px-2.5 py-1 rounded-full text-xs font-medium transition">With balance</button>
+                </div>
             </div>
+            <div class="overflow-x-auto">
             <table class="w-full min-w-[960px] text-sm">
                 <thead>
                     <tr class="border-y border-gray-200 dark:border-[#2A2F58] bg-gray-50 dark:bg-[#161A33]">
@@ -232,6 +235,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     @endforeach

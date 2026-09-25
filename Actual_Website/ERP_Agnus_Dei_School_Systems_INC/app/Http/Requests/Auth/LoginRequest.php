@@ -54,6 +54,9 @@ class LoginRequest extends FormRequest
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
+            $failedUser = \App\Models\User::where('email', $this->string('email'))->first();
+            log_activity($failedUser, 'Login Failed', 'Failed login attempt for ' . $this->string('email') . ' from IP ' . $this->ip() . '.');
+
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
@@ -74,6 +77,8 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+
+        log_activity(null, 'Login Locked Out', 'Login locked out for ' . $this->string('email') . ' from IP ' . $this->ip() . ' after too many failed attempts.');
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 

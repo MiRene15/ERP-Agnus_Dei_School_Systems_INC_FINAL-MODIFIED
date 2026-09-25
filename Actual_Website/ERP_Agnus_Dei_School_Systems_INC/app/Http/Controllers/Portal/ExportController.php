@@ -18,6 +18,7 @@ class ExportController extends Controller
             ->get();
 
         $filename = 'enrollments-' . active_school_year() . '-' . $enrollments->count() . 'rows.csv';
+        log_activity(Enrollment::class, 'Exported', auth()->user()->name . ' exported the enrollments CSV (' . $enrollments->count() . ' rows, SY ' . active_school_year() . ').');
         return $this->streamCsv($filename, function ($fh) use ($enrollments) {
             fputcsv($fh, ['LRN', 'First Name', 'Last Name', 'Grade Level', 'Section', 'Adviser', 'Status']);
             foreach ($enrollments as $e) {
@@ -50,6 +51,7 @@ class ExportController extends Controller
 
         $passing = (int) \App\Models\Setting::getValue('passing_grade', '75');
         $filename = 'grades-' . active_school_year() . '-' . $enrollments->count() . 'students.csv';
+        log_activity(Grade::class, 'Exported', auth()->user()->name . ' exported the grades CSV (' . $enrollments->count() . ' students, SY ' . active_school_year() . ').');
         return $this->streamCsv($filename, function ($fh) use ($enrollments, $periods, $allGrades, $passing) {
             fputcsv($fh, array_merge(['LRN', 'Name', 'Grade', 'Section', 'Subject'], $periods, ['Final', 'Remarks']));
             foreach ($enrollments as $e) {
@@ -80,6 +82,7 @@ class ExportController extends Controller
             ->get();
 
         $filename = 'collections-' . now()->format('Y-m') . '-' . $payments->count() . 'rows.csv';
+        log_activity(Payment::class, 'Exported', auth()->user()->name . ' exported the collections CSV (' . $payments->count() . ' payments, ' . now()->format('Y-m') . ').');
         return $this->streamCsv($filename, function ($fh) use ($payments) {
             fputcsv($fh, ['Receipt #', 'Student', 'LRN', 'Amount', 'Payment Date', 'Cashier']);
             foreach ($payments as $p) {

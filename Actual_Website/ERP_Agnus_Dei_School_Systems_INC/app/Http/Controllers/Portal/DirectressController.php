@@ -449,6 +449,7 @@ class DirectressController extends Controller
     {
         $transactions = \App\Models\LibraryTransaction::with('student', 'book')->latest('borrow_date')->get();
         $filename = 'library_report_' . now()->format('Ymd_His') . '.csv';
+        log_activity(\App\Models\LibraryTransaction::class, 'Exported', auth()->user()->name . ' exported the library report CSV (' . $transactions->count() . ' transactions).');
         $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
         $callback = function() use ($transactions) {
             $file = fopen('php://output', 'w');
@@ -474,6 +475,7 @@ class DirectressController extends Controller
         $dateTo = $request->date_to ?? now()->format('Y-m-d');
         $payments = \App\Models\Payment::with('ledger.student')->whereBetween('payment_date', [$dateFrom, $dateTo . ' 23:59:59'])->orderBy('payment_date')->get();
         $filename = 'cashier_report_' . $dateFrom . '_to_' . $dateTo . '.csv';
+        log_activity(\App\Models\Payment::class, 'Exported', auth()->user()->name . ' exported the cashier report CSV (' . $payments->count() . ' payments, ' . $dateFrom . ' to ' . $dateTo . ').');
         $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
         $callback = function() use ($payments) {
             $file = fopen('php://output', 'w');

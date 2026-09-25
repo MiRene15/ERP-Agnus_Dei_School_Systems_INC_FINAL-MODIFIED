@@ -133,6 +133,8 @@ class ReportCardController extends Controller
     {
         $enrollment->load('student', 'section.adviser', 'subjects.subject', 'subjects.teacher');
 
+        log_activity($enrollment, 'Report Card Exported', auth()->user()->name . ' opened the printable report card for ' . $enrollment->student->first_name . ' ' . $enrollment->student->last_name . ' (SY ' . $enrollment->school_year . ').');
+
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $passing = (int) Setting::getValue('passing_grade', '75');
 

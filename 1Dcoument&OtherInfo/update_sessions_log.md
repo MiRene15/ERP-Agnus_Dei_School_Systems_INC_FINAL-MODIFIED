@@ -482,7 +482,17 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 67
+## 48. Full Audit-Log Coverage + Promotion Margins (Sep 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-09-25 | — | Feat: audit-log coverage sweep — 27 previously silent actions now log (admissions/drafts/uploads, enrollment requests, public inquiry account creation, failed logins + lockouts, password reset/change, email verification, profile update, all CSV/PDF exports, report card print, subject CSV import, announcements CRUD) + new event badge colors; promotion margins aligned per screenshot (note+pills one gray band, matched sticky-bar control heights, band outside scroll container) |
+
+**Scope:** MD plan first (`audit_logs_full_coverage_20260925.md`), then edits across ~18 PHP files + 1 blade + 2 auth request classes. `LoginFailed` logging writes with `causer_id = null` when the account is unknown. No route/controller signature changes. Verified with `php -l`, `php artisan view:cache`.
+
+---
+
+- **Total update sessions (commits):** 68
 - **Time span:** 2026-03-29 → 2026-09-25
 - **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals) → Validation notes all phases (30 items) → Dark mode readability & contrast → Promotion grade filter + Audit logs fix + Reports export & graphs → Batch requests 16 items (seeders, report card, cashier, schedules) → Strands→Electives + Directress demographics
 - **Uncommitted/working changes:** none — all work committed through session 67

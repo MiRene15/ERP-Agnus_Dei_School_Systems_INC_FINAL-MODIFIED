@@ -35,6 +35,8 @@ class ConfirmablePasswordController extends Controller
 
         $request->session()->put('auth.password_confirmed_at', time());
 
+        log_activity($request->user(), 'Password Confirmed', $request->user()->name . ' confirmed their password for a sensitive action.');
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 }

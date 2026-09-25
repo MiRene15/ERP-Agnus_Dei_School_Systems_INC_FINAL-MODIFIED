@@ -40,7 +40,8 @@ class InquiryController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($request) {
+            $createdUser = null;
+            DB::transaction(function () use ($request, &$createdUser) {
                 $firstName = $request->first_name;
                 $lastName = $request->last_name;
                 $personalEmail = $request->personal_email;
@@ -62,6 +63,7 @@ class InquiryController extends Controller
                     'password' => Hash::make($password),
                     'role_id' => 7,
                 ]);
+                $createdUser = $user;
 
                 Student::create([
                     'user_id' => $user->id,
@@ -73,6 +75,10 @@ class InquiryController extends Controller
 
                 Mail::to($personalEmail)->send(new InquiryCredentialsMail($firstName, $institutionalEmail, $password));
             });
+
+            if ($createdUser) {
+                log_activity($createdUser, 'Account Created', 'Pre-admission account created via public inquiry: ' . $createdUser->name . ' (' . $createdUser->email . '). Credentials emailed to ' . $request->personal_email . '.');
+            }
 
             return redirect('/inquiry')->with('success', true);
 

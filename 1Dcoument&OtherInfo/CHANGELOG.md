@@ -1,5 +1,16 @@
 # Release Notes
 
+## [Unreleased] — Full Audit-Log Coverage (27 gaps) + Promotion Margins — 2026-09-25
+- **Coverage:** scanned all 37 controllers → added `log_activity()` to all **27 gaps** (28 new call sites; now **94 total calls**, was 66)
+  - **Student flows:** `Admission Submitted`, `Admission Draft Saved`, `Admission Draft Discarded`, `Requirements Uploaded`, `Enrollment Request Submitted`, public inquiry `Account Created`
+  - **Security/auth:** `Login Failed` + `Login Locked Out` (LoginRequest), own-password `Password Changed`, token `Password Reset`, `Password Reset Requested`, `Email Verified`, `Verification Email Sent`, `Password Confirmed`, `Profile Updated`, API 401/403 `Login Failed`
+  - **Exports (PII):** `Exported` on admin enrollments/grades/collections, cashier collections export, directress library/cashier exports, `Report Card Exported`, `Subjects Imported` bulk CSV
+  - **Announcements:** `Announcement Created/Updated/Deleted` (Principal)
+  - **Skipped (dead code):** `RegisteredUserController` (routes commented out), root `InquiryController` stub
+- **Colors:** new event badge colors for all of the above in `audit-logs-results.blade.php`
+- **Promotion margins (per screenshot):** note + filter pills merged into one aligned gray band (`px-4`), inactive pills bordered, sticky-bar select/button heights matched, gray band moved outside the scroll container, spacing scale unified
+- See `audit_logs_full_coverage_20260925.md`
+
 ## [Unreleased] — Promotion: Scoped Batch Select + Margin Fixes — 2026-09-25
 - **Bug:** per-grade "select all" checkbox used a global `document.querySelectorAll('.promo-checkbox')`, so selecting all in Kinder checked **all students in all grade levels** — and there was no separate global select-all box
 - **Fix:** row checkboxes now carry `data-grade` / `data-qualified`; per-grade header checkbox is scoped to its own table (`setGrade()`), plus a distinct global **"Select all students (all grade levels)"** control (`setAll()`), global "Qualified only (all)" and "Clear selection"

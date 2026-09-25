@@ -52,13 +52,15 @@ class StudentEnrollmentController extends Controller
             'school_year' => 'required|string|max:20',
         ]);
 
-        Admission::create([
+        $admission = Admission::create([
             'student_id' => $student->id,
             'application_type' => 'Old',
             'grade_level' => $data['grade_level'],
             'school_year' => $data['school_year'],
             'status' => 'Pending',
         ]);
+
+        log_activity($admission, 'Enrollment Request Submitted', $student->first_name . ' ' . $student->last_name . ' submitted an enrollment request for ' . $data['grade_level'] . ' (SY ' . $data['school_year'] . ').');
 
         return redirect()->route('student.dashboard')
             ->with('success', 'Enrollment request submitted for ' . $data['school_year'] . '. Please wait for the Registrar to approve it.');

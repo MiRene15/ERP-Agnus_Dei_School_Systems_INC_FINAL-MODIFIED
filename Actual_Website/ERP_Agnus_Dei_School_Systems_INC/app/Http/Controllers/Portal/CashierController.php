@@ -452,6 +452,8 @@ class CashierController extends Controller
 
         $filename = "collections-{$dateFrom}-to-{$dateTo}.csv";
 
+        log_activity(Payment::class, 'Exported', auth()->user()->name . ' exported the collections report CSV (' . $payments->count() . ' payments, ' . $dateFrom . ' to ' . $dateTo . ').');
+
         return response()->stream(function () use ($payments, $filename) {
             $fh = fopen('php://output', 'w');
             fputcsv($fh, ['Date', 'Student', 'Amount', 'Receipt No.', 'AR No.', 'Plan', 'Cashier']);
