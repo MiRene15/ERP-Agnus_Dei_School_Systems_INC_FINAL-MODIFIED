@@ -1,5 +1,13 @@
 # Release Notes
 
+## [Unreleased] — Promotion: Scoped Batch Select + Margin Fixes — 2026-09-25
+- **Bug:** per-grade "select all" checkbox used a global `document.querySelectorAll('.promo-checkbox')`, so selecting all in Kinder checked **all students in all grade levels** — and there was no separate global select-all box
+- **Fix:** row checkboxes now carry `data-grade` / `data-qualified`; per-grade header checkbox is scoped to its own table (`setGrade()`), plus a distinct global **"Select all students (all grade levels)"** control (`setAll()`), global "Qualified only (all)" and "Clear selection"
+- **Sync:** per-grade and global headers now reflect real row state with `checked` + `indeterminate` (`syncHeaders()`); "Select qualified in {grade}" no longer guesses visibility via `row.style.display`
+- **Margins:** unified spacing scale (`mb-6`/`mb-5`/`mb-4`), table cells `px-4 py-3`, `min-w-[960px]` so columns stop collapsing, `w-44` action select, footer row `mt-6 pt-4 border-t`
+- **Also fixed:** removed the bottom batch form that was nested inside the "Process All Actions" form (invalid HTML — never submitted); batch controls stay in the sticky bar, and the school-year select is now `x-model`-bound so batch promote submits the chosen year
+- See `promotion_batch_select_fix_20260925.md`
+
 ## [Unreleased] — Audit Logs: Missing Events + Filter Fixes — 2026-09-25
 - **Root cause:** admin "confirm student account" actions wrote **no** audit log — `AdminController::confirmAccount()` and `confirmBatch()` had zero `log_activity()` calls, so verifying a student produced no event (registrar requirement verification was already logged)
 - **New events:** `Account Confirmed` (single), `Accounts Confirmed` (batch, with student names), `Settings Updated` (admin settings save) — `AdminController.php`

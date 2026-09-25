@@ -472,7 +472,17 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 66
+## 47. Promotion Scoped Batch Select + Margins (Sep 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-09-25 | — | Fix: promotion batch select scoping — per-grade select-all no longer selects all students (was global `document.querySelectorAll`), added distinct global "Select all students (all grade levels)" + "Qualified only (all)" + "Clear selection", header checkbox `checked`/`indeterminate` sync, margin/table alignment pass |
+
+**Scope:** `resources/views/portal/admin/partials/promotion-index-results.blade.php` only. Each row checkbox now carries `data-grade` + `data-qualified`; per-grade header checkbox calls `setGrade(grade, checked)` scoped to its own table; new global checkbox calls `setAll(checked)`; "Select qualified in {grade}" uses `data-qualified` instead of guessing hidden rows via `row.style.display`; `syncHeaders()` keeps per-grade and global headers accurate including indeterminate state. Margins unified (`mb-6`/`mb-5`/`mb-4`, cells `px-4 py-3`, `min-w-[960px]`, footer `mt-6 pt-4 border-t`). Also removed the invalid nested bottom batch `<form>` (never submitted) and bound the school-year select with `x-model` so the sticky batch form submits the selected year. See `promotion_batch_select_fix_20260925.md`.
+
+---
+
+- **Total update sessions (commits):** 67
 - **Time span:** 2026-03-29 → 2026-09-25
 - **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals) → Validation notes all phases (30 items) → Dark mode readability & contrast → Promotion grade filter + Audit logs fix + Reports export & graphs → Batch requests 16 items (seeders, report card, cashier, schedules) → Strands→Electives + Directress demographics
-- **Uncommitted/working changes:** none — all work committed through session 66
+- **Uncommitted/working changes:** none — all work committed through session 67
