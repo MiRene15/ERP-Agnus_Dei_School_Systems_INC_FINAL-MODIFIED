@@ -204,7 +204,9 @@ class AuditLogsAndExtrasSeeder extends Seeder
                 DB::table('requirements')->updateOrInsert(
                     ['admission_id' => $admission->id, 'document_type' => $documentType],
                     [
-                        'file_path' => 'requirements/' . $admission->id . '/' . strtolower(str_replace(' ', '_', $documentType)) . '.pdf',
+                        'original_filename' => strtolower(str_replace(' ', '_', $documentType)) . '.pdf',
+                        'mime_type' => 'application/pdf',
+                        'file_size' => 96_000 + ($index * 137) + ($docIndex * 41),
                         'status' => $statuses[($index + $docIndex) % count($statuses)],
                         'created_at' => now()->subDays(10 - min($docIndex, 9)),
                         'updated_at' => now()->subDays(10 - min($docIndex, 9)),

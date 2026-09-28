@@ -38,4 +38,5 @@
 | `seeder_gaps_20260925.md` | superseded note: library visits now seeded in `LibraryAndClinicSeeder` |
 
 ## 4. Verification
-- `php -l` both seeders. **Not executed** against live Supabase DB without explicit OK.
+- `php -l` both seeders.
+- ✅ **Executed against live Supabase DB** (2026-09-25): clinic **157 logs / 120 unique patients**, library **202 transactions** (41 borrowed incl. overdue, ₱480 late fees), **37 visits**, 35 books. `AuditLogsAndExtrasSeeder` also live-seeded: activity_log 103 → 138, 2 graduation fees + 19 assignments, 15 withdrawals, 3 inquiries, 45 requirements.

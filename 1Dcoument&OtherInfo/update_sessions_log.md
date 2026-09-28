@@ -526,7 +526,7 @@ Generated: 2026-08-04
 
 | Date | Commit | Description |
 |------|--------|-------------|
-| 2026-09-25 | — | Feat: `LibraryAndClinicSeeder` rewritten — deterministic library transactions ~180 (60-day spread, real late fees), clinic logs ~140 (all enrolled students, repeat visits), library visits ~35 moved from `AuditLogsAndExtrasSeeder` |
+| 2026-09-25 | — | Feat: `LibraryAndClinicSeeder` rewritten — deterministic library transactions ~180 (60-day spread, real late fees), clinic logs ~140 (all enrolled students, repeat visits), library visits ~35 moved from `AuditLogsAndExtrasSeeder`. Executed live against Supabase (14 → 166 students, full linked data) + fixed `requirements` seeder to post-bytea schema |
 
 **Scope:** 2 seeder files + 3 MDs. See `clinic_library_processes_20260925.md`.
 

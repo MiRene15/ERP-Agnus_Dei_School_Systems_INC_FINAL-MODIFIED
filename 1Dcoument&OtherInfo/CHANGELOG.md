@@ -1,5 +1,10 @@
 # Release Notes
 
+## [Unreleased] — Live DB Seed Run + requirements schema fix — 2026-09-25
+- **Seeded live Supabase DB:** 14 → **166 students** / 165 ledgers (₱1.93M receivable balance), 12,264 assessments + 3,066 grades, 203 payments, 157 clinic logs (120 patients), 202 library txns (41 borrowed, ₱480 fines), 37 library visits, activity_log 103 → 138, 2 grad fees + 19 assignments, 15 withdrawals, 3 inquiries, 45 requirements
+- **Fix:** `AuditLogsAndExtrasSeeder::seedRequirements()` wrote `file_path` — column dropped by bytea migration; now writes current schema (`original_filename`/`mime_type`/`file_size`, nullable `file_content` guarded by `StudentAdmissionController:331`)
+- See updated verification sections in `student_roster_expansion_20260925.md`, `clinic_library_processes_20260925.md`, `seeder_gaps_20260925.md`
+
 ## [Unreleased] — Clinic Information + Library Processes (roster-wide seed data) — 2026-09-25
 - **Library transactions** 35 → **~180**: deterministic, up to 2 borrows per enrolled student across 60 days; overdue/returned/late mix preserved; **late fees now actually seed** (Carbon-safe late-days formula → fines feed Library report)
 - **Clinic logs** 20 → **~140**: every enrolled student ≥1 visit (repeat visitors for Unique Patients metric), 60-day spread, 20-condition complaint library → Clinic tab's symptoms/diagnosis/referrals populated

@@ -49,3 +49,5 @@
 - `php -l` on all 4 seeder files; `php artisan db:seed --class=AuditLogsAndExtrasSeeder` **not run** against live Supabase DB without explicit OK.
 
 > **Superseded note (later same day):** library visits are now seeded in `LibraryAndClinicSeeder` (expanded to ~35, deterministic) — see `clinic_library_processes_20260925.md`.
+
+> **Live-run fix (execution against Supabase):** `seedRequirements()` originally wrote `file_path`, but migration `2026_08_14_120000_switch_requirements_to_bytea` **drops `file_path`** (content now lives in nullable `file_content::bytea`). Fixed to the current schema: `admission_id, document_type, original_filename, mime_type, file_size, status` (nullable `file_content` — the download UI already guards `if (!$requirement->file_content)` at `StudentAdmissionController:331`).

@@ -31,4 +31,5 @@ user account (role 7, `Agnus2026!`) → student profile (LRN, parents, addresses
 | Index-based demo rules (first 75) | untouched — new rules gated on `$index >= 75` |
 
 ## 4. Verification
-- `php -l database/seeders/StudentsAndFeesSeeder.php`. **Seeder not executed** against live Supabase DB without explicit OK.
+- `php -l database/seeders/StudentsAndFeesSeeder.php`.
+- ✅ **Executed against live Supabase DB** (2026-09-25): 14 → **166 students**, **165 ledgers** (₱4,171,200 assessed / ₱1,921,210 paid / ₱1,926,930 balance), 203 payments, 142 Active + 8 Withdrawn + 8 Graduated + 7 Transferred enrollments, 12,264 assessments / 3,066 grades.
