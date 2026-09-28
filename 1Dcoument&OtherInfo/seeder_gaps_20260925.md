@@ -47,3 +47,5 @@
 
 ## 3. Verification
 - `php -l` on all 4 seeder files; `php artisan db:seed --class=AuditLogsAndExtrasSeeder` **not run** against live Supabase DB without explicit OK.
+
+> **Superseded note (later same day):** library visits are now seeded in `LibraryAndClinicSeeder` (expanded to ~35, deterministic) — see `clinic_library_processes_20260925.md`.

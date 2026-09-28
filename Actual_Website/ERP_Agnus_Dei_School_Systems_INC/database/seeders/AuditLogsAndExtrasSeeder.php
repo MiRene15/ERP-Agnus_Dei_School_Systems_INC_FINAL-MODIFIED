@@ -21,7 +21,6 @@ class AuditLogsAndExtrasSeeder extends Seeder
         $this->seedGraduationFees();
         $this->seedWithdrawals();
         $this->seedInquiries();
-        $this->seedLibraryVisits();
         $this->seedRequirements();
     }
 
@@ -188,30 +187,6 @@ class AuditLogsAndExtrasSeeder extends Seeder
                     'expires_at' => now()->addDays(7),
                     'created_at' => now()->subDays(3),
                     'updated_at' => now()->subDays(3),
-                ]
-            );
-        }
-    }
-
-    private function seedLibraryVisits(): void
-    {
-        $librarian = User::where('email', 'library@agnusdei.local')->first()
-            ?? User::where('role_id', 5)->first();
-
-        if (!$librarian) return;
-
-        $students = Student::inRandomOrder()->limit(12)->get();
-
-        foreach ($students as $index => $student) {
-            $timeIn = now()->startOfDay()->addHours(8)->addMinutes(15 * $index);
-            $hasOut = $index % 4 !== 0;
-            DB::table('library_visits')->updateOrInsert(
-                ['student_id' => $student->id, 'time_in' => $timeIn],
-                [
-                    'librarian_id' => $librarian->id,
-                    'time_out' => $hasOut ? $timeIn->copy()->addMinutes(rand(20, 90)) : null,
-                    'created_at' => $timeIn,
-                    'updated_at' => $timeIn,
                 ]
             );
         }

@@ -7,6 +7,7 @@ use App\Models\ClinicLog;
 use App\Models\LibraryTransaction;
 use App\Models\Student;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class LibraryAndClinicSeeder extends Seeder
 {
@@ -65,68 +66,87 @@ class LibraryAndClinicSeeder extends Seeder
         });
 
         // Fix: role_id=5 is Librarian, role_id=6 is Nurse (was swapped before)
-        $students = Student::where('status', 'enrolled')->get();
+        $students = Student::where('status', 'enrolled')->orderBy('id')->get();
         $librarianId = \App\Models\User::where('role_id', 5)->first()?->id;
         $nurseId = \App\Models\User::where('role_id', 6)->first()?->id;
+        $booksById = Book::orderBy('id')->get();
 
-        if ($students->isEmpty() || !$librarianId) {
+        if ($students->isEmpty() || !$librarianId || $booksById->isEmpty()) {
             return;
         }
 
-        // Create varied library transactions — 35 total with mix of statuses and conditions
-        $borrowers = $students->random(min(35, $students->count()));
-        $statuses = ['Borrowed', 'Returned', 'Returned', 'Returned', 'Returned'];
+        // Library processes — deterministic borrow/return history for every enrolled student
+        // (up to 2 transactions each, spread over 60 days; id-based picks = idempotent re-runs)
+        $txn = 0;
+        foreach ($students as $student) {
+            $copies = $student->id % 3 === 0 ? 2 : 1;
+            for ($n = 0; $n < $copies; $n++) {
+                $idx = $txn++;
+                $book = $booksById[($student->id * 7 + $n * 11) % $booksById->count()];
 
-        foreach ($borrowers as $idx => $student) {
-            $book = Book::inRandomOrder()->first();
-            if (!$book) continue;
+                $isBorrowed = $idx % 5 === 0;
+                $borrowDate = now()->subDays(1 + (($student->id * 5 + $n * 3) % 60));
 
-            $status = $statuses[$idx % count($statuses)];
-            $borrowDate = now()->subDays(rand(1, 60));
+                if ($isBorrowed) {
+                    // ~1 in 4 currently borrowed are overdue
+                    $returnDate = $idx % 4 === 0
+                        ? now()->copy()->subDays(1 + ($student->id % 10))
+                        : now()->copy()->addDays(1 + ($student->id % 14));
+                    $actualReturnDate = null;
+                    $lateDays = 0;
+                } else {
+                    $returnDate = $borrowDate->copy()->addDays(7);
+                    // -2..+2 days vs due date → on-time, early and late returns
+                    $actualReturnDate = $returnDate->copy()->addDays(($student->id + $n) % 5 - 2);
+                    $lateDays = max(0, $returnDate->diffInDays($actualReturnDate));
+                }
 
-            if ($status === 'Returned') {
-                // Some returned on time, some returned late
-                $returnDate = $borrowDate->copy()->addDays(rand(3, 14));
-                $actualReturnDate = $returnDate->copy()->addDays(rand(0, 7));
-                $lateDays = max(0, $actualReturnDate->diffInDays($returnDate) * -1);
-            } else {
-                // Currently borrowed — some overdue, some not
-                $returnDate = $idx % 4 === 0
-                    ? now()->copy()->subDays(rand(1, 10)) // overdue
-                    : now()->copy()->addDays(rand(1, 14)); // not yet due
-                $actualReturnDate = null;
-                $lateDays = 0;
+                $conditionAtBorrow = ['Good', 'Good', 'Good', 'Minor Damage'][($student->id + $n) % 4];
+                $conditionAtReturn = !$isBorrowed ? ['Good', 'Good', 'Minor Damage'][($student->id + $n) % 3] : null;
+                $totalFees = !$isBorrowed && $lateDays > 0 ? $lateDays * 5.00 : 0;
+
+                LibraryTransaction::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'book_title' => $book->title,
+                    ],
+                    [
+                        'book_id' => $book->id,
+                        'librarian_id' => $librarianId,
+                        'borrow_date' => $borrowDate,
+                        'return_date' => $returnDate,
+                        'status' => $isBorrowed ? 'Borrowed' : 'Returned',
+                        'condition_at_borrow' => $conditionAtBorrow,
+                        'condition_at_return' => $conditionAtReturn,
+                        'total_fees' => $totalFees,
+                    ]
+                );
             }
+        }
 
-            $conditionAtBorrow = ['Good', 'Good', 'Good', 'Minor Damage'][rand(0, 3)];
-            $conditionAtReturn = $status === 'Returned' ? ['Good', 'Good', 'Minor Damage'][rand(0, 2)] : null;
+        // Library visits (manual time-in/out log) — every 4th student, across the last 5 days
+        foreach ($students as $student) {
+            if ($student->id % 4 !== 0) continue;
+            $timeIn = now()->startOfDay()
+                ->subDays($student->id % 5)
+                ->addHours(8 + ($student->id % 8))
+                ->addMinutes(($student->id * 7) % 60);
+            $hasOut = $student->id % 3 !== 0;
 
-            $totalFees = 0;
-            if ($status === 'Returned' && $lateDays > 0) {
-                $totalFees = $lateDays * 5.00; // late fee
-            }
-
-            LibraryTransaction::updateOrCreate(
+            DB::table('library_visits')->updateOrInsert(
+                ['student_id' => $student->id, 'time_in' => $timeIn],
                 [
-                    'student_id' => $student->id,
-                    'book_title' => $book->title,
-                ],
-                [
-                    'book_id' => $book->id,
                     'librarian_id' => $librarianId,
-                    'borrow_date' => $borrowDate,
-                    'return_date' => $returnDate,
-                    'status' => $status,
-                    'condition_at_borrow' => $conditionAtBorrow,
-                    'condition_at_return' => $conditionAtReturn,
-                    'total_fees' => $totalFees,
+                    'time_out' => $hasOut ? $timeIn->copy()->addMinutes(30 + ($student->id % 5) * 10) : null,
+                    'created_at' => $timeIn,
+                    'updated_at' => $timeIn,
                 ]
             );
         }
 
         if (!$nurseId) return;
 
-        // Create varied clinic logs — 20 total with varied complaints and treatments
+        // Clinic information — every enrolled student has a visit history (deterministic)
         $complaints = [
             ['complaint' => 'Headache and mild fever', 'diagnosis' => 'Tension headache with mild fever', 'treatment' => 'Rest, hydration, paracetamol administered', 'referred_to' => null],
             ['complaint' => 'Abdominal pain after lunch', 'diagnosis' => 'Mild indigestion', 'treatment' => 'Antacid given, advised rest in clinic', 'referred_to' => null],
@@ -138,7 +158,6 @@ class LibraryAndClinicSeeder extends Seeder
             ['complaint' => 'Eye irritation from chemicals in lab', 'diagnosis' => 'Chemical irritation, mild', 'treatment' => 'Eye wash administered', 'referred_to' => null],
             ['complaint' => 'Dizziness during morning assembly', 'diagnosis' => 'Mild dehydration', 'treatment' => 'Oral rehydration salts, rest', 'referred_to' => null],
             ['complaint' => 'Nosebleed, warm weather', 'diagnosis' => 'Epistaxis, mild', 'treatment' => 'Cold compress on nose, pinched bridge', 'referred_to' => null],
-            // Additional complaints (11-20)
             ['complaint' => 'Back pain from carrying heavy bag', 'diagnosis' => 'Muscle strain, lower back', 'treatment' => 'Pain relief cream, stretching exercises advised', 'referred_to' => null],
             ['complaint' => 'Cut finger in arts and crafts', 'diagnosis' => 'Minor laceration on right index finger', 'treatment' => 'Wound cleaned, antiseptic applied, bandaged', 'referred_to' => null],
             ['complaint' => 'Feeling faint during recess', 'diagnosis' => 'Low blood sugar', 'treatment' => 'Given juice and crackers, rested 30 minutes', 'referred_to' => null],
@@ -151,24 +170,32 @@ class LibraryAndClinicSeeder extends Seeder
             ['complaint' => 'Chills and body aches', 'diagnosis' => 'Early signs of flu', 'treatment' => 'Paracetamol given, advised rest at home', 'referred_to' => null],
         ];
 
-        $clinicStudents = $students->random(min(20, $students->count()));
-        foreach ($clinicStudents as $idx => $student) {
-            $complaint = $complaints[$idx % count($complaints)];
-            $incidentDate = now()->subDays(rand(0, 30));
+        foreach ($students as $student) {
+            if ($student->id % 7 === 3) continue; // some students never visit the clinic
 
-            ClinicLog::updateOrCreate(
-                [
-                    'student_id' => $student->id,
-                    'incident_date' => $incidentDate,
-                    'complaint' => $complaint['complaint'],
-                ],
-                array_merge($complaint, [
-                    'nurse_id' => $nurseId,
-                    'symptoms' => $complaint['complaint'],
-                    'visit_date' => $incidentDate,
-                    'notes' => null,
-                ])
-            );
+            $visitCount = $student->id % 4 === 1 ? 2 : 1; // repeat visitors for Unique Patients metric
+
+            for ($visitNo = 0; $visitNo < $visitCount; $visitNo++) {
+                $complaint = $complaints[($student->id + $visitNo * 7) % count($complaints)];
+                $incidentDate = now()->startOfDay()
+                    ->subDays((($student->id * 2) % 55) + $visitNo * 5)
+                    ->addHours(8 + (($student->id + $visitNo) % 6))
+                    ->addMinutes(($student->id * 13 + $visitNo * 17) % 60);
+
+                ClinicLog::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'incident_date' => $incidentDate,
+                        'complaint' => $complaint['complaint'],
+                    ],
+                    array_merge($complaint, [
+                        'nurse_id' => $nurseId,
+                        'symptoms' => $complaint['complaint'],
+                        'visit_date' => $incidentDate,
+                        'notes' => $visitNo > 0 ? 'Follow-up visit.' : null,
+                    ])
+                );
+            }
         }
     }
 }

@@ -1,5 +1,12 @@
 # Release Notes
 
+## [Unreleased] — Clinic Information + Library Processes (roster-wide seed data) — 2026-09-25
+- **Library transactions** 35 → **~180**: deterministic, up to 2 borrows per enrolled student across 60 days; overdue/returned/late mix preserved; **late fees now actually seed** (Carbon-safe late-days formula → fines feed Library report)
+- **Clinic logs** 20 → **~140**: every enrolled student ≥1 visit (repeat visitors for Unique Patients metric), 60-day spread, 20-condition complaint library → Clinic tab's symptoms/diagnosis/referrals populated
+- **Library visits** 12 → **~35** and moved from `AuditLogsAndExtrasSeeder` to `LibraryAndClinicSeeder` (its proper home); clock in/out across 5 days
+- All deterministic (id-based keys/dates) → re-running seeders adds no duplicates
+- See `clinic_library_processes_20260925.md`
+
 ## [Unreleased] — Student Roster Expansion 75 → 165 — 2026-09-25
 - **`StudentsAndFeesSeeder`**: new `generateRoster(90)` appends 90 programmatic students (Kinder–Grade 12 evenly, SHS strands cycling STEM/ABM/HUMSS/GAS, ~4 graduated / 5 withdrawn / 5 transferred, scholarship mix) → **165 total**, all with full linked records (account, profile, admission, enrollment, subjects, ledger, payments, grades)
 - Payment ratios + honor/sibling discounts extended for `$index >= 75` so balances/unpaid/paid spread across the **whole** roster (receivables + collections reports get realistic volume)
