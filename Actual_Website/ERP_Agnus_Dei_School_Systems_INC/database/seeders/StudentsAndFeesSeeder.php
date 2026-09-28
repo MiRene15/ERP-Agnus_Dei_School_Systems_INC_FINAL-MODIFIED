@@ -141,6 +141,50 @@ class StudentsAndFeesSeeder extends Seeder
         ['first_name' => 'Samuel', 'last_name' => 'Ortiz',       'middle_name' => 'Garcia',    'grade' => 'Grade 12','strand' => 'HUMSS', 'status' => 'transferred'],
     ];
 
+    protected function generateRoster(int $count): array
+    {
+        $firstNames = [
+            'Aiden', 'Althea', 'Amber', 'Anton', 'Bea', 'Benjamin', 'Bless', 'Carlo', 'Catherine', 'Cedric',
+            'Dianne', 'Dominic', 'Elena', 'Emman', 'Erika', 'Francis', 'Gabriel', 'Gemma', 'Hannah', 'Hazel',
+            'Ivan', 'Jasmine', 'Jomar', 'Joyce', 'Kevin', 'Lara', 'Lester', 'Maica', 'Nico', 'Olivia',
+        ];
+        $lastNames = [
+            'Aguilar', 'Bartolome', 'Castillo', 'Dimaculangan', 'Espinosa', 'Fabian', 'Gatchalian', 'Hernandez', 'Ignacio', 'Jimenez',
+            'Lardizabal', 'Manalo', 'Natividad', 'Ocampo', 'Panganiban', 'Quizon', 'Rosales', 'Salvador', 'Tolentino', 'Ubaldo',
+            'Vergara', 'Whitmore', 'Yamamoto', 'Zabala',
+        ];
+        $grades = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+        $strands = ['STEM', 'ABM', 'HUMSS', 'GAS'];
+        $middlePool = ['Bautista', 'Reyes', 'Aquino', 'Villanueva', 'Cruz', 'Garcia', 'Ramos', 'Torres', 'Navarro', 'Santiago'];
+
+        $rows = [];
+        for ($i = 0; $i < $count; $i++) {
+            $grade = $grades[$i % 13];
+            $strand = in_array($grade, ['Grade 11', 'Grade 12'], true) ? $strands[intdiv($i, 13) % 4] : null;
+            $block = intdiv($i, 13);
+
+            $status = null;
+            if ($grade === 'Grade 12' && $block % 4 !== 3) {
+                $status = 'graduated';
+            } elseif ($i % 17 === 4) {
+                $status = 'withdrawn';
+            } elseif ($i % 19 === 8) {
+                $status = 'transferred';
+            }
+
+            $rows[] = [
+                'first_name' => $firstNames[$i % count($firstNames)],
+                'last_name' => $lastNames[intdiv($i, count($firstNames)) % count($lastNames)],
+                'middle_name' => $middlePool[$i % count($middlePool)],
+                'grade' => $grade,
+                'strand' => $strand,
+                'scholarship' => $i % 9 === 4,
+                'status' => $status,
+            ];
+        }
+        return $rows;
+    }
+
     public function run(): void
     {
         $schoolYear = active_school_year();
@@ -157,7 +201,9 @@ class StudentsAndFeesSeeder extends Seeder
         $relationships = ['Mother', 'Father', 'Aunt', 'Uncle', 'Grandmother', 'Grandfather', 'Sibling'];
         $previousSchools = ['Sample Elementary School', 'St. Mary\'s Academy', 'Holy Child School', 'Sacred Heart Academy', 'Don Bosco School', 'La Salle Greenhills', 'Ateneo de Manila', 'St. Scholastica\'s College', 'Immaculate Conception Academy'];
 
-        foreach (self::$studentSeeds as $index => $seed) {
+        $seeds = array_merge(self::$studentSeeds, $this->generateRoster(90));
+
+        foreach ($seeds as $index => $seed) {
             $grade = $seed['grade'];
             $email = $this->resolveEmail($seed['first_name'], $seed['last_name']);
             $middleName = $seed['middle_name'] ?? $middleNames[array_rand($middleNames)];
@@ -294,6 +340,12 @@ class StudentsAndFeesSeeder extends Seeder
             } elseif (in_array($index, [5, 14, 50, 62], true)) {
                 $discountType = 'sibling';
                 $discountAmount = round($totalAssessed * 0.05, 2);
+            } elseif ($index >= 75 && $index % 13 === 2) {
+                $discountType = 'honor';
+                $discountAmount = round($totalAssessed * 0.10, 2);
+            } elseif ($index >= 75 && $index % 13 === 7) {
+                $discountType = 'sibling';
+                $discountAmount = round($totalAssessed * 0.05, 2);
             }
 
             // Varied payment behaviors - expanded for 75 students
@@ -305,6 +357,9 @@ class StudentsAndFeesSeeder extends Seeder
                 in_array($index, [7, 22, 57, 70], true) => 0.25,   // quarter paid
                 in_array($index, [9, 20, 29, 44, 54, 63], true) => 0.0,    // unpaid (overdue)
                 in_array($index, [38, 39, 40, 41, 53, 59, 73, 74], true) => 0.0, // withdrawn/graduated/transferred unpaid
+                $index >= 75 && $index % 14 === 3 => 0.0,   // generated: fully unpaid (overdue)
+                $index >= 75 && $index % 14 === 10 => 1.0,  // generated: fully paid
+                $index >= 75 && $index % 14 === 6 => 0.5,   // generated: half paid
                 default => rand(30, 60) / 100,
             };
             $partialPayment = round($effectiveAssessed * $paymentRatio, 2);

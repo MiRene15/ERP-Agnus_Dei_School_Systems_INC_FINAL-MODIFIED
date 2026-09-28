@@ -1,5 +1,10 @@
 # Release Notes
 
+## [Unreleased] — Student Roster Expansion 75 → 165 — 2026-09-25
+- **`StudentsAndFeesSeeder`**: new `generateRoster(90)` appends 90 programmatic students (Kinder–Grade 12 evenly, SHS strands cycling STEM/ABM/HUMSS/GAS, ~4 graduated / 5 withdrawn / 5 transferred, scholarship mix) → **165 total**, all with full linked records (account, profile, admission, enrollment, subjects, ledger, payments, grades)
+- Payment ratios + honor/sibling discounts extended for `$index >= 75` so balances/unpaid/paid spread across the **whole** roster (receivables + collections reports get realistic volume)
+- See `student_roster_expansion_20260925.md`
+
 ## [Unreleased] — Directress Reports Hub (5 tabs) + Seeder Gap Fixes — 2026-09-25
 - **New `/directress/reports` tabbed hub** mirroring the cashier structure: **Collections** (summary strip, daily breakdown, tfoot TOTAL), **Receivables** (balances by grade), **Clinic** (visits/patients/top symptoms/referrals), **Library** (existing library report as a tab), **Student Statistics** (grade/section/year/gender/strand) — each tab its own `ajaxTable` + filters + **CSV export** (5 exports total, all audit-logged `Exported`)
 - **Folded old pages in:** `directress.cashier-reports` and `directress.library-reports` now redirect to `?tab=collections` / `?tab=library`; sidebar's two links replaced by one **Reports** entry; old wrapper views deleted

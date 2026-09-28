@@ -512,7 +512,17 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 70
+## 51. Student Roster Expansion 75 → 165 (Sep 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-09-25 | — | Feat: `generateRoster(90)` in `StudentsAndFeesSeeder` — 165 students with full linked data; payment-ratio + discount patterns extended past index 75 for realistic balances across the roster |
+
+**Scope:** 1 seeder file + 2 MDs. See `student_roster_expansion_20260925.md`.
+
+---
+
+- **Total update sessions (commits):** 71
 - **Time span:** 2026-03-29 → 2026-09-25
 - **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals) → Validation notes all phases (30 items) → Dark mode readability & contrast → Promotion grade filter + Audit logs fix + Reports export & graphs → Batch requests 16 items (seeders, report card, cashier, schedules) → Strands→Electives + Directress demographics
 - **Uncommitted/working changes:** none — all work committed through session 67
