@@ -76,6 +76,7 @@ class ExportController extends Controller
 
     public function collections()
     {
+        set_time_limit(120);
         $payments = Payment::with('ledger.student')
             ->whereBetween('payment_date', [now()->startOfMonth(), now()->endOfMonth()])
             ->orderBy('payment_date')
@@ -100,6 +101,7 @@ class ExportController extends Controller
 
     private function streamCsv($filename, $callback)
     {
+        set_time_limit(120);
         return response()->stream(function () use ($callback) {
             $fh = fopen('php://output', 'w');
             $callback($fh);

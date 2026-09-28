@@ -1,0 +1,129 @@
+{
+    "generated_at": "2026-09-29 04:10:37",
+    "password": "Agnus2026!",
+    "staff": {
+        "admin": "admin@agnusdei.local",
+        "registrar": "registrar@agnusdei.local",
+        "cashier": "cashier1@agnusdei.local",
+        "directress": "directress@agnusdei.local",
+        "principal": "principal@agnusdei.local",
+        "librarian": "library@agnusdei.local",
+        "nurse": "clinic@agnusdei.local"
+    },
+    "staff_presence": {
+        "admin": {
+            "id": 1,
+            "role_id": 1,
+            "status": "active"
+        },
+        "registrar": {
+            "id": 2,
+            "role_id": 2,
+            "status": "active"
+        },
+        "cashier": {
+            "id": 3,
+            "role_id": 3,
+            "status": "active"
+        },
+        "directress": {
+            "id": 5,
+            "role_id": 8,
+            "status": "active"
+        },
+        "principal": {
+            "id": 6,
+            "role_id": 9,
+            "status": "active"
+        },
+        "librarian": {
+            "id": 7,
+            "role_id": 5,
+            "status": "active"
+        },
+        "nurse": {
+            "id": 8,
+            "role_id": 6,
+            "status": "active"
+        }
+    },
+    "teacher": {
+        "id": 10,
+        "email": "jose.reyes@agnusdei.local"
+    },
+    "teacher_class_id": 278,
+    "teacher_class_enrollment_id": 6,
+    "teacher_class_grade": {
+        "grade_level": "Grade 5",
+        "section": "A"
+    },
+    "student": {
+        "id": 1,
+        "user_id": 29,
+        "email": "juan.delacruz@agnusdei.edu.ph",
+        "enrollment_id": 1,
+        "ledger_id": 1,
+        "ledger_balance": "0.00",
+        "existing_payment_id": 1
+    },
+    "payment_ledger_snapshot": {
+        "id": 1,
+        "student_id": 1,
+        "payment_plan": "full",
+        "total_assessed": "20000.01",
+        "discount_applied": "0.00",
+        "total_paid": "20000.01",
+        "balance": "0.00",
+        "clearance_status": "Uncleared",
+        "created_at": "2026-09-17 15:42:35",
+        "updated_at": "2026-09-29 03:57:13",
+        "it_confirmed_at": "2026-09-17 17:52:02",
+        "carried_over_balance": "0.00",
+        "discount_type": null
+    },
+    "payment_max_id_before": 205,
+    "borrow_student_id": 14,
+    "student_admission_id": 1,
+    "student_requirement_id": 1,
+    "requirement_with_content_id": null,
+    "student_requirement_with_content_id": null,
+    "admission_id": 15,
+    "requirement_id": 43,
+    "withdrawal_id": 15,
+    "section_id": 30,
+    "admin_edit_user_id": 2,
+    "subject_id": 112,
+    "payment_id": 205,
+    "payment_ledger_id": 6,
+    "book_available_id": 34,
+    "book_edit_id": 34,
+    "txn_id": 13,
+    "fee_id": 39,
+    "grad_fee_id": 2,
+    "schedule_id": 845,
+    "existing_schedule": {
+        "id": 845,
+        "class_id": 424,
+        "grade": "Grade 12",
+        "section": "STEM-A",
+        "day": "Monday",
+        "start": "10:00",
+        "end": "11:00",
+        "room": "S-208",
+        "teacher_id": 26
+    },
+    "section_conflict_class_id": 418,
+    "any_active_class_id": 210,
+    "announcement_id": 3,
+    "active_school_year": null,
+    "counts": {
+        "users": 195,
+        "students": 167,
+        "classes": 215,
+        "schedules": 430,
+        "enrollments": 165,
+        "grades": 3099,
+        "payments": 205,
+        "books": 35
+    }
+}

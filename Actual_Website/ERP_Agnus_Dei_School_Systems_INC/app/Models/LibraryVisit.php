@@ -20,4 +20,9 @@ class LibraryVisit extends Model
     {
         return $this->belongsTo(Student::class);
     }
+
+    public function librarian()
+    {
+        return $this->belongsTo(User::class, 'librarian_id');
+    }
 }

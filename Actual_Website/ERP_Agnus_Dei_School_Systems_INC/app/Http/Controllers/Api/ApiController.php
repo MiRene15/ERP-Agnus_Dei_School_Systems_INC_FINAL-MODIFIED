@@ -232,7 +232,7 @@ class ApiController extends Controller
     {
         $student = Student::where('user_id', $request->user()->id)->firstOrFail();
         $grades = Grade::whereHas('enrollment', fn($q) => $q->where('student_id', $student->id))
-            ->with('class.subject')
+            ->with('schoolClass.subject')
             ->get();
         return $this->success($grades);
     }
@@ -273,7 +273,7 @@ class ApiController extends Controller
 
     public function principalGrades(): JsonResponse
     {
-        $grades = Grade::with('class.section', 'class.subject', 'enrollment.student')
+        $grades = Grade::with('schoolClass.subject', 'schoolClass.teacher', 'enrollment.student')
             ->latest()
             ->paginate(50);
         return $this->success($grades);

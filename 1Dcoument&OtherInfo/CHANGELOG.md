@@ -1,5 +1,11 @@
 # Release Notes
 
+## [Unreleased] — Live Smoke Test (All Departments) + 7 Bug Fixes — 2026-09-29
+- **Full live smoke test:** new repeatable harness `scripts/live_smoke/` (`dump_accounts.php` → `run_smoke.php` → `cleanup.php`) drives a real local server against the live Supabase DB — 9 role logins, every portal route per department (public site, Admin, Registrar, Cashier, Teacher, Librarian, Nurse, Student, Directress, Principal), ajax/export variants, write flows with full cleanup, and 9 Sanctum API token sessions — **final run 219/219 PASS**
+- **Fixes found by the run:** `/librarian/visits` 500 (missing `librarian()` relation on `LibraryVisit`); API `studentGrades`/`principalGrades` 500s (phantom `class.*` eager-loads → `schoolClass.*`); cashier `processPayment` "Undefined array key ar_number" (payments 500'd when the field was empty); admin collections export 30 s timeout (`set_time_limit(120)` in `collections()` + `streamCsv()`); public inquiry rolled back when Resend mail failed (mail moved post-commit, logged); duplicate-section error flash invisible (error blocks added to 3 section blades)
+- Cleanup guarantees: all SMOKE rows deleted, test payment reverted from snapshot, ledger 1 restored, 9 API tokens revoked — verified baseline counts after each round
+- See `live_smoke_test_all_departments_20260925.md`
+
 ## [Unreleased] — System Verification + Scheduling Fix Batch — 2026-09-25
 - **Scheduling audit (critical):** fixed **75 section-level double-bookings** (seeder never checked section availability), **310 room double-bookings** (room numbering restarted per grade → `E-101` reused across grades), and **missing SHS classes** (hardcoded section names vs drifted live names left e.g. Grade 12 GAS with 0 classes / 3 students with no schedule)
 - **Conflict validation hardened:** store/update/import now check **section (grade+section+year)** in addition to class/teacher/room, all scoped to active classes of the same school year (was matching archived + old-year rows)

@@ -280,7 +280,7 @@ class CashierController extends Controller
                     throw new \Exception('Could not generate unique receipt number after 5 attempts.');
                 }
 
-                $arNumber = $data['ar_number'] ?: (new Payment())->generateArNumber();
+                $arNumber = ($data['ar_number'] ?? null) ?: (new Payment())->generateArNumber();
 
                 Payment::create([
                     'ledger_id' => $ledger->id,

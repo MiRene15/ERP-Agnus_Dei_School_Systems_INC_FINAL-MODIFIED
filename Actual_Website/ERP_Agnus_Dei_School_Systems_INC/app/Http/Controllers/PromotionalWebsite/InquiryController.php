@@ -41,22 +41,22 @@ class InquiryController extends Controller
 
         try {
             $createdUser = null;
-            DB::transaction(function () use ($request, &$createdUser) {
-                $firstName = $request->first_name;
-                $lastName = $request->last_name;
-                $personalEmail = $request->personal_email;
+            $firstName = $request->first_name;
+            $lastName = $request->last_name;
+            $personalEmail = $request->personal_email;
 
-                $baseEmail = strtolower(str_replace(' ', '', $firstName) . '.' . str_replace(' ', '', $lastName));
-                $institutionalEmail = $baseEmail . '@agnusdei.edu.ph';
+            $baseEmail = strtolower(str_replace(' ', '', $firstName) . '.' . str_replace(' ', '', $lastName));
+            $institutionalEmail = $baseEmail . '@agnusdei.edu.ph';
 
-                $counter = 1;
-                while (User::where('email', $institutionalEmail)->exists()) {
-                    $institutionalEmail = $baseEmail . $counter . '@agnusdei.edu.ph';
-                    $counter++;
-                }
+            $counter = 1;
+            while (User::where('email', $institutionalEmail)->exists()) {
+                $institutionalEmail = $baseEmail . $counter . '@agnusdei.edu.ph';
+                $counter++;
+            }
 
-                $password = Str::random(8);
+            $password = Str::random(8);
 
+            DB::transaction(function () use ($request, &$createdUser, $firstName, $lastName, $personalEmail, $institutionalEmail, $password) {
                 $user = User::create([
                     'name' => $firstName . ' ' . $lastName,
                     'email' => $institutionalEmail,
@@ -72,9 +72,18 @@ class InquiryController extends Controller
                     'personal_email' => $personalEmail,
                     'status' => 'pre-admission'
                 ]);
-
-                Mail::to($personalEmail)->send(new InquiryCredentialsMail($firstName, $institutionalEmail, $password));
             });
+
+            // Mail is sent AFTER the commit: a mail-provider outage must never
+            // roll back (or block) the inquiry itself.
+            try {
+                Mail::to($personalEmail)->send(new InquiryCredentialsMail($firstName, $institutionalEmail, $password));
+            } catch (\Exception $mailError) {
+                Log::warning('Inquiry credentials email failed: ' . $mailError->getMessage(), [
+                    'personal_email' => $personalEmail,
+                    'institutional_email' => $institutionalEmail,
+                ]);
+            }
 
             if ($createdUser) {
                 log_activity($createdUser, 'Account Created', 'Pre-admission account created via public inquiry: ' . $createdUser->name . ' (' . $createdUser->email . '). Credentials emailed to ' . $request->personal_email . '.');

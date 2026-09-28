@@ -1,0 +1,2415 @@
+{
+    "total": 219,
+    "failed": 0,
+    "results": [
+        {
+            "group": "Public",
+            "label": "GET /",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2245,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /vision",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 417,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /mission",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 411,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /academics",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 524,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /admissions",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 436,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /identity",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 515,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /educational-philosophy",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 435,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /institutional-background",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 420,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /contact-information",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 468,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /program-offerings",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 424,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /requirements-procedures",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 421,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /discounts-privileges",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 435,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /inquiry",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 551,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /login",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 353,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "GET /forgot-password",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 370,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "POST /inquiry (create pre-admission account)",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 477,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "inquiry 302 redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 6672,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Public",
+            "label": "inquiry no-error flash",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "admin (admin@agnusdei.local)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "admin /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1939,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "registrar (registrar@agnusdei.local)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "registrar /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1822,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "cashier (cashier1@agnusdei.local)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "cashier /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1926,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "teacher (jose.reyes@agnusdei.local)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "teacher /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1917,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "librarian (library@agnusdei.local)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "librarian /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 2021,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "nurse (clinic@agnusdei.local)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "nurse /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1839,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "student (juan.delacruz@agnusdei.edu.ph)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "student /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1934,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "directress (directress@agnusdei.local)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "directress /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1947,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "principal (principal@agnusdei.local)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Login",
+            "label": "principal /dashboard role-redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 2175,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5050,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/pending-accounts",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4281,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/users",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3484,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/users/create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2322,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/users/2/edit",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2473,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/student-accounts",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2907,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/subjects",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2260,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/subjects/create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2148,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/subjects/112/edit",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2144,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/settings",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2169,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/audit-logs",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3894,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/promotion",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5763,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/exports/enrollments",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3808,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/exports/grades",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5156,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /admin/exports/collections",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 67031,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Admin",
+            "label": "GET /profile",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2411,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2713,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/admissions",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3449,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/admissions/15",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5650,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/withdrawals",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3974,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/report-cards",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3924,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/report-cards/1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5865,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/report-cards/1/print",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 7081,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/sections",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2596,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/sections/create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2116,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET /registrar/sections/30/edit",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2554,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "GET requirements/{id}/view (skipped: no seeded file_content)",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "POST sections create SMOKEZZ",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2440,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "POST sections duplicate rejected",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2440,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "PATCH section SMOKEZZ",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2337,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Registrar",
+            "label": "DELETE section SMOKEZZ",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2498,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2597,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/payments",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1879,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/search?q=Juan",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1912,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/payment/1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5524,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/financial/1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5661,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/receipt/205",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4336,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/collections",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3243,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/collections/export",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3539,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/reports",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1664,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/reports/receivables",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4025,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/reports/receivables/export",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3630,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "GET /cashier/discounts",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3538,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "POST process payment 100 (reverted later)",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5080,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Cashier",
+            "label": "payment created with receipt RCP-20260929-0001",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5080,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3344,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/classes",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2902,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/classes/278",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5567,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/classes/278/assessments",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3466,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/class-list/278/students",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3391,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/grade-assessment/278/student/6",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3421,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/schedule",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3814,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/class-list",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2393,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/grade-assessment",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2248,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/computed-grades",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2342,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/dashboard?ajax=1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 7167,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/classes?ajax=1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3087,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Teacher",
+            "label": "GET /teacher/class-list?ajax=1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 6873,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4206,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/books",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2461,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/books/create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1904,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/books/34/edit",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2058,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/inactive-logs",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2103,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/loans",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3221,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/loans/borrow",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3406,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/loans/13/return",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2851,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/students/search?q=Juan",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1843,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/books/search?q=a",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2381,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/loans/search?q=a",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2965,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/visits",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3236,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "GET /librarian/history",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3202,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "POST books create SMOKE TEST BOOK",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2391,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "PATCH book",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2322,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "POST borrow SMOKE TEST BOOK",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3177,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "borrowed book listed via loans search",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3140,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Librarian",
+            "label": "PATCH return book",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2913,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Nurse",
+            "label": "GET /nurse/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3969,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Nurse",
+            "label": "GET /nurse/logs",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2851,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Nurse",
+            "label": "GET /nurse/logs/create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2310,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Nurse",
+            "label": "POST clinic log SMOKE-TEST-COMPLAINT",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2885,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5338,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/admission/apply (guard redirect)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 2143,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/enrollment/apply (guard redirect)",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 2504,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/admission/status",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4598,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/withdrawal",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4673,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/report-card",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 7267,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/cor",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5244,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/schedule",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5851,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET /student/ledger",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5198,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Student",
+            "label": "GET requirements/{id}/view (skipped: no seeded file_content)",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4860,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/demographics",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 5899,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/school-years",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2181,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/fees",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2077,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/fees/create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1845,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/fees/39/edit",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2230,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/graduation-fees",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2135,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/graduation-fees/create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1846,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/graduation-fees/2/edit",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2021,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/graduation-fees/2/assign",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3267,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/graduation-fees/2/assigned",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3616,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1829,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports?tab=collections",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1838,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports?tab=receivables",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1726,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports?tab=clinic",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1810,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports?tab=library",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1894,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports?tab=students",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1744,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports/receivables/export",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3484,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports/clinic/export",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3611,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/reports/students/export",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4442,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/library-reports/export",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3561,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/cashier-reports/export",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3318,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/library-reports legacy redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1797,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Directress",
+            "label": "GET /directress/cashier-reports legacy redirect",
+            "status": 302,
+            "expect": [
+                302
+            ],
+            "ms": 1835,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/dashboard",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3374,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/schedules",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3284,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/schedules/manage",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3680,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/schedules/845/edit",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3076,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/schedules/template",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1830,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/announcements",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3675,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/announcements/create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 1940,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/announcements/3/edit",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2278,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/grades?grade_level=Kinder",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4632,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/grades?grade_level=Grade+1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4683,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/grades?grade_level=Grade+5",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4675,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/grades?grade_level=Grade+7",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4638,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/grades?grade_level=Grade+10",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4332,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/grades?grade_level=Grade+11",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4289,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/grades?grade_level=Grade+12",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4645,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/schedules?grade_level=Grade%2012&ajax=1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3244,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "ajax schedules Grade 12 rows include STEM-A",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3244,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "GET /principal/grades?grade_level=Grade%2012&ajax=1",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4493,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "POST announcement create",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3569,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "PATCH announcement",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3569,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "DELETE announcement",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3540,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "schedule CONFLICT same-class rejected",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2978,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "schedule CONFLICT section-level rejected (s53 fix)",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3196,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "schedule CONFLICT room/other rejected",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3145,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "schedule VALID create Friday 19:00 SMOKE-99",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3366,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "PATCH schedule (smoke row)",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3217,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "Principal",
+            "label": "DELETE schedule (smoke row)",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3041,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "admin token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "ADMIN GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3106,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "ADMIN GET /api/admin/users",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3703,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "ADMIN GET /api/admin/users/2",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3050,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "ADMIN GET /api/admin/activity-logs",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3528,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "registrar token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "REGISTRAR GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2874,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "REGISTRAR GET /api/registrar/admissions",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3815,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "REGISTRAR GET /api/registrar/admissions/2",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3660,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "REGISTRAR GET /api/registrar/students",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4295,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "cashier token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "CASHIER GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2645,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "CASHIER GET /api/cashier/payments",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4316,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "CASHIER GET /api/cashier/ledgers",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3797,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "teacher token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "TEACHER GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2820,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "TEACHER GET /api/teacher/classes",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3304,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "TEACHER GET /api/teacher/classes/278",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3667,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "TEACHER GET /api/teacher/classes/278/grades",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3544,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "librarian token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "LIBRARIAN GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2853,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "LIBRARIAN GET /api/librarian/books",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3292,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "LIBRARIAN GET /api/librarian/loans",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4182,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "nurse token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "NURSE GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2642,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "NURSE GET /api/nurse/clinic-logs",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4130,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "student token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "STUDENT GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2718,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "STUDENT GET /api/student/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3734,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "STUDENT GET /api/student/admission",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3483,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "STUDENT GET /api/student/enrollments",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3224,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "STUDENT GET /api/student/grades",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3526,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "STUDENT GET /api/student/ledger",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3355,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "directress token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "DIRECTRESS GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2666,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "DIRECTRESS GET /api/directress/fees",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3304,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "DIRECTRESS GET /api/directress/collections",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 3117,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "principal token issue",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 0,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "PRINCIPAL GET /api/me",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2686,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "PRINCIPAL GET /api/principal/schedules",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4400,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "PRINCIPAL GET /api/principal/grades",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 4885,
+            "detail": "",
+            "pass": true
+        },
+        {
+            "group": "API",
+            "label": "PRINCIPAL GET /api/principal/announcements",
+            "status": 200,
+            "expect": [
+                200
+            ],
+            "ms": 2959,
+            "detail": "",
+            "pass": true
+        }
+    ]
+}
