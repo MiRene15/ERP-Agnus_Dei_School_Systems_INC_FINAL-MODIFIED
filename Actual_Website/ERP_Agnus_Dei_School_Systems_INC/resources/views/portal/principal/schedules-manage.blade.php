@@ -9,6 +9,11 @@
 </div>
 @if(session('success'))<div class="mb-4 p-3 bg-green-50 dark:bg-[rgba(74,222,128,0.12)] border border-green-200 dark:border-[rgba(74,222,128,0.25)] rounded text-sm text-green-700 dark:text-[#4ADE80]">{{ session('success') }}</div>@endif
 @if(session('error'))<div class="mb-4 p-3 bg-red-50 dark:bg-[rgba(248,113,113,0.12)] border border-red-200 dark:border-[rgba(248,113,113,0.25)] rounded text-sm text-red-700 dark:text-[#F87171]">{{ session('error') }}</div>@endif
+@if($errors->any())
+    <div class="mb-4 p-3 bg-red-50 dark:bg-[rgba(248,113,113,0.12)] border border-red-200 dark:border-[rgba(248,113,113,0.25)] rounded text-sm text-red-700 dark:text-[#F87171]">
+        <ul class="list-disc ml-4">@foreach($errors->all() as $err)<li>{{ $err }}</li>@endforeach</ul>
+    </div>
+@endif
 
 <div x-data="{ tab: 'add' }" class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
     <div class="flex border-b border-gray-100 dark:border-[#2A2F58]">
@@ -57,54 +62,71 @@
             </div>
             <script>
                 const allClasses = @json($classes);
-                const allSubjects = @json(\App\Models\Subject::orderBy('name')->get(['id','name','subject_code']));
+                const days = @json($days);
+                const schedulesBase = '{{ url('/principal/schedules') }}';
+                const csrf = '{{ csrf_token() }}';
                 const gradeEl = document.getElementById('editGrade');
                 const sectionEl = document.getElementById('editSection');
                 const classEl = document.getElementById('editClass');
                 const resultsEl = document.getElementById('editResults');
-                const days = @json($days);
+                const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                const timeVal = t => (t || '').slice(0, 5);
+                const introHtml = '<p class="text-sm text-gray-500 dark:text-[#8A90B0]">Choose grade &rarr; section &rarr; class to load and edit its weekly slots. All subjects for the selected section will be listed below.</p>';
+                const daySelect = day => '<select name="day_of_week" class="px-1 py-0.5 border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded text-xs">' + days.map(d => '<option value="' + d + '"' + (d === day ? ' selected' : '') + '>' + d + '</option>').join('') + '</select>';
                 gradeEl.addEventListener('change', () => {
                     const grade = gradeEl.value;
                     const filtered = allClasses.filter(c => c.grade_level === grade);
                     const sections = [...new Set(filtered.map(c => c.section))];
-                    sectionEl.innerHTML = '<option value=\"\">Select Section</option>' + sections.map(s => `<option value=\"${s}\">${s}</option>`).join('');
-                    classEl.innerHTML = '<option value=\"\">Select Class</option>';
-                    resultsEl.innerHTML = '<p class=\"text-sm text-gray-500 dark:text-[#8A90B0]\">Choose section and class. All subjects for that grade/section will be shown below for editing.</p>';
+                    sectionEl.innerHTML = '<option value="">Select Section</option>' + sections.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+                    classEl.innerHTML = '<option value="">Select Class</option>';
+                    resultsEl.innerHTML = introHtml;
                 });
                 sectionEl.addEventListener('change', () => {
                     const grade = gradeEl.value;
                     const section = sectionEl.value;
                     const filtered = allClasses.filter(c => c.grade_level === grade && c.section === section);
-                    const subjectOptions = filtered.length ? filtered.map(c => `<option value=\"${c.id}\">${c.subject?.name || c.subject_id} — ${c.teacher?.name || 'No teacher'}</option>`).join('') : '<option value=\"\">No classes yet — add via Add tab</option>';
-                    classEl.innerHTML = '<option value=\"\">Select Class</option>' + subjectOptions;
+                    const subjectOptions = filtered.length ? filtered.map(c => `<option value="${c.id}">${esc(c.subject?.name || c.subject_id)} — ${esc(c.teacher?.name || 'No teacher')}</option>`).join('') : '<option value="">No classes yet — add via Add tab</option>';
+                    classEl.innerHTML = '<option value="">Select Class</option>' + subjectOptions;
                     if (filtered.length) {
-                        let html = '<p class=\"text-xs text-gray-400 dark:text-[#8A90B0] mb-2\">All subjects for ' + grade + ' ' + section + ':</p><div class=\"flex flex-wrap gap-1\">' + filtered.map(c => `<span class=\"px-2 py-1 bg-gray-100 dark:bg-[#23274C] rounded text-xs dark:text-[#C1C4DC]\">${c.subject?.name || c.subject_id}</span>`).join('') + '</div>';
-                        resultsEl.innerHTML = html;
+                        resultsEl.innerHTML = '<p class="text-xs text-gray-400 dark:text-[#8A90B0] mb-2">All subjects for ' + esc(grade) + ' ' + esc(section) + ':</p><div class="flex flex-wrap gap-1">' + filtered.map(c => `<span class="px-2 py-1 bg-gray-100 dark:bg-[#23274C] rounded text-xs dark:text-[#C1C4DC]">${esc(c.subject?.name || c.subject_id)}</span>`).join('') + '</div>';
                     }
                 });
-                classEl.addEventListener('change', async () => {
+                classEl.addEventListener('change', () => {
                     const classId = classEl.value;
                     if (!classId) return;
-                    resultsEl.innerHTML = '<p class=\"text-sm text-gray-500 dark:text-[#8A90B0]\">Loading editable slots...</p>';
-                    try {
-                        const res = await fetch(`{{ url('/principal/schedules') }}?class_id=${classId}&ajax=1`);
-                        const data = await res.json();
-                        const temp = document.createElement('div');
-                        temp.innerHTML = data.html;
-                        temp.querySelectorAll('td a[href*=\"/edit\"]').forEach(a => {
-                            const href = a.getAttribute('href');
-                            const form = document.createElement('div');
-                            form.innerHTML = `<form method=\"POST\" action=\"${href.replace('/edit','')}\" class=\"flex gap-1 items-center\">
-                                <input type=\"hidden\" name=\"_token\" value=\"{{ csrf_token() }}\">
-                                <input type=\"hidden\" name=\"_method\" value=\"PATCH\">
-                                <input type=\"text\" name=\"room\" placeholder=\"Room\" value=\"${a.nextElementSibling ? a.nextElementSibling.textContent.trim() : ''}\" class=\"w-16 px-1 py-0.5 border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] rounded text-xs\">
-                                <button type=\"submit\" class=\"px-2 py-0.5 bg-blue-600 text-white rounded text-xs\">Save</button>
-                                <a href=\"${href}\" class=\"px-2 py-0.5 bg-gray-100 dark:bg-[#23274C] rounded text-xs\">Open</a>
-                            </form>`;
-                            a.parentNode.replaceChild(form, a);
-                        });
-                        resultsEl.innerHTML = '<div class=\"bg-white dark:bg-[#1A1E3B] rounded-xl border border-gray-100 dark:border-[#2A2F58] p-4\">' + temp.innerHTML + '<p class=\"text-xs text-gray-400 dark:text-[#8A90B0] mt-3\">Tip: Click a time slot to edit, or use <strong>Add Schedule</strong> tab to add new. Delete requires confirmation and is audit logged.</p></div>';
-                    } catch(e){ resultsEl.innerHTML = '<p class=\"text-sm text-red-500\">Failed to load. ' + e.message + '</p>'; }
+                    const cls = allClasses.find(c => String(c.id) === String(classId));
+                    if (!cls) return;
+                    const slots = (cls.schedules || []).slice().sort((a, b) => days.indexOf(a.day_of_week) - days.indexOf(b.day_of_week));
+                    if (!slots.length) {
+                        resultsEl.innerHTML = '<p class="text-sm text-gray-500 dark:text-[#8A90B0]">No schedule slots yet for <strong>' + esc(cls.subject?.name || 'this class') + '</strong> — use the <strong>Add Schedule</strong> tab to create one.</p>';
+                        return;
+                    }
+                    const rows = slots.map(s => `
+                        <tr class="border-b border-gray-100 dark:border-[#2A2F58]">
+                            <td class="py-2 px-2"><form method="POST" action="${schedulesBase}/${s.id}" class="flex gap-1 items-center flex-wrap">
+                                <input type="hidden" name="_token" value="${csrf}">
+                                <input type="hidden" name="_method" value="PATCH">
+                                ${daySelect(s.day_of_week)}
+                                <input type="time" name="start_time" value="${timeVal(s.start_time)}" required class="px-1 py-0.5 border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded text-xs">
+                                <input type="time" name="end_time" value="${timeVal(s.end_time)}" required class="px-1 py-0.5 border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded text-xs">
+                                <input type="text" name="room" maxlength="50" placeholder="Room" value="${esc(s.room)}" class="w-20 px-1 py-0.5 border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded text-xs">
+                                <button type="submit" class="px-2 py-0.5 bg-blue-600 text-white rounded text-xs">Save</button>
+                            </form></td>
+                            <td class="py-2 px-2 whitespace-nowrap">
+                                <a href="${schedulesBase}/${s.id}/edit" class="px-2 py-0.5 bg-gray-100 dark:bg-[#23274C] rounded text-xs dark:text-[#C1C4DC]">Open</a>
+                                <form method="POST" action="${schedulesBase}/${s.id}" class="inline" onsubmit="return confirm('Delete this schedule slot? This will be audit logged.');">
+                                    <input type="hidden" name="_token" value="${csrf}">
+                                    <input type="hidden" name="_method" value="DELETE">
+                                    <button type="submit" class="px-2 py-0.5 bg-red-50 dark:bg-[rgba(248,113,113,0.12)] text-red-600 dark:text-[#F87171] rounded text-xs">Delete</button>
+                                </form>
+                            </td>
+                        </tr>`).join('');
+                    resultsEl.innerHTML = `
+                        <div class="bg-white dark:bg-[#1A1E3B] rounded-xl border border-gray-100 dark:border-[#2A2F58] p-4">
+                            <p class="text-xs text-gray-400 dark:text-[#8A90B0] mb-2">${esc(cls.subject?.name || '')} — ${esc(cls.grade_level)} ${esc(cls.section)} (${slots.length} slot${slots.length > 1 ? 's' : ''})</p>
+                            <table class="w-full text-sm"><tbody>${rows}</tbody></table>
+                            <p class="text-xs text-gray-400 dark:text-[#8A90B0] mt-3">Edits validate class, section, teacher and room conflicts. <strong>Open</strong> loads the full edit page; Delete requires confirmation and is audit logged.</p>
+                        </div>`;
                 });
             </script>
         </div>

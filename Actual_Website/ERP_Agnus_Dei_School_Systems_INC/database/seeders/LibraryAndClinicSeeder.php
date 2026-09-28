@@ -88,10 +88,14 @@ class LibraryAndClinicSeeder extends Seeder
                 $borrowDate = now()->subDays(1 + (($student->id * 5 + $n * 3) % 60));
 
                 if ($isBorrowed) {
-                    // ~1 in 4 currently borrowed are overdue
-                    $returnDate = $idx % 4 === 0
-                        ? now()->copy()->subDays(1 + ($student->id % 10))
-                        : now()->copy()->addDays(1 + ($student->id % 14));
+                    if ($idx % 4 === 0) {
+                        // Overdue: borrow forced to >= 3 days back and due clamped between
+                        // borrow and now, so a due date can never precede the borrow date
+                        $borrowDate = now()->subDays(3 + (($student->id * 5 + $n * 3) % 58));
+                        $returnDate = now()->subDays(1 + ($student->id % 10))->max($borrowDate->copy()->addDay());
+                    } else {
+                        $returnDate = now()->copy()->addDays(1 + ($student->id % 14));
+                    }
                     $actualReturnDate = null;
                     $lateDays = 0;
                 } else {
@@ -105,43 +109,47 @@ class LibraryAndClinicSeeder extends Seeder
                 $conditionAtReturn = !$isBorrowed ? ['Good', 'Good', 'Minor Damage'][($student->id + $n) % 3] : null;
                 $totalFees = !$isBorrowed && $lateDays > 0 ? $lateDays * 5.00 : 0;
 
-                LibraryTransaction::updateOrCreate(
-                    [
-                        'student_id' => $student->id,
-                        'book_title' => $book->title,
-                    ],
-                    [
-                        'book_id' => $book->id,
-                        'librarian_id' => $librarianId,
-                        'borrow_date' => $borrowDate,
-                        'return_date' => $returnDate,
-                        'status' => $isBorrowed ? 'Borrowed' : 'Returned',
-                        'condition_at_borrow' => $conditionAtBorrow,
-                        'condition_at_return' => $conditionAtReturn,
-                        'total_fees' => $totalFees,
-                    ]
-                );
+                // Skip when this student+book row already exists: keeps re-runs (on any later
+                // day) from churning dates and never touches rows created by the librarian UI
+                $alreadySeeded = LibraryTransaction::where('student_id', $student->id)
+                    ->where('book_title', $book->title)
+                    ->exists();
+                if ($alreadySeeded) continue;
+
+                LibraryTransaction::create([
+                    'student_id' => $student->id,
+                    'book_id' => $book->id,
+                    'librarian_id' => $librarianId,
+                    'borrow_date' => $borrowDate,
+                    'return_date' => $returnDate,
+                    'status' => $isBorrowed ? 'Borrowed' : 'Returned',
+                    'condition_at_borrow' => $conditionAtBorrow,
+                    'condition_at_return' => $conditionAtReturn,
+                    'total_fees' => $totalFees,
+                ]);
             }
         }
 
         // Library visits (manual time-in/out log) — every 4th student, across the last 5 days
         foreach ($students as $student) {
             if ($student->id % 4 !== 0) continue;
+            // Already seeded (or logged by the librarian UI) → skip: time_in is now()-derived,
+            // so re-running on a later day would otherwise duplicate every visit
+            if (DB::table('library_visits')->where('student_id', $student->id)->exists()) continue;
             $timeIn = now()->startOfDay()
                 ->subDays($student->id % 5)
                 ->addHours(8 + ($student->id % 8))
                 ->addMinutes(($student->id * 7) % 60);
             $hasOut = $student->id % 3 !== 0;
 
-            DB::table('library_visits')->updateOrInsert(
-                ['student_id' => $student->id, 'time_in' => $timeIn],
-                [
-                    'librarian_id' => $librarianId,
-                    'time_out' => $hasOut ? $timeIn->copy()->addMinutes(30 + ($student->id % 5) * 10) : null,
-                    'created_at' => $timeIn,
-                    'updated_at' => $timeIn,
-                ]
-            );
+            DB::table('library_visits')->insert([
+                'student_id' => $student->id,
+                'librarian_id' => $librarianId,
+                'time_in' => $timeIn,
+                'time_out' => $hasOut ? $timeIn->copy()->addMinutes(30 + ($student->id % 5) * 10) : null,
+                'created_at' => $timeIn,
+                'updated_at' => $timeIn,
+            ]);
         }
 
         if (!$nurseId) return;
@@ -182,19 +190,21 @@ class LibraryAndClinicSeeder extends Seeder
                     ->addHours(8 + (($student->id + $visitNo) % 6))
                     ->addMinutes(($student->id * 13 + $visitNo * 17) % 60);
 
-                ClinicLog::updateOrCreate(
-                    [
-                        'student_id' => $student->id,
-                        'incident_date' => $incidentDate,
-                        'complaint' => $complaint['complaint'],
-                    ],
-                    array_merge($complaint, [
-                        'nurse_id' => $nurseId,
-                        'symptoms' => $complaint['complaint'],
-                        'visit_date' => $incidentDate,
-                        'notes' => $visitNo > 0 ? 'Follow-up visit.' : null,
-                    ])
-                );
+                // incident_date is now()-derived → keying on it would duplicate every row on a
+                // later-day re-run; skip when this student+complaint is already logged instead
+                $alreadySeeded = ClinicLog::where('student_id', $student->id)
+                    ->where('complaint', $complaint['complaint'])
+                    ->exists();
+                if ($alreadySeeded) continue;
+
+                ClinicLog::create(array_merge($complaint, [
+                    'student_id' => $student->id,
+                    'nurse_id' => $nurseId,
+                    'symptoms' => $complaint['complaint'],
+                    'incident_date' => $incidentDate,
+                    'visit_date' => $incidentDate,
+                    'notes' => $visitNo > 0 ? 'Follow-up visit.' : null,
+                ]));
             }
         }
     }

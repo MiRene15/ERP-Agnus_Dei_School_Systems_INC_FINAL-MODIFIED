@@ -22,19 +22,19 @@
     <div class="mb-4 p-4 bg-red-50 dark:bg-[rgba(248,113,113,0.12)] border border-red-200 dark:border-[rgba(248,113,113,0.25)] rounded-lg text-red-800 dark:text-[#F87171] text-sm">{{ session('error') }}</div>
 @endif
 
-<div class="mb-4 flex gap-2 flex-wrap">
-    @foreach($gradeLevels as $gl)
-    <a href="{{ route('principal.schedules', array_filter(['grade_level' => $gl, 'school_year' => request('school_year')])) }}"
-       class="px-3 py-1.5 rounded-lg text-sm font-medium transition {{ $selectedGrade === $gl ? 'text-white' : 'text-gray-600 dark:text-[#C1C4DC] bg-gray-100 dark:bg-[#23274C] hover:bg-gray-200 dark:hover:bg-[#2A2F58]' }}"
-       style="{{ $selectedGrade === $gl ? 'background: var(--navy);' : '' }}">
-        {{ $gl }}
-    </a>
-    @endforeach
-</div>
-
 <p class="text-sm text-gray-500 dark:text-[#8A90B0] mb-4">Schedules are managed via <a href="{{ route('principal.schedules.manage') }}" class="text-blue-600 dark:text-[#60A5FA] underline">Manage Schedules</a> — add, import, or edit there. This page shows the weekly timetable per section.</p>
 
-<div x-data="ajaxTable('{{ route('principal.schedules') }}', { search: '{{ request('search') }}', school_year: '{{ request('school_year') }}', day: '{{ request('day') }}' })">
+<div x-data="ajaxTable('{{ route('principal.schedules') }}', { search: '{{ request('search') }}', school_year: '{{ request('school_year') }}', day: '{{ request('day') }}', grade_level: '{{ request('grade_level', 'Grade 7') }}' })">
+    <div class="mb-4 flex gap-2 flex-wrap">
+        @foreach($gradeLevels as $gl)
+        <a href="{{ route('principal.schedules') }}" @click.prevent="filters.grade_level = '{{ $gl }}'; reload()"
+           :class="filters.grade_level === '{{ $gl }}' ? 'text-white' : 'text-gray-600 dark:text-[#C1C4DC] bg-gray-100 dark:bg-[#23274C] hover:bg-gray-200 dark:hover:bg-[#2A2F58]'"
+           :style="filters.grade_level === '{{ $gl }}' ? 'background: var(--navy);' : ''"
+           class="px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer">
+            {{ $gl }}
+        </a>
+        @endforeach
+    </div>
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
@@ -54,7 +54,7 @@
                 @endforeach
             </select>
             <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Filter</button>
-            <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 dark:bg-[#23274C] text-gray-700 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58] transition">Clear</button>
+            <button type="button" @click="reset(); filters.grade_level = 'Grade 7'" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 dark:bg-[#23274C] text-gray-700 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58] transition">Clear</button>
         </form>
     </div>
 

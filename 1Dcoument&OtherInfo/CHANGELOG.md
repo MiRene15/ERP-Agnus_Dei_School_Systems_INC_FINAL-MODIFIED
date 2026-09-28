@@ -1,5 +1,17 @@
 # Release Notes
 
+## [Unreleased] — System Verification + Scheduling Fix Batch — 2026-09-25
+- **Scheduling audit (critical):** fixed **75 section-level double-bookings** (seeder never checked section availability), **310 room double-bookings** (room numbering restarted per grade → `E-101` reused across grades), and **missing SHS classes** (hardcoded section names vs drifted live names left e.g. Grade 12 GAS with 0 classes / 3 students with no schedule)
+- **Conflict validation hardened:** store/update/import now check **section (grade+section+year)** in addition to class/teacher/room, all scoped to active classes of the same school year (was matching archived + old-year rows)
+- **UI fixes:** grade tabs no longer snap back to Grade 7 (`grade_level` added to `ajaxTable` filters, pills made Alpine-driven — same bug pattern fixed on the Grades page); `SHS` phantom tab removed; **`$errors` rendered** on Manage/Edit schedule pages; **Edit Existing tab rebuilt client-side** (old version fetched a controller-ignored `class_id` and submitted invalid PATCHes that always failed silently)
+- **API 500s fixed:** `teacherClasses/teacherClassShow` dropped phantom `section` relation on `Classes`; `principalSchedules` now eager-loads `schoolClass.subject/teacher` (`Schedule` has no `teacher/section/subject` relations)
+- **CSV import** now strips UTF-8 BOM (Excel-saved files were rejected as bad headers); registrar section **update** gained duplicate guard + grade whitelist
+- **`TeachersClassesSchedulesSeeder` rewrite:** SHS plans read from the DB `sections` table, unique room per section (global per-department numbering), section+room-aware slot resolution with DB-backed pre-load, conflict-free schedule fallback (was forcing Monday 07:00), orphan-class deactivation for `(grade, section)` pairs no longer active
+- **New `php artisan schedules:repair`:** before/after conflict report + seeder run + `enrollment_subject` backfill + missing-only grades for newly linked pairs — **executed live: section overlaps 75 → 0, room overlaps 310 → 0, all schedule/link/grade gaps → 0; re-run fully idempotent (0 changes)**; fixed a live incident found by the run (generic-vs-saint section rename orphaned all classes → old rows deleted via cascade, seeder rename made conditional, orphans now delete instead of deactivate)
+- **`LibraryAndClinicSeeder`:** re-run idempotent across days (skip-if-exists keys — was duplicating clinic logs/visits on any later-day re-run); overdue loans clamped so **due date can never precede borrow date**
+- **Library charts fixed in directress hub:** Chart.js `<script>` removed (dead under `x-html`, same issue as cashier session 49) → pure-CSS availability bar
+- See `system_verification_scheduling_20260925.md`
+
 ## [Unreleased] — Live DB Seed Run + requirements schema fix — 2026-09-25
 - **Seeded live Supabase DB:** 14 → **166 students** / 165 ledgers (₱1.93M receivable balance), 12,264 assessments + 3,066 grades, 203 payments, 157 clinic logs (120 patients), 202 library txns (41 borrowed, ₱480 fines), 37 library visits, activity_log 103 → 138, 2 grad fees + 19 assignments, 15 withdrawals, 3 inquiries, 45 requirements
 - **Fix:** `AuditLogsAndExtrasSeeder::seedRequirements()` wrote `file_path` — column dropped by bytea migration; now writes current schema (`original_filename`/`mime_type`/`file_size`, nullable `file_content` guarded by `StudentAdmissionController:331`)

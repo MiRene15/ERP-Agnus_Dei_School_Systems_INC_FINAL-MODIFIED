@@ -8,10 +8,32 @@ use App\Models\Schedule;
 use App\Models\Section;
 use App\Models\Subject;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class TeachersClassesSchedulesSeeder extends Seeder
 {
     private array $teacherAvailability = [];
+    private array $sectionAvailability = [];
+    private array $roomAvailability = [];
+
+    private array $timeSlots = [
+        ['07:00:00', '08:00:00'],
+        ['08:00:00', '09:00:00'],
+        ['09:00:00', '10:00:00'],
+        ['10:00:00', '11:00:00'],
+        ['11:00:00', '12:00:00'],
+        ['13:00:00', '14:00:00'],
+        ['14:00:00', '15:00:00'],
+        ['15:00:00', '16:00:00'],
+    ];
+
+    private array $dayPatterns = [
+        ['Monday', 'Wednesday'],
+        ['Tuesday', 'Thursday'],
+        ['Monday', 'Thursday'],
+        ['Tuesday', 'Friday'],
+        ['Wednesday', 'Friday'],
+    ];
 
     public function run(): void
     {
@@ -57,7 +79,9 @@ class TeachersClassesSchedulesSeeder extends Seeder
             'Grade 10' => ['G10-ENG', 'G10-FIL', 'G10-MAT', 'G10-SCI', 'G10-AP', 'G10-ESP', 'G10-MAPEH', 'G10-TLE'],
         ];
 
-        // Map legacy generic section names to new saint/strand names for existing DB migration
+        // Map legacy generic section names to new saint/strand names for existing DB migration.
+        // Only rename when the sections table actually holds the NEW names — on DBs that still
+        // use generic names (A/B/STEM-A), renaming classes would orphan them from their sections.
         $legacySectionMap = [
             'Kinder' => ['A' => 'St. Agnes', 'B' => 'St. Clare'],
             'Grade 1' => ['A' => 'St. Francis', 'B' => 'St. Dominic'],
@@ -74,88 +98,158 @@ class TeachersClassesSchedulesSeeder extends Seeder
             'Grade 12' => ['STEM-A' => 'STEM - St. Albert', 'ABM-A' => 'ABM - St. Luke', 'HUMSS-A' => 'HUMSS - St. Jerome', 'GAS-A' => 'GAS - St. Benedict'],
         ];
         foreach ($legacySectionMap as $gl => $map) {
+            $sectionNames = ($sectionsByGrade[$gl] ?? collect())->pluck('section_name');
+            if ($sectionNames->isEmpty()) continue;
             foreach ($map as $old => $new) {
-                Classes::where('grade_level', $gl)->where('section', $old)->update(['section' => $new]);
+                if ($sectionNames->contains($new) && !$sectionNames->contains($old)) {
+                    Classes::where('grade_level', $gl)->where('section', $old)->update(['section' => $new]);
+                }
             }
         }
 
-        $seniorHighPlans = [
-            ['grade_level' => 'Grade 11', 'section' => 'STEM - St. Thomas Aquinas', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-GMATH', 'SHS-ELS', 'SHS-PD', 'SHS-PEH', 'STEM-PCAL', 'STEM-BCAL']],
-            ['grade_level' => 'Grade 12', 'section' => 'STEM - St. Albert', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-PR2', 'SHS-EMTECH', 'SHS-III', 'STEM-BIO1', 'STEM-CHEM1', 'STEM-PHY1']],
-            ['grade_level' => 'Grade 11', 'section' => 'ABM - St. Matthew', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-GMATH', 'SHS-UCSP', 'SHS-PEH', 'ABM-BMATH', 'ABM-OAM', 'ABM-FABM1']],
-            ['grade_level' => 'Grade 12', 'section' => 'ABM - St. Luke', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-FPL', 'SHS-ENTREP', 'SHS-III', 'ABM-FABM2', 'SHS-PR2']],
-            ['grade_level' => 'Grade 11', 'section' => 'HUMSS - St. Augustine', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-21CL', 'SHS-UCSP', 'SHS-PEH', 'HUMSS-DISS', 'HUMSS-DIASS', 'SHS-PR1']],
-            ['grade_level' => 'Grade 12', 'section' => 'HUMSS - St. Jerome', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-FPL', 'HUMSS-CREW', 'HUMSS-TNCT', 'SHS-III', 'SHS-PR2']],
-            ['grade_level' => 'Grade 11', 'section' => 'GAS - St. Scholastica', 'term' => '1st Term', 'subject_codes' => ['SHS-OC', 'SHS-RW', 'SHS-MIL', 'SHS-UCSP', 'SHS-PEH', 'GAS-HGP']],
-            ['grade_level' => 'Grade 12', 'section' => 'GAS - St. Benedict', 'term' => '2nd Term', 'subject_codes' => ['SHS-EAPP', 'SHS-ENTREP', 'SHS-EMTECH', 'SHS-III', 'GAS-ORG']],
+        // Normalize blank terms ('' vs NULL would break updateOrCreate keys and duplicate classes)
+        Classes::where('school_year', $schoolYear)->where('term', '')->update(['term' => null]);
+
+        // Remove current-year classes whose (grade, section) no longer exists among active
+        // sections (rename-drift orphans). DELETE (not deactivate) so the FK cascade clears
+        // their grades, assessments, schedules and enrollment links — otherwise students would
+        // see duplicate subject grades from both the dead and the replacement class.
+        $activePairs = [];
+        foreach ($sectionsByGrade as $gl => $secs) {
+            foreach ($secs as $sec) {
+                $activePairs[$gl . '|' . $sec->section_name] = true;
+            }
+        }
+        $orphans = Classes::where('school_year', $schoolYear)->where('status', 'active')->get()
+            ->filter(fn($c) => !isset($activePairs[$c->grade_level . '|' . $c->section]));
+        foreach ($orphans as $orphan) {
+            DB::table('enrollment_subject')->where('class_id', $orphan->id)->delete();
+            Schedule::where('class_id', $orphan->id)->delete();
+            $orphan->delete();
+        }
+        if ($orphans->isNotEmpty()) {
+            $this->warn("Removed {$orphans->count()} orphaned class(es) whose sections are no longer active.");
+        }
+
+        // SHS subject codes by strand and grade (used to build plans from the DB sections table)
+        $shsSubjectCodes = [
+            'STEM' => [
+                'Grade 11' => ['SHS-OC', 'SHS-RW', 'SHS-GMATH', 'SHS-ELS', 'SHS-PD', 'SHS-PEH', 'STEM-PCAL', 'STEM-BCAL'],
+                'Grade 12' => ['SHS-EAPP', 'SHS-PR2', 'SHS-EMTECH', 'SHS-III', 'STEM-BIO1', 'STEM-CHEM1', 'STEM-PHY1'],
+            ],
+            'ABM' => [
+                'Grade 11' => ['SHS-OC', 'SHS-RW', 'SHS-GMATH', 'SHS-UCSP', 'SHS-PEH', 'ABM-BMATH', 'ABM-OAM', 'ABM-FABM1'],
+                'Grade 12' => ['SHS-EAPP', 'SHS-FPL', 'SHS-ENTREP', 'SHS-III', 'ABM-FABM2', 'SHS-PR2'],
+            ],
+            'HUMSS' => [
+                'Grade 11' => ['SHS-OC', 'SHS-21CL', 'SHS-UCSP', 'SHS-PEH', 'HUMSS-DISS', 'HUMSS-DIASS', 'SHS-PR1'],
+                'Grade 12' => ['SHS-EAPP', 'SHS-FPL', 'HUMSS-CREW', 'HUMSS-TNCT', 'SHS-III', 'SHS-PR2'],
+            ],
+            'GAS' => [
+                'Grade 11' => ['SHS-OC', 'SHS-RW', 'SHS-MIL', 'SHS-UCSP', 'SHS-PEH', 'GAS-HGP'],
+                'Grade 12' => ['SHS-EAPP', 'SHS-ENTREP', 'SHS-EMTECH', 'SHS-III', 'GAS-ORG'],
+            ],
         ];
 
         $plans = [];
+        $roomCounters = ['K' => 100, 'E' => 100, 'J' => 100, 'S' => 200];
 
         foreach ($gradeSubjectCodes as $gradeLevel => $subjectCodes) {
             $department = $this->departmentForGrade($gradeLevel);
-            $roomPrefix = $gradeLevel === 'Kinder' ? 'K' : ($department === 'Elementary' ? 'E' : 'J');
+            $prefix = $gradeLevel === 'Kinder' ? 'K' : ($department === 'Elementary' ? 'E' : 'J');
 
-            foreach (($sectionsByGrade[$gradeLevel] ?? collect()) as $sectionIndex => $section) {
+            foreach (($sectionsByGrade[$gradeLevel] ?? collect()) as $section) {
+                $roomCounters[$prefix]++;
                 $plans[] = [
                     'grade_level' => $gradeLevel,
                     'section' => $section->section_name,
                     'term' => null,
-                    'room' => $roomPrefix . '-' . str_pad((string) ($sectionIndex + 101), 3, '0', STR_PAD_LEFT),
+                    'room' => $prefix . '-' . str_pad((string) $roomCounters[$prefix], 3, '0', STR_PAD_LEFT),
                     'department' => $department,
                     'subject_codes' => $subjectCodes,
                 ];
             }
         }
 
-        foreach ($seniorHighPlans as $index => $plan) {
-            $plans[] = [
-                'grade_level' => $plan['grade_level'],
-                'section' => $plan['section'],
-                'term' => $plan['term'],
-                'room' => 'S-' . str_pad((string) ($index + 201), 3, '0', STR_PAD_LEFT),
-                'department' => 'Senior High School',
-                'subject_codes' => $plan['subject_codes'],
-            ];
+        // SHS plans read straight from the DB sections table (hardcoded names drifted from live
+        // data and left sections like Grade 12 GAS with zero classes)
+        $shsIndex = 0;
+        foreach (['Grade 11', 'Grade 12'] as $gradeLevel) {
+            foreach (($sectionsByGrade[$gradeLevel] ?? collect()) as $section) {
+                $shsIndex++;
+                preg_match('/^(STEM|ABM|HUMSS|GAS)\b/i', $section->section_name, $m);
+                $strand = $m ? strtoupper($m[1]) : ['STEM', 'ABM', 'HUMSS', 'GAS'][$shsIndex % 4];
+                $roomCounters['S']++;
+                $plans[] = [
+                    'grade_level' => $gradeLevel,
+                    'section' => $section->section_name,
+                    'term' => $gradeLevel === 'Grade 11' ? '1st Term' : '2nd Term',
+                    'room' => 'S-' . str_pad((string) $roomCounters['S'], 3, '0', STR_PAD_LEFT),
+                    'department' => 'Senior High School',
+                    'subject_codes' => $shsSubjectCodes[$strand][$gradeLevel],
+                ];
+            }
         }
 
-        $timeSlots = [
-            ['07:00:00', '08:00:00'],
-            ['08:00:00', '09:00:00'],
-            ['09:00:00', '10:00:00'],
-            ['10:00:00', '11:00:00'],
-            ['11:00:00', '12:00:00'],
-            ['13:00:00', '14:00:00'],
-            ['14:00:00', '15:00:00'],
-            ['15:00:00', '16:00:00'],
-        ];
+        // Pre-load every existing schedule of active current-year classes so re-runs and
+        // untouched classes can't be double-booked (teacher + section + room availability)
+        $existingSchedules = Schedule::whereHas('schoolClass', function ($q) use ($schoolYear) {
+            $q->where('school_year', $schoolYear)->where('status', 'active');
+        })->with('schoolClass')->get();
+        foreach ($existingSchedules as $existing) {
+            if ($existing->schoolClass) {
+                $this->reserveFor($existing->schoolClass, $existing->day_of_week, $existing->start_time, $existing->end_time, $existing->room);
+            }
+        }
 
-        $dayPatterns = [
-            ['Monday', 'Wednesday'],
-            ['Tuesday', 'Thursday'],
-            ['Monday', 'Thursday'],
-            ['Tuesday', 'Friday'],
-            ['Wednesday', 'Friday'],
-        ];
-
-        foreach ($plans as $planIndex => $plan) {
+        foreach ($plans as $plan) {
             $teacherPool = $teacherIdsByDept[$plan['department']] ?? [];
             if (empty($teacherPool)) continue;
 
+            $sectionKey = $plan['grade_level'] . '|' . $plan['section'];
+            $matched = 0;
+
             foreach ($plan['subject_codes'] as $subjectIndex => $subjectCode) {
                 if (!isset($subjectMap[$subjectCode])) continue;
+                $matched++;
 
                 $seedKey = abs(crc32($plan['grade_level'] . '|' . $plan['section'] . '|' . $subjectCode));
-                $assignment = $this->resolveAssignment($teacherPool, $timeSlots, $dayPatterns, $seedKey);
+                $key = [
+                    'subject_id' => $subjectMap[$subjectCode],
+                    'section' => $plan['section'],
+                    'grade_level' => $plan['grade_level'],
+                    'school_year' => $schoolYear,
+                    'term' => $plan['term'],
+                ];
+
+                // Release this class's previous reservations first so it can keep its own slot
+                $existingClass = Classes::where($key)->first();
+                $oldSchedules = collect();
+                if ($existingClass) {
+                    $oldSchedules = Schedule::where('class_id', $existingClass->id)->get();
+                    foreach ($oldSchedules as $old) {
+                        $this->releaseFor($existingClass, $old->day_of_week, $old->start_time, $old->end_time, $old->room);
+                    }
+                }
+
+                // Resolve a slot free for the teacher AND the section AND the room
+                $assignment = $this->resolveAssignment($teacherPool, $seedKey, $sectionKey, $plan['room']);
+
+                if (!$assignment) {
+                    // No free slot anywhere — keep the existing schedule instead of forcing a conflict
+                    if ($existingClass) {
+                        foreach ($oldSchedules as $old) {
+                            $this->reserveFor($existingClass, $old->day_of_week, $old->start_time, $old->end_time, $old->room);
+                        }
+                    }
+                    if ($oldSchedules->isEmpty()) {
+                        $this->warn("No conflict-free slot for {$plan['grade_level']} {$plan['section']} — {$subjectCode} left unscheduled.");
+                    }
+                    continue;
+                }
 
                 $class = Classes::updateOrCreate(
-                    [
-                        'subject_id' => $subjectMap[$subjectCode],
-                        'section' => $plan['section'],
-                        'grade_level' => $plan['grade_level'],
-                        'school_year' => $schoolYear,
-                        'term' => $plan['term'],
-                    ],
+                    $key,
                     [
                         'teacher_id' => $assignment['teacher_id'],
                         'room' => $plan['room'],
@@ -180,6 +274,10 @@ class TeachersClassesSchedulesSeeder extends Seeder
                     );
                 }
             }
+
+            if ($matched === 0) {
+                $this->warn("Plan produced no classes (missing subjects?): {$plan['grade_level']} / {$plan['section']}");
+            }
         }
 
         // Post-repair: ensure every active Section has an adviser and every active Class has a teacher
@@ -189,27 +287,41 @@ class TeachersClassesSchedulesSeeder extends Seeder
             foreach ($orphanSections as $idx => $sec) {
                 $sec->update(['adviser_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
             }
-            // Fix any section with invalid adviser (e.g., deleted teacher)
             $invalidAdviserSections = Section::where('is_active', true)->whereNotIn('adviser_id', $allTeacherIds)->whereNotNull('adviser_id')->get();
             foreach ($invalidAdviserSections as $idx => $sec) {
                 $sec->update(['adviser_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
             }
-            $orphanClasses = Classes::where('status', 'active')->whereNull('teacher_id')->get();
+            $orphanClasses = Classes::where('status', 'active')->where('school_year', $schoolYear)->whereNull('teacher_id')->get();
             foreach ($orphanClasses as $idx => $cls) {
                 $cls->update(['teacher_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
             }
-            $invalidTeacherClasses = Classes::where('status', 'active')->whereNotIn('teacher_id', $allTeacherIds)->whereNotNull('teacher_id')->get();
+            $invalidTeacherClasses = Classes::where('status', 'active')->where('school_year', $schoolYear)->whereNotIn('teacher_id', $allTeacherIds)->whereNotNull('teacher_id')->get();
             foreach ($invalidTeacherClasses as $idx => $cls) {
                 $cls->update(['teacher_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
             }
         }
-        // Ensure every Class has at least one Schedule entry
-        $classesWithoutSchedule = Classes::where('status', 'active')->whereDoesntHave('schedules')->get();
+
+        // Ensure every active class has at least one schedule — search a DB-verified free slot
+        // (the old fallback forced Monday 07:00 with no conflict check)
+        $classesWithoutSchedule = Classes::where('status', 'active')
+            ->where('school_year', $schoolYear)
+            ->whereDoesntHave('schedules')
+            ->get();
         foreach ($classesWithoutSchedule as $cls) {
-            Schedule::updateOrCreate(
-                ['class_id' => $cls->id, 'day_of_week' => 'Monday'],
-                ['start_time' => '07:00:00', 'end_time' => '08:00:00', 'room' => $cls->room]
-            );
+            $free = $this->findFreeSlotInDb($cls);
+            if (!$free) {
+                $this->warn("No conflict-free slot available for class #{$cls->id} ({$cls->grade_level} {$cls->section}) — left unscheduled.");
+                continue;
+            }
+            Schedule::create([
+                'class_id' => $cls->id,
+                'day_of_week' => $free['day'],
+                'start_time' => $free['slot'][0],
+                'end_time' => $free['slot'][1],
+                'room' => $cls->room,
+            ]);
+            $this->reserveFor($cls, $free['day'], $free['slot'][0], $free['slot'][1], $cls->room);
+            $this->info("Scheduled class #{$cls->id} ({$cls->grade_level} {$cls->section}) on {$free['day']} {$free['slot'][0]}.");
         }
     }
 
@@ -222,44 +334,140 @@ class TeachersClassesSchedulesSeeder extends Seeder
         return 'Elementary';
     }
 
-    private function resolveAssignment(array $teacherPool, array $timeSlots, array $dayPatterns, int $seedKey): array
+    /**
+     * Find a slot free for the teacher AND section AND room across all day patterns.
+     * Returns null when every combination is blocked (caller keeps the old schedule).
+     */
+    private function resolveAssignment(array $teacherPool, int $seedKey, string $sectionKey, string $room): ?array
     {
-        for ($slotOffset = 0; $slotOffset < count($timeSlots); $slotOffset++) {
-            $slotIndex = ($seedKey + $slotOffset) % count($timeSlots);
-            $patternIndex = ($seedKey + $slotOffset) % count($dayPatterns);
-            $slot = $timeSlots[$slotIndex];
-            $days = $dayPatterns[$patternIndex];
+        $combos = count($this->timeSlots) * count($this->dayPatterns);
+        for ($i = 0; $i < $combos; $i++) {
+            $slot = $this->timeSlots[($seedKey + $i) % count($this->timeSlots)];
+            $days = $this->dayPatterns[($seedKey + $i) % count($this->dayPatterns)];
 
             for ($teacherOffset = 0; $teacherOffset < count($teacherPool); $teacherOffset++) {
                 $teacherId = $teacherPool[($seedKey + $teacherOffset) % count($teacherPool)];
-                if ($this->teacherIsAvailable($teacherId, $days, $slot)) {
-                    $this->reserveTeacherSlot($teacherId, $days, $slot);
+                if ($this->assignmentAvailable($teacherId, $sectionKey, $room, $days, $slot)) {
+                    $this->reserveAssignment($teacherId, $sectionKey, $room, $days, $slot);
                     return ['teacher_id' => $teacherId, 'slot' => $slot, 'days' => $days];
                 }
             }
         }
 
-        $fallbackTeacherId = $teacherPool[$seedKey % count($teacherPool)];
-        $fallbackSlot = $timeSlots[$seedKey % count($timeSlots)];
-        $fallbackDays = $dayPatterns[$seedKey % count($dayPatterns)];
-        $this->reserveTeacherSlot($fallbackTeacherId, $fallbackDays, $fallbackSlot);
-        return ['teacher_id' => $fallbackTeacherId, 'slot' => $fallbackSlot, 'days' => $fallbackDays];
+        return null;
     }
 
-    private function teacherIsAvailable(int $teacherId, array $days, array $slot): bool
+    private function assignmentAvailable(int $teacherId, string $sectionKey, string $room, array $days, array $slot): bool
     {
-        $slotKey = implode('-', $slot);
+        $slotKey = $slot[0] . '|' . $slot[1];
         foreach ($days as $day) {
             if (!empty($this->teacherAvailability[$teacherId][$day][$slotKey])) return false;
+            if (!empty($this->sectionAvailability[$sectionKey][$day][$slotKey])) return false;
+            if (!empty($this->roomAvailability[strtoupper($room)][$day][$slotKey])) return false;
         }
         return true;
     }
 
-    private function reserveTeacherSlot(int $teacherId, array $days, array $slot): void
+    private function reserveAssignment(int $teacherId, string $sectionKey, string $room, array $days, array $slot): void
     {
-        $slotKey = implode('-', $slot);
+        $slotKey = $slot[0] . '|' . $slot[1];
         foreach ($days as $day) {
             $this->teacherAvailability[$teacherId][$day][$slotKey] = true;
+            $this->sectionAvailability[$sectionKey][$day][$slotKey] = true;
+            $this->roomAvailability[strtoupper($room)][$day][$slotKey] = true;
         }
+    }
+
+    private function reserveFor(Classes $class, string $day, string $start, string $end, ?string $room): void
+    {
+        $slotKey = $start . '|' . $end;
+        if ($class->teacher_id) {
+            $this->teacherAvailability[$class->teacher_id][$day][$slotKey] = true;
+        }
+        $this->sectionAvailability[$class->grade_level . '|' . $class->section][$day][$slotKey] = true;
+        if (!empty($room)) {
+            $this->roomAvailability[strtoupper($room)][$day][$slotKey] = true;
+        }
+    }
+
+    private function releaseFor(Classes $class, string $day, string $start, string $end, ?string $room): void
+    {
+        $slotKey = $start . '|' . $end;
+        if ($class->teacher_id) {
+            unset($this->teacherAvailability[$class->teacher_id][$day][$slotKey]);
+        }
+        unset($this->sectionAvailability[$class->grade_level . '|' . $class->section][$day][$slotKey]);
+        if (!empty($room)) {
+            unset($this->roomAvailability[strtoupper($room)][$day][$slotKey]);
+        }
+    }
+
+    /**
+     * DB-verified free slot for a class: no overlapping schedule for the same class,
+     * section, teacher or room among active classes of the same school year.
+     */
+    private function findFreeSlotInDb(Classes $class): ?array
+    {
+        foreach ($this->dayPatterns as $pattern) {
+            foreach ($pattern as $day) {
+                foreach ($this->timeSlots as $slot) {
+                    if (!$this->dbSlotBlocked($class, $day, $slot)) {
+                        return ['day' => $day, 'slot' => $slot];
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private function dbSlotBlocked(Classes $class, string $day, array $slot): bool
+    {
+        $overlap = function ($q) use ($slot) {
+            $q->where('start_time', '<', $slot[1])->where('end_time', '>', $slot[0]);
+        };
+        $activeYear = function ($q) use ($class) {
+            $q->where('school_year', $class->school_year)->where('status', 'active');
+        };
+
+        if (Schedule::where('class_id', $class->id)->where('day_of_week', $day)->where($overlap)->exists()) {
+            return true;
+        }
+
+        $sectionTeacherClash = Schedule::where('day_of_week', $day)->where($overlap)
+            ->whereHas('schoolClass', function ($q) use ($class) {
+                $q->where('school_year', $class->school_year)->where('status', 'active')
+                    ->where(function ($qq) use ($class) {
+                        $qq->where(function ($s) use ($class) {
+                            $s->where('grade_level', $class->grade_level)->where('section', $class->section);
+                        });
+                        if ($class->teacher_id) {
+                            $qq->orWhere('teacher_id', $class->teacher_id);
+                        }
+                    });
+            })->exists();
+        if ($sectionTeacherClash) {
+            return true;
+        }
+
+        if (!empty($class->room)) {
+            $roomClash = Schedule::where('day_of_week', $day)->where($overlap)
+                ->where('room', $class->room)
+                ->whereHas('schoolClass', $activeYear)->exists();
+            if ($roomClash) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function warn(string $message): void
+    {
+        if ($this->command) $this->command->warn($message);
+    }
+
+    private function info(string $message): void
+    {
+        if ($this->command) $this->command->info($message);
     }
 }

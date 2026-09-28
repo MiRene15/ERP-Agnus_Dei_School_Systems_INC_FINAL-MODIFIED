@@ -47,8 +47,9 @@ class SectionController extends Controller
 
     public function store(Request $request)
     {
+        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         $data = $request->validate([
-            'grade_level' => 'required|string|max:20',
+            'grade_level' => ['required', 'string', 'max:20', 'in:' . implode(',', $gradeLevels)],
             'section_name' => 'required|string|max:50',
             'is_active' => 'boolean',
             'adviser_id' => 'nullable|exists:users,id',
@@ -83,12 +84,22 @@ class SectionController extends Controller
 
     public function update(Request $request, Section $section)
     {
+        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         $data = $request->validate([
-            'grade_level' => 'required|string|max:20',
+            'grade_level' => ['required', 'string', 'max:20', 'in:' . implode(',', $gradeLevels)],
             'section_name' => 'required|string|max:50',
             'is_active' => 'boolean',
             'adviser_id' => 'nullable|exists:users,id',
         ]);
+
+        $exists = Section::where('grade_level', $data['grade_level'])
+            ->where('section_name', $data['section_name'])
+            ->where('id', '!=', $section->id)
+            ->exists();
+
+        if ($exists) {
+            return back()->withInput()->with('error', "Section {$data['section_name']} already exists for {$data['grade_level']}.");
+        }
 
         $section->update([
             'grade_level' => $data['grade_level'],

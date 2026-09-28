@@ -153,7 +153,7 @@ class ApiController extends Controller
 
     public function teacherClasses(): JsonResponse
     {
-        $classes = Classes::where('teacher_id', auth()->id())->with('section', 'subject')->get();
+        $classes = Classes::where('teacher_id', auth()->id())->with('subject')->get();
         return $this->success($classes);
     }
 
@@ -162,7 +162,7 @@ class ApiController extends Controller
         if ($class->teacher_id !== auth()->id()) {
             return $this->error('Unauthorized.', 403);
         }
-        return $this->success($class->load('section', 'subject', 'enrollments.student'));
+        return $this->success($class->load('subject', 'enrollments.student'));
     }
 
     public function teacherClassGrades(Classes $class): JsonResponse
@@ -267,7 +267,7 @@ class ApiController extends Controller
 
     public function principalSchedules(): JsonResponse
     {
-        $schedules = Schedule::with('teacher', 'section', 'subject')->paginate(50);
+        $schedules = Schedule::with('schoolClass.subject', 'schoolClass.teacher')->paginate(50);
         return $this->success($schedules);
     }
 

@@ -43,7 +43,7 @@ class PrincipalController extends Controller
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
-        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'SHS'];
+        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         $selectedGrade = request('grade_level', 'Grade 7');
         $selectedYear = request('school_year', active_school_year());
         $schoolYears = all_school_years();
@@ -92,44 +92,14 @@ class PrincipalController extends Controller
             'room' => 'nullable|string|max:50',
         ]);
 
-        // Normalize times to H:i:s for overlap comparison
-        $start = $data['start_time'] . ':00';
-        $end = $data['end_time'] . ':00';
-        if (strlen($data['start_time']) === 8) $start = $data['start_time'];
-        if (strlen($data['end_time']) === 8) $end = $data['end_time'];
-
-        $conflict = Schedule::where('class_id', $data['class_id'])
-            ->where('day_of_week', $data['day_of_week'])
-            ->where(function ($q) use ($start, $end) {
-                $q->where('start_time', '<', $end)->where('end_time', '>', $start);
-            })
-            ->exists();
-
-        if ($conflict) {
-            return back()->with('error', 'This time slot conflicts with an existing schedule for this class.');
-        }
-
         $class = Classes::find($data['class_id']);
-        if ($class && $class->teacher_id) {
-            $teacherConflict = Schedule::where('day_of_week', $data['day_of_week'])
-                ->whereHas('schoolClass', fn($q) => $q->where('teacher_id', $class->teacher_id))
-                ->where(function ($q) use ($start, $end) {
-                    $q->where('start_time', '<', $end)->where('end_time', '>', $start);
-                })->exists();
-            if ($teacherConflict) {
-                return back()->with('error', 'Teacher is already booked at this time on ' . $data['day_of_week'] . '.');
-            }
+        if (!$class) {
+            return back()->with('error', 'Class not found.');
         }
 
-        if (!empty($data['room'])) {
-            $roomConflict = Schedule::where('day_of_week', $data['day_of_week'])
-                ->where('room', $data['room'])
-                ->where(function ($q) use ($start, $end) {
-                    $q->where('start_time', '<', $end)->where('end_time', '>', $start);
-                })->exists();
-            if ($roomConflict) {
-                return back()->with('error', 'Room ' . $data['room'] . ' is already booked at this time on ' . $data['day_of_week'] . '.');
-            }
+        $conflict = $this->findScheduleConflict($data, $class);
+        if ($conflict) {
+            return back()->with('error', $conflict);
         }
 
         $schedule = Schedule::create([
@@ -142,6 +112,67 @@ class PrincipalController extends Controller
         log_activity($schedule, 'Schedule Created', auth()->user()->name . ' created schedule for class #' . $data['class_id'] . ' on ' . $data['day_of_week'] . ' ' . $data['start_time'] . '-' . $data['end_time']);
 
         return back()->with('success', 'Schedule added.');
+    }
+
+    /**
+     * Conflict scan for a proposed slot: same class, same section (grade+section),
+     * teacher and room — all scoped to active classes of the class's school year
+     * so archived or old-year schedules can't block a valid slot.
+     */
+    private function findScheduleConflict(array $data, Classes $class, ?int $ignoreId = null): ?string
+    {
+        $day = $data['day_of_week'];
+        $start = $this->normalizeTime($data['start_time']);
+        $end = $this->normalizeTime($data['end_time']);
+
+        $overlap = fn($q) => $q->where('start_time', '<', $end)->where('end_time', '>', $start);
+        $activeYear = fn($q) => $q->where('school_year', $class->school_year)->where('status', 'active');
+
+        // Same class
+        $query = Schedule::where('class_id', $class->id)->where('day_of_week', $day)->where($overlap);
+        if ($ignoreId) $query->where('id', '!=', $ignoreId);
+        if ($query->exists()) {
+            return 'This time slot conflicts with an existing schedule for this class.';
+        }
+
+        // Same section (a section cannot take two subjects at once)
+        $query = Schedule::where('day_of_week', $day)->where($overlap)
+            ->where('class_id', '!=', $class->id)
+            ->whereHas('schoolClass', fn($q) => $activeYear($q)
+                ->where('grade_level', $class->grade_level)
+                ->where('section', $class->section));
+        if ($ignoreId) $query->where('id', '!=', $ignoreId);
+        if ($query->exists()) {
+            return "Section {$class->grade_level} — {$class->section} already has a class at this time on {$day}.";
+        }
+
+        // Teacher
+        if ($class->teacher_id) {
+            $query = Schedule::where('day_of_week', $day)->where($overlap)
+                ->whereHas('schoolClass', fn($q) => $activeYear($q)->where('teacher_id', $class->teacher_id));
+            if ($ignoreId) $query->where('id', '!=', $ignoreId);
+            if ($query->exists()) {
+                return "Teacher is already booked at this time on {$day}.";
+            }
+        }
+
+        // Room
+        if (!empty($data['room'])) {
+            $query = Schedule::where('day_of_week', $day)->where($overlap)
+                ->where('room', $data['room'])
+                ->whereHas('schoolClass', $activeYear);
+            if ($ignoreId) $query->where('id', '!=', $ignoreId);
+            if ($query->exists()) {
+                return "Room {$data['room']} is already booked at this time on {$day}.";
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeTime(string $time): string
+    {
+        return strlen($time) === 8 ? $time : $time . ':00';
     }
 
     public function schedulesEdit(Schedule $schedule)
@@ -159,38 +190,14 @@ class PrincipalController extends Controller
             'room' => 'nullable|string|max:50',
         ]);
 
-        $start = $data['start_time'] . ':00';
-        $end = $data['end_time'] . ':00';
-        if (strlen($data['start_time']) === 8) $start = $data['start_time'];
-        if (strlen($data['end_time']) === 8) $end = $data['end_time'];
-
-        $conflict = Schedule::where('id', '!=', $schedule->id)
-            ->where('class_id', $schedule->class_id)
-            ->where('day_of_week', $data['day_of_week'])
-            ->where(function ($q) use ($start, $end) {
-                $q->where('start_time', '<', $end)->where('end_time', '>', $start);
-            })->exists();
-        if ($conflict) return back()->with('error', 'Time conflict for this class.');
-
         $class = $schedule->schoolClass;
-        if ($class && $class->teacher_id) {
-            $teacherConflict = Schedule::where('id', '!=', $schedule->id)
-                ->where('day_of_week', $data['day_of_week'])
-                ->whereHas('schoolClass', fn($q) => $q->where('teacher_id', $class->teacher_id))
-                ->where(function ($q) use ($start, $end) {
-                    $q->where('start_time', '<', $end)->where('end_time', '>', $start);
-                })->exists();
-            if ($teacherConflict) return back()->with('error', 'Teacher already booked at this time.');
+        if (!$class) {
+            return back()->with('error', 'Schedule has no linked class.');
         }
 
-        if (!empty($data['room'])) {
-            $roomConflict = Schedule::where('id', '!=', $schedule->id)
-                ->where('day_of_week', $data['day_of_week'])
-                ->where('room', $data['room'])
-                ->where(function ($q) use ($start, $end) {
-                    $q->where('start_time', '<', $end)->where('end_time', '>', $start);
-                })->exists();
-            if ($roomConflict) return back()->with('error', 'Room already booked at this time.');
+        $conflict = $this->findScheduleConflict($data, $class, $schedule->id);
+        if ($conflict) {
+            return back()->with('error', $conflict);
         }
 
         $schedule->update($data);
@@ -200,8 +207,8 @@ class PrincipalController extends Controller
 
     public function schedulesManage(Request $request)
     {
-        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'SHS'];
-        $classes = Classes::with('subject', 'teacher')->where('school_year', active_school_year())->where('status','active')->orderBy('grade_level')->get();
+        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+        $classes = Classes::with('subject', 'teacher', 'schedules')->where('school_year', active_school_year())->where('status','active')->orderBy('grade_level')->get();
         $days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
         return view('portal.principal.schedules-manage', compact('gradeLevels','classes','days'));
     }
@@ -245,6 +252,9 @@ class PrincipalController extends Controller
         }
 
         $header = fgetcsv($handle);
+        if (isset($header[0])) {
+            $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]); // strip UTF-8 BOM (Excel-saved CSVs)
+        }
         $headerNorm = array_map(fn($h) => strtolower(trim($h)), $header ?? []);
         $legacy = ['class_id', 'day_of_week', 'start_time', 'end_time', 'room'];
         $friendly = ['grade_level', 'section', 'subject_code', 'day_of_week', 'start_time', 'end_time', 'room'];
@@ -299,43 +309,11 @@ class PrincipalController extends Controller
                 continue;
             }
 
-            $rStart = $r['start_time'] . ':00';
-            $rEnd = $r['end_time'] . ':00';
-            if (strlen($r['start_time']) === 8) $rStart = $r['start_time'];
-            if (strlen($r['end_time']) === 8) $rEnd = $r['end_time'];
-            $conflict = Schedule::where('class_id', $r['class_id'])
-                ->where('day_of_week', $r['day_of_week'])
-                ->where(function ($q) use ($rStart, $rEnd) {
-                    $q->where('start_time', '<', $rEnd)->where('end_time', '>', $rStart);
-                })->exists();
-
-            if ($conflict) {
-                $skipped[] = "Line {$r['line']}: time conflict for class {$r['class_id']} on {$r['day_of_week']} {$r['start_time']}-{$r['end_time']} — skipped.";
-                continue;
-            }
-
             $class = Classes::find($r['class_id']);
-            if ($class && $class->teacher_id) {
-                $teacherConflict = Schedule::where('day_of_week', $r['day_of_week'])
-                    ->whereHas('schoolClass', fn($q) => $q->where('teacher_id', $class->teacher_id))
-                    ->where(function ($q) use ($rStart, $rEnd) {
-                        $q->where('start_time', '<', $rEnd)->where('end_time', '>', $rStart);
-                    })->exists();
-                if ($teacherConflict) {
-                    $skipped[] = "Line {$r['line']}: teacher already booked on {$r['day_of_week']} {$r['start_time']}-{$r['end_time']} — skipped.";
-                    continue;
-                }
-            }
-            if (!empty($r['room'])) {
-                $roomConflict = Schedule::where('day_of_week', $r['day_of_week'])
-                    ->where('room', $r['room'])
-                    ->where(function ($q) use ($rStart, $rEnd) {
-                        $q->where('start_time', '<', $rEnd)->where('end_time', '>', $rStart);
-                    })->exists();
-                if ($roomConflict) {
-                    $skipped[] = "Line {$r['line']}: room {$r['room']} already booked on {$r['day_of_week']} — skipped.";
-                    continue;
-                }
+            $conflict = $this->findScheduleConflict($r, $class);
+            if ($conflict) {
+                $skipped[] = "Line {$r['line']}: {$conflict} — skipped.";
+                continue;
             }
 
             try {
@@ -368,7 +346,7 @@ class PrincipalController extends Controller
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
-        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'SHS'];
+        $gradeLevels = ['Kinder', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         $selectedGrade = request('grade_level', $gradeLevels[0]);
         $selectedYear = request('school_year', active_school_year());
         $schoolYears = all_school_years();

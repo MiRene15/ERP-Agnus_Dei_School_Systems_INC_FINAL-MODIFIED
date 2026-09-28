@@ -5,6 +5,7 @@
 @section('content')
 <div class="mb-6"><h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Edit Schedule</h2><p class="text-sm text-gray-500 dark:text-[#8A90B0]">{{ $schedule->schoolClass->subject->name ?? 'Class' }} — {{ $schedule->schoolClass->section ?? '' }} ({{ $schedule->schoolClass->grade_level ?? '' }}) — {{ $schedule->schoolClass->teacher->name ?? 'No teacher' }}</p></div>
 @if(session('error'))<div class="mb-4 p-3 bg-red-50 dark:bg-[rgba(248,113,113,0.12)] border border-red-200 dark:border-[rgba(248,113,113,0.25)] rounded text-sm text-red-700 dark:text-[#F87171]">{{ session('error') }}</div>@endif
+@if($errors->any())<div class="mb-4 p-3 bg-red-50 dark:bg-[rgba(248,113,113,0.12)] border border-red-200 dark:border-[rgba(248,113,113,0.25)] rounded text-sm text-red-700 dark:text-[#F87171]"><ul class="list-disc ml-4">@foreach($errors->all() as $err)<li>{{ $err }}</li>@endforeach</ul></div>@endif
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 max-w-lg">
     <form method="POST" action="{{ route('principal.schedules.update', $schedule) }}">
         @csrf @method('PATCH')

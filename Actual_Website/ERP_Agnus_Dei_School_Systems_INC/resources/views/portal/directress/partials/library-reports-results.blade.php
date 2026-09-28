@@ -22,41 +22,19 @@
 
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
     <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">Library Overview</h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-            <canvas id="libraryStatusChart" height="200"></canvas>
-        </div>
-        <div>
-            <canvas id="libraryPopularChart" height="200"></canvas>
-        </div>
+    @php $statusTotal = max(1, $availableCopies + $borrowedCount + $overdueCount); @endphp
+    <div class="flex h-4 rounded-full overflow-hidden bg-gray-100 dark:bg-[#23274C] mb-3">
+        <div class="bg-green-500" style="width: {{ round($availableCopies / $statusTotal * 100, 1) }}%"></div>
+        <div class="bg-amber-500" style="width: {{ round($borrowedCount / $statusTotal * 100, 1) }}%"></div>
+        <div class="bg-red-500" style="width: {{ round($overdueCount / $statusTotal * 100, 1) }}%"></div>
     </div>
+    <div class="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-[#C1C4DC]">
+        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>Available: {{ $availableCopies }}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>Borrowed: {{ $borrowedCount }}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>Overdue: {{ $overdueCount }}</span>
+    </div>
+    <p class="text-xs text-gray-400 dark:text-[#8A90B0] mt-3">Copy status across all titles — transaction history and popular titles below.</p>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-(function(){
-    const dark = document.documentElement.classList.contains('dark');
-    const tc = dark ? '#E8EAF6' : '#1E293B';
-    const gc = dark ? '#2A2F58' : '#E2E8F0';
-    // Status doughnut
-    new Chart(document.getElementById('libraryStatusChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Available', 'Borrowed', 'Overdue'],
-            datasets: [{ data: [{{ $availableCopies }}, {{ $borrowedCount }}, {{ $overdueCount }}], backgroundColor: ['#22c55e','#f59e0b','#ef4444'], borderWidth: 0 }]
-        },
-        options: { plugins: { legend: { labels: { color: tc } } } }
-    });
-    // Popular books bar
-    new Chart(document.getElementById('libraryPopularChart'), {
-        type: 'bar',
-        data: {
-            labels: [@foreach($popularBooks as $b)'{{ Str::limit($b->title, 15) }}',@endforeach],
-            datasets: [{ label: 'Borrows', data: [@foreach($popularBooks as $b){{ $b->borrowings_count }},@endforeach], backgroundColor: '#6366f1', borderRadius: 6 }]
-        },
-        options: { scales: { x: { ticks: { color: tc }, grid: { color: gc } }, y: { ticks: { color: tc }, grid: { color: gc } } }, plugins: { legend: { display: false } } }
-    });
-})();
-</script>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
