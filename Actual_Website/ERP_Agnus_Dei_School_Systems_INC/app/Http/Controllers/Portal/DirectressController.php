@@ -401,48 +401,139 @@ class DirectressController extends Controller
                 ))->render(),
             ]);
         }
-        
-        return view('portal.directress.library-reports', compact(
-            'totalBooks', 'totalCopies', 'availableCopies', 'borrowedCount', 'overdueCount', 'totalTransactions', 'totalFines', 'recentTransactions', 'popularBooks'
-        ));
+
+        return view('portal.directress.reports', ['activeTab' => 'library']);
     }
 
-    public function cashierReports(Request $request)
+    // ─── Reports Hub (Collections / Receivables / Clinic / Library / Students) ──
+    public function reports(Request $request)
+    {
+        return view('portal.directress.reports', ['activeTab' => $request->query('tab', 'collections')]);
+    }
+
+    public function collectionsReport(Request $request)
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
-        
+
         $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
         $dateTo = $request->date_to ?? now()->format('Y-m-d');
-        
+
         $payments = \App\Models\Payment::with('ledger.student', 'cashier')
             ->whereBetween('payment_date', [$dateFrom, $dateTo . ' 23:59:59'])
             ->orderBy('payment_date')
             ->get();
-        
+
         $totalCollected = $payments->sum('amount_paid');
         $receiptCount = $payments->count();
-        $avgPayment = $receiptCount > 0 ? $totalCollected / $receiptCount : 0;
-        
-        $totalAssessed = \App\Models\StudentLedger::sum('total_assessed');
-        $totalPaid = \App\Models\StudentLedger::sum('total_paid');
-        $totalBalance = \App\Models\StudentLedger::sum('balance');
-        
-        $monthlyData = $payments->groupBy(fn($p) => \Carbon\Carbon::parse($p->payment_date)->format('Y-m'))
-            ->map(fn($group) => ['count' => $group->count(), 'total' => $group->sum('amount_paid')])
-            ->sortKeysDesc();
-        
+
+        $byPlan = $payments->groupBy(fn($p) => $p->ledger->payment_plan ?? 'Unknown')
+            ->map(fn($g) => ['count' => $g->count(), 'total' => $g->sum('amount_paid')]);
+
+        $dailyBreakdown = $payments->groupBy(fn($p) => $p->payment_date->format('Y-m-d'))
+            ->map(fn($g, $date) => ['date' => $date, 'count' => $g->count(), 'total' => $g->sum('amount_paid')])
+            ->sortKeysDesc()
+            ->values();
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.directress.partials.cashier-reports-results', compact(
-                    'totalCollected', 'receiptCount', 'avgPayment', 'totalAssessed', 'totalPaid', 'totalBalance', 'monthlyData', 'dateFrom', 'dateTo', 'payments'
+                'html' => view('portal.directress.partials.collections-report-results', compact(
+                    'payments', 'totalCollected', 'receiptCount', 'byPlan', 'dailyBreakdown', 'dateFrom', 'dateTo'
                 ))->render(),
             ]);
         }
-        
-        return view('portal.directress.cashier-reports', compact(
-            'totalCollected', 'receiptCount', 'avgPayment', 'totalAssessed', 'totalPaid', 'totalBalance', 'monthlyData', 'dateFrom', 'dateTo', 'payments'
-        ));
+
+        return view('portal.directress.reports', ['activeTab' => 'collections']);
+    }
+
+    public function receivablesReport(Request $request)
+    {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
+        $receivables = \App\Models\StudentLedger::with('student.enrollments.section')
+            ->where('balance', '>', 0)
+            ->orderByDesc('balance')
+            ->get()
+            ->groupBy(fn($l) => $l->student->enrollments->where('status', 'Active')->first()?->section?->grade_level ?? 'Unknown');
+
+        $totalReceivable = \App\Models\StudentLedger::where('balance', '>', 0)->sum('balance');
+        $countReceivable = \App\Models\StudentLedger::where('balance', '>', 0)->count();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.directress.partials.receivables-results', compact('receivables', 'totalReceivable', 'countReceivable'))->render(),
+            ]);
+        }
+
+        return view('portal.directress.reports', ['activeTab' => 'receivables']);
+    }
+
+    public function clinicReport(Request $request)
+    {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
+        $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $dateTo = $request->date_to ?? now()->format('Y-m-d');
+
+        $logs = \App\Models\ClinicLog::with('student.enrollments.section')
+            ->whereBetween('visit_date', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->orderByDesc('visit_date')
+            ->get();
+
+        $totalVisits = $logs->count();
+        $uniquePatients = $logs->pluck('student_id')->unique()->count();
+        $referralsOut = $logs->whereNotNull('referred_to')->count();
+        $activeDays = $logs->groupBy(fn($l) => \Carbon\Carbon::parse($l->visit_date)->format('Y-m-d'))->count();
+
+        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
+        $byGrade = $logs->groupBy(fn($l) => $l->student?->enrollments->where('status', 'Active')->first()?->section?->grade_level ?? 'Unknown')
+            ->map->count()
+            ->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
+
+        $topSymptoms = $logs->pluck('symptoms')->filter()->flatMap(fn($s) => array_map('trim', explode(',', $s)))
+            ->countBy()->sortDesc()->take(8);
+        $topDiagnosis = $logs->pluck('diagnosis')->filter()->countBy()->sortDesc()->take(8);
+        $recentLogs = $logs->take(20);
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.directress.partials.clinic-reports-results', compact(
+                    'logs', 'totalVisits', 'uniquePatients', 'referralsOut', 'activeDays', 'byGrade', 'topSymptoms', 'topDiagnosis', 'recentLogs', 'dateFrom', 'dateTo'
+                ))->render(),
+            ]);
+        }
+
+        return view('portal.directress.reports', ['activeTab' => 'clinic']);
+    }
+
+    public function studentStatsReport(Request $request)
+    {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
+        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
+        $byGrade = Enrollment::with('section')->where('status', 'Active')->get()
+            ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown')->map->count()
+            ->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
+        $bySection = Enrollment::with('section')->where('status', 'Active')->get()
+            ->groupBy(fn($e) => $e->section?->section_name ?? 'Unknown')->map->count()->sortKeys();
+        $byYear = Enrollment::where('status', 'Active')->get()->groupBy('school_year')->map->count()->sortKeysDesc();
+        $byGender = Student::whereHas('enrollments', fn($q) => $q->where('status', 'Active'))->get()
+            ->groupBy(fn($s) => $s->gender ?? 'Unknown')->map->count();
+        $byStrand = Enrollment::where('status', 'Active')->whereNotNull('strand')->get()->groupBy('strand')->map->count();
+        $total = $byGrade->sum();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.directress.partials.student-stats-results', compact(
+                    'byGrade', 'bySection', 'byYear', 'byGender', 'byStrand', 'total'
+                ))->render(),
+            ]);
+        }
+
+        return view('portal.directress.reports', ['activeTab' => 'students']);
     }
 
     public function exportLibraryReports(Request $request)
@@ -482,6 +573,99 @@ class DirectressController extends Controller
             fputcsv($file, ['Date', 'Student', 'Amount', 'Receipt', 'AR Number']);
             foreach ($payments as $p) {
                 fputcsv($file, [$p->payment_date, ($p->ledger->student->first_name ?? '') . ' ' . ($p->ledger->student->last_name ?? ''), $p->amount_paid, $p->receipt_number, $p->ar_number ?? '']);
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportReceivablesReport()
+    {
+        $ledgers = \App\Models\StudentLedger::with('student.enrollments.section')
+            ->where('balance', '>', 0)
+            ->orderByDesc('balance')
+            ->get();
+
+        $total = $ledgers->sum('balance');
+        $filename = 'receivables_' . now()->format('Ymd_His') . '.csv';
+        log_activity(\App\Models\StudentLedger::class, 'Exported', auth()->user()->name . ' exported the receivables report CSV (' . $ledgers->count() . ' student(s), total ₱' . number_format($total, 2) . ').');
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
+        $callback = function () use ($ledgers, $total) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Grade Level', 'Student', 'LRN', 'Section', 'Balance']);
+            foreach ($ledgers as $ledger) {
+                $student = $ledger->student;
+                $enrollment = $student?->enrollments->where('status', 'Active')->first();
+                fputcsv($file, [
+                    $enrollment?->section?->grade_level ?? 'Unknown',
+                    trim(($student?->first_name ?? '') . ' ' . ($student?->last_name ?? '')),
+                    $student?->student_number ?? '',
+                    $enrollment?->section?->section_name ?? '—',
+                    number_format($ledger->balance, 2),
+                ]);
+            }
+            fputcsv($file, ['', 'TOTAL', '', '', number_format($total, 2)]);
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportClinicReport(Request $request)
+    {
+        $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $dateTo = $request->date_to ?? now()->format('Y-m-d');
+        $logs = \App\Models\ClinicLog::with('student.enrollments.section')
+            ->whereBetween('visit_date', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->orderByDesc('visit_date')
+            ->get();
+        $filename = 'clinic_report_' . $dateFrom . '_to_' . $dateTo . '.csv';
+        log_activity(\App\Models\ClinicLog::class, 'Exported', auth()->user()->name . ' exported the clinic report CSV (' . $logs->count() . ' visit(s), ' . $dateFrom . ' to ' . $dateTo . ').');
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
+        $callback = function () use ($logs) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Visit Date', 'Student', 'Grade Level', 'Complaint', 'Symptoms', 'Diagnosis', 'Treatment', 'Referred To']);
+            foreach ($logs as $l) {
+                $student = $l->student;
+                $enrollment = $student?->enrollments->where('status', 'Active')->first();
+                fputcsv($file, [
+                    $l->visit_date,
+                    trim(($student?->first_name ?? '') . ' ' . ($student?->last_name ?? '')),
+                    $enrollment?->section?->grade_level ?? 'Unknown',
+                    $l->complaint ?? '',
+                    $l->symptoms ?? '',
+                    $l->diagnosis ?? '',
+                    $l->treatment ?? '',
+                    $l->referred_to ?? '',
+                ]);
+            }
+            fclose($file);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportStudentStatsReport()
+    {
+        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
+        $byGrade = Enrollment::with('section')->where('status', 'Active')->get()
+            ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown')->map->count()
+            ->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
+        $bySection = Enrollment::with('section')->where('status', 'Active')->get()
+            ->groupBy(fn($e) => $e->section?->section_name ?? 'Unknown')->map->count()->sortKeys();
+        $byYear = Enrollment::where('status', 'Active')->get()->groupBy('school_year')->map->count()->sortKeysDesc();
+        $byGender = Student::whereHas('enrollments', fn($q) => $q->where('status', 'Active'))->get()
+            ->groupBy(fn($s) => $s->gender ?? 'Unknown')->map->count();
+        $byStrand = Enrollment::where('status', 'Active')->whereNotNull('strand')->get()->groupBy('strand')->map->count();
+
+        $filename = 'student_statistics_' . now()->format('Ymd_His') . '.csv';
+        log_activity(Enrollment::class, 'Exported', auth()->user()->name . ' exported the student statistics CSV (' . $byGrade->sum() . ' enrolled).');
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
+        $callback = function () use ($byGrade, $bySection, $byYear, $byGender, $byStrand) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Category', 'Label', 'Count']);
+            foreach (['By Grade' => $byGrade, 'By Section' => $bySection, 'By School Year' => $byYear, 'By Gender' => $byGender, 'By Strand' => $byStrand] as $category => $rows) {
+                foreach ($rows as $label => $count) {
+                    fputcsv($file, [$category, $label, $count]);
+                }
             }
             fclose($file);
         };

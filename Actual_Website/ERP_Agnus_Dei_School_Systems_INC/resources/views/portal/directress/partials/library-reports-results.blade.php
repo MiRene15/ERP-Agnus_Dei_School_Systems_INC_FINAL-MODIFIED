@@ -1,6 +1,5 @@
 <div class="flex items-center justify-between mb-6">
     <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Library Statistics</h3>
-    <a href="{{ route('directress.library-reports.export') }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700">Export CSV</a>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

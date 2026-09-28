@@ -1,5 +1,12 @@
 # Release Notes
 
+## [Unreleased] — Directress Reports Hub (5 tabs) + Seeder Gap Fixes — 2026-09-25
+- **New `/directress/reports` tabbed hub** mirroring the cashier structure: **Collections** (summary strip, daily breakdown, tfoot TOTAL), **Receivables** (balances by grade), **Clinic** (visits/patients/top symptoms/referrals), **Library** (existing library report as a tab), **Student Statistics** (grade/section/year/gender/strand) — each tab its own `ajaxTable` + filters + **CSV export** (5 exports total, all audit-logged `Exported`)
+- **Folded old pages in:** `directress.cashier-reports` and `directress.library-reports` now redirect to `?tab=collections` / `?tab=library`; sidebar's two links replaced by one **Reports** entry; old wrapper views deleted
+- **Collections tab:** dropped the Chart.js monthly trend — `x-html`-injected scripts never executed, so the canvas was silently broken; daily breakdown replaces it
+- **Seeders audited:** all 9 role accounts + recent features verified seeded ✓; fixed gaps — new `AuditLogsAndExtrasSeeder` (audit-log samples w/ causers+subjects, graduation fees/assignments, withdrawals, inquiries, library visits, requirements, `locked_school_years`), `AnnouncementsTableSeeder` made idempotent (was duplicating 4 rows/run), removed 2 phantom columns from `LibraryAndClinicSeeder`
+- See `directress_reports_hub_20260925.md`, `seeder_gaps_20260925.md`
+
 ## [Unreleased] — Cashier Reports: Total Collections + Dual Export — 2026-09-25
 - **Total collections in report body:** `collectionsReport()` now passes `totalCollected/receiptCount/byPlan/dateFrom/dateTo` to the AJAX partial (was only `payments` + `dailyBreakdown`) — the injected report now has a **summary strip** (Total Collections ₱, Receipts, By Payment Plan) and a **`<tfoot>` TOTAL row** under the payments table
 - **Stale-summary fix:** removed the static summary grid from `collections-report.blade.php` (it never refreshed on date-filter changes); summary now lives inside the partial

@@ -119,8 +119,6 @@ class LibraryAndClinicSeeder extends Seeder
                     'status' => $status,
                     'condition_at_borrow' => $conditionAtBorrow,
                     'condition_at_return' => $conditionAtReturn,
-                    'actual_return_date' => $actualReturnDate,
-                    'late_days' => $lateDays,
                     'total_fees' => $totalFees,
                 ]
             );

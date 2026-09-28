@@ -287,9 +287,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/directress/graduation-fees/{graduationFee}/assigned', [DirectressController::class, 'graduationFeesAssigned'])->name('directress.graduation-fees.assigned');
         Route::post('/directress/graduation-fees/{assignment}/toggle-paid', [DirectressController::class, 'graduationFeesTogglePaid'])->name('directress.graduation-fees.toggle-paid');
 
-        Route::get('/directress/library-reports', [DirectressController::class, 'libraryReports'])->name('directress.library-reports');
+        // Reports Hub (Collections / Receivables / Clinic / Library / Students)
+        Route::get('/directress/reports', [DirectressController::class, 'reports'])->name('directress.reports');
+        Route::get('/directress/reports/collections', [DirectressController::class, 'collectionsReport'])->name('directress.reports.collections');
+        Route::get('/directress/reports/receivables', [DirectressController::class, 'receivablesReport'])->name('directress.reports.receivables');
+        Route::get('/directress/reports/clinic', [DirectressController::class, 'clinicReport'])->name('directress.reports.clinic');
+        Route::get('/directress/reports/library', [DirectressController::class, 'libraryReports'])->name('directress.reports.library');
+        Route::get('/directress/reports/students', [DirectressController::class, 'studentStatsReport'])->name('directress.reports.students');
+        Route::get('/directress/reports/receivables/export', [DirectressController::class, 'exportReceivablesReport'])->name('directress.reports.receivables.export');
+        Route::get('/directress/reports/clinic/export', [DirectressController::class, 'exportClinicReport'])->name('directress.reports.clinic.export');
+        Route::get('/directress/reports/students/export', [DirectressController::class, 'exportStudentStatsReport'])->name('directress.reports.students.export');
+        // Legacy report routes → redirect into hub tabs (exports kept for tab buttons)
+        Route::get('/directress/library-reports', fn() => redirect()->route('directress.reports', ['tab' => 'library']))->name('directress.library-reports');
         Route::get('/directress/library-reports/export', [DirectressController::class, 'exportLibraryReports'])->name('directress.library-reports.export');
-        Route::get('/directress/cashier-reports', [DirectressController::class, 'cashierReports'])->name('directress.cashier-reports');
+        Route::get('/directress/cashier-reports', fn() => redirect()->route('directress.reports', ['tab' => 'collections']))->name('directress.cashier-reports');
         Route::get('/directress/cashier-reports/export', [DirectressController::class, 'exportCashierReports'])->name('directress.cashier-reports.export');
     });
 

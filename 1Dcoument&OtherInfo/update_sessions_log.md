@@ -502,7 +502,17 @@ Generated: 2026-08-04
 
 ---
 
-- **Total update sessions (commits):** 69
+## 50. Directress Reports Hub + Seeder Gap Fixes (Sep 2026)
+
+| Date | Commit | Description |
+|------|--------|-------------|
+| 2026-09-25 | — | Feat: tabbed `/directress/reports` hub (Collections/Receivables/Clinic/Library/Student Stats) with 5 CSV exports + audit logs; old Cashier/Library report pages folded in as redirects; sidebar "Reports" link. Fix: seeder gaps (new `AuditLogsAndExtrasSeeder` for audit logs + graduation fees + withdrawals + inquiries + visits + requirements), idempotent announcements, phantom columns removed |
+
+**Scope:** `DirectressController` (+7 methods), `routes/web.php` (+9 routes, 2 redirects), 1 new wrapper view + 4 new/evolved partials, sidebar, 4 seeder files. See `directress_reports_hub_20260925.md` + `seeder_gaps_20260925.md`.
+
+---
+
+- **Total update sessions (commits):** 70
 - **Time span:** 2026-03-29 → 2026-09-25
 - **Major milestones:** Foundation → UI/Email → Admissions/Roles → Schema expansion → Admin/Teacher/Registrar/Cashier/Nurse/Librarian modules → Directress & Principal separation → Search/filter polish → Verified bug fixes → Library book_id FK, receipt/number race fixes, first-login password enforcement → Rate limiting, audit logs, discount management UI, DB backups, REST API → Feature enhancement documentation → Feature enhancements implementation → MD review & stale-doc sync → Portal dark mode → AJAX + skeleton loading everywhere → Public homepage announcements → Librarian module cleanup + overdue pricing → Multi-module improvements + seeders execution → UI polish + collapsible filters + Alpine bug fixes + cashier cleanup + COR fee display → Admin audit logs fix + library filters fix + financial SQL fix + student MDs update → x-collapse fix + receipt printing + auto-discount + bug fixes → Critical script placement fixes + full website audit → Catalog serial number + financial data fix + report card cleanup + fee structure update → PostgreSQL/Supabase migration prep + Docker/Render fixes → Supabase execution — seed fixes + full data verified → Render deployment + HTTPS fix → Login & student dashboard fixes → Performance optimization (56 issues fixed) → SMTP/email debugging + hosting evaluation → Role ID fix + Admin account management reorganization → Sidebar active-state fix → Full AJAX conversion (16 pages, 9 portals) → Validation notes all phases (30 items) → Dark mode readability & contrast → Promotion grade filter + Audit logs fix + Reports export & graphs → Batch requests 16 items (seeders, report card, cashier, schedules) → Strands→Electives + Directress demographics
 - **Uncommitted/working changes:** none — all work committed through session 67

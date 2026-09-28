@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             LibraryAndClinicSeeder::class,
             AnnouncementsTableSeeder::class,
             FixArNumbersSeeder::class,
+            AuditLogsAndExtrasSeeder::class,
         ]);
     }
 }
