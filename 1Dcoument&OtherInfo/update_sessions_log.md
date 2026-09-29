@@ -566,7 +566,7 @@ Generated: 2026-08-04
 
 | Date | Commit | Description |
 |------|--------|-------------|
-| 2026-09-29 | ?" | Feat: `StudentLinkedInfoSeeder` backfills everything the 308 scattered students lacked → +410 library transactions, +77 library visits, +330 clinic logs, +71 grad-fee assignments (G10 30/30, G12 60/60), +1,374 requirement rows (473/473 admissions × 3 types), +5 Pending withdrawals; coverage mirrors the original roster (clinic never-visit rule preserved), pre-existing rows untouched; idempotent (all-zero re-run — pending-withdrawal cap bug found & fixed in verification); new-student HTTP login verified (aiden.aguilar1 → /student/dashboard 200); smoke harness 219/219 |
+| 2026-09-29 | - | Feat: `StudentLinkedInfoSeeder` backfills everything the 308 scattered students lacked → +410 library transactions, +77 library visits, +330 clinic logs, +71 grad-fee assignments (G10 30/30, G12 60/60), +1,374 requirement rows (473/473 admissions × 3 types), +5 Pending withdrawals; coverage mirrors the original roster (clinic never-visit rule preserved), pre-existing rows untouched; idempotent (all-zero re-run — pending-withdrawal cap bug found & fixed in verification); new-student HTTP login verified (aiden.aguilar1 → /student/dashboard 200); smoke harness 219/219 |
 
 **Scope:** MD plan first (`student_scatter_20260929.md` follow-up section), new `StudentLinkedInfoSeeder` (bulk, idempotent), executed live against Supabase, +2,267 rows. See `student_scatter_20260929.md`.
 
