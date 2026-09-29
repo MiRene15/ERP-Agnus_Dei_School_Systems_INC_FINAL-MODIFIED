@@ -1,5 +1,12 @@
 # Release Notes
 
+## [Unreleased] — Student Scatter: 15 per Section, All Subjects Populated — 2026-09-29
+- **308 new students** (`StudentScatterSeeder`) bring every one of the 30 active sections to **15 Active enrollments (450 total, was 142)** — filling the 11 previously empty `B` sections and sparse SHS strands; every active class (subject × section) now has students (**81 → 0** zero-student classes)
+- Full linkage per student: account (role 7), profile, admission (Approved By Registrar), enrollment with correct SHS strand, **all subject-class pivots incl. advisory**, FeeSchedule ledger with ESC/honor/sibling discount mix, varied paid/half/unpaid payment mix
+- `GradesAssessmentsSeeder` made **additive** — skips enrollments that already carry grades (previously re-randomized all 3,099 existing grade rows on every re-run); new students seeded **+6,558 grades + 26,232 assessments** (3 terms × enrolled classes), demo "No grades" row preserved
+- Seeder is deficit-based + resume-safe (re-run after a mid-seed timeout continued with zero duplicate names); verified 219/219 smoke harness on the grown DB
+- See `student_scatter_20260929.md`
+
 ## [Unreleased] — Live Smoke Test (All Departments) + 7 Bug Fixes — 2026-09-29
 - **Full live smoke test:** new repeatable harness `scripts/live_smoke/` (`dump_accounts.php` → `run_smoke.php` → `cleanup.php`) drives a real local server against the live Supabase DB — 9 role logins, every portal route per department (public site, Admin, Registrar, Cashier, Teacher, Librarian, Nurse, Student, Directress, Principal), ajax/export variants, write flows with full cleanup, and 9 Sanctum API token sessions — **final run 219/219 PASS**
 - **Fixes found by the run:** `/librarian/visits` 500 (missing `librarian()` relation on `LibraryVisit`); API `studentGrades`/`principalGrades` 500s (phantom `class.*` eager-loads → `schoolClass.*`); cashier `processPayment` "Undefined array key ar_number" (payments 500'd when the field was empty); admin collections export 30 s timeout (`set_time_limit(120)` in `collections()` + `streamCsv()`); public inquiry rolled back when Resend mail failed (mail moved post-commit, logged); duplicate-section error flash invisible (error blocks added to 3 section blades)

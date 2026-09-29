@@ -48,6 +48,9 @@ class GradesAssessmentsSeeder extends Seeder
             $isNoGrades = $demoNoGradesId && $enrollment->id === $demoNoGradesId;
             if ($isNoGrades) continue; // leave this enrollment with no grades for demo (No grades badge)
 
+            // additive: never re-randomize enrollments that already carry grades
+            if (DB::table('grades')->where('enrollment_id', $enrollment->id)->exists()) continue;
+
             $enrolledClasses = DB::table('enrollment_subject')
                 ->where('enrollment_id', $enrollment->id)
                 ->pluck('class_id');

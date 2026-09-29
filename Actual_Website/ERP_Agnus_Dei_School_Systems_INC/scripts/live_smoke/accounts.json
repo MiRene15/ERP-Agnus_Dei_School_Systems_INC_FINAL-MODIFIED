@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-09-29 04:10:37",
+    "generated_at": "2026-09-29 08:15:17",
     "password": "Agnus2026!",
     "staff": {
         "admin": "admin@agnusdei.local",
@@ -51,10 +51,10 @@
         "id": 10,
         "email": "jose.reyes@agnusdei.local"
     },
-    "teacher_class_id": 278,
-    "teacher_class_enrollment_id": 6,
+    "teacher_class_id": 214,
+    "teacher_class_enrollment_id": 1,
     "teacher_class_grade": {
-        "grade_level": "Grade 5",
+        "grade_level": "Kinder",
         "section": "A"
     },
     "student": {
@@ -76,12 +76,12 @@
         "balance": "0.00",
         "clearance_status": "Uncleared",
         "created_at": "2026-09-17 15:42:35",
-        "updated_at": "2026-09-29 03:57:13",
+        "updated_at": "2026-09-29 04:15:52",
         "it_confirmed_at": "2026-09-17 17:52:02",
         "carried_over_balance": "0.00",
         "discount_type": null
     },
-    "payment_max_id_before": 205,
+    "payment_max_id_before": 494,
     "borrow_student_id": 14,
     "student_admission_id": 1,
     "student_requirement_id": 1,
@@ -93,8 +93,8 @@
     "section_id": 30,
     "admin_edit_user_id": 2,
     "subject_id": 112,
-    "payment_id": 205,
-    "payment_ledger_id": 6,
+    "payment_id": 494,
+    "payment_ledger_id": 473,
     "book_available_id": 34,
     "book_edit_id": 34,
     "txn_id": 13,
@@ -117,13 +117,13 @@
     "announcement_id": 3,
     "active_school_year": null,
     "counts": {
-        "users": 195,
-        "students": 167,
+        "users": 503,
+        "students": 475,
         "classes": 215,
         "schedules": 430,
-        "enrollments": 165,
-        "grades": 3099,
-        "payments": 205,
+        "enrollments": 473,
+        "grades": 9657,
+        "payments": 491,
         "books": 35
     }
 }
