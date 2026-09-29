@@ -51,3 +51,38 @@ Capture `students.max(id)` / `users.max(id)` before the run; cleanup = delete ro
 - [x] docs + commit + push
 
 **Final counts:** 503 users, 475 students, 450 active enrollments, 3,225 enrollment_subject pivots, 473 ledgers, 491 payments, 9,657 grades, 38,624 assessments.
+
+---
+
+# Follow-up — Full Linked Information for the 308 (Session 56, 2026-09-29)
+
+**Ask:** make sure every one of the 450 active students is a fully-populated active account with all the various linked information the original roster has.
+
+## Audit result (before this follow-up)
+
+| Data | Old (≤167) | New (308) | Verdict |
+|------|-----------|-----------|---------|
+| users role 7, `status=active`, login-shaped (no `email_verified_at`, same as old) | 167/167 | **308/308** | ✅ already active accounts |
+| profile, admission, enrollment, ledger, subject pivots, grades (3 terms), assessments | full | **308/308** | ✅ already filled |
+| payments (paid/half/unpaid mix) | 152/167 | 286/308 | ✅ by-design unpaid mix |
+| clinic logs | 120 students | **0** | ❌ fill |
+| library transactions / visits | 202 / 37 rows | **0** | ❌ fill |
+| graduation-fee assignments (G10/G12) | 19 | **0** | ❌ fill |
+| admission requirement docs (3 types) | 15 admissions only | **0** | ❌ fill for all admissions |
+| withdrawal requests | 15 (approved, event-based) | 0 | ➕ add 5 Pending for variety |
+
+## Fill plan — new `StudentLinkedInfoSeeder` (bulk, idempotent)
+
+1. **Library**: deterministic borrow/return history (1–2 per enrolled student, same formulas as `LibraryAndClinicSeeder`), library visits for every 4th student — built in memory, **chunk-inserted** (the old per-row seeder would take ~23 min over Supabase; bulk ≈ seconds).
+2. **Clinic**: 1–2 visits per enrolled student except the `id % 7 === 3` never-visit group (20-complaint pool, nurse = role 6).
+3. **Graduation fees**: every Active Grade 10 / Grade 12 enrollment without an assignment gets the fee (₱1,500 / ₱2,500, `paid` mix).
+4. **Requirements**: all 473 admissions receive the 3 document rows (PSA Birth Certificate, Form 138, Good Moral — Verified/Under Review mix); existing 45 rows untouched, `file_content` stays null exactly like the originals.
+5. **Withdrawals**: 5 `Pending` requests from new students (registrar queue variety; enrollment stays Active, student can still use the portal).
+
+## Verification checklist (session 56)
+
+- [x] fill run: **410 library txns + 77 library visits + 330 clinic logs + 71 grad-fee assignments + 1,374 requirement rows + 5 Pending withdrawals** (bulk, seconds) — coverage: new students clinic 264/308 (same never-visit rule as old 120/142), lib_txn 308/308, lib_visit 77, G10 30/30 + G12 60/60 grad fees, requirements 473/473 admissions (1,419 rows total), withdrawals 15 Approved + 5 Pending
+- [x] **new student login over HTTP: PASS** — `aiden.aguilar1@agnusdei.edu.ph` → 302 → `/student/dashboard` 200 with name rendered (all 308 `status=active`, same login shape as old)
+- [x] idempotency: re-run inserts **all zeros** (pending-withdrawal cap bug found & fixed during verification — candidates query now limited to `5 − existing`)
+- [x] smoke harness **219/219**; existing rows untouched (first-15 requirement rows and all old linked data preserved)
+- [x] docs + commit + push

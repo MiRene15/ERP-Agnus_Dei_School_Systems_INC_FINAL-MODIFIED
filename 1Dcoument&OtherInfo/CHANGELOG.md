@@ -1,5 +1,13 @@
 # Release Notes
 
+## [Unreleased] — Linked-Info Fill for the 450-Student Roster — 2026-09-29
+- New `StudentLinkedInfoSeeder` closes every linkage gap left by the session-55 scatter — **+410 library transactions, +77 library visits, +330 clinic logs, +71 graduation-fee assignments (Grade 10 30/30, Grade 12 60/60), +1,374 requirement rows (all 473 admissions now carry 3 requirement types), +5 Pending withdrawal requests** (bulk inserts, seconds)
+- Coverage now mirrors the original roster exactly: clinic never-visit rule preserved (new 264/308 vs old 120/142), library txn 308/308, visits every 4th student; nothing overwrites pre-existing rows (first 15 requirement rows and all old linked data untouched)
+- Seeder fully **idempotent** — re-run reports all zeros; verification caught and fixed a pending-withdrawal bug (candidates query grew the queue by 5 on every run → now capped at `5 − existing`)
+- **New-student HTTP login verified:** `aiden.aguilar1@agnusdei.edu.ph` → 302 → `/student/dashboard` 200 with name rendered; all 308 new accounts `status=active`
+- Smoke harness re-run: **219/219 PASS** on the grown DB (475 students / 503 users / 9,657 grades), cleanup verified
+- See `student_scatter_20260929.md`
+
 ## [Unreleased] — Student Scatter: 15 per Section, All Subjects Populated — 2026-09-29
 - **308 new students** (`StudentScatterSeeder`) bring every one of the 30 active sections to **15 Active enrollments (450 total, was 142)** — filling the 11 previously empty `B` sections and sparse SHS strands; every active class (subject × section) now has students (**81 → 0** zero-student classes)
 - Full linkage per student: account (role 7), profile, admission (Approved By Registrar), enrollment with correct SHS strand, **all subject-class pivots incl. advisory**, FeeSchedule ledger with ESC/honor/sibling discount mix, varied paid/half/unpaid payment mix
