@@ -21,6 +21,9 @@ use App\Http\Controllers\Portal\ExportController;
 use App\Http\Controllers\Portal\WithdrawalController;
 use App\Http\Controllers\Portal\DirectressController;
 use App\Http\Controllers\Portal\PrincipalController;
+use App\Http\Controllers\Portal\DiscountRequestController;
+use App\Http\Controllers\Portal\PromotionWorkflowController;
+use App\Http\Controllers\Portal\GradeUnlockController;
 use App\Http\Controllers\Admin\UserController;
 
 /*
@@ -109,9 +112,9 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['role:1'])->group(function() {
         Route::get('/admin/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
-        Route::get('/admin/pending-accounts', [AdminController::class, 'pendingAccounts'])->name('admin.pending-accounts');
-        Route::post('/admin/confirm-account/{ledger}', [AdminController::class, 'confirmAccount'])->name('admin.confirm-account');
-        Route::post('/admin/confirm-batch', [AdminController::class, 'confirmBatch'])->name('admin.confirm-batch');
+        // IT Support scope: accounts, passwords, system health, audit logs.
+        // Money (payment confirmation) and academic decisions (promotion, subjects)
+        // were removed here — see registrar/cashier/directress/principal routes.
 // Staff Account Management
          Route::resource('admin/users', UserController::class)->except(['show', 'destroy'])->names('admin.users');
          Route::post('admin/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
@@ -120,11 +123,7 @@ Route::middleware('auth')->group(function () {
          Route::get('admin/student-accounts', [\App\Http\Controllers\Admin\StudentAccountController::class, 'index'])->name('admin.student-accounts.index');
          Route::post('admin/student-accounts/{user}/toggle-status', [\App\Http\Controllers\Admin\StudentAccountController::class, 'toggleStatus'])->name('admin.student-accounts.toggle-status');
          Route::post('admin/student-accounts/{user}/reset-password', [\App\Http\Controllers\Admin\StudentAccountController::class, 'resetPassword'])->name('admin.student-accounts.reset-password');
-        // Subjects Management (hidden — no sidebar link per request, but routes kept for direct access)
-        Route::get('admin/subjects/template', [\App\Http\Controllers\Admin\SubjectController::class, 'template'])->name('admin.subjects.template');
-        Route::post('admin/subjects/import', [\App\Http\Controllers\Admin\SubjectController::class, 'import'])->name('admin.subjects.import');
-        Route::resource('admin/subjects', \App\Http\Controllers\Admin\SubjectController::class)->except(['show'])->names('admin.subjects');
-        // School Settings
+         // School Settings
          Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
          Route::post('/admin/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
          // Audit Logs
@@ -133,19 +132,32 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/exports/enrollments', [ExportController::class, 'enrollments'])->name('admin.exports.enrollments');
         Route::get('/admin/exports/grades', [ExportController::class, 'grades'])->name('admin.exports.grades');
         Route::get('/admin/exports/collections', [ExportController::class, 'collections'])->name('admin.exports.collections');
-        // Promotion / End-of-Year
-        Route::get('/admin/promotion', [\App\Http\Controllers\Admin\PromotionController::class, 'index'])->name('admin.promotion.index');
-        Route::post('/admin/promotion/process', [\App\Http\Controllers\Admin\PromotionController::class, 'process'])->name('admin.promotion.process');
-        Route::post('/admin/promotion/batch-promote', [\App\Http\Controllers\Admin\PromotionController::class, 'batchPromote'])->name('admin.promotion.batch-promote');
     });
 
-    // Sections — Registrar only (moved from Admin per request)
+    // Registrar owns subjects + sections together (moved from Admin); Principal reviews read-only.
     Route::middleware(['role:2'])->group(function() {
         Route::resource('registrar/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('registrar.sections');
+        Route::get('registrar/subjects/template', [\App\Http\Controllers\Admin\SubjectController::class, 'template'])->name('registrar.subjects.template');
+        Route::post('registrar/subjects/import', [\App\Http\Controllers\Admin\SubjectController::class, 'import'])->name('registrar.subjects.import');
+        Route::resource('registrar/subjects', \App\Http\Controllers\Admin\SubjectController::class)->except(['show'])->names('registrar.subjects');
+        // Promotion — Registrar prepares proposals (Principal approves, Directress signs off + executes)
+        Route::get('/registrar/promotion', [PromotionWorkflowController::class, 'registrarIndex'])->name('registrar.promotion.index');
+        Route::post('/registrar/promotion/propose', [PromotionWorkflowController::class, 'registrarPropose'])->name('registrar.promotion.propose');
+        // Admission requirement documents — Registrar only (Cashier access removed)
+        Route::get('/registrar/requirements/{requirement}/view', [StudentAdmissionController::class, 'viewRequirement'])->name('registrar.requirements.view');
     });
 
+    // Discount requests — Cashier or Registrar files with proof; Directress reviews.
     Route::middleware(['role:2,3'])->group(function() {
-        Route::get('/registrar/requirements/{requirement}/view', [StudentAdmissionController::class, 'viewRequirement'])->name('registrar.requirements.view');
+        Route::get('/discount-requests', [DiscountRequestController::class, 'index'])->name('discount-requests.index');
+        Route::post('/discount-requests', [DiscountRequestController::class, 'store'])->name('discount-requests.store');
+    });
+
+    // Grade unlock reviews — Principal or Registrar re-opens submitted grades for correction.
+    Route::middleware(['role:2,9'])->group(function() {
+        Route::get('/registrar/grade-unlocks', [GradeUnlockController::class, 'reviewIndex'])->name('registrar.grade-unlocks.index');
+        Route::post('/registrar/grade-unlocks/{unlockRequest}/approve', [GradeUnlockController::class, 'approve'])->name('registrar.grade-unlocks.approve');
+        Route::post('/registrar/grade-unlocks/{unlockRequest}/reject', [GradeUnlockController::class, 'reject'])->name('registrar.grade-unlocks.reject');
     });
 
     Route::middleware(['role:1,2'])->group(function() {
@@ -179,7 +191,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/cashier/reports/receivables', [CashierController::class, 'receivablesReport'])->name('cashier.reports.receivables');
         Route::get('/cashier/reports/receivables/export', [CashierController::class, 'receivablesReportExport'])->name('cashier.reports.receivables.export');
         Route::get('/cashier/discounts', [CashierController::class, 'discounts'])->name('cashier.discounts');
-        Route::post('/cashier/discounts/{ledger}', [CashierController::class, 'updateDiscount'])->name('cashier.discounts.update');
+        // Discounts are request-based now: Directress approves -> Cashier applies. No direct edits.
+        Route::post('/cashier/discounts/apply/{discountRequest}', [CashierController::class, 'applyDiscount'])->name('cashier.discounts.apply');
+        // Graduation-fee paid marking — Cashier only (moved from Directress).
+        Route::post('/cashier/graduation-fees/{assignment}/toggle-paid', [CashierController::class, 'graduationFeesTogglePaid'])->name('cashier.graduation-fees.toggle-paid');
     });
 
     Route::middleware(['role:4'])->group(function() {
@@ -200,6 +215,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/teacher/grade-assessment/{class}/student/{enrollment}', [TeacherController::class, 'storeGradeAssessmentStudent'])->name('teacher.grade-assessment.student.store');
         Route::get('/teacher/computed-grades', [TeacherController::class, 'computedGrades'])->name('teacher.computed-grades');
         Route::post('/teacher/computed-grades/batch-submit', [TeacherController::class, 'batchSubmitGrades'])->name('teacher.computed-grades.batch-submit');
+        // Grade correction requests — Teacher asks Principal/Registrar to reopen submitted grades.
+        Route::get('/teacher/grade-unlocks', [GradeUnlockController::class, 'teacherIndex'])->name('teacher.grade-unlocks.index');
+        Route::post('/teacher/grade-unlocks', [GradeUnlockController::class, 'teacherStore'])->name('teacher.grade-unlocks.store');
     });
 
     Route::middleware(['role:5'])->group(function() {
@@ -285,7 +303,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/directress/graduation-fees/{graduationFee}/assign', [DirectressController::class, 'graduationFeesAssign'])->name('directress.graduation-fees.assign');
         Route::post('/directress/graduation-fees/{graduationFee}/assign', [DirectressController::class, 'graduationFeesAssignStore'])->name('directress.graduation-fees.assign.store');
         Route::get('/directress/graduation-fees/{graduationFee}/assigned', [DirectressController::class, 'graduationFeesAssigned'])->name('directress.graduation-fees.assigned');
-        Route::post('/directress/graduation-fees/{assignment}/toggle-paid', [DirectressController::class, 'graduationFeesTogglePaid'])->name('directress.graduation-fees.toggle-paid');
+
+        // Discount approvals — Directress approves/rejects requests; only Cashier applies.
+        Route::get('/directress/discount-requests', [DiscountRequestController::class, 'reviewIndex'])->name('directress.discount-requests.index');
+        Route::post('/directress/discount-requests/{discountRequest}/approve', [DiscountRequestController::class, 'approve'])->name('directress.discount-requests.approve');
+        Route::post('/directress/discount-requests/{discountRequest}/reject', [DiscountRequestController::class, 'reject'])->name('directress.discount-requests.reject');
+        // Promotion sign-off — executes Principal-approved proposals.
+        Route::get('/directress/promotion', [PromotionWorkflowController::class, 'directressIndex'])->name('directress.promotion.index');
+        Route::post('/directress/promotion/{proposal}/signoff', [PromotionWorkflowController::class, 'directressSignoff'])->name('directress.promotion.signoff');
+        // School announcements awareness — Directress acknowledges Principal's posts.
+        Route::get('/directress/announcements', [DirectressController::class, 'announcements'])->name('directress.announcements.index');
+        Route::post('/directress/announcements/{announcement}/acknowledge', [DirectressController::class, 'acknowledgeAnnouncement'])->name('directress.announcements.acknowledge');
 
         // Reports Hub (Collections / Receivables / Clinic / Library / Students)
         Route::get('/directress/reports', [DirectressController::class, 'reports'])->name('directress.reports');
@@ -318,6 +346,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/principal/schedules/import', [PrincipalController::class, 'schedulesImport'])->name('principal.schedules.import');
         // Grades
         Route::get('/principal/grades', [PrincipalController::class, 'grades'])->name('principal.grades');
+        // Promotion approvals — Principal approves Registrar proposals.
+        Route::get('/principal/promotion', [PromotionWorkflowController::class, 'principalIndex'])->name('principal.promotion.index');
+        Route::post('/principal/promotion/{proposal}/approve', [PromotionWorkflowController::class, 'principalApprove'])->name('principal.promotion.approve');
+        Route::post('/principal/promotion/{proposal}/reject', [PromotionWorkflowController::class, 'principalReject'])->name('principal.promotion.reject');
+        // Subjects oversight (read-only) — Registrar owns, Principal reviews.
+        Route::get('/principal/subjects', [\App\Http\Controllers\Admin\SubjectController::class, 'index'])->name('principal.subjects.index');
         // Announcements
         Route::get('/principal/announcements', [PrincipalController::class, 'announcements'])->name('principal.announcements');
         Route::get('/principal/announcements/create', [PrincipalController::class, 'announcementsCreate'])->name('principal.announcements.create');

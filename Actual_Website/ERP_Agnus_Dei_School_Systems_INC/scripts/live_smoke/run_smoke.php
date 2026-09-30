@@ -296,17 +296,16 @@ if (!$skip('admin') && mark('admin')) {
     out('-- Admin --');
     $h = $clients['admin'];
     test($h, 'Admin', 'GET', '/admin/dashboard');
-    test($h, 'Admin', 'GET', '/admin/pending-accounts');
+    // Role reform: IT no longer touches money or academic decisions — assert gone.
+    test($h, 'Admin', 'GET', '/admin/pending-accounts', ['x' => [404]]);
+    test($h, 'Admin', 'GET', '/admin/promotion', ['x' => [404]]);
+    test($h, 'Admin', 'GET', '/admin/subjects', ['x' => [404]]);
     test($h, 'Admin', 'GET', '/admin/users');
     test($h, 'Admin', 'GET', '/admin/users/create');
     if ($acc['admin_edit_user_id']) test($h, 'Admin', 'GET', '/admin/users/' . $acc['admin_edit_user_id'] . '/edit');
     test($h, 'Admin', 'GET', '/admin/student-accounts');
-    test($h, 'Admin', 'GET', '/admin/subjects');
-    test($h, 'Admin', 'GET', '/admin/subjects/create');
-    if ($acc['subject_id']) test($h, 'Admin', 'GET', '/admin/subjects/' . $acc['subject_id'] . '/edit');
     test($h, 'Admin', 'GET', '/admin/settings');
     test($h, 'Admin', 'GET', '/admin/audit-logs');
-    test($h, 'Admin', 'GET', '/admin/promotion');
     foreach (['enrollments', 'grades', 'collections'] as $ex) {
         test($h, 'Admin', 'GET', '/admin/exports/' . $ex,
             ['ctype_contains' => 'text/csv', 'not_contains' => '<html']);
@@ -330,6 +329,13 @@ if (!$skip('registrar') && mark('registrar')) {
     test($h, 'Registrar', 'GET', '/registrar/sections');
     test($h, 'Registrar', 'GET', '/registrar/sections/create');
     if ($acc['section_id']) test($h, 'Registrar', 'GET', '/registrar/sections/' . $acc['section_id'] . '/edit');
+    // Role reform: Registrar owns subjects + prepares promotion proposals.
+    test($h, 'Registrar', 'GET', '/registrar/subjects');
+    test($h, 'Registrar', 'GET', '/registrar/subjects/create');
+    if ($acc['subject_id']) test($h, 'Registrar', 'GET', '/registrar/subjects/' . $acc['subject_id'] . '/edit');
+    test($h, 'Registrar', 'GET', '/registrar/promotion');
+    test($h, 'Registrar', 'GET', '/registrar/grade-unlocks');
+    test($h, 'Registrar', 'GET', '/discount-requests');
     if ($acc['requirement_with_content_id']) {
         test($h, 'Registrar', 'GET', '/registrar/requirements/' . $acc['requirement_with_content_id'] . '/view');
     } else {
@@ -382,6 +388,11 @@ if (!$skip('cashier') && mark('cashier')) {
     test($h, 'Cashier', 'GET', '/cashier/reports/receivables');
     test($h, 'Cashier', 'GET', '/cashier/reports/receivables/export', ['not_contains' => '<html']);
     test($h, 'Cashier', 'GET', '/cashier/discounts');
+    test($h, 'Cashier', 'GET', '/discount-requests');
+    // Role reform: Cashier can no longer view admission documents.
+    if ($acc['requirement_with_content_id']) {
+        test($h, 'Cashier', 'GET', '/registrar/requirements/' . $acc['requirement_with_content_id'] . '/view', ['x' => [403]]);
+    }
 
     // write: process a real 100 payment (reverted by cleanup.php from snapshot)
     if ($sid) {
@@ -419,6 +430,7 @@ if (!$skip('teacher') && mark('teacher')) {
     test($h, 'Teacher', 'GET', '/teacher/class-list');
     test($h, 'Teacher', 'GET', '/teacher/grade-assessment');
     test($h, 'Teacher', 'GET', '/teacher/computed-grades');
+    test($h, 'Teacher', 'GET', '/teacher/grade-unlocks');
     test($h, 'Teacher', 'GET', '/teacher/dashboard?ajax=1', ['contains' => '"html"']);
     test($h, 'Teacher', 'GET', '/teacher/classes?ajax=1', ['contains' => '"html"']);
     test($h, 'Teacher', 'GET', '/teacher/class-list?ajax=1', ['contains' => '"html"']);
@@ -563,6 +575,10 @@ if (!$skip('directress') && mark('directress')) {
         test($h, 'Directress', 'GET', '/directress/graduation-fees/' . $acc['grad_fee_id'] . '/assign');
         test($h, 'Directress', 'GET', '/directress/graduation-fees/' . $acc['grad_fee_id'] . '/assigned');
     }
+    // Role reform: Directress approves discounts, signs off promotion, acknowledges announcements.
+    test($h, 'Directress', 'GET', '/directress/discount-requests');
+    test($h, 'Directress', 'GET', '/directress/promotion');
+    test($h, 'Directress', 'GET', '/directress/announcements');
     test($h, 'Directress', 'GET', '/directress/reports');
     foreach (['collections', 'receivables', 'clinic', 'library', 'students'] as $tab) {
         test($h, 'Directress', 'GET', '/directress/reports?tab=' . $tab);
@@ -592,6 +608,10 @@ if (!$skip('principal') && mark('principal')) {
     test($h, 'Principal', 'GET', '/principal/schedules/template', ['not_contains' => '<html']);
     test($h, 'Principal', 'GET', '/principal/announcements');
     test($h, 'Principal', 'GET', '/principal/announcements/create');
+    // Role reform: Principal approves promotion, oversees subjects, reviews grade unlocks.
+    test($h, 'Principal', 'GET', '/principal/promotion');
+    test($h, 'Principal', 'GET', '/principal/subjects');
+    test($h, 'Principal', 'GET', '/registrar/grade-unlocks');
     if ($acc['announcement_id']) {
         test($h, 'Principal', 'GET', '/principal/announcements/' . $acc['announcement_id'] . '/edit');
     }

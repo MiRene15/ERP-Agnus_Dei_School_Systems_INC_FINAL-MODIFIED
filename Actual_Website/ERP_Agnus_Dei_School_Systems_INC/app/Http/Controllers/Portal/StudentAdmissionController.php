@@ -322,7 +322,8 @@ class StudentAdmissionController extends Controller
         $admission = $requirement->admission;
 
         $isStudent = $user->role_id === 7 && $admission->student_id === $user->student?->id;
-        $isRegistrar = in_array($user->role_id, [2, 3]);
+        // Admission documents: student (own) + Registrar only. Cashier access removed.
+        $isRegistrar = $user->role_id === 2;
 
         if (!$isStudent && !$isRegistrar) {
             abort(403);

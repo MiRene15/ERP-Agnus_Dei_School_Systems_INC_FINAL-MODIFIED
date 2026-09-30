@@ -45,12 +45,7 @@
                         </span>
                     </td>
                     <td class="py-2 px-2">
-                        <form method="POST" action="{{ route('directress.graduation-fees.toggle-paid', $assignment) }}" class="inline">
-                            @csrf
-                            <button type="submit" class="px-2 py-1 text-xs font-medium {{ $assignment->paid ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800' }}">
-                                {{ $assignment->paid ? 'Mark Unpaid' : 'Mark Paid' }}
-                            </button>
-                        </form>
+                        <span class="text-xs text-gray-400">Cashier marks paid on collection</span>
                     </td>
                 </tr>
                 @empty

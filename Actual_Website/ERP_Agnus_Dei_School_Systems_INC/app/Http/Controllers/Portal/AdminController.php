@@ -5,95 +5,34 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\Student;
-use App\Models\StudentLedger;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
+    /**
+     * IT Support overview: accounts, system health, audit trail.
+     * Payment confirmation and academic decisions were removed from IT —
+     * money belongs to Cashier, promotion/subjects to Registrar/Principal.
+     */
     public function index(Request $request)
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
-        $pendingConfirmations = StudentLedger::whereNull('it_confirmed_at')
-            ->where('total_paid', '>', 0)
-            ->with('student.user')
-            ->get();
-
-        $confirmedCount = StudentLedger::whereNotNull('it_confirmed_at')->count();
         $totalUsers = \App\Models\User::count();
         $activeRoles = \App\Models\Role::count();
+        $totalStudents = Student::count();
+        $activeSY = active_school_year();
 
         $recentActivity = \App\Models\ActivityLog::with('causer')->latest()->take(5)->get();
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.admin.partials.dashboard-results', compact('pendingConfirmations', 'confirmedCount', 'totalUsers', 'activeRoles', 'recentActivity'))->render(),
+                'html' => view('portal.admin.partials.dashboard-results', compact('totalUsers', 'activeRoles', 'totalStudents', 'activeSY', 'recentActivity'))->render(),
             ]);
         }
 
-        return view('portal.admin.dashboard', compact('pendingConfirmations', 'confirmedCount', 'totalUsers', 'activeRoles', 'recentActivity'));
-    }
-
-    public function pendingAccounts(Request $request)
-    {
-        $isAjax = $request->boolean('ajax');
-        $request->query->remove('ajax');
-
-        $pendingConfirmations = StudentLedger::whereNull('it_confirmed_at')
-            ->where('total_paid', '>', 0)
-            ->with('student.user', 'student.enrollments.section')
-            ->get();
-
-        if ($isAjax) {
-            return response()->json([
-                'html' => view('portal.admin.partials.pending-accounts-results', compact('pendingConfirmations'))->render(),
-            ]);
-        }
-
-        return view('portal.admin.pending-accounts', compact('pendingConfirmations'));
-    }
-
-    public function confirmAccount(StudentLedger $ledger)
-    {
-        $ledger->it_confirmed_at = now();
-        $ledger->clearance_status = 'Cleared';
-        $ledger->save();
-
-        $student = $ledger->student;
-        $studentName = $student ? trim($student->first_name . ' ' . $student->last_name) : 'Student #' . $ledger->student_id;
-
-        log_activity($student ?? $ledger, 'Account Confirmed', auth()->user()->name . ' confirmed the student account of ' . $studentName . '.');
-
-        return back()->with('success', 'Account confirmed for ' . $studentName . '.');
-    }
-
-    public function confirmBatch(Request $request)
-    {
-        $data = $request->validate([
-            'ledger_ids' => 'required|array|min:1',
-            'ledger_ids.*' => 'exists:student_ledgers,id',
-        ]);
-
-        $count = 0;
-        $names = [];
-        StudentLedger::whereIn('id', $data['ledger_ids'])
-            ->whereNull('it_confirmed_at')
-            ->where('total_paid', '>', 0)
-            ->with('student')
-            ->each(function ($ledger) use (&$count, &$names) {
-                $ledger->it_confirmed_at = now();
-                $ledger->clearance_status = 'Cleared';
-                $ledger->save();
-                $count++;
-                if ($ledger->student) {
-                    $names[] = trim($ledger->student->first_name . ' ' . $ledger->student->last_name);
-                }
-            });
-
-        log_activity(new StudentLedger, 'Accounts Confirmed', auth()->user()->name . ' confirmed ' . $count . ' student account(s): ' . (count($names) ? implode(', ', $names) : 'no names available') . '.');
-
-        return back()->with('success', "{$count} student account(s) confirmed successfully.");
+        return view('portal.admin.dashboard', compact('totalUsers', 'activeRoles', 'totalStudents', 'activeSY', 'recentActivity'));
     }
 
     public function settings()

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\Announcement;
 use App\Models\FeeSchedule;
 use App\Models\GraduationFee;
 use App\Models\StudentGraduationFee;
@@ -301,14 +302,25 @@ class DirectressController extends Controller
         return view('portal.directress.graduation-fees.assigned', compact('graduationFee', 'assignments'));
     }
 
-    public function graduationFeesTogglePaid(StudentGraduationFee $assignment)
+    // ─── Announcements awareness ────────────────────────────────
+    // Whole-school announcements come from the Principal; the Directress
+    // acknowledges them here so nothing goes out unnoticed.
+    public function announcements()
     {
-        $assignment->paid = !$assignment->paid;
-        $assignment->save();
+        $announcements = Announcement::with('admin')->latest()->paginate(20);
+        $unseenCount = Announcement::whereNull('directress_seen_at')->count();
 
-        log_activity($assignment, 'Graduation Fee Payment Toggled', auth()->user()->name . ' toggled paid status for student #' . $assignment->student_id . ' on "' . $assignment->graduationFee->name . '".');
+        return view('portal.directress.announcements.index', compact('announcements', 'unseenCount'));
+    }
 
-        return back()->with('success', 'Payment status updated.');
+    public function acknowledgeAnnouncement(Announcement $announcement)
+    {
+        $announcement->directress_seen_at = now();
+        $announcement->save();
+
+        log_activity($announcement, 'Announcement Acknowledged', auth()->user()->name . ' (Directress) acknowledged: "' . $announcement->title . '".');
+
+        return back()->with('success', 'Announcement acknowledged.');
     }
 
     // ─── School Year ──────────────────────────────────────────────

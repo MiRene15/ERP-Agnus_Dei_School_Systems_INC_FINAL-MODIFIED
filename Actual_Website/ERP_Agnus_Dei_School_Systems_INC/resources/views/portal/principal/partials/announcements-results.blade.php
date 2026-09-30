@@ -6,6 +6,7 @@
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Type</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Date</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Status</th>
+                <th class="text-left py-3 px-2 font-medium text-gray-600">Directress</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600">Actions</th>
             </tr>
         </thead>
@@ -25,6 +26,13 @@
                     </span>
                 </td>
                 <td class="py-2 px-2">
+                    @if($a->directress_seen_at)
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700" title="Seen {{ $a->directress_seen_at->format('M d, Y h:i A') }}">Seen ✓</span>
+                    @else
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Awaiting Directress</span>
+                    @endif
+                </td>
+                <td class="py-2 px-2">
                     <div class="flex gap-1">
                         <a href="{{ route('principal.announcements.edit', $a) }}" class="px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">Edit</a>
                         <form method="POST" action="{{ route('principal.announcements.destroy', $a) }}" onsubmit="return confirm('Delete this announcement?')" class="inline">
@@ -36,7 +44,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="5" class="py-6 text-center text-gray-500 text-sm">No announcements yet. <a href="{{ route('principal.announcements.create') }}" class="text-blue-600 hover:underline">Create one</a>.</td>
+                <td colspan="6" class="py-6 text-center text-gray-500 text-sm">No announcements yet. <a href="{{ route('principal.announcements.create') }}" class="text-blue-600 hover:underline">Create one</a>.</td>
             </tr>
             @endforelse
         </tbody>

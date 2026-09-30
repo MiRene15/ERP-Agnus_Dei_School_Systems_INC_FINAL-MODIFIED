@@ -465,6 +465,9 @@ class PrincipalController extends Controller
 
         $data['is_published'] = $request->boolean('is_published');
 
+        // Content changed → Directress must acknowledge again.
+        $data['directress_seen_at'] = null;
+
         $announcement->update($data);
 
         log_activity($announcement, 'Announcement Updated', auth()->user()->name . ' updated ' . $announcement->type . ': "' . $announcement->title . '".');

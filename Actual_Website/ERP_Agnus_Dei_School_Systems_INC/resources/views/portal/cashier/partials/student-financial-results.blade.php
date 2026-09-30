@@ -35,6 +35,33 @@
 </div>
 @endif
 
+@if(($gradFeeAssignments ?? collect())->isNotEmpty())
+<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
+    <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-1">Graduation Fees</h3>
+    <p class="text-xs text-gray-500 dark:text-[#8A90B0] mb-4">Only the Cashier marks these paid.</p>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead><tr class="border-b border-gray-200 dark:border-[#2A2F58]"><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Fee</th><th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Amount</th><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Status</th><th class="text-center py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Action</th></tr></thead>
+            <tbody>
+                @foreach($gradFeeAssignments as $gfa)
+                <tr class="border-b border-gray-50 dark:border-[#2A2F58]">
+                    <td class="py-2 px-2">{{ $gfa->graduationFee->name ?? 'Graduation Fee' }}</td>
+                    <td class="py-2 px-2 text-right font-medium">₱{{ number_format($gfa->amount, 2) }}</td>
+                    <td class="py-2 px-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $gfa->paid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ $gfa->paid ? 'Paid' : 'Unpaid' }}</span></td>
+                    <td class="py-2 px-2 text-center">
+                        <form method="POST" action="{{ route('cashier.graduation-fees.toggle-paid', $gfa) }}" class="inline">
+                            @csrf
+                            <button type="submit" class="px-2 py-1 text-xs font-medium {{ $gfa->paid ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800' }}">{{ $gfa->paid ? 'Mark Unpaid' : 'Mark Paid' }}</button>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
     <div class="lg:col-span-1 space-y-6">
         <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">

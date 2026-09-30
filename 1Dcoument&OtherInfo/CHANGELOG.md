@@ -1,5 +1,12 @@
 # Release Notes
 
+## [Unreleased] — Role Reform Phases 1+2: Separation of Duties — 2026-09-30
+- **Phase 1 (permission removals):** Cashier lost admission-document viewing (route + controller check now Registrar-only); Directress lost paid-marking (grad-fee toggle moved to the Cashier financial page, Directress sees a badge); Admin/IT lost payment confirmation, promotion, and subjects (routes, methods, views deleted; dashboard Verification panel replaced with Students/active-year stats; welcome tutorial link fixed)
+- **Subjects → Registrar** (`registrar/subjects`, views moved under `portal/registrar/`); Principal gets a read-only subjects browser (full subject-change approval deferred, noted in plan)
+- **Phase 2 (approval workflows, all live + verified):** 2-step discounts (`discount_requests` — request w/ proof → Directress approves → Cashier applies; direct edit deleted); promotion handoff (`promotion_proposals` — Registrar proposes → Principal approves → Directress signs off and the system executes via new `PromotionService`; `Admin\PromotionController` deleted); grade unlocks (`grade_unlock_requests` — Teacher requests → Principal/Registrar approves → Submitted→Pending → correct → re-submit); announcement awareness (`directress_seen_at` — Directress acknowledges, Principal edits reset it)
+- **Verification:** 21/21 page/permission checks (incl. 404/403 negatives), 16/16 write-flow checks with full revert (zero residue), smoke harness updated for the new route map → **231/231 PASS**; live user count +12 during the window came from manual browser injection/XSS probes, unrelated
+- See `role_process_reform_plan_20260930.md`
+
 ## [Unreleased] — Linked-Info Fill for the 450-Student Roster — 2026-09-29
 - New `StudentLinkedInfoSeeder` closes every linkage gap left by the session-55 scatter — **+410 library transactions, +77 library visits, +330 clinic logs, +71 graduation-fee assignments (Grade 10 30/30, Grade 12 60/60), +1,374 requirement rows (all 473 admissions now carry 3 requirement types), +5 Pending withdrawal requests** (bulk inserts, seconds)
 - Coverage now mirrors the original roster exactly: clinic never-visit rule preserved (new 264/308 vs old 120/142), library txn 308/308, visits every 4th student; nothing overwrites pre-existing rows (first 15 requirement rows and all old linked data untouched)

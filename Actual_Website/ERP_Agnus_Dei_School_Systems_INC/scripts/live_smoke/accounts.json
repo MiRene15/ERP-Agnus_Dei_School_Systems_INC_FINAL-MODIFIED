@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-09-29 09:03:02",
+    "generated_at": "2026-10-01 02:42:00",
     "password": "Agnus2026!",
     "staff": {
         "admin": "admin@agnusdei.local",
@@ -76,7 +76,7 @@
         "balance": "0.00",
         "clearance_status": "Uncleared",
         "created_at": "2026-09-17 15:42:35",
-        "updated_at": "2026-09-29 08:22:00",
+        "updated_at": "2026-10-01 02:37:11",
         "it_confirmed_at": "2026-09-17 17:52:02",
         "carried_over_balance": "0.00",
         "discount_type": null
@@ -117,8 +117,8 @@
     "announcement_id": 3,
     "active_school_year": null,
     "counts": {
-        "users": 503,
-        "students": 475,
+        "users": 515,
+        "students": 487,
         "classes": 215,
         "schedules": 430,
         "enrollments": 473,

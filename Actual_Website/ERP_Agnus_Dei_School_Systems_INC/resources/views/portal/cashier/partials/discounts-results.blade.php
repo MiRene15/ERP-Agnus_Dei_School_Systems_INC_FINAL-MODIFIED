@@ -1,6 +1,10 @@
 @if($ledgers->isEmpty())
     <p class="text-sm text-gray-500 text-center py-8">No enrolled students found with ledgers.</p>
 @else
+@php
+    $approvedByLedger = ($approvedRequests ?? collect())->keyBy('student_ledger_id');
+    $openIds = $openRequestLedgerIds ?? collect();
+@endphp
 <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -36,10 +40,16 @@
                     @endif
                 </td>
                 <td class="px-4 py-3 text-center">
-                    <button onclick="openDiscountModal({{ $ledger->id }}, '{{ $ledger->discount_type }}', {{ $ledger->discount_applied }}, {{ $ledger->total_assessed }})"
-                            class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                        {{ $ledger->discount_applied > 0 ? 'Edit' : 'Grant' }}
-                    </button>
+                    @if(isset($approvedByLedger[$ledger->id]))
+                        <form method="POST" action="{{ route('cashier.discounts.apply', $approvedByLedger[$ledger->id]) }}" onsubmit="return confirm('Apply this approved discount to the ledger?')" class="inline">
+                            @csrf
+                            <button type="submit" class="px-3 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg">Apply approved</button>
+                        </form>
+                    @elseif(isset($openIds[$ledger->id]))
+                        <span class="text-xs font-medium text-amber-600">Awaiting Directress approval</span>
+                    @else
+                        <a href="{{ route('discount-requests.index') }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Request</a>
+                    @endif
                 </td>
             </tr>
             @endforeach

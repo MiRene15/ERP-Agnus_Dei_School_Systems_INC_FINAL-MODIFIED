@@ -45,10 +45,14 @@
                                     @endif
                                 </td>
                                 <td class="py-2.5 px-2 text-right">
+                                    @if(empty($readOnly))
                                     <div class="flex items-center justify-end gap-1">
-                                        <a href="{{ route('admin.subjects.edit', $subject) }}" class="px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">Edit</a>
-                                        <form method="POST" action="{{ route('admin.subjects.destroy', $subject) }}" onsubmit="return confirm('Delete {{ $subject->subject_code }}?')" class="inline">@csrf @method('DELETE')<button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800">Delete</button></form>
+                                        <a href="{{ route('registrar.subjects.edit', $subject) }}" class="px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">Edit</a>
+                                        <form method="POST" action="{{ route('registrar.subjects.destroy', $subject) }}" onsubmit="return confirm('Delete {{ $subject->subject_code }}?')" class="inline">@csrf @method('DELETE')<button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800">Delete</button></form>
                                     </div>
+                                    @else
+                                    <span class="text-xs text-gray-400">View only</span>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
@@ -62,6 +66,6 @@
 
 @empty($subjects)
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
-        <p class="text-sm text-gray-500 py-4">No subjects yet. <a href="{{ route('admin.subjects.create') }}" class="text-blue-600 font-medium">Add one</a>.</p>
+        <p class="text-sm text-gray-500 py-4">No subjects yet. @if(empty($readOnly))<a href="{{ route('registrar.subjects.create') }}" class="text-blue-600 font-medium">Add one</a>.@endif</p>
     </div>
 @endempty

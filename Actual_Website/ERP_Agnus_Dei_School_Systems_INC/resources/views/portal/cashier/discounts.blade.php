@@ -5,10 +5,59 @@
 @endsection
 
 @section('content')
-<div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Manage Discounts</h2>
-    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Grant or update discounts for enrolled students. Discounts persist across payments.</p>
+<div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Manage Discounts</h2>
+        <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Two-step process: request with proof → Directress approves → Cashier applies here. Nobody grants and collects alone.</p>
+    </div>
+    <a href="{{ route('discount-requests.index') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">+ Request Discount</a>
 </div>
+
+@if(session('success'))
+    <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
+@endif
+
+@if(($approvedRequests ?? collect())->isNotEmpty())
+<div class="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-xl p-6 mb-6">
+    <h3 class="font-semibold text-green-900 dark:text-green-200 mb-1">Approved — ready to apply ({{ $approvedRequests->count() }})</h3>
+    <p class="text-xs text-green-700 dark:text-green-300 mb-4">These requests were approved by the Directress. Applying posts the discount to the ledger.</p>
+    <div class="overflow-x-auto bg-white dark:bg-[#1A1E3B] rounded-lg border border-green-100 dark:border-[#2A2F58]">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50 dark:bg-[#161A33]">
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Student</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Amount</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Approved by</th>
+                    <th class="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @foreach($approvedRequests as $req)
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2">
+                        <div class="font-medium text-gray-900">{{ $req->ledger->student->first_name }} {{ $req->ledger->student->last_name }}</div>
+                        <div class="text-xs text-gray-500">{{ $req->ledger->student->user->email ?? '' }}</div>
+                    </td>
+                    <td class="px-4 py-2 text-gray-600">{{ \App\Models\DiscountRequest::TYPES[$req->discount_type] ?? $req->discount_type }}</td>
+                    <td class="px-4 py-2 text-right font-medium">₱{{ number_format($req->discount_amount, 2) }}</td>
+                    <td class="px-4 py-2 text-xs text-gray-500">{{ $req->reviewer?->name ?? '—' }}</td>
+                    <td class="px-4 py-2 text-center">
+                        <form method="POST" action="{{ route('cashier.discounts.apply', $req) }}" onsubmit="return confirm('Apply this approved discount to the ledger?')" class="inline">
+                            @csrf
+                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg">Apply</button>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
 
 <div x-data="ajaxTable('{{ route('cashier.discounts') }}', { search: '{{ request('search') }}' })">
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
@@ -39,59 +88,4 @@
         <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
-
-<div x-data="{ open: false, ledgerId: null, discountType: 'honor', discountAmount: 0, totalAssessed: 0, discountPercent: 0 }"
-     x-show="open" x-cloak class="fixed inset-0 z-50"
-     @open-discount-modal.window="ledgerId = $event.detail.id; discountType = $event.detail.type || 'honor'; discountAmount = $event.detail.amount || 0; totalAssessed = $event.detail.total; discountPercent = totalAssessed > 0 ? Math.round((discountAmount / totalAssessed) * 100) : 0; open = true;">
-    <div class="fixed inset-0 bg-black/40" @click="open = false"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-[#1A1E3B] rounded-2xl shadow-xl max-w-md w-full p-6" @click.stop>
-            <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6] mb-4">Update Discount</h3>
-            <form :action="'{{ url('/cashier/discounts') }}/' + ledgerId" method="POST">
-                @csrf
-                @method('POST')
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-[#C1C4DC] mb-1">Discount</label>
-                        <div class="flex gap-2">
-                            <button type="button" @click="discountPercent = 0; discountAmount = 0; discountType = 'honor';"
-                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
-                                    :class="discountPercent === 0 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white dark:bg-[#1A1E3B] text-gray-700 dark:text-[#C1C4DC] border-gray-300 dark:border-[#3B4172] hover:border-gray-400'">
-                                None
-                            </button>
-                            <button type="button" @click="discountPercent = 30; discountAmount = Math.round(totalAssessed * 0.30 * 100) / 100; discountType = 'other';"
-                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
-                                    :class="discountPercent === 30 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-[#1A1E3B] text-gray-700 dark:text-[#C1C4DC] border-gray-300 dark:border-[#3B4172] hover:border-gray-400'">
-                                30%
-                            </button>
-                            <button type="button" @click="discountPercent = 50; discountAmount = Math.round(totalAssessed * 0.50 * 100) / 100; discountType = 'other';"
-                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
-                                    :class="discountPercent === 50 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-[#1A1E3B] text-gray-700 dark:text-[#C1C4DC] border-gray-300 dark:border-[#3B4172] hover:border-gray-400'">
-                                50%
-                            </button>
-                            <button type="button" @click="discountPercent = 100; discountAmount = totalAssessed; discountType = 'other';"
-                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
-                                    :class="discountPercent === 100 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-[#1A1E3B] text-gray-700 dark:text-[#C1C4DC] border-gray-300 dark:border-[#3B4172] hover:border-gray-400'">
-                                100%
-                            </button>
-                        </div>
-                        <input type="hidden" name="discount_type" :value="discountType">
-                        <input type="hidden" name="discount_amount" :value="discountAmount">
-                        <p class="text-xs text-blue-600 mt-1" x-show="discountPercent > 0" x-text="discountPercent + '% of ₱' + totalAssessed.toLocaleString('en-PH', {minimumFractionDigits: 2}) + ' = -₱' + discountAmount.toLocaleString('en-PH', {minimumFractionDigits: 2})"></p>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" @click="open = false" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-[#C1C4DC] bg-gray-100 dark:bg-[#23274C] rounded-lg hover:bg-gray-200 dark:hover:bg-[#2A2F58]">Cancel</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">Save Discount</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-function openDiscountModal(id, type, amount, total) {
-    window.dispatchEvent(new CustomEvent('open-discount-modal', { detail: { id, type, amount, total } }));
-}
-</script>
 @endsection

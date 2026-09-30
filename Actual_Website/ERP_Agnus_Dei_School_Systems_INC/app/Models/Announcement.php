@@ -16,11 +16,13 @@ class Announcement extends Model
         'type',
         'date',
         'is_published',
+        'directress_seen_at',
     ];
 
     protected $casts = [
         'date' => 'datetime',
         'is_published' => 'boolean',
+        'directress_seen_at' => 'datetime',
     ];
 
     public function admin()

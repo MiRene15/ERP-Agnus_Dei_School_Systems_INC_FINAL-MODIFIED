@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('breadcrumbs')
-    <a href="{{ route('admin.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
+    <a href="{{ request()->routeIs('principal.*') ? route('principal.dashboard') : route('registrar.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
     <span class="opacity-40">/</span>
     <span class="current">Subjects</span>
 @endsection
@@ -12,7 +12,11 @@
         <h2 class="text-2xl font-bold text-gray-900">Subjects</h2>
         <p class="text-gray-600 mt-1">View and manage subjects by grade level.</p>
     </div>
-    <a href="{{ route('admin.subjects.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">+ Add Subject</a>
+    @if(empty($readOnly))
+    <a href="{{ route('registrar.subjects.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">+ Add Subject</a>
+    @else
+    <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">Read-only oversight</span>
+    @endif
 </div>
 
 @if(session('success'))
@@ -22,7 +26,7 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
-<div x-data="ajaxTable('{{ route('admin.subjects.index') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
+<div x-data="ajaxTable('{{ request()->routeIs('principal.*') ? route('principal.subjects.index') : route('registrar.subjects.index') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
@@ -39,15 +43,16 @@
         </form>
     </div>
 
+    @if(empty($readOnly))
     <div class="mb-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <details>
             <summary class="cursor-pointer text-sm font-semibold text-gray-700">Import from CSV (hybrid — manual stays)</summary>
             <div class="mt-3 flex flex-col gap-3">
                 <p class="text-xs text-gray-500">CSV: <code>subject_code,name,grade_level,category</code> — category = Core/Contextualized/Specialized/TVL. Duplicates skipped.</p>
                 <div class="flex gap-2 items-center flex-wrap">
-                    <a href="{{ route('admin.subjects.template') }}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Download template</a>
+                    <a href="{{ route('registrar.subjects.template') }}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Download template</a>
                 </div>
-                <form method="POST" action="{{ route('admin.subjects.import') }}" enctype="multipart/form-data" class="flex gap-2 items-center flex-wrap">
+                <form method="POST" action="{{ route('registrar.subjects.import') }}" enctype="multipart/form-data" class="flex gap-2 items-center flex-wrap">
                     @csrf
                     <input type="file" name="file" accept=".csv,.txt" required class="text-sm border border-gray-300 rounded-lg px-3 py-1.5">
                     <button type="submit" class="px-4 py-1.5 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Import CSV</button>
@@ -61,6 +66,7 @@
             </div>
         </details>
     </div>
+    @endif
 
     <!-- Skeleton loading -->
     <div x-show="loading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">

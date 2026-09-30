@@ -29,20 +29,23 @@ class SubjectController extends Controller
         $subjects = $query->orderBy('grade_level')->orderBy('name')->get()->groupBy('grade_level');
         $gradeLevels = ['All', 'Kinder','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12','SHS'];
 
+        // Principal browses read-only (Registrar owns subjects + sections together).
+        $readOnly = request()->routeIs('principal.*');
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.admin.partials.subjects-index-results', compact('subjects', 'gradeLevels'))->render(),
+                'html' => view('portal.registrar.partials.subjects-index-results', compact('subjects', 'gradeLevels', 'readOnly'))->render(),
             ]);
         }
 
-        return view('portal.admin.subjects.index', compact('subjects', 'gradeLevels'));
+        return view('portal.registrar.subjects.index', compact('subjects', 'gradeLevels', 'readOnly'));
     }
 
     public function create()
     {
         $categories = ['Core', 'Contextualized', 'Specialized', 'TVL'];
         $gradeLevels = ['Kinder','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12','SHS'];
-        return view('portal.admin.subjects.create', compact('categories', 'gradeLevels'));
+        return view('portal.registrar.subjects.create', compact('categories', 'gradeLevels'));
     }
 
     public function store(Request $request)
@@ -58,7 +61,7 @@ class SubjectController extends Controller
 
         log_activity(new \App\Models\Subject, 'Created', "Created subject: {$data['subject_code']} — {$data['name']}");
 
-        return redirect()->route('admin.subjects.index')
+        return redirect()->route('registrar.subjects.index')
             ->with('success', "Subject {$data['subject_code']} — {$data['name']} created.");
     }
 
@@ -66,7 +69,7 @@ class SubjectController extends Controller
     {
         $categories = ['Core', 'Contextualized', 'Specialized', 'TVL'];
         $gradeLevels = ['Kinder','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12','SHS'];
-        return view('portal.admin.subjects.edit', compact('subject', 'categories', 'gradeLevels'));
+        return view('portal.registrar.subjects.edit', compact('subject', 'categories', 'gradeLevels'));
     }
 
     public function update(Request $request, Subject $subject)
@@ -82,7 +85,7 @@ class SubjectController extends Controller
 
         log_activity($subject, 'Updated', "Updated subject: {$data['subject_code']}");
 
-        return redirect()->route('admin.subjects.index')
+        return redirect()->route('registrar.subjects.index')
             ->with('success', "Subject {$data['subject_code']} updated.");
     }
 

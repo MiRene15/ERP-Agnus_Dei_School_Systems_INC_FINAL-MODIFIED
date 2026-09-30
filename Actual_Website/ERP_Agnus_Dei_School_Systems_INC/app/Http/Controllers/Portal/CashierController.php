@@ -381,13 +381,19 @@ class CashierController extends Controller
 
         $paymentYears = $allPayments->map(fn($p) => \Carbon\Carbon::parse($p->payment_date)->format('Y'))->unique()->sortDesc()->values()->all();
 
+        // Graduation-fee assignments for this student — Cashier marks paid here.
+        $gradFeeAssignments = \App\Models\StudentGraduationFee::with('graduationFee')
+            ->where('student_id', $student->id)
+            ->orderByDesc('id')
+            ->get();
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal'))->render(),
+                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments'))->render(),
             ]);
         }
 
-        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal'));
+        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments'));
     }
 
     public function collectionsReport(Request $request)
@@ -539,32 +545,69 @@ class CashierController extends Controller
             '' => 'None',
         ];
 
+        // Directress-approved requests awaiting Cashier application (two-step discounts).
+        $approvedRequests = \App\Models\DiscountRequest::with('ledger.student.user', 'ledger.student.enrollments.section', 'requester', 'reviewer')
+            ->where('status', \App\Models\DiscountRequest::STATUS_APPROVED)
+            ->latest()
+            ->get();
+
+        // Ledgers that already have an open (pending/approved) request, to shape row actions.
+        $openRequestLedgerIds = \App\Models\DiscountRequest::whereIn('status', [\App\Models\DiscountRequest::STATUS_PENDING, \App\Models\DiscountRequest::STATUS_APPROVED])
+            ->pluck('student_ledger_id')
+            ->flip();
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.discounts-results', compact('ledgers', 'discountTypes'))->render(),
+                'html' => view('portal.cashier.partials.discounts-results', compact('ledgers', 'discountTypes', 'approvedRequests', 'openRequestLedgerIds'))->render(),
             ]);
         }
 
-        return view('portal.cashier.discounts', compact('ledgers', 'discountTypes'));
+        return view('portal.cashier.discounts', compact('ledgers', 'discountTypes', 'approvedRequests', 'openRequestLedgerIds'));
     }
 
-    public function updateDiscount(Request $request, StudentLedger $ledger)
+    /**
+     * Apply a Directress-approved discount request. Cashier never grants directly —
+     * every discount on this page comes from an approved request.
+     */
+    public function applyDiscount(\App\Models\DiscountRequest $discountRequest)
     {
-        $data = $request->validate([
-            'discount_type' => 'required|in:honor,sibling,esc,other',
-            'discount_amount' => 'required|numeric|min:0',
-        ]);
+        if ($discountRequest->status !== \App\Models\DiscountRequest::STATUS_APPROVED) {
+            return back()->with('error', 'Only Directress-approved requests can be applied.');
+        }
 
-        $discountAmount = min((float) $data['discount_amount'], $ledger->total_assessed);
+        $ledger = $discountRequest->ledger;
+        $discountAmount = min((float) $discountRequest->discount_amount, (float) $ledger->total_assessed);
 
         $ledger->update([
-            'discount_type' => $data['discount_type'],
+            'discount_type' => $discountRequest->discount_type,
             'discount_applied' => $discountAmount,
             'balance' => max(0, $ledger->total_assessed - $ledger->total_paid - $discountAmount),
         ]);
 
-        log_activity($ledger->student, 'Discount Updated', "Discount updated: {$data['discount_type']} — ₱" . number_format($discountAmount, 2));
+        $discountRequest->update([
+            'status' => \App\Models\DiscountRequest::STATUS_APPLIED,
+            'applied_at' => now(),
+        ]);
 
-        return back()->with('success', 'Discount updated for ' . $ledger->student->first_name . ' ' . $ledger->student->last_name . '.');
+        $student = $ledger->student;
+        $studentName = $student ? $student->first_name . ' ' . $student->last_name : 'Student #' . $ledger->student_id;
+        $reviewer = $discountRequest->reviewer?->name ?? 'Directress';
+        log_activity($student ?? $ledger, 'Discount Applied', auth()->user()->name . " (Cashier) applied the approved {$discountRequest->discount_type} discount (₱" . number_format($discountAmount, 2) . ") for {$studentName}. Approved by {$reviewer}.");
+
+        return back()->with('success', 'Discount applied for ' . $studentName . '.');
+    }
+
+    /**
+     * Graduation-fee paid marking — Cashier only (moved from Directress:
+     * setting the price and marking paid must not be the same person).
+     */
+    public function graduationFeesTogglePaid(\App\Models\StudentGraduationFee $assignment)
+    {
+        $assignment->paid = !$assignment->paid;
+        $assignment->save();
+
+        log_activity($assignment, 'Graduation Fee Payment Toggled', auth()->user()->name . ' (Cashier) toggled paid status for student #' . $assignment->student_id . ' on "' . $assignment->graduationFee->name . '".');
+
+        return back()->with('success', 'Payment status updated.');
     }
 }
