@@ -1,6 +1,6 @@
 # Role & Process Reform Plan — Separation of Duties — 2026-09-30
 
-**Status:** ALL PHASES IMPLEMENTED LIVE 2026-10-01. Phases 1+2 committed (held per request); Phases 3+4 below.
+**Status:** ALL PHASES IMPLEMENTED LIVE AND PUSHED 2026-10-01 (commits `2a0911a` phases 1+2, `394f40f` phases 3+4, `0e85c7c` follow-ups).
 
 ## Guiding principle
 

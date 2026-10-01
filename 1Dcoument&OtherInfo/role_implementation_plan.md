@@ -1,5 +1,7 @@
 # Role Implementation Plan — Agnus Dei School ERP
 
+> **SUPERSEDED 2026-10-01** — this was the original role-separation proposal. The reform that actually shipped (`role_process_reform_plan_20260930.md`, all 4 phases + follow-ups live) overturned three of its calls below: **Subjects CRUD moved to Registrar** (not STAY with IT), **Sections CRUD moved to Registrar** (not STAY), **IT Confirmations (`/admin/pending-accounts`) removed entirely** (not STAY — clearance is now derived from balance by `LedgerService`), and **Promotion became a 3-role workflow** (Registrar proposes → Principal approves → Directress signs off, not Registrar-only). The "Current Role Definitions" table describes the pre-reform system. Kept for history — do not build from this.
+
 ## Overview
 
 Currently all "back-office" functions live under `role_id: 1` (Admin). The School Directress and Principal are also assigned role 1. This plan separates them into dedicated roles and redistributes functionality so Admin keeps only **technical/IT** responsibilities.

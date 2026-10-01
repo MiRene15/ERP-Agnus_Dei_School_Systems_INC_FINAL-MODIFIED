@@ -52,6 +52,8 @@ Capture `students.max(id)` / `users.max(id)` before the run; cleanup = delete ro
 
 **Final counts:** 503 users, 475 students, 450 active enrollments, 3,225 enrollment_subject pivots, 473 ledgers, 491 payments, 9,657 grades, 38,624 assessments.
 
+> **Later note (2026-10-01, verified live):** distribution claims above still hold exactly — **450 Active enrollments, every section at 15**; grades 9,657 and payments 491 unchanged. Users/students have since grown to 516/488 from manual browser testing (injection/XSS probe accounts via public inquiry) — pre-admission accounts with no enrollments, so the scatter distribution is untouched. Left as-is pending a housekeeping decision.
+
 ---
 
 # Follow-up — Full Linked Information for the 308 (Session 56, 2026-09-29)

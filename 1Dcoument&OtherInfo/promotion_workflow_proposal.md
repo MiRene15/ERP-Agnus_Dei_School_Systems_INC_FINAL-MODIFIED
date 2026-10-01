@@ -1,5 +1,7 @@
 # Promotion Workflow Proposal — Cleaner Status Lifecycle
 
+> **SUPERSEDED 2026-10-01** — promotion was implemented differently: a 3-role handoff (`PromotionWorkflowController` + `promotion_proposals`: Registrar proposes → Principal approves → Directress signs off and the system executes via `PromotionService`), plus clearance Holds that block execution. The `admin/promotion` page this proposal designs no longer exists. Kept for history — the lifecycle/status analysis in §2.1 may still be useful.
+
 > **Status: PROPOSAL — awaiting go signal. No code has been changed.**
 > Covers: Promote, Retain, Graduate, Transfer (Transfer Out), and Dropout.
 

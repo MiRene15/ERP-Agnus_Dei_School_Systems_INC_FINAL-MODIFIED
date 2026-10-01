@@ -81,10 +81,14 @@ Priority legend: HIGH = blocks/corrupts core operations · MEDIUM = significant 
 - **Add (MEDIUM):** Printable/reprintable receipt (PDF).
 
 > **Discount management UI: FIXED 2026-08-04** — `cashier/discounts` page, `discount_type` column, Alpine.js modal, preserves discount across payments.
+>
+> **SUPERSEDED 2026-10-01** — direct discount grants were removed by the role reform. Discounts are now two-step (`discount_requests`: Cashier/Registrar requests with proof → Directress approves → Cashier applies); the modal and `cashier.discounts.update` route are deleted. See `role_process_reform_plan_20260930.md`.
 
 ---
 
 ## 6. IT Confirmation (admin)
+
+> **SUPERSEDED 2026-10-01** — `AdminController@confirmAccount`/`confirmBatch` and the `pending-accounts` page were deleted by the role reform (IT no longer touches money). Clearance is now derived from balance by `LedgerService::refreshClearance()`; the "portal activated" email idea below was dropped with the flow. See `role_process_reform_plan_20260930.md`.
 
 - **Fix:** none found. `AdminController@confirmAccount` works.
 - **Add (LOW):** Send a "portal activated" email when the account is IT-confirmed.

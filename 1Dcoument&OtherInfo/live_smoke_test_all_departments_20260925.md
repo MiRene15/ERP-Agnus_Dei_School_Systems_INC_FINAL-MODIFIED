@@ -73,3 +73,13 @@ Public site (15 pages + inquiry write), 9 role logins + role-redirects, Admin (1
 - Admin collections export takes ~62–67 s (Supabase round-trips) — within the raised 120 s limit.
 - Manual browser testing ran in parallel during the session (1 pre-admission inquiry `ray.ramos@…`, 2 cashier payments ₱1,500) — cleanup only touches `SMOKE`-marked rows and ledger-1 test payments, so live data was preserved (baseline counts: users 195, students 167, payments 205).
 - After every round: cleanup verified **"no smoke-test rows remain"** (sections/announcements/schedules/books/loans/clinic logs/inquiries/test payment reverted/9 API tokens deleted; ledger 1 restored from snapshot).
+
+## Later runs (route map changed by the role reform — session-54 record above kept intact)
+
+| Date | Result | What changed |
+|------|--------|--------------|
+| 2026-09-30 | **231/231 PASS** | Reform Phases 1+2: removed admin routes asserted 404 (`pending-accounts`, `promotion`, `subjects`); subjects/promotion moved to Registrar; 2-step discounts; promotion handoff; grade unlocks; announcement awareness (+12 tests) |
+| 2026-10-01 | **235/235 PASS** | Reform Phases 3+4: registrar fee-assignment, cashier refunds, teacher attendance, holds-aware student report-card (fixed harness student carries a real overdue library hold → block + reasons asserted) |
+| 2026-10-01 | **237/237 PASS** | Reform follow-ups: principal teacher-assignments + subject-approvals pages |
+
+Route-map deltas vs the session-54 matrix above: Admin lost `pending-accounts`, `subjects/*`, `promotion/*` (IT confirmation, payment confirm, promotion, subject powers removed); `registrar/subjects/*` added (moved from Admin); `registrar/promotion` (propose), `principal/promotion` (approve), `directress/promotion` (sign-off) replaced `admin/promotion`; `discount-requests` (registrar/cashier file, directress approves) + cashier apply-only discounts replaced direct discount edits; `registrar/grade-unlocks` + `teacher/grade-unlocks`; `directress/announcements` (acknowledge); `registrar/fee-assignment`; `cashier/refunds` + payment void; `teacher/classes/{id}/attendance`; `nurse/logs/{id}/close`; `principal/teacher-assignments`; `principal/subject-approvals`; directress one-by-one grad-fee assign removed (404). Per-run results live in `scripts/live_smoke/results.json`.
