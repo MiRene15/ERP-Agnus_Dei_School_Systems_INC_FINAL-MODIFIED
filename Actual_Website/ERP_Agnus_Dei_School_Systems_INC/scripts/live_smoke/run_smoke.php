@@ -300,6 +300,7 @@ if (!$skip('admin') && mark('admin')) {
     test($h, 'Admin', 'GET', '/admin/pending-accounts', ['x' => [404]]);
     test($h, 'Admin', 'GET', '/admin/promotion', ['x' => [404]]);
     test($h, 'Admin', 'GET', '/admin/subjects', ['x' => [404]]);
+    test($h, 'Admin', 'GET', '/registrar/dashboard', ['x' => [403]]);
     test($h, 'Admin', 'GET', '/admin/users');
     test($h, 'Admin', 'GET', '/admin/users/create');
     if ($acc['admin_edit_user_id']) test($h, 'Admin', 'GET', '/admin/users/' . $acc['admin_edit_user_id'] . '/edit');

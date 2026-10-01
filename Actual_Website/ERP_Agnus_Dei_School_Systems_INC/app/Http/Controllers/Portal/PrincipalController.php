@@ -80,11 +80,11 @@ class PrincipalController extends Controller
 
     public function schedulesStore(Request $request)
     {
+        // NOTE: teacher assignment lives on the Teachers page (assignTeacher) —
+        // schedule creation never changes who teaches the class.
         $data = $request->validate([
             'grade_level' => 'nullable|string|max:50',
             'section' => 'nullable|string|max:100',
-            'teacher_id' => 'nullable|exists:users,id',
-            'subject_id' => 'nullable|exists:subjects,id',
             'class_id' => 'required|exists:classes,id',
             'day_of_week' => 'required|in:Monday,Tuesday,Wednesday,Thursday,Friday',
             'start_time' => 'required|date_format:H:i',

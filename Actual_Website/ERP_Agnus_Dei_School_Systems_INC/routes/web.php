@@ -166,7 +166,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/registrar/grade-unlocks/{unlockRequest}/reject', [GradeUnlockController::class, 'reject'])->name('registrar.grade-unlocks.reject');
     });
 
-    Route::middleware(['role:1,2'])->group(function() {
+    Route::middleware(['role:2'])->group(function() {
         Route::get('/registrar/dashboard', [RegistrarController::class, 'index'])->name('registrar.dashboard');
         Route::get('/registrar/admissions', [RegistrarAdmissionController::class, 'index'])->name('registrar.admissions.index');
         Route::get('/registrar/admissions/{admission}', [RegistrarAdmissionController::class, 'show'])->name('registrar.admissions.show');
