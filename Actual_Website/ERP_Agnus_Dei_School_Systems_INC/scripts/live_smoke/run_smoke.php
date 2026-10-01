@@ -627,6 +627,8 @@ if (!$skip('principal') && mark('principal')) {
     // Role reform: Principal approves promotion, oversees subjects, reviews grade unlocks.
     test($h, 'Principal', 'GET', '/principal/promotion');
     test($h, 'Principal', 'GET', '/principal/subjects');
+    test($h, 'Principal', 'GET', '/principal/subject-approvals');
+    test($h, 'Principal', 'GET', '/principal/teacher-assignments');
     test($h, 'Principal', 'GET', '/registrar/grade-unlocks');
     if ($acc['announcement_id']) {
         test($h, 'Principal', 'GET', '/principal/announcements/' . $acc['announcement_id'] . '/edit');

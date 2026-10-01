@@ -223,6 +223,7 @@ class PromotionService
             $ledger->clearance_status = 'Uncleared';
             $ledger->it_confirmed_at = null;
             $ledger->save();
+            LedgerService::refreshClearance($ledger);
         }
     }
 

@@ -72,7 +72,7 @@ class FeeAssignmentController extends Controller
                 'discount_applied' => 0,
                 'total_paid' => 0,
                 'balance' => max(0, $total),
-                'clearance_status' => 'Uncleared',
+                'clearance_status' => $total > 0 ? 'Uncleared' : 'Cleared',
             ]);
             $created++;
         }

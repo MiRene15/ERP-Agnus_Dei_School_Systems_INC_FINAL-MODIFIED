@@ -141,4 +141,11 @@ Phases 3+4:
 - [x] Phase 3 holds engine live (all three hold sources block + student sees reasons)
 - [x] Phase 4 features live (attendance, receipts, breakdowns, bulk assign, refunds, private clinic reports)
 - [x] No role can complete a full money loop alone (grant + collect) — verified by permission audit (21 checks: directress cannot mark paid, cashier cannot grant solo, admin has no money routes; withdrawal payouts split registrar-approve/cashier-release)
-- [ ] Docs updated (CHANGELOG + sessions log), committed, pushed
+- [x] Docs updated (CHANGELOG + sessions log), committed, pushed
+
+## Follow-ups (2026-10-01, live Supabase)
+
+- **Clearance auto-update (Phase 1 loose end, fixed):** nothing set `Cleared` after IT confirmation was removed, so reminders would nag settled accounts and the ledger showed a stale "IT Confirmation". New `LedgerService::refreshClearance()` derives clearance from balance (cents-rounded) after every money mutation (payment, refund release, void, discount apply, promotion fee carry, bulk assign); backfilled live (17 → Cleared, 66 → Uncleared); student ledger row relabeled to Clearance. Verified 16-check flow incl. full-payment→Cleared→void→Uncleared cycle. Bug found: float dust (1.8E-12) kept settled accounts Uncleared — fixed with cents rounding.
+- **Teacher-class assignment (Principal owns it now):** verified no UI ever wrote `classes.teacher_id` (the schedule form even validated-then-dropped it). New Principal "Teachers" page (grade filter, per-row teacher select with Unassigned option, non-teacher users rejected); assignments are audit-logged and feed the existing schedule conflict detection. Verified assign → restore → reject-non-teacher.
+- **Subject-change approval:** Registrar create/update/delete/import now stage `subject_change_requests` instead of touching live subjects; Principal inbox approves (applies with re-validation) or rejects; Registrar sees pending items atop the subjects index. Verified full cycle create→approve→delete→approve (zero residue) plus update→reject.
+- **Infra note (not code):** public inquiry POST 500'd twice from combined slowness (Resend API SSL hang — cURL error 60, missing CA bundle on the Windows PHP — plus slow Supabase queries) exceeding the 30 s budget; synchronous `Mail::send` in the request is the exposure. Re-run passed 237/237. Proper fixes: configure `curl.cainfo` CA bundle in php.ini and/or move inquiry mail to a queue worker — left for a hosting/infra pass.

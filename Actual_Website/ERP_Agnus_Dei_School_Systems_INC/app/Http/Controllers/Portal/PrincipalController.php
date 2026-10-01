@@ -482,4 +482,52 @@ class PrincipalController extends Controller
         $announcement->delete();
         return back()->with('success', 'Announcement deleted.');
     }
+
+    // ─── Teacher assignments (Principal owns who teaches what) ──
+    public function teacherAssignments(Request $request)
+    {
+        $selectedGrade = $request->input('grade_level', 'All');
+
+        $query = Classes::with('subject', 'teacher')
+            ->where('school_year', active_school_year())
+            ->where('status', 'active');
+
+        if ($selectedGrade !== 'All') {
+            $query->where('grade_level', $selectedGrade);
+        }
+
+        $classes = $query->orderBy('grade_level')->orderBy('section')->orderBy('subject_id')->get()
+            ->groupBy('grade_level');
+
+        $gradeLevels = Classes::where('school_year', active_school_year())
+            ->where('status', 'active')
+            ->distinct()->orderBy('grade_level')->pluck('grade_level');
+
+        $teachers = \App\Models\User::where('role_id', 4)->where('status', 'active')->orderBy('name')->get();
+
+        return view('portal.principal.teacher-assignments.index', compact('classes', 'gradeLevels', 'teachers', 'selectedGrade'));
+    }
+
+    public function assignTeacher(Request $request, Classes $class)
+    {
+        $data = $request->validate([
+            'teacher_id' => 'nullable|exists:users,id',
+        ]);
+
+        if ($data['teacher_id']) {
+            $teacher = \App\Models\User::find($data['teacher_id']);
+            if (!$teacher || (int) $teacher->role_id !== 4) {
+                return back()->with('error', 'Selected user is not a teacher account.');
+            }
+        }
+
+        $old = $class->teacher?->name ?? 'Unassigned';
+        $class->update(['teacher_id' => $data['teacher_id']]);
+        $new = $data['teacher_id'] ? \App\Models\User::find($data['teacher_id'])->name : 'Unassigned';
+
+        $label = ($class->subject->name ?? 'Class') . " ({$class->grade_level} {$class->section})";
+        log_activity($class, 'Teacher Assigned', auth()->user()->name . " (Principal) assigned {$label}: {$old} → {$new}.");
+
+        return back()->with('success', "Teacher updated for {$label}: {$new}.");
+    }
 }

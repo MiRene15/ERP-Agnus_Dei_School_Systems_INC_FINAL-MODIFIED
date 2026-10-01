@@ -26,6 +26,32 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
+@if(empty($readOnly) && ($pendingRequests ?? collect())->isNotEmpty())
+<div class="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+    <h3 class="text-sm font-semibold text-amber-800 mb-2">Waiting for Principal approval ({{ $pendingRequests->count() }}) — live subjects unchanged until approved</h3>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-amber-200">
+                    <th class="text-left py-1 px-2 font-medium text-amber-700">Action</th>
+                    <th class="text-left py-1 px-2 font-medium text-amber-700">Subject</th>
+                    <th class="text-left py-1 px-2 font-medium text-amber-700">Requested</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($pendingRequests as $req)
+                <tr class="border-b border-amber-100 last:border-0">
+                    <td class="py-1 px-2 text-amber-800 font-medium">{{ ucfirst($req->action) }}</td>
+                    <td class="py-1 px-2 text-gray-700">{{ $req->subject?->subject_code ?? ($req->payload['subject_code'] ?? '?') }} — {{ $req->subject?->name ?? ($req->payload['name'] ?? '') }}</td>
+                    <td class="py-1 px-2 text-xs text-gray-500">{{ $req->created_at->format('M d, Y') }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 <div x-data="ajaxTable('{{ request()->routeIs('principal.*') ? route('principal.subjects.index') : route('registrar.subjects.index') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">

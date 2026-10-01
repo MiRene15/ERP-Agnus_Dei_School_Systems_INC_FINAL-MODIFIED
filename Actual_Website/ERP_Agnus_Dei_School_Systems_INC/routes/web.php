@@ -23,8 +23,9 @@ use App\Http\Controllers\Portal\DirectressController;
 use App\Http\Controllers\Portal\PrincipalController;
 use App\Http\Controllers\Portal\DiscountRequestController;
 use App\Http\Controllers\Portal\FeeAssignmentController;
-use App\Http\Controllers\Portal\PromotionWorkflowController;
 use App\Http\Controllers\Portal\GradeUnlockController;
+use App\Http\Controllers\Portal\PromotionWorkflowController;
+use App\Http\Controllers\Portal\SubjectApprovalController;
 use App\Http\Controllers\Admin\UserController;
 
 /*
@@ -366,6 +367,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/principal/promotion/{proposal}/reject', [PromotionWorkflowController::class, 'principalReject'])->name('principal.promotion.reject');
         // Subjects oversight (read-only) — Registrar owns, Principal reviews.
         Route::get('/principal/subjects', [\App\Http\Controllers\Admin\SubjectController::class, 'index'])->name('principal.subjects.index');
+        // Subject-change approvals — Registrar stages, Principal applies.
+        Route::get('/principal/subject-approvals', [SubjectApprovalController::class, 'index'])->name('principal.subject-approvals.index');
+        Route::post('/principal/subject-approvals/{changeRequest}/approve', [SubjectApprovalController::class, 'approve'])->name('principal.subject-approvals.approve');
+        Route::post('/principal/subject-approvals/{changeRequest}/reject', [SubjectApprovalController::class, 'reject'])->name('principal.subject-approvals.reject');
+        // Teacher assignments — Principal owns who teaches what.
+        Route::get('/principal/teacher-assignments', [PrincipalController::class, 'teacherAssignments'])->name('principal.teacher-assignments.index');
+        Route::patch('/principal/teacher-assignments/{class}', [PrincipalController::class, 'assignTeacher'])->name('principal.teacher-assignments.assign');
         // Announcements
         Route::get('/principal/announcements', [PrincipalController::class, 'announcements'])->name('principal.announcements');
         Route::get('/principal/announcements/create', [PrincipalController::class, 'announcementsCreate'])->name('principal.announcements.create');

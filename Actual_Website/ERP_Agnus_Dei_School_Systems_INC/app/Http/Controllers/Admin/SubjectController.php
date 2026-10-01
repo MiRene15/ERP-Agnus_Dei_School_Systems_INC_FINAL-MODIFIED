@@ -32,13 +32,19 @@ class SubjectController extends Controller
         // Principal browses read-only (Registrar owns subjects + sections together).
         $readOnly = request()->routeIs('principal.*');
 
+        // Registrar's open change requests (change approval workflow).
+        $pendingRequests = $readOnly ? collect() : \App\Models\SubjectChangeRequest::with('subject', 'requester')
+            ->where('status', \App\Models\SubjectChangeRequest::STATUS_PENDING)
+            ->latest()
+            ->get();
+
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.registrar.partials.subjects-index-results', compact('subjects', 'gradeLevels', 'readOnly'))->render(),
             ]);
         }
 
-        return view('portal.registrar.subjects.index', compact('subjects', 'gradeLevels', 'readOnly'));
+        return view('portal.registrar.subjects.index', compact('subjects', 'gradeLevels', 'readOnly', 'pendingRequests'));
     }
 
     public function create()
@@ -57,12 +63,27 @@ class SubjectController extends Controller
             'category'     => 'required|in:Core,Contextualized,Specialized,TVL',
         ]);
 
-        Subject::create($data);
+        // Registrar stages; Principal approves before anything goes live.
+        $dup = \App\Models\SubjectChangeRequest::where('action', \App\Models\SubjectChangeRequest::ACTION_CREATE)
+            ->where('status', \App\Models\SubjectChangeRequest::STATUS_PENDING)
+            ->where('payload->subject_code', $data['subject_code'])
+            ->exists();
+        if ($dup) {
+            return back()->with('error', "Subject code {$data['subject_code']} already has a pending creation request.")->withInput();
+        }
 
-        log_activity(new \App\Models\Subject, 'Created', "Created subject: {$data['subject_code']} — {$data['name']}");
+        $change = \App\Models\SubjectChangeRequest::create([
+            'action' => \App\Models\SubjectChangeRequest::ACTION_CREATE,
+            'subject_id' => null,
+            'payload' => $data,
+            'requested_by' => auth()->id(),
+            'status' => \App\Models\SubjectChangeRequest::STATUS_PENDING,
+        ]);
+
+        log_activity($change, 'Subject Creation Requested', auth()->user()->name . " (Registrar) requested new subject: {$data['subject_code']} — {$data['name']}.");
 
         return redirect()->route('registrar.subjects.index')
-            ->with('success', "Subject {$data['subject_code']} — {$data['name']} created.");
+            ->with('success', "Subject {$data['subject_code']} sent to the Principal for approval.");
     }
 
     public function edit(Subject $subject)
@@ -81,12 +102,27 @@ class SubjectController extends Controller
             'category'     => 'required|in:Core,Contextualized,Specialized,TVL',
         ]);
 
-        $subject->update($data);
+        // Registrar stages; Principal approves before anything goes live.
+        $open = \App\Models\SubjectChangeRequest::where('subject_id', $subject->id)
+            ->whereIn('action', [\App\Models\SubjectChangeRequest::ACTION_UPDATE, \App\Models\SubjectChangeRequest::ACTION_DELETE])
+            ->where('status', \App\Models\SubjectChangeRequest::STATUS_PENDING)
+            ->exists();
+        if ($open) {
+            return back()->with('error', "Subject {$subject->subject_code} already has a pending change request.")->withInput();
+        }
 
-        log_activity($subject, 'Updated', "Updated subject: {$data['subject_code']}");
+        $change = \App\Models\SubjectChangeRequest::create([
+            'action' => \App\Models\SubjectChangeRequest::ACTION_UPDATE,
+            'subject_id' => $subject->id,
+            'payload' => $data,
+            'requested_by' => auth()->id(),
+            'status' => \App\Models\SubjectChangeRequest::STATUS_PENDING,
+        ]);
+
+        log_activity($change, 'Subject Update Requested', auth()->user()->name . " (Registrar) requested changes to subject: {$subject->subject_code}.");
 
         return redirect()->route('registrar.subjects.index')
-            ->with('success', "Subject {$data['subject_code']} updated.");
+            ->with('success', "Changes to {$subject->subject_code} sent to the Principal for approval.");
     }
 
     public function template()
@@ -127,13 +163,27 @@ class SubjectController extends Controller
             ]);
             if ($v->fails()) { $errors[]="Line $line: ".implode(', ',$v->errors()->all()); continue; }
             if (Subject::where('subject_code',$row['subject_code'])->exists()) { $skipped[]="Line $line: subject_code {$row['subject_code']} already exists — skipped."; continue; }
-            try { Subject::create($row); $imported++; } catch (\Exception $e) { $errors[]="Line $line: ".$e->getMessage(); }
+            $pendingDup = \App\Models\SubjectChangeRequest::where('action', \App\Models\SubjectChangeRequest::ACTION_CREATE)
+                ->where('status', \App\Models\SubjectChangeRequest::STATUS_PENDING)
+                ->where('payload->subject_code', $row['subject_code'])->exists();
+            if ($pendingDup) { $skipped[]="Line $line: subject_code {$row['subject_code']} already has a pending request — skipped."; continue; }
+            // Imports are staged like manual creates: Principal approves before anything goes live.
+            try {
+                \App\Models\SubjectChangeRequest::create([
+                    'action' => \App\Models\SubjectChangeRequest::ACTION_CREATE,
+                    'subject_id' => null,
+                    'payload' => $row,
+                    'requested_by' => auth()->id(),
+                    'status' => \App\Models\SubjectChangeRequest::STATUS_PENDING,
+                ]);
+                $imported++;
+            } catch (\Exception $e) { $errors[]="Line $line: ".$e->getMessage(); }
         }
         fclose($handle);
-        $msg = "$imported subject(s) imported.";
+        $msg = "$imported subject(s) staged for Principal approval.";
         if ($skipped) $msg .= ' '.count($skipped).' skipped.';
         if ($errors) $msg .= ' Errors: '.implode(' | ',array_slice($errors,0,5)).(count($errors)>5?' (+'.(count($errors)-5).' more)':'');
-        log_activity(Subject::class, 'Subjects Imported', auth()->user()->name . ' imported ' . $imported . ' subject(s) via CSV' . ($skipped ? ' (' . count($skipped) . ' skipped)' : '') . ($errors ? ' (' . count($errors) . ' error(s))' : '') . '.');
+        log_activity(Subject::class, 'Subjects Import Staged', auth()->user()->name . ' staged ' . $imported . ' subject(s) via CSV for Principal approval' . ($skipped ? ' (' . count($skipped) . ' skipped)' : '') . ($errors ? ' (' . count($errors) . ' error(s))' : '') . '.');
         return back()->with($imported>0?'success':'error',$msg)->with('import_errors',$errors)->with('import_skipped',$skipped);
     }
 
@@ -142,8 +192,25 @@ class SubjectController extends Controller
         if ($subject->classes()->exists()) {
             return back()->with('error', 'Cannot delete — subject has active classes.');
         }
-        $subject->delete();
-        log_activity($subject, 'Deleted', "Deleted subject: {$subject->name}");
-        return back()->with('success', 'Subject deleted.');
+
+        // Registrar stages; Principal approves before anything goes live.
+        $open = \App\Models\SubjectChangeRequest::where('subject_id', $subject->id)
+            ->where('status', \App\Models\SubjectChangeRequest::STATUS_PENDING)
+            ->exists();
+        if ($open) {
+            return back()->with('error', "Subject {$subject->subject_code} already has a pending change request.");
+        }
+
+        $change = \App\Models\SubjectChangeRequest::create([
+            'action' => \App\Models\SubjectChangeRequest::ACTION_DELETE,
+            'subject_id' => $subject->id,
+            'payload' => null,
+            'requested_by' => auth()->id(),
+            'status' => \App\Models\SubjectChangeRequest::STATUS_PENDING,
+        ]);
+
+        log_activity($change, 'Subject Deletion Requested', auth()->user()->name . " (Registrar) requested deletion of subject: {$subject->subject_code} — {$subject->name}.");
+
+        return back()->with('success', "Deletion of {$subject->subject_code} sent to the Principal for approval.");
     }
 }

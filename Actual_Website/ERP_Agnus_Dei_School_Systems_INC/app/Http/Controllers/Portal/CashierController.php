@@ -266,6 +266,7 @@ class CashierController extends Controller
                     $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
 
                     $ledger->save();
+                    \App\Services\LedgerService::refreshClearance($ledger);
                 }
 
                 $receiptNumber = null;
@@ -584,6 +585,7 @@ class CashierController extends Controller
             'discount_applied' => $discountAmount,
             'balance' => max(0, $ledger->total_assessed - $ledger->total_paid - $discountAmount),
         ]);
+        \App\Services\LedgerService::refreshClearance($ledger->fresh());
 
         $discountRequest->update([
             'status' => \App\Models\DiscountRequest::STATUS_APPLIED,
@@ -650,6 +652,7 @@ class CashierController extends Controller
                 $ledger->total_paid = max(0, $ledger->total_paid - $refundAmount);
                 $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
                 $ledger->save();
+                \App\Services\LedgerService::refreshClearance($ledger);
 
                 $receiptNumber = 'REF-' . now()->format('Ymd') . '-' . str_pad($student->id, 5, '0', STR_PAD_LEFT);
 
@@ -704,6 +707,7 @@ class CashierController extends Controller
             $ledger->total_paid = max(0, $ledger->total_paid - $payment->amount_paid);
             $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
             $ledger->save();
+            \App\Services\LedgerService::refreshClearance($ledger);
 
             $student = $ledger->student;
             $name = $student ? $student->first_name . ' ' . $student->last_name : 'Student #' . $ledger->student_id;
