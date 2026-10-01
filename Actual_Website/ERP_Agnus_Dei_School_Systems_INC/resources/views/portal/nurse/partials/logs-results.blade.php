@@ -9,6 +9,7 @@
                 <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Treatment</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Notes</th>
                 <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Referred To</th>
+                <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#C1C4DC]">Case</th>
             </tr>
         </thead>
         <tbody>
@@ -23,10 +24,21 @@
                 <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $log->treatment ?? 'N/A' }}</td>
                 <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC] max-w-[200px] truncate" title="{{ $log->notes ?? '' }}">{{ \Illuminate\Support\Str::limit($log->notes ?? '', 50) ?: '—' }}</td>
                 <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $log->referred_to ?? '—' }}</td>
+                <td class="py-2 px-2">
+                    @if($log->is_open)
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Open — holds clearance</span>
+                        <form method="POST" action="{{ route('nurse.logs.close', $log) }}" class="inline ml-1">
+                            @csrf @method('PATCH')
+                            <button type="submit" class="px-2 py-0.5 text-xs font-medium text-green-600 hover:text-green-800">Close case</button>
+                        </form>
+                    @else
+                        <span class="text-xs text-gray-400">Closed</span>
+                    @endif
+                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="py-6 text-center text-gray-500 dark:text-[#8A90B0] text-sm">No clinic logs found.</td>
+                <td colspan="8" class="py-6 text-center text-gray-500 dark:text-[#8A90B0] text-sm">No clinic logs found.</td>
             </tr>
             @endforelse
         </tbody>

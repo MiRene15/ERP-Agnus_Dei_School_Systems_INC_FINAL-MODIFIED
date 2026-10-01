@@ -36,13 +36,16 @@ class StudentController extends Controller
 
         $student->load('ledger');
 
+        // Clearance holds (library / clinic / finance) — student sees why they are blocked.
+        $holds = \App\Services\HoldService::forStudent($student);
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears'))->render(),
+                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds'))->render(),
             ]);
         }
 
-        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears'));
+        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds'));
     }
 
     public function cor(Request $request)
@@ -170,12 +173,19 @@ class StudentController extends Controller
             ->where('school_year', $activeEnrollment->school_year)
             ->orderBy('term')->get();
 
+        // Latest approved/applied discount request, so the student sees the full breakdown.
+        $discountRequest = $student->ledger
+            ? \App\Models\DiscountRequest::with('reviewer')->where('student_ledger_id', $student->ledger->id)
+                ->whereIn('status', [\App\Models\DiscountRequest::STATUS_APPLIED, \App\Models\DiscountRequest::STATUS_APPROVED])
+                ->latest()->first()
+            : null;
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears'))->render(),
+                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears', 'discountRequest'))->render(),
             ]);
         }
 
-        return view('portal.student.ledger', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears'));
+        return view('portal.student.ledger', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears', 'discountRequest'));
     }
 }

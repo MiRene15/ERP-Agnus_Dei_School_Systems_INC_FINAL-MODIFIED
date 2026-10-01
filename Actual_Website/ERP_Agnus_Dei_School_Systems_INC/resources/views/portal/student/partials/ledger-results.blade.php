@@ -16,6 +16,11 @@
                 <span class="text-gray-600">Discount ({{ ucfirst($student->ledger->discount_type) }})</span>
                 <span class="font-medium text-green-600">-₱ {{ number_format($student->ledger->discount_applied, 2) }}</span>
             </div>
+            @if(!empty($discountRequest ?? null))
+            <div class="py-2 border-b border-gray-100">
+                <p class="text-xs text-gray-500">Approved {{ $discountRequest->reviewed_at?->format('M d, Y') ?? '' }} by {{ $discountRequest->reviewer?->name ?? 'Directress' }} — proof: {{ $discountRequest->proof_details }}</p>
+            </div>
+            @endif
             @endif
             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                 <span class="text-gray-600">Total Paid</span>
@@ -88,13 +93,18 @@
         @if($student->ledger && $student->ledger->payments->isNotEmpty())
         <ul class="divide-y divide-gray-100 text-sm">
             @foreach($student->ledger->payments->sortByDesc('created_at') as $payment)
+            @php
+                $rcpt = (string) $payment->receipt_number;
+                $kind = str_starts_with($rcpt, 'VOID-') ? ['Void reversal', 'bg-gray-100 text-gray-600'] : (str_starts_with($rcpt, 'REF-') ? ['Refund payout', 'bg-orange-100 text-orange-700'] : ['Payment', 'bg-green-100 text-green-700']);
+            @endphp
             <li class="py-3">
                 <div class="flex justify-between items-start">
                     <div>
-                        <p class="font-medium text-gray-900">₱ {{ number_format($payment->amount_paid, 2) }}</p>
+                        <p class="font-medium {{ $payment->amount_paid < 0 ? 'text-orange-600' : 'text-gray-900' }}">₱ {{ number_format($payment->amount_paid, 2) }}</p>
                         <p class="text-xs text-gray-500">{{ $payment->payment_date->format('M d, Y') }}</p>
-                        <p class="text-xs text-gray-400">Receipt: {{ $payment->receipt_number }}</p>
+                        <p class="text-xs text-gray-400">Receipt: {{ $payment->receipt_number }}{{ $payment->ar_number ? ' · AR: ' . $payment->ar_number : '' }}</p>
                     </div>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $kind[1] }}">{{ $kind[0] }}</span>
                 </div>
             </li>
             @endforeach

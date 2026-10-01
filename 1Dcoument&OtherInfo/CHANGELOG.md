@@ -1,5 +1,11 @@
 # Release Notes
 
+## [Unreleased] — Role Reform Phases 3+4: Holds Engine + Visibility — 2026-10-01
+- **Phase 3 (holds engine):** computed `HoldService` — library (overdue unreturned loans), clinic (open cases via new `clinic_logs.is_open/closed_at`; nurse marks open at log creation, closes from the list), finance (ledger balance > 0); students see reasons in a dashboard banner; holds block report cards (302 + reasons), re-enrollment (request + registrar approval), and promotion sign-off (HOLD badges on the propose page, batched in 3 queries)
+- **Phase 4:** attendance (`attendances` table + per-class date marking for teachers); receipts (Payment/Refund/Void badges + AR numbers) and discount breakdown (approver/date/proof) on the student ledger; bulk fee assignment for Registrar (missing tuition ledgers + per-fee grad-fee bulk; Directress one-by-one assign removed); withdrawal split (Registrar approves and computes refund, Cashier releases payout on a new Refunds page with `refund_released_by`) + payment void via offsetting VOID- reversal; Directress clinic reports aggregate-only (diagnosis panel, per-student rows, and detail export columns removed; open-cases count added)
+- **Verification:** holds 14/14, phase-4 flows 21/21 (both with full revert, zero residue); 2 bugs found and fixed (Withdrawal datetime cast 500, missing error flash on student dashboard); smoke harness updated → **235/235 PASS**
+- See `role_process_reform_plan_20260930.md`
+
 ## [Unreleased] — Role Reform Phases 1+2: Separation of Duties — 2026-09-30
 - **Phase 1 (permission removals):** Cashier lost admission-document viewing (route + controller check now Registrar-only); Directress lost paid-marking (grad-fee toggle moved to the Cashier financial page, Directress sees a badge); Admin/IT lost payment confirmation, promotion, and subjects (routes, methods, views deleted; dashboard Verification panel replaced with Students/active-year stats; welcome tutorial link fixed)
 - **Subjects → Registrar** (`registrar/subjects`, views moved under `portal/registrar/`); Principal gets a read-only subjects browser (full subject-change approval deferred, noted in plan)

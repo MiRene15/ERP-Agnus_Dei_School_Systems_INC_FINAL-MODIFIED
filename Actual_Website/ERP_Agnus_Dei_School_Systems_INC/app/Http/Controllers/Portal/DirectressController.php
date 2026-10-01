@@ -235,64 +235,6 @@ class DirectressController extends Controller
         return back()->with('success', 'Graduation fee deleted.');
     }
 
-    public function graduationFeesAssign(GraduationFee $graduationFee)
-    {
-        $query = Enrollment::with('student', 'section')
-            ->where('status', 'Active')
-            ->whereHas('section', function ($q) use ($graduationFee) {
-                if ($graduationFee->grade_level) {
-                    $q->where('grade_level', $graduationFee->grade_level);
-                }
-            });
-
-        if (request('search')) {
-            $search = request('search');
-            $query->whereHas('student', function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%");
-            });
-        }
-
-        $enrollments = $query->get();
-
-        $alreadyAssigned = StudentGraduationFee::where('graduation_fee_id', $graduationFee->id)
-            ->pluck('student_id')
-            ->toArray();
-
-        return view('portal.directress.graduation-fees.assign', compact('graduationFee', 'enrollments', 'alreadyAssigned'));
-    }
-
-    public function graduationFeesAssignStore(Request $request, GraduationFee $graduationFee)
-    {
-        $request->validate([
-            'student_ids' => 'required|array',
-        ]);
-
-        $totalPerStudent = $graduationFee->graduation_fee + $graduationFee->other_fees;
-
-        foreach ($request->student_ids as $enrollmentId) {
-            $enrollment = Enrollment::with('student')->find($enrollmentId);
-            if (!$enrollment) continue;
-
-            $exists = StudentGraduationFee::where('student_id', $enrollment->student_id)
-                ->where('graduation_fee_id', $graduationFee->id)
-                ->exists();
-
-            if (!$exists) {
-                StudentGraduationFee::create([
-                    'student_id' => $enrollment->student_id,
-                    'enrollment_id' => $enrollmentId,
-                    'graduation_fee_id' => $graduationFee->id,
-                    'amount' => $totalPerStudent,
-                ]);
-            }
-        }
-
-        log_activity('App\\Models\\GraduationFee', 'Graduation Fee Assigned', auth()->user()->name . ' assigned graduation fee to ' . count($request->student_ids) . ' student(s).');
-
-        return back()->with('success', 'Graduation fees assigned to selected students.');
-    }
-
     public function graduationFeesAssigned(GraduationFee $graduationFee)
     {
         $assignments = StudentGraduationFee::with('student', 'enrollment.section')
@@ -506,13 +448,14 @@ class DirectressController extends Controller
 
         $topSymptoms = $logs->pluck('symptoms')->filter()->flatMap(fn($s) => array_map('trim', explode(',', $s)))
             ->countBy()->sortDesc()->take(8);
-        $topDiagnosis = $logs->pluck('diagnosis')->filter()->countBy()->sortDesc()->take(8);
-        $recentLogs = $logs->take(20);
+        // Privacy: Directress sees totals and trends only — no per-student
+        // diagnosis details, no recent-visit rows. Full details stay with the clinic.
+        $openCases = $logs->where('is_open', true)->count();
 
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.directress.partials.clinic-reports-results', compact(
-                    'logs', 'totalVisits', 'uniquePatients', 'referralsOut', 'activeDays', 'byGrade', 'topSymptoms', 'topDiagnosis', 'recentLogs', 'dateFrom', 'dateTo'
+                    'logs', 'totalVisits', 'uniquePatients', 'referralsOut', 'activeDays', 'byGrade', 'topSymptoms', 'openCases', 'dateFrom', 'dateTo'
                 ))->render(),
             ]);
         }
@@ -631,24 +574,33 @@ class DirectressController extends Controller
             ->orderByDesc('visit_date')
             ->get();
         $filename = 'clinic_report_' . $dateFrom . '_to_' . $dateTo . '.csv';
-        log_activity(\App\Models\ClinicLog::class, 'Exported', auth()->user()->name . ' exported the clinic report CSV (' . $logs->count() . ' visit(s), ' . $dateFrom . ' to ' . $dateTo . ').');
+        log_activity(\App\Models\ClinicLog::class, 'Exported', auth()->user()->name . ' exported the clinic report CSV (aggregates, ' . $logs->count() . ' visit(s), ' . $dateFrom . ' to ' . $dateTo . ').');
+
+        // Privacy: aggregates only — no per-student diagnosis rows.
+        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
+        $byGrade = $logs->groupBy(fn($l) => $l->student?->enrollments->where('status', 'Active')->first()?->section?->grade_level ?? 'Unknown')
+            ->map->count()->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
+        $topSymptoms = $logs->pluck('symptoms')->filter()->flatMap(fn($s) => array_map('trim', explode(',', $s)))
+            ->countBy()->sortDesc()->take(10);
+
         $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
-        $callback = function () use ($logs) {
+        $callback = function () use ($logs, $byGrade, $topSymptoms, $dateFrom, $dateTo) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Visit Date', 'Student', 'Grade Level', 'Complaint', 'Symptoms', 'Diagnosis', 'Treatment', 'Referred To']);
-            foreach ($logs as $l) {
-                $student = $l->student;
-                $enrollment = $student?->enrollments->where('status', 'Active')->first();
-                fputcsv($file, [
-                    $l->visit_date,
-                    trim(($student?->first_name ?? '') . ' ' . ($student?->last_name ?? '')),
-                    $enrollment?->section?->grade_level ?? 'Unknown',
-                    $l->complaint ?? '',
-                    $l->symptoms ?? '',
-                    $l->diagnosis ?? '',
-                    $l->treatment ?? '',
-                    $l->referred_to ?? '',
-                ]);
+            fputcsv($file, ['Clinic Report (Aggregates)', $dateFrom . ' to ' . $dateTo]);
+            fputcsv($file, ['Metric', 'Value']);
+            fputcsv($file, ['Total Visits', $logs->count()]);
+            fputcsv($file, ['Unique Patients', $logs->pluck('student_id')->unique()->count()]);
+            fputcsv($file, ['Referred Out', $logs->whereNotNull('referred_to')->count()]);
+            fputcsv($file, ['Open Cases', $logs->where('is_open', true)->count()]);
+            fputcsv($file, []);
+            fputcsv($file, ['Visits by Grade', 'Count']);
+            foreach ($byGrade as $grade => $count) {
+                fputcsv($file, [$grade, $count]);
+            }
+            fputcsv($file, []);
+            fputcsv($file, ['Top Symptoms', 'Count']);
+            foreach ($topSymptoms as $symptom => $count) {
+                fputcsv($file, [$symptom, $count]);
             }
             fclose($file);
         };

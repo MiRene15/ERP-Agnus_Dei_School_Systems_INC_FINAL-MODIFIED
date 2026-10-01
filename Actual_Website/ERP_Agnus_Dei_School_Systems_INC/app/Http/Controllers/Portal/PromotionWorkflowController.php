@@ -44,7 +44,10 @@ class PromotionWorkflowController extends Controller
             ->get()
             ->keyBy('enrollment_id');
 
-        return view('portal.registrar.promotion.index', compact('enrollments', 'actions', 'schoolYears', 'passingGrade', 'openProposals'));
+        // Hold badges (batched — 3 queries for the whole roster).
+        $holdMap = \App\Services\HoldService::forStudentIds($enrollments->flatten()->pluck('student_id'));
+
+        return view('portal.registrar.promotion.index', compact('enrollments', 'actions', 'schoolYears', 'passingGrade', 'openProposals', 'holdMap'));
     }
 
     public function registrarPropose(Request $request)
@@ -162,6 +165,15 @@ class PromotionWorkflowController extends Controller
     {
         if ($proposal->status !== PromotionProposal::STATUS_PRINCIPAL_APPROVED) {
             return back()->with('error', 'Only Principal-approved proposals can be signed off.');
+        }
+
+        // Holds block promotion until cleared (library / clinic / finance).
+        $proposal->loadMissing('enrollment.student');
+        $holds = $proposal->enrollment && $proposal->enrollment->student
+            ? \App\Services\HoldService::forStudent($proposal->enrollment->student)
+            : [];
+        if (!empty($holds)) {
+            return back()->with('error', 'Cannot execute — holds must be cleared first. ' . \App\Services\HoldService::blockingMessage($holds));
         }
 
         $proposal->update([

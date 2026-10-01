@@ -38,6 +38,9 @@
 @if(session('info'))
     <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">{{ session('info') }}</div>
 @endif
+@if(session('error'))
+    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
+@endif
 
 <div x-data="ajaxTable('{{ route('student.dashboard') }}')">
     <div x-show="loading" class="space-y-4">

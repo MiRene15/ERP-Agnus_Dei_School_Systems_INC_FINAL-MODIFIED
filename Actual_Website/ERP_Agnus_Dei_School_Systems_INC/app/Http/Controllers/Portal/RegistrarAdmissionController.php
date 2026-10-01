@@ -137,6 +137,15 @@ class RegistrarAdmissionController extends Controller
             return back()->with('error', 'All requirements must be verified before approving. ' . $unverifiedCount . ' requirement(s) still pending.');
         }
 
+        // Holds block (re-)enrollment until cleared (library / clinic / finance).
+        $studentForHolds = $admission->student;
+        if ($studentForHolds) {
+            $holds = \App\Services\HoldService::forStudent($studentForHolds);
+            if (!empty($holds)) {
+                return back()->with('error', 'Cannot enroll — holds must be cleared first. ' . \App\Services\HoldService::blockingMessage($holds));
+            }
+        }
+
         $data = $request->validate([
             'section_id' => 'required|exists:sections,id',
             'subject_ids' => 'required|array',

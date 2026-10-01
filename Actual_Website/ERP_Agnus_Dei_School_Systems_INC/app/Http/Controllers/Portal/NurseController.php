@@ -112,17 +112,36 @@ class NurseController extends Controller
             'treatment' => 'nullable|string',
             'notes' => 'nullable|string',
             'referred_to' => 'nullable|string|max:255',
+            'is_open' => 'nullable|boolean',
         ]);
 
         $data['nurse_id'] = auth()->id();
         $data['symptoms'] = $data['complaint'] ?? '';
         $data['visit_date'] = $data['incident_date'];
+        // Open cases (pending follow-up / referral) raise a clearance Hold until closed.
+        $data['is_open'] = $request->boolean('is_open');
 
         $log = ClinicLog::create($data);
 
         $student = Student::find($data['student_id']);
-        log_activity($log, 'Clinic Log Created', auth()->user()->name . ' recorded a clinic visit for ' . $student->first_name . ' ' . $student->last_name . '. Complaint: ' . ($data['complaint'] ?? 'N/A'));
+        log_activity($log, 'Clinic Log Created', auth()->user()->name . ' recorded a clinic visit for ' . $student->first_name . ' ' . $student->last_name . '. Complaint: ' . ($data['complaint'] ?? 'N/A') . ($data['is_open'] ? ' [OPEN CASE — clearance hold raised]' : ''));
 
-        return redirect()->route('nurse.logs')->with('success', 'Clinic log created successfully.');
+        return redirect()->route('nurse.logs')->with('success', 'Clinic log created successfully.' . ($data['is_open'] ? ' Case left open — it now blocks the student’s clearance until closed.' : ''));
+    }
+
+    /**
+     * Close an open case — lifts the student's clinic hold.
+     */
+    public function closeCase(ClinicLog $log)
+    {
+        if (!$log->is_open) {
+            return back()->with('info', 'This case is already closed.');
+        }
+
+        $log->update(['is_open' => false, 'closed_at' => now()]);
+
+        log_activity($log, 'Clinic Case Closed', auth()->user()->name . ' closed the open clinic case for student #' . $log->student_id . ' — clearance hold lifted.');
+
+        return back()->with('success', 'Case closed — the student’s clinic hold is lifted.');
     }
 }

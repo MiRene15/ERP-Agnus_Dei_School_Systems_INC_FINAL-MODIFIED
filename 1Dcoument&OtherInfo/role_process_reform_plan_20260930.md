@@ -1,6 +1,6 @@
 # Role & Process Reform Plan — Separation of Duties — 2026-09-30
 
-**Status:** PHASES 1 + 2 IMPLEMENTED LIVE 2026-09-30 (commit pending push — held per request). Phases 3–4 not started.
+**Status:** ALL PHASES IMPLEMENTED LIVE 2026-10-01. Phases 1+2 committed (held per request); Phases 3+4 below.
 
 ## Guiding principle
 
@@ -116,23 +116,29 @@ No single role should both grant a benefit and execute it (discount + collect, p
 
 - **Phase 1 — permission removals (quick wins) — DONE 2026-09-30:** Cashier admission-doc view off (route `role:2,3`→`role:2` + `viewRequirement` role check); Directress paid-marking off (toggle moved to Cashier financial page, Directress sees badge only); Admin payment/promotion/subject powers off (confirm routes+methods+views deleted, dashboard Verification panel → Students/SY stats, tutorial modal link fixed); subjects moved to Registrar (`registrar/subjects`, views moved to `portal/registrar/`), Principal gets read-only browser.
 - **Phase 2 — approval workflows — DONE 2026-09-30:** 2-step discounts (`discount_requests`: Cashier/Registrar request w/ proof → Directress approves → Cashier applies; direct edit route deleted); promotion handoff (`promotion_proposals`: Registrar proposes → Principal approves → Directress signs off + executes via new `PromotionService`; old `Admin\PromotionController` deleted); grade unlock (`grade_unlock_requests`: Teacher requests → Principal/Registrar approves → Submitted→Pending → correct → re-submit); announcements (`directress_seen_at`: Directress acknowledges, Principal edits reset it, Principal list shows awareness badge).
-- **Phase 3 — holds engine:** library/clinic/finance holds; student-facing hold reasons; block report card, re-enrollment, promotion.
-- **Phase 4 — new features & visibility:** attendance, receipt history, discount breakdown, bulk fee assignment, void/refund payouts, aggregate-only clinic reports for Directress.
+- **Phase 3 — holds engine — DONE 2026-10-01:** computed `HoldService` (library = overdue unreturned loans via existing `isOverdue()`; clinic = open cases via new `clinic_logs.is_open/closed_at`, nurse marks open at log creation and closes from the logs list; finance = ledger balance > 0); student sees reasons in a dashboard banner; blocks report card (student 302 + reasons), re-enrollment request + registrar approval, and promotion sign-off (registrar propose page shows HOLD badges, batched in 3 queries).
+- **Phase 4 — new features & visibility — DONE 2026-10-01:** attendance (`attendances` table, per-class date marking UI for teachers); receipts (type badges Payment/Refund/Void + AR numbers on student ledger) and discount breakdown (approval date/approver/proof shown); bulk fee assignment (`FeeAssignmentController` for Registrar — missing tuition ledgers + per-fee grad-fee bulk; Directress one-by-one assign removed, list kept); withdrawal split (Registrar approves → computes refund due, moves no money; Cashier releases payout on new Refunds page with `refund_released_by`) + payment void (offsetting VOID- reversal, original kept); clinic reports aggregate-only (diagnosis panel + per-student rows + detail export columns removed, open-cases count added).
 
-## Verification (2026-09-30, live Supabase)
+## Verification (2026-09-30 → 2026-10-01, live Supabase)
 
-- 21/21 page/permission checks (incl. negatives: admin promotion/subjects/pending-accounts → 404, cashier doc view → 403)
-- 16/16 write-flow checks with full revert (discount request→approve→apply→restore; unlock request→approve→restore; propose→approve→delete; sign-off execution inside rolled-back txn; ack→reset) — zero residue in all 3 new tables
-- Smoke harness updated for the new route map and re-run: **231/231 PASS** (219 original + 12 new/changed), cleanup verified
-- Note: live user/student counts grew +12 during this window from manual browser testing (injection/XSS probe accounts via public inquiry) — unrelated to this change; left untouched
-- Deferred: full subject-change approval workflow (Registrar owns CRUD now; Principal has read-only oversight — approval step to be designed with Phase 3/4)
+Phases 1+2: 21/21 page/permission checks (incl. 404/403 negatives), 16/16 write-flow checks with full revert (zero residue), harness 231/231.
+
+Phases 3+4:
+- Holds: 14/14 (service per-source computation, report-card 302 + reasons, re-enrollment blocked with no admission created, signoff refused with nothing executed, nurse open→hold→close→lifted cycle with student-side visibility, loan aging cycle with restore)
+- Phase 4: 21/21 (all new pages load, attendance save+delete, bulk endpoints run with zero missing ledgers left, withdrawal approve-without-money → cashier release → full revert, void → revert, clinic aggregates + export, one-by-one assign → 404)
+- Bugs found by verification and fixed: Withdrawal missing `refund_processed_at` datetime cast (500'd the Refunds page); student dashboard had no error-flash block (block reasons invisible on landing — added)
+- Smoke harness updated for the new map (assign removal, fee-assignment/refunds/attendance/grade-unlock tests, holds-aware report-card test) → **235/235 PASS**, cleanup verified
+- Live demo note: the fixed harness student (juan.delacruz) carries a real overdue library hold, so his report card is blocked by design — the harness asserts the block + reasons
+
+- Live demo note: live user/student counts grew +12 during the Phase 1+2 window from manual browser testing (injection/XSS probe accounts via public inquiry) — unrelated, left untouched
+- Deferred: full subject-change approval workflow (Registrar owns CRUD now; Principal has read-only oversight)
 
 ## Acceptance checklist
 
 - [ ] Role-by-role changes reviewed and approved
 - [x] Phase 1 permission removals executed + smoke-tested (231-test harness, incl. 404/403 negatives)
 - [x] Phase 2 approval workflows live (discount, promotion, grade unlock, announcements)
-- [ ] Phase 3 holds engine live (all three hold sources block + student sees reasons)
-- [ ] Phase 4 features live (attendance, receipts, breakdowns, bulk assign, refunds, private clinic reports)
-- [x] No role can complete a full money loop alone (grant + collect) — verified by permission audit (21 checks: directress cannot mark paid, cashier cannot grant solo, admin has no money routes)
+- [x] Phase 3 holds engine live (all three hold sources block + student sees reasons)
+- [x] Phase 4 features live (attendance, receipts, breakdowns, bulk assign, refunds, private clinic reports)
+- [x] No role can complete a full money loop alone (grant + collect) — verified by permission audit (21 checks: directress cannot mark paid, cashier cannot grant solo, admin has no money routes; withdrawal payouts split registrar-approve/cashier-release)
 - [ ] Docs updated (CHANGELOG + sessions log), committed, pushed

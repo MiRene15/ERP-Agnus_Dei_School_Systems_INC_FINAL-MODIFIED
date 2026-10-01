@@ -22,6 +22,7 @@ use App\Http\Controllers\Portal\WithdrawalController;
 use App\Http\Controllers\Portal\DirectressController;
 use App\Http\Controllers\Portal\PrincipalController;
 use App\Http\Controllers\Portal\DiscountRequestController;
+use App\Http\Controllers\Portal\FeeAssignmentController;
 use App\Http\Controllers\Portal\PromotionWorkflowController;
 use App\Http\Controllers\Portal\GradeUnlockController;
 use App\Http\Controllers\Admin\UserController;
@@ -143,6 +144,10 @@ Route::middleware('auth')->group(function () {
         // Promotion — Registrar prepares proposals (Principal approves, Directress signs off + executes)
         Route::get('/registrar/promotion', [PromotionWorkflowController::class, 'registrarIndex'])->name('registrar.promotion.index');
         Route::post('/registrar/promotion/propose', [PromotionWorkflowController::class, 'registrarPropose'])->name('registrar.promotion.propose');
+        // Fee assignment — bulk from enrollment (replaces one-by-one assignment)
+        Route::get('/registrar/fee-assignment', [FeeAssignmentController::class, 'index'])->name('registrar.fee-assignment.index');
+        Route::post('/registrar/fee-assignment/ledgers', [FeeAssignmentController::class, 'assignLedgers'])->name('registrar.fee-assignment.ledgers');
+        Route::post('/registrar/fee-assignment/graduation-fees', [FeeAssignmentController::class, 'assignGradFees'])->name('registrar.fee-assignment.graduation-fees');
         // Admission requirement documents — Registrar only (Cashier access removed)
         Route::get('/registrar/requirements/{requirement}/view', [StudentAdmissionController::class, 'viewRequirement'])->name('registrar.requirements.view');
     });
@@ -195,6 +200,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/cashier/discounts/apply/{discountRequest}', [CashierController::class, 'applyDiscount'])->name('cashier.discounts.apply');
         // Graduation-fee paid marking — Cashier only (moved from Directress).
         Route::post('/cashier/graduation-fees/{assignment}/toggle-paid', [CashierController::class, 'graduationFeesTogglePaid'])->name('cashier.graduation-fees.toggle-paid');
+        // Refund payouts — Registrar approves withdrawals, Cashier releases the money.
+        Route::get('/cashier/refunds', [CashierController::class, 'refunds'])->name('cashier.refunds.index');
+        Route::post('/cashier/refunds/{withdrawal}/release', [CashierController::class, 'releasePayout'])->name('cashier.refunds.release');
+        // Void an erroneous collection via offsetting reversal (original kept for audit).
+        Route::post('/cashier/payments/{payment}/void', [CashierController::class, 'voidPayment'])->name('cashier.payments.void');
     });
 
     Route::middleware(['role:4'])->group(function() {
@@ -218,6 +228,9 @@ Route::middleware('auth')->group(function () {
         // Grade correction requests — Teacher asks Principal/Registrar to reopen submitted grades.
         Route::get('/teacher/grade-unlocks', [GradeUnlockController::class, 'teacherIndex'])->name('teacher.grade-unlocks.index');
         Route::post('/teacher/grade-unlocks', [GradeUnlockController::class, 'teacherStore'])->name('teacher.grade-unlocks.store');
+        // Attendance — Teacher marks daily attendance per class.
+        Route::get('/teacher/classes/{class}/attendance', [TeacherController::class, 'attendance'])->name('teacher.attendance');
+        Route::post('/teacher/classes/{class}/attendance', [TeacherController::class, 'storeAttendance'])->name('teacher.attendance.store');
     });
 
     Route::middleware(['role:5'])->group(function() {
@@ -256,6 +269,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/nurse/logs', [NurseController::class, 'logs'])->name('nurse.logs');
         Route::get('/nurse/logs/create', [NurseController::class, 'createLog'])->name('nurse.logs.create');
         Route::post('/nurse/logs', [NurseController::class, 'storeLog'])->name('nurse.logs.store');
+        // Open cases raise a clearance Hold — closing lifts it.
+        Route::patch('/nurse/logs/{log}/close', [NurseController::class, 'closeCase'])->name('nurse.logs.close');
     });
 
     // Using role 7 for Students (and potentially Parents/Guardians under unified)
@@ -300,8 +315,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/directress/graduation-fees/{graduationFee}/edit', [DirectressController::class, 'graduationFeesEdit'])->name('directress.graduation-fees.edit');
         Route::patch('/directress/graduation-fees/{graduationFee}', [DirectressController::class, 'graduationFeesUpdate'])->name('directress.graduation-fees.update');
         Route::delete('/directress/graduation-fees/{graduationFee}', [DirectressController::class, 'graduationFeesDestroy'])->name('directress.graduation-fees.destroy');
-        Route::get('/directress/graduation-fees/{graduationFee}/assign', [DirectressController::class, 'graduationFeesAssign'])->name('directress.graduation-fees.assign');
-        Route::post('/directress/graduation-fees/{graduationFee}/assign', [DirectressController::class, 'graduationFeesAssignStore'])->name('directress.graduation-fees.assign.store');
+        // Assigned-student list (oversight). One-by-one assignment removed — Registrar assigns in bulk.
         Route::get('/directress/graduation-fees/{graduationFee}/assigned', [DirectressController::class, 'graduationFeesAssigned'])->name('directress.graduation-fees.assigned');
 
         // Discount approvals — Directress approves/rejects requests; only Cashier applies.

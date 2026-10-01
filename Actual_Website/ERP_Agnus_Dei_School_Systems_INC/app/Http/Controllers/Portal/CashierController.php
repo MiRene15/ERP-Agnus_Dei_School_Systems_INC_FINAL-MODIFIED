@@ -9,6 +9,7 @@ use App\Models\FeeSchedule;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\StudentLedger;
+use App\Models\Withdrawal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -609,5 +610,106 @@ class CashierController extends Controller
         log_activity($assignment, 'Graduation Fee Payment Toggled', auth()->user()->name . ' (Cashier) toggled paid status for student #' . $assignment->student_id . ' on "' . $assignment->graduationFee->name . '".');
 
         return back()->with('success', 'Payment status updated.');
+    }
+
+    /**
+     * Refund payouts awaiting release (role reform Phase 4d).
+     * Registrar approves the withdrawal; only the Cashier moves money.
+     */
+    public function refunds()
+    {
+        $pending = Withdrawal::with('student.user', 'enrollment.section', 'processor')
+            ->where('status', 'Approved')
+            ->where('refund_amount', '>', 0)
+            ->whereNull('refund_processed_at')
+            ->latest()
+            ->get();
+
+        $released = Withdrawal::with('student.user')
+            ->where('status', 'Approved')
+            ->whereNotNull('refund_processed_at')
+            ->latest('refund_processed_at')
+            ->take(50)
+            ->get();
+
+        return view('portal.cashier.refunds.index', compact('pending', 'released'));
+    }
+
+    public function releasePayout(Withdrawal $withdrawal)
+    {
+        if ($withdrawal->status !== 'Approved' || $withdrawal->refund_processed_at || $withdrawal->refund_amount <= 0) {
+            return back()->with('error', 'This refund cannot be released (already released or nothing due).');
+        }
+
+        $student = $withdrawal->student;
+        $ledger = $student->ledger;
+        $refundAmount = (float) $withdrawal->refund_amount;
+
+        DB::transaction(function () use ($withdrawal, $student, $ledger, $refundAmount) {
+            if ($ledger) {
+                $ledger->total_paid = max(0, $ledger->total_paid - $refundAmount);
+                $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
+                $ledger->save();
+
+                $receiptNumber = 'REF-' . now()->format('Ymd') . '-' . str_pad($student->id, 5, '0', STR_PAD_LEFT);
+
+                $ledger->payments()->create([
+                    'cashier_id' => auth()->id(),
+                    'amount_paid' => -$refundAmount,
+                    'receipt_number' => $receiptNumber,
+                    'payment_date' => now(),
+                ]);
+            }
+
+            $withdrawal->refund_processed_at = now();
+            $withdrawal->refund_released_by = auth()->id();
+            $withdrawal->save();
+
+            log_activity($student, 'Refund Released', auth()->user()->name . " (Cashier) released refund payout ₱" . number_format($refundAmount, 2) . " for {$student->first_name} {$student->last_name}.");
+        });
+
+        return back()->with('success', 'Refund payout of ₱' . number_format($refundAmount, 2) . ' released for ' . $student->first_name . ' ' . $student->last_name . '.');
+    }
+
+    /**
+     * Void an erroneous collection: posts an offsetting reversal (VOID- receipt)
+     * and recomputes the ledger. The original row is kept for the audit trail.
+     */
+    public function voidPayment(Request $request, Payment $payment)
+    {
+        $data = $request->validate(['reason' => 'required|string|min:5|max:500']);
+
+        if ($payment->amount_paid <= 0 || !str_starts_with((string) $payment->receipt_number, 'RCP-')) {
+            return back()->with('error', 'Only collected payments (RCP- receipts) can be voided.');
+        }
+
+        $alreadyVoided = Payment::where('ledger_id', $payment->ledger_id)
+            ->where('receipt_number', 'like', 'VOID-' . $payment->receipt_number . '%')
+            ->exists();
+        if ($alreadyVoided) {
+            return back()->with('error', 'This payment has already been voided.');
+        }
+
+        $ledger = $payment->ledger;
+
+        DB::transaction(function () use ($payment, $ledger, $data) {
+            $reversal = $ledger->payments()->create([
+                'cashier_id' => auth()->id(),
+                'amount_paid' => -$payment->amount_paid,
+                'receipt_number' => 'VOID-' . $payment->receipt_number,
+                'ar_number' => $payment->ar_number,
+                'payment_date' => now(),
+            ]);
+
+            $ledger->total_paid = max(0, $ledger->total_paid - $payment->amount_paid);
+            $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
+            $ledger->save();
+
+            $student = $ledger->student;
+            $name = $student ? $student->first_name . ' ' . $student->last_name : 'Student #' . $ledger->student_id;
+            log_activity($student ?? $ledger, 'Payment Voided', auth()->user()->name . " (Cashier) voided payment {$payment->receipt_number} (₱" . number_format($payment->amount_paid, 2) . ") for {$name}. Reason: {$data['reason']}");
+        });
+
+        return back()->with('success', 'Payment ' . $payment->receipt_number . ' voided with an offsetting reversal.');
     }
 }

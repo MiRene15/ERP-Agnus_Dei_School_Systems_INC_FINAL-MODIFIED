@@ -20,6 +20,13 @@ class ClinicLog extends Model
         'referred_to',
         'incident_date',
         'visit_date',
+        'is_open',
+        'closed_at',
+    ];
+
+    protected $casts = [
+        'is_open' => 'boolean',
+        'closed_at' => 'datetime',
     ];
 
     public function student()

@@ -36,7 +36,10 @@ class StudentEnrollmentController extends Controller
 
         $nextGradeLevel = $activeEnrollment ? $this->nextGradeLevel($activeEnrollment->section->grade_level) : null;
 
-        return view('portal.student.enrollment-apply', compact('student', 'activeEnrollment', 'pendingAdmission', 'nextGradeLevel'));
+        // Holds block re-enrollment until cleared — show them on the apply page.
+        $holds = \App\Services\HoldService::forStudent($student);
+
+        return view('portal.student.enrollment-apply', compact('student', 'activeEnrollment', 'pendingAdmission', 'nextGradeLevel', 'holds'));
     }
 
     public function store(Request $request)
@@ -45,6 +48,12 @@ class StudentEnrollmentController extends Controller
 
         if (!$student->student_number) {
             return back()->with('error', 'You must have a student number to enroll.');
+        }
+
+        // Holds block re-enrollment until cleared (library / clinic / finance).
+        $holds = \App\Services\HoldService::forStudent($student);
+        if (!empty($holds)) {
+            return back()->with('error', 'Enrollment request blocked. ' . \App\Services\HoldService::blockingMessage($holds));
         }
 
         $data = $request->validate([

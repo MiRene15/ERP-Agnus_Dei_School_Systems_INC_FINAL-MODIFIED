@@ -14,7 +14,7 @@
         <h2 class="text-2xl font-bold text-gray-900">Assigned Students</h2>
         <p class="text-gray-600 mt-1">{{ $graduationFee->grade_level }} ({{ $graduationFee->school_year }})</p>
     </div>
-    <a href="{{ route('directress.graduation-fees.assign', $graduationFee) }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Assign More</a>
+    <a href="{{ route('directress.graduation-fees') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Back to Fees</a>
 </div>
 
 @if(session('success'))

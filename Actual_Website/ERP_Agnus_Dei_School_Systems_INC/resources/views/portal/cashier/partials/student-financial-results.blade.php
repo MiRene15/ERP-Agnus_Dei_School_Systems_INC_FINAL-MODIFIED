@@ -169,6 +169,16 @@
                                     <a href="{{ asset('storage/' . $p->receipt_file_path) }}" target="_blank"
                                        class="text-xs text-blue-600 hover:text-blue-800 font-medium">View</a>
                                     @endif
+                                    @if($p->amount_paid > 0 && str_starts_with((string) $p->receipt_number, 'RCP-'))
+                                    <details class="inline">
+                                        <summary class="text-xs text-red-600 hover:text-red-800 font-medium cursor-pointer list-none">Void</summary>
+                                        <form method="POST" action="{{ route('cashier.payments.void', $p) }}" onsubmit="return confirm('Void payment {{ $p->receipt_number }}? An offsetting reversal will be posted.')" class="mt-1 flex gap-1">
+                                            @csrf
+                                            <input type="text" name="reason" required minlength="5" maxlength="500" placeholder="Reason (min 5 chars)" class="rounded border border-gray-300 px-2 py-1 text-xs w-36">
+                                            <button type="submit" class="px-2 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded">Confirm</button>
+                                        </form>
+                                    </details>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

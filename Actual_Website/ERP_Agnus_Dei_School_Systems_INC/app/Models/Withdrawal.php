@@ -8,7 +8,11 @@ class Withdrawal extends Model
 {
     protected $fillable = [
         'enrollment_id', 'student_id', 'reason', 'status', 'processed_by', 'remarks',
-        'refund_amount', 'refund_processed_at',
+        'refund_amount', 'refund_processed_at', 'refund_released_by',
+    ];
+
+    protected $casts = [
+        'refund_processed_at' => 'datetime',
     ];
 
     public function enrollment()

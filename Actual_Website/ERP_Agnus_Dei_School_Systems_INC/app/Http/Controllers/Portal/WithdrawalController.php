@@ -102,6 +102,10 @@ class WithdrawalController extends Controller
         return view('portal.registrar.withdrawals-index', compact('withdrawals'));
     }
 
+    /**
+     * Registrar approves the withdrawal (academic decision). Computes the refund
+     * due but moves NO money — the Cashier releases the payout separately.
+     */
     public function approve(Withdrawal $withdrawal)
     {
         if ($withdrawal->status !== 'Pending') {
@@ -129,40 +133,25 @@ class WithdrawalController extends Controller
         $totalPaid = $ledger ? $ledger->total_paid : 0;
         $refundAmount = round($totalPaid * $refundPercentage, 2);
 
-        DB::transaction(function () use ($withdrawal, $student, $enrollment, $refundAmount, $ledger, $refundPercentage) {
+        DB::transaction(function () use ($withdrawal, $student, $enrollment, $refundAmount, $refundPercentage) {
             $withdrawal->status = 'Approved';
             $withdrawal->processed_by = auth()->id();
             $withdrawal->refund_amount = $refundAmount;
-            $withdrawal->refund_processed_at = now();
+            // refund_processed_at stays null until the Cashier releases the payout.
             $withdrawal->save();
 
             $enrollment->update(['status' => 'Withdrawn']);
 
-            if ($refundAmount > 0 && $ledger) {
-                $ledger->total_paid = max(0, $ledger->total_paid - $refundAmount);
-                $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
-                $ledger->save();
-
-                $receiptNumber = 'REF-' . now()->format('Ymd') . '-' . str_pad($student->id, 5, '0', STR_PAD_LEFT);
-
-                $ledger->payments()->create([
-                    'cashier_id' => auth()->id(),
-                    'amount_paid' => -$refundAmount,
-                    'receipt_number' => $receiptNumber,
-                    'payment_date' => now(),
-                ]);
-            }
-
             $refundLabel = $refundPercentage > 0
-                ? " — Refund: ₱" . number_format($refundAmount, 2) . " (" . ($refundPercentage * 100) . "%)"
+                ? " — Refund due: ₱" . number_format($refundAmount, 2) . " (" . ($refundPercentage * 100) . "%, awaiting Cashier release)"
                 : " — No refund (0%)";
 
-            log_activity($student, 'Withdrawal Approved', "Withdrawal approved for {$student->first_name} {$student->last_name}{$refundLabel}");
+            log_activity($student, 'Withdrawal Approved', auth()->user()->name . " (Registrar) approved withdrawal for {$student->first_name} {$student->last_name}{$refundLabel}");
         });
 
         $msg = 'Withdrawal approved for ' . $student->first_name . ' ' . $student->last_name . '.';
         if ($refundAmount > 0) {
-            $msg .= " Refund of ₱" . number_format($refundAmount, 2) . " processed.";
+            $msg .= " Refund of ₱" . number_format($refundAmount, 2) . " computed — the Cashier releases the payout.";
         }
 
         return back()->with('success', $msg);

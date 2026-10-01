@@ -72,6 +72,15 @@
                 @error('referred_to') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
 
+            <div class="flex items-start gap-3 p-4 bg-amber-50 dark:bg-[rgba(251,191,36,0.08)] border border-amber-200 dark:border-[rgba(251,191,36,0.25)] rounded-lg">
+                <input type="checkbox" name="is_open" value="1" {{ old('is_open') ? 'checked' : '' }} id="is_open"
+                       class="mt-1 rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                <div>
+                    <label for="is_open" class="block text-sm font-semibold text-amber-800 dark:text-[#FCD34D]">Keep case open (needs follow-up / pending referral)</label>
+                    <p class="text-xs text-amber-700 dark:text-[#FCD34D] mt-1">An open case raises a clearance <strong>Hold</strong> — it blocks the student’s report card, re-enrollment, and promotion until you close it.</p>
+                </div>
+            </div>
+
             <div class="flex items-center gap-2 pt-2">
                 <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Save Log</button>
                 <a href="{{ route('nurse.logs') }}" class="px-5 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Cancel</a>

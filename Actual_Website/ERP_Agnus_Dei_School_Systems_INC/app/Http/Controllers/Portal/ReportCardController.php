@@ -208,6 +208,16 @@ class ReportCardController extends Controller
             return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
         }
 
+        // Holds block report cards until cleared (library / clinic / finance).
+        $holds = \App\Services\HoldService::forStudent($student);
+        if (!empty($holds)) {
+            $message = \App\Services\HoldService::blockingMessage($holds);
+            if ($isAjax) {
+                return response()->json(['html' => '<div class="p-8 text-center text-sm text-red-600">' . e($message) . '</div>']);
+            }
+            return redirect()->route('student.dashboard')->with('error', 'Report card withheld. ' . $message);
+        }
+
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $passing = (int) Setting::getValue('passing_grade', '75');
 

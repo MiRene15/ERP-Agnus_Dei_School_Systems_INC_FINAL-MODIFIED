@@ -45,7 +45,6 @@
                     <td class="py-3 px-2 font-medium text-gray-900">₱ {{ number_format($gf->graduation_fee + $gf->other_fees, 2) }}</td>
                     <td class="py-3 px-2">
                         <div class="flex gap-1 flex-wrap">
-                            <a href="{{ route('directress.graduation-fees.assign', $gf) }}" class="px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800">Assign</a>
                             <a href="{{ route('directress.graduation-fees.assigned', $gf) }}" class="px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">View Assigned</a>
                             <a href="{{ route('directress.graduation-fees.edit', $gf) }}" class="px-2 py-1 text-xs font-medium text-gray-600 hover:text-gray-800">Edit</a>
                             <form method="POST" action="{{ route('directress.graduation-fees.destroy', $gf) }}" onsubmit="return confirm('Delete this graduation fee?')" class="inline">

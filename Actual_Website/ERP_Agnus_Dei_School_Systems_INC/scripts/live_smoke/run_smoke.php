@@ -335,6 +335,7 @@ if (!$skip('registrar') && mark('registrar')) {
     if ($acc['subject_id']) test($h, 'Registrar', 'GET', '/registrar/subjects/' . $acc['subject_id'] . '/edit');
     test($h, 'Registrar', 'GET', '/registrar/promotion');
     test($h, 'Registrar', 'GET', '/registrar/grade-unlocks');
+    test($h, 'Registrar', 'GET', '/registrar/fee-assignment');
     test($h, 'Registrar', 'GET', '/discount-requests');
     if ($acc['requirement_with_content_id']) {
         test($h, 'Registrar', 'GET', '/registrar/requirements/' . $acc['requirement_with_content_id'] . '/view');
@@ -389,6 +390,7 @@ if (!$skip('cashier') && mark('cashier')) {
     test($h, 'Cashier', 'GET', '/cashier/reports/receivables/export', ['not_contains' => '<html']);
     test($h, 'Cashier', 'GET', '/cashier/discounts');
     test($h, 'Cashier', 'GET', '/discount-requests');
+    test($h, 'Cashier', 'GET', '/cashier/refunds');
     // Role reform: Cashier can no longer view admission documents.
     if ($acc['requirement_with_content_id']) {
         test($h, 'Cashier', 'GET', '/registrar/requirements/' . $acc['requirement_with_content_id'] . '/view', ['x' => [403]]);
@@ -431,6 +433,9 @@ if (!$skip('teacher') && mark('teacher')) {
     test($h, 'Teacher', 'GET', '/teacher/grade-assessment');
     test($h, 'Teacher', 'GET', '/teacher/computed-grades');
     test($h, 'Teacher', 'GET', '/teacher/grade-unlocks');
+    if ($cid) {
+        test($h, 'Teacher', 'GET', '/teacher/classes/' . $cid . '/attendance');
+    }
     test($h, 'Teacher', 'GET', '/teacher/dashboard?ajax=1', ['contains' => '"html"']);
     test($h, 'Teacher', 'GET', '/teacher/classes?ajax=1', ['contains' => '"html"']);
     test($h, 'Teacher', 'GET', '/teacher/class-list?ajax=1', ['contains' => '"html"']);
@@ -547,7 +552,17 @@ if (!$skip('student') && mark('student')) {
             ? '' : 'expected designed 302 to student area, got ' . $r['status']);
     test($h, 'Student', 'GET', '/student/admission/status');
     test($h, 'Student', 'GET', '/student/withdrawal');
-    test($h, 'Student', 'GET', '/student/report-card');
+    // Role reform: holds block report cards. Juan currently carries an overdue
+    // library hold, so expect the block + hold reasons on the dashboard. If his
+    // holds ever clear, the plain 200 path below covers the open view.
+    $r = $h->req('GET', '/student/report-card');
+    if ($r['status'] === 302) {
+        rec('Student', 'GET /student/report-card blocked by holds', $r['status'], [302], $r['ms']);
+        testFollow($h, 'Student', 'report-card block explains holds on dashboard', $r, ['x' => [200], 'contains' => 'Report card withheld']);
+    } else {
+        $detail = scanMarkers($r['body']);
+        rec('Student', 'GET /student/report-card (no holds)', $r['status'], [200], $r['ms'], $detail);
+    }
     test($h, 'Student', 'GET', '/student/cor');
     test($h, 'Student', 'GET', '/student/schedule');
     test($h, 'Student', 'GET', '/student/ledger');
@@ -572,8 +587,9 @@ if (!$skip('directress') && mark('directress')) {
     test($h, 'Directress', 'GET', '/directress/graduation-fees/create');
     if ($acc['grad_fee_id']) {
         test($h, 'Directress', 'GET', '/directress/graduation-fees/' . $acc['grad_fee_id'] . '/edit');
-        test($h, 'Directress', 'GET', '/directress/graduation-fees/' . $acc['grad_fee_id'] . '/assign');
         test($h, 'Directress', 'GET', '/directress/graduation-fees/' . $acc['grad_fee_id'] . '/assigned');
+        // Role reform: one-by-one assignment removed (Registrar assigns in bulk).
+        test($h, 'Directress', 'GET', '/directress/graduation-fees/' . $acc['grad_fee_id'] . '/assign', ['x' => [404]]);
     }
     // Role reform: Directress approves discounts, signs off promotion, acknowledges announcements.
     test($h, 'Directress', 'GET', '/directress/discount-requests');

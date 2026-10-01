@@ -17,6 +17,7 @@
     <div class="text-sm text-gray-500 dark:text-[#8A90B0] bg-gray-50 dark:bg-[#161A33] px-3 py-2 rounded-lg border border-gray-100 dark:border-[#2A2F58]">
         {{ $activeEnrollments->count() }} student(s)
     </div>
+    <a href="{{ route('teacher.attendance', $class) }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Take Attendance</a>
 </div>
 
 @if(session('success'))

@@ -1,9 +1,11 @@
 <?php
 
 namespace App\Http\Controllers\Portal;
-
 use App\Http\Controllers\Controller;
+
 use App\Models\Assessment;
+
+use App\Models\Attendance;
 use App\Models\Classes;
 use App\Models\Enrollment;
 use App\Models\Grade;
@@ -187,6 +189,72 @@ class TeacherController extends Controller
         log_activity($class, 'Grades Submitted', auth()->user()->name . ' submitted grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . $gradeCount . ' grade(s) submitted.');
 
         return back()->with('success', 'Grades submitted for ' . $data['grading_period'] . '. ' . $gradeCount . ' grade(s) submitted.');
+    }
+
+    /**
+     * Daily attendance per class (role reform Phase 4a — did not exist before).
+     */
+    public function attendance(Request $request, Classes $class)
+    {
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $class->load('subject', 'enrollments.student');
+
+        $activeEnrollments = $class->enrollments->filter(fn($e) => $e->status === 'Active')->values();
+
+        $markedOn = $request->input('date', now()->toDateString());
+
+        $existing = Attendance::where('class_id', $class->id)
+            ->where('marked_on', $markedOn)
+            ->get()
+            ->keyBy('enrollment_id');
+
+        // Recent history for context (last 5 marked days).
+        $recentDates = Attendance::where('class_id', $class->id)
+            ->orderByDesc('marked_on')
+            ->distinct()
+            ->pluck('marked_on')
+            ->take(5);
+
+        return view('portal.teacher.attendance', compact('class', 'activeEnrollments', 'markedOn', 'existing', 'recentDates'));
+    }
+
+    public function storeAttendance(Request $request, Classes $class)
+    {
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'marked_on' => 'required|date|before_or_equal:today',
+            'status' => 'required|array',
+            'status.*' => 'required|in:present,absent,late,excused',
+        ]);
+
+        $validIds = $class->enrollments()->where('status', 'Active')->pluck('enrollments.id')->all();
+        $count = 0;
+
+        foreach ($data['status'] as $enrollmentId => $status) {
+            if (!in_array((int) $enrollmentId, $validIds, true)) {
+                continue;
+            }
+            Attendance::updateOrCreate(
+                [
+                    'class_id' => $class->id,
+                    'enrollment_id' => $enrollmentId,
+                    'marked_on' => $data['marked_on'],
+                ],
+                ['status' => $status, 'marked_by' => auth()->id()]
+            );
+            $count++;
+        }
+
+        log_activity($class, 'Attendance Marked', auth()->user()->name . ' marked attendance for ' . $class->subject->name . ' (' . $class->grade_level . ' ' . $class->section . ') on ' . $data['marked_on'] . ' — ' . $count . ' student(s).');
+
+        return redirect()->route('teacher.attendance', ['class' => $class->id, 'date' => $data['marked_on']])
+            ->with('success', 'Attendance saved for ' . $data['marked_on'] . ' (' . $count . ' student(s)).');
     }
 
     public function assessments(Classes $class)

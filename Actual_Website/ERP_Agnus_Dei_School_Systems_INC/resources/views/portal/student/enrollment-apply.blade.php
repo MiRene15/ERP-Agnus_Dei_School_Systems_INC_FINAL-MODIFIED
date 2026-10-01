@@ -22,6 +22,17 @@
     <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">{{ session('info') }}</div>
 @endif
 
+@if(!empty($holds ?? []))
+    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+        <p class="font-semibold">Re-enrollment is blocked by {{ count($holds) }} hold(s). Clear these first:</p>
+        <ul class="list-disc ml-5 mt-2 space-y-1">
+            @foreach($holds as $hold)
+            <li><strong>[{{ ucfirst($hold['source']) }}]</strong> {{ $hold['reason'] }} → {{ $hold['action'] }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 @if($pendingAdmission)
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center gap-3">
