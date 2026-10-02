@@ -150,10 +150,23 @@
 
         html.dark .hero-overlay { background: linear-gradient(180deg, rgba(14,17,36,0.65) 0%, rgba(14,17,36,0.4) 50%, rgba(14,17,36,0.7) 100%) !important; }
         html.dark .hero-content h1 { color: #E8EAF6 !important; text-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+        html.dark .hero-content h1 span { color: #A39FE9 !important; }
         html.dark .hero-content p { color: #C1C4DC !important; }
         html.dark .dot { background: rgba(163,159,233,0.3); }
         html.dark .dot.active { background: #A39FE9; }
         html.dark .announcement-card { border-color: #2A2F58; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+        html.dark .section-header h2, html.dark .announcement-row-label { color: #E8EAF6; }
+        html.dark .badge-announce, html.dark .detail-type-badge.announce-type { background: rgba(163,159,233,0.15); color: #C4B5FD; }
+        html.dark .badge-event, html.dark .detail-type-badge.event-type { background: rgba(229,192,106,0.15); color: #E5C06A; }
+        html.dark .detail-title { color: #E8EAF6; }
+        html.dark .slide-indicators .dot { animation-name: dotPulseDark; }
+        @keyframes dotPulseDark {
+            0%        { background: rgba(163,159,233,0.25); transform: scale(1); }
+            3%        { background: #A39FE9; transform: scale(1.3); }
+            22%       { background: #A39FE9; transform: scale(1.3); }
+            25%       { background: rgba(163,159,233,0.25); transform: scale(1); }
+            100%      { background: rgba(163,159,233,0.25); transform: scale(1); }
+        }
     </style>
 
     <section class="hero-wrapper">

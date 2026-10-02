@@ -16,28 +16,28 @@
             <div style="margin-bottom: 20px;">
                 <label for="first_name" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--primary-navy);">First Name</label>
                 <input type="text" name="first_name" id="first_name" required value="{{ old('first_name') }}"
-                       style="width: 100%; padding: 12px 15px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-family: var(--font-main); font-size: 1rem; transition: var(--transition);">
+                       style="width: 100%; padding: 12px 15px; border-radius: 8px; font-family: var(--font-main); font-size: 1rem; transition: var(--transition);">
                 @error('first_name')
-                    <span style="color: #e74c3c; font-size: 0.85rem; margin-top: 5px; display: block;">{{ $message }}</span>
+                    <span class="field-error">{{ $message }}</span>
                 @enderror
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label for="last_name" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--primary-navy);">Last Name</label>
                 <input type="text" name="last_name" id="last_name" required value="{{ old('last_name') }}"
-                       style="width: 100%; padding: 12px 15px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-family: var(--font-main); font-size: 1rem; transition: var(--transition);">
+                       style="width: 100%; padding: 12px 15px; border-radius: 8px; font-family: var(--font-main); font-size: 1rem; transition: var(--transition);">
                 @error('last_name')
-                    <span style="color: #e74c3c; font-size: 0.85rem; margin-top: 5px; display: block;">{{ $message }}</span>
+                    <span class="field-error">{{ $message }}</span>
                 @enderror
             </div>
 
             <div style="margin-bottom: 25px;">
                 <label for="personal_email" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--primary-navy);">Personal Email Address</label>
                 <input type="email" name="personal_email" id="personal_email" required value="{{ old('personal_email') }}"
-                       style="width: 100%; padding: 12px 15px; border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; font-family: var(--font-main); font-size: 1rem; transition: var(--transition);">
+                       style="width: 100%; padding: 12px 15px; border-radius: 8px; font-family: var(--font-main); font-size: 1rem; transition: var(--transition);">
                 <small style="color: var(--text-muted); font-size: 0.85rem; display: block; margin-top: 5px;">Must be Gmail, Yahoo, Proton, or Outlook.</small>
                 @error('personal_email')
-                    <span style="color: #e74c3c; font-size: 0.85rem; margin-top: 5px; display: block;">{{ $message }}</span>
+                    <span class="field-error">{{ $message }}</span>
                 @enderror
             </div>
 
@@ -46,7 +46,7 @@
     </div>
 
     @if(session('error'))
-        <div class="error-box" style="background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.95rem;">
+        <div class="error-box" style="padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.95rem;">
             {{ session('error') }}
         </div>
     @endif
@@ -73,6 +73,8 @@
         border-color: var(--lilac-glow) !important;
         box-shadow: 0 0 0 3px rgba(163, 159, 233, 0.2);
     }
+    .field-error { color: #e74c3c; font-size: 0.85rem; margin-top: 5px; display: block; }
+    .error-box { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
 
     .modal-overlay {
         position: fixed; inset: 0; z-index: 9999;
@@ -145,6 +147,9 @@
     html.dark input::placeholder, html.dark textarea::placeholder { color: #6A7094; }
     html.dark .error-box { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.25); color: #FCA5A5; }
     html.dark .modal-card { background: #1A1E3B; }
+    html.dark .modal-title { color: #E8EAF6; }
+    html.dark .modal-icon { color: #4ade80; background: rgba(74,222,128,0.12); }
+    html.dark .field-error { color: #f87171; }
 </style>
 
 @if(session('success'))

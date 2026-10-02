@@ -10,8 +10,8 @@
             <div class="card">
                 <h3>💰 Payment Plans</h3>
                 <ul style="list-style: none; padding-left: 0; color: var(--text-muted);">
-                    <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;"><strong>Plan A (Full Cash):</strong> 10% Tuition Discount for the whole year.</li>
-                    <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9;"><strong>Plan B (Monthly):</strong> ₱1,500 downpayment, balance divided into 10 months.</li>
+                    <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--divider);"><strong>Plan A (Full Cash):</strong> 10% Tuition Discount for the whole year.</li>
+                    <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--divider);"><strong>Plan B (Monthly):</strong> ₱1,500 downpayment, balance divided into 10 months.</li>
                     <li><strong>Plan C:</strong> Custom arrangements with the Cashier's Office.</li>
                 </ul>
             </div>

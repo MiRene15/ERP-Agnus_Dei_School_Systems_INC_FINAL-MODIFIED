@@ -10,6 +10,8 @@
             padding: 40px;
             box-shadow: var(--shadow-soft);
         }
+        /* Always-dark card: keep light text even when vars flip for dark mode. */
+        html.dark .fee-card { color: #E8EAF6; }
 
         .ul-clean {
             list-style: none;

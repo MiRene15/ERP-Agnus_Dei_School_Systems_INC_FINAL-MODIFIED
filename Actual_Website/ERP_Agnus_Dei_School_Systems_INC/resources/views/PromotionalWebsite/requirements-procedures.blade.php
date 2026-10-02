@@ -10,10 +10,10 @@
             <div class="card">
                 <h3>📋 Enrollment Requirements</h3>
                 <ul style="list-style: none; padding-left: 0; color: var(--text-muted);">
-                    <li style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">✅ PSA Certified Birth Certificate</li>
-                    <li style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">✅ Form 138 (Latest Report Card)</li>
-                    <li style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">✅ Certificate of Good Moral Character</li>
-                    <li style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">✅ ESC Grant Certificate (if applicable)</li>
+                    <li style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--divider);">✅ PSA Certified Birth Certificate</li>
+                    <li style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--divider);">✅ Form 138 (Latest Report Card)</li>
+                    <li style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--divider);">✅ Certificate of Good Moral Character</li>
+                    <li style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--divider);">✅ ESC Grant Certificate (if applicable)</li>
                     <li>✅ QVR Voucher (for incoming Grade 11)</li>
                 </ul>
             </div>

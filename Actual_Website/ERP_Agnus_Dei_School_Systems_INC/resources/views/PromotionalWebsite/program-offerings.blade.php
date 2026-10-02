@@ -42,7 +42,7 @@
                 <h3>Primary & Junior High School</h3>
                 <p>We build exceptional foundational intelligence starting from Kinder through Grade 10.</p>
                 <ul style="list-style: none; padding-left: 0; color: var(--text-muted); margin-top: 15px;">
-                    <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee;">✅ <strong>Primary:</strong> Kinder & Grades 1-6</li>
+                    <li style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--divider);">✅ <strong>Primary:</strong> Kinder & Grades 1-6</li>
                     <li>✅ <strong>Junior High (JHS):</strong> Grades 7-10 — ESC Grant enabled!</li>
                 </ul>
             </div>
@@ -52,12 +52,12 @@
             <div class="strand-card">
                 <div class="strand-title">🎨 Arts, Social Sciences, and Humanities</div>
                 <p class="strand-desc">Creativity, culture, and societal studies</p>
-                <p style="font-size: 0.9rem; color: #888;">For students passionate about arts, communication, political science, journalism, and human society.</p>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">For students passionate about arts, communication, political science, journalism, and human society.</p>
             </div>
             <div class="strand-card">
                 <div class="strand-title">💼 Business and Entrepreneurship</div>
                 <p class="strand-desc">Commerce, business, and entrepreneurial skills</p>
-                <p style="font-size: 0.9rem; color: #888;">Geared toward future entrepreneurs, business leaders, and innovators in commerce.</p>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">Geared toward future entrepreneurs, business leaders, and innovators in commerce.</p>
             </div>
         </section>
     </main>

@@ -43,6 +43,7 @@
             --font-main: 'Outfit', sans-serif;
             --text-dark: #1E293B;
             --text-muted: #64748B;
+            --divider: #f1f5f9;
             
             --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             --radius-lg: 20px;
@@ -394,7 +395,7 @@
         }
 
         /* Dark mode for Promotional + Login modals */
-        html.dark { color-scheme: dark; --surface-off-white: #0E1124; --surface-white: #1A1E3B; --text-dark: #E8EAF6; --text-muted: #8A90B0; }
+        html.dark { color-scheme: dark; --surface-off-white: #0E1124; --surface-white: #1A1E3B; --text-dark: #E8EAF6; --text-muted: #8A90B0; --divider: #2A2F58; }
         html.dark body { background-color: var(--surface-off-white); color: var(--text-dark); }
         html.dark .card { background: var(--surface-white); border-color: #2A2F58; }
         html.dark .page-title, html.dark .card h3 { color: var(--text-dark); }
@@ -409,6 +410,22 @@
         html.dark .skeleton-block { background: linear-gradient(90deg, #232852 25%, #2B315E 50%, #232852 75%); }
         html.dark input, html.dark select, html.dark textarea { background: #23274C; color: #E8EAF6; border-color: #3B4172; }
         html.dark input::placeholder, html.dark textarea::placeholder { color: #6A7094; }
+        /* Base input border (light) so the dark border-color above has an effect;
+           promo pages must NOT set inline borders (inline beats stylesheets). */
+        input, select, textarea { border: 1px solid rgba(0,0,0,0.1); }
+        /* ── Dark-mode contrast hardening ────────────────────────────
+           Promo pages use hardcoded inline colors in places. These central
+           guards keep text readable in dark mode without per-page rewrites. */
+        html.dark .nav-title { color: #E8EAF6; }
+        html.dark .nav-links a:hover, html.dark .nav-links a.active { color: #A39FE9; }
+        html.dark .nav-links a.active::after { background: #E5C06A; }
+        html.dark .nav-links .dropdown-menu a { color: #E8EAF6; }
+        html.dark .btn-outline { color: #E8EAF6; border-color: #3B4172; }
+        html.dark .btn-outline:hover { background: rgba(163,159,233,0.12); border-color: #A39FE9; }
+        html.dark footer { background: #0E1124; color: #E8EAF6; }
+        html.dark [style*="color: var(--primary-navy)"] { color: #E8EAF6 !important; }
+        html.dark [style*="color:var(--primary-navy)"] { color: #E8EAF6 !important; }
+        html.dark [style*="--surface-off-white"] { color: #E8EAF6 !important; }
         [x-cloak] { display: none !important; }
     </style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
