@@ -193,6 +193,11 @@ class CashierController extends Controller
         ]);
 
         $enrollment = $student->enrollments()->with('section')->where('status', 'Active')->latest()->firstOrFail();
+
+        // Locked school years are frozen — no payments into them.
+        if (school_year_locked($enrollment->school_year)) {
+            return back()->with('error', 'Cannot collect — school year ' . $enrollment->school_year . ' is locked.');
+        }
         $feeSchedules = FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
             ->get();

@@ -25,8 +25,7 @@ if (!function_exists('active_school_year')) {
     }
 }
 
-if (!function_exists('all_school_years')) {
-    function all_school_years(): \Illuminate\Support\Collection
+if (!function_exists('all_school_years')) {    function all_school_years(): \Illuminate\Support\Collection
     {
         return Cache::remember('all_school_years', 3600, function () {
             $fromEnrollments = \App\Models\Enrollment::distinct()->pluck('school_year');
@@ -39,5 +38,25 @@ if (!function_exists('all_school_years')) {
                 ->sortDesc()
                 ->values();
         });
+    }
+}
+
+if (!function_exists('locked_school_years')) {
+    function locked_school_years(): array
+    {
+        $raw = Cache::remember('setting_locked_school_years', 3600, function () {
+            return Setting::getValue('locked_school_years', '');
+        });
+        return $raw ? array_map('trim', explode(',', $raw)) : [];
+    }
+}
+
+if (!function_exists('school_year_locked')) {
+    // A locked year is frozen: no new enrollments, payments, grades,
+    // schedules, fees, or promotions may touch it.
+    function school_year_locked(?string $schoolYear): bool
+    {
+        if (!$schoolYear) return false;
+        return in_array($schoolYear, locked_school_years(), true);
     }
 }

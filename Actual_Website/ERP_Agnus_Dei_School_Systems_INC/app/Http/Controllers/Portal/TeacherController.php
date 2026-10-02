@@ -151,6 +151,11 @@ class TeacherController extends Controller
             'grades.*' => 'nullable|numeric|min:0|max:100',
         ]);
 
+        // Locked school years are frozen — grades can no longer be changed.
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — grades can no longer be changed.');
+        }
+
         // Submitted grades are locked — only an approved unlock reopens them.
         $lockedIds = Grade::where('class_id', $class->id)
             ->where('grading_period', $data['grading_period'])
@@ -200,6 +205,11 @@ class TeacherController extends Controller
         $data = $request->validate([
             'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
         ]);
+
+        // Locked school years are frozen — grades can no longer be changed.
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — grades can no longer be changed.');
+        }
 
         $gradeCount = Grade::where('class_id', $class->id)
             ->where('grading_period', $data['grading_period'])
@@ -262,6 +272,11 @@ class TeacherController extends Controller
             'status' => 'required|array',
             'status.*' => 'required|in:present,absent,late,excused',
         ]);
+
+        // Locked school years are frozen — attendance can no longer be changed.
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — attendance can no longer be changed.');
+        }
 
         $validIds = $class->enrollments()->where('status', 'Active')->pluck('enrollments.id')->all();
         $count = 0;
@@ -327,6 +342,11 @@ class TeacherController extends Controller
             'assessments.*.*.raw_score' => 'nullable|numeric|min:0',
             'assessments.*.*.max_score' => 'nullable|numeric|min:0',
         ]);
+
+        // Locked school years are frozen — assessments can no longer be changed.
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — assessments can no longer be changed.');
+        }
 
         // Submitted finals lock their assessments too — only an approved
         // unlock reopens them. Never wipe locked students' assessments.
@@ -569,6 +589,11 @@ class TeacherController extends Controller
             abort(403);
         }
 
+        // Locked school years are frozen — assessments can no longer be changed.
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — assessments can no longer be changed.');
+        }
+
         $data = $request->validate([
             'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
             'assessments' => 'required|array',
@@ -731,6 +756,11 @@ class TeacherController extends Controller
         $class = Classes::findOrFail($data['class_id']);
         if ($class->teacher_id !== auth()->id()) {
             abort(403);
+        }
+
+        // Locked school years are frozen — grades can no longer be changed.
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — grades can no longer be changed.');
         }
 
         // Submitted grades are locked — this saves as Pending (correct via unlock flow).

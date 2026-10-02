@@ -97,6 +97,11 @@ class PrincipalController extends Controller
             return back()->with('error', 'Class not found.');
         }
 
+        // Locked school years are frozen — their schedules can no longer be edited.
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — its schedules can no longer be edited.');
+        }
+
         $conflict = $this->findScheduleConflict($data, $class);
         if ($conflict) {
             return back()->with('error', $conflict);
@@ -195,6 +200,11 @@ class PrincipalController extends Controller
             return back()->with('error', 'Schedule has no linked class.');
         }
 
+        // Locked school years are frozen — their schedules can no longer be edited.
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — its schedules can no longer be edited.');
+        }
+
         $conflict = $this->findScheduleConflict($data, $class, $schedule->id);
         if ($conflict) {
             return back()->with('error', $conflict);
@@ -215,6 +225,10 @@ class PrincipalController extends Controller
 
     public function schedulesDestroy(Schedule $schedule)
     {
+        // Locked school years are frozen — their schedules can no longer be edited.
+        if ($schedule->schoolClass && school_year_locked($schedule->schoolClass->school_year)) {
+            return back()->with('error', 'School year ' . $schedule->schoolClass->school_year . ' is locked — its schedules can no longer be edited.');
+        }
         $info = 'Schedule #' . $schedule->id . ' (' . $schedule->day_of_week . ' ' . substr($schedule->start_time,0,5) . '-' . substr($schedule->end_time,0,5) . ') deleted';
         log_activity($schedule, 'Schedule Deleted', auth()->user()->name . ' deleted ' . $info);
         $schedule->delete();
@@ -310,6 +324,11 @@ class PrincipalController extends Controller
             }
 
             $class = Classes::find($r['class_id']);
+            // Locked school years are frozen — skip rows targeting them.
+            if ($class && school_year_locked($class->school_year)) {
+                $skipped[] = "Line {$r['line']}: school year {$class->school_year} is locked — skipped.";
+                continue;
+            }
             $conflict = $this->findScheduleConflict($r, $class);
             if ($conflict) {
                 $skipped[] = "Line {$r['line']}: {$conflict} — skipped.";

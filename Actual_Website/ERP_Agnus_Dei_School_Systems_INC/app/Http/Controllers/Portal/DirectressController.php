@@ -124,6 +124,11 @@ class DirectressController extends Controller
             return back()->withInput()->with('error', 'A fee schedule already exists for this grade level, term, and school year.');
         }
 
+        // Locked school years are frozen — their settings can no longer be edited.
+        if (school_year_locked($data['school_year'])) {
+            return back()->withInput()->with('error', 'School year ' . $data['school_year'] . ' is locked — its settings can no longer be edited.');
+        }
+
         $feeSchedule = FeeSchedule::create($data);
 
         log_activity($feeSchedule, 'Fee Schedule Created', auth()->user()->name . ' created fee schedule for ' . $data['grade_level'] . ' (SY: ' . $data['school_year'] . ').');
@@ -150,6 +155,11 @@ class DirectressController extends Controller
             'school_year' => 'required|string|max:20',
         ]);
 
+        // Locked school years are frozen — their settings can no longer be edited.
+        if (school_year_locked($data['school_year']) || school_year_locked($fee->school_year)) {
+            return back()->with('error', 'School year ' . $fee->school_year . ' is locked — its settings can no longer be edited.');
+        }
+
         $fee->update($data);
 
         log_activity($fee, 'Fee Schedule Updated', auth()->user()->name . ' updated fee schedule for ' . $fee->grade_level . '.');
@@ -160,6 +170,10 @@ class DirectressController extends Controller
 
     public function feesDestroy(FeeSchedule $fee)
     {
+        // Locked school years are frozen — their settings can no longer be edited.
+        if (school_year_locked($fee->school_year)) {
+            return back()->with('error', 'School year ' . $fee->school_year . ' is locked — its settings can no longer be edited.');
+        }
         $gradeLevel = $fee->grade_level;
         $fee->delete();
         log_activity('App\\Models\\FeeSchedule', 'Fee Schedule Deleted', auth()->user()->name . ' deleted fee schedule for ' . $gradeLevel . '.');
@@ -196,6 +210,11 @@ class DirectressController extends Controller
             return back()->withInput()->with('error', 'A graduation fee already exists for this grade level and school year.');
         }
 
+        // Locked school years are frozen — their settings can no longer be edited.
+        if (school_year_locked($data['school_year'])) {
+            return back()->withInput()->with('error', 'School year ' . $data['school_year'] . ' is locked — its settings can no longer be edited.');
+        }
+
         $graduationFee = GraduationFee::create($data);
 
         log_activity($graduationFee, 'Graduation Fee Created', auth()->user()->name . ' created graduation fee: ' . $data['grade_level'] . ' (₱' . number_format($data['graduation_fee'], 2) . ').');
@@ -219,6 +238,11 @@ class DirectressController extends Controller
             'other_fees' => 'required|numeric|min:0',
         ]);
 
+        // Locked school years are frozen — their settings can no longer be edited.
+        if (school_year_locked($data['school_year']) || school_year_locked($graduationFee->school_year)) {
+            return back()->with('error', 'School year ' . $graduationFee->school_year . ' is locked — its settings can no longer be edited.');
+        }
+
         $graduationFee->update($data);
 
         log_activity($graduationFee, 'Graduation Fee Updated', auth()->user()->name . ' updated graduation fee: ' . $graduationFee->grade_level . '.');
@@ -229,6 +253,10 @@ class DirectressController extends Controller
 
     public function graduationFeesDestroy(GraduationFee $graduationFee)
     {
+        // Locked school years are frozen — their settings can no longer be edited.
+        if (school_year_locked($graduationFee->school_year)) {
+            return back()->with('error', 'School year ' . $graduationFee->school_year . ' is locked — its settings can no longer be edited.');
+        }
         $name = $graduationFee->grade_level;
         $graduationFee->delete();
         log_activity('App\\Models\\GraduationFee', 'Graduation Fee Deleted', auth()->user()->name . ' deleted graduation fee: ' . $name . '.');

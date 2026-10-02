@@ -48,6 +48,11 @@ class FeeAssignmentController extends Controller
     {
         $schoolYear = active_school_year();
 
+        // Locked school years are frozen — nothing may be assigned into them.
+        if (school_year_locked($schoolYear)) {
+            return back()->with('error', 'Cannot assign — school year ' . $schoolYear . ' is locked.');
+        }
+
         $enrollments = Enrollment::with('section')
             ->where('status', 'Active')
             ->where('school_year', $schoolYear)
@@ -92,6 +97,12 @@ class FeeAssignmentController extends Controller
         ]);
 
         $fee = GraduationFee::findOrFail($data['graduation_fee_id']);
+
+        // Locked school years are frozen — nothing may be assigned into them.
+        if ($fee->school_year && school_year_locked($fee->school_year)) {
+            return back()->with('error', 'Cannot assign — school year ' . $fee->school_year . ' is locked.');
+        }
+
         $totalPerStudent = $fee->graduation_fee + $fee->other_fees;
 
         $assignedIds = StudentGraduationFee::where('graduation_fee_id', $fee->id)->pluck('student_id')->all();

@@ -134,6 +134,11 @@ class LibrarianController extends Controller
 
     public function destroyBook(Book $book)
     {
+        // Loan history references books by FK — deleting a borrowed book would
+        // either violate the constraint or destroy history. Deactivate instead.
+        if (\App\Models\LibraryTransaction::where('book_id', $book->id)->exists()) {
+            return back()->with('error', 'Cannot delete — this book has loan history. Deactivate it instead.');
+        }
         log_activity($book, 'Book Deleted', auth()->user()->name . ' deleted book: "' . $book->title . '".');
         $book->delete();
         return back()->with('success', 'Book deleted.');

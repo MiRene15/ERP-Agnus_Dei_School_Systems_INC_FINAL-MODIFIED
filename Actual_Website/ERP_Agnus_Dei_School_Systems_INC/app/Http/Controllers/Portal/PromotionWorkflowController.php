@@ -60,6 +60,11 @@ class PromotionWorkflowController extends Controller
             'reasons.*' => 'nullable|string|max:500',
         ]);
 
+        // Locked school years are frozen — nothing moves into them.
+        if (school_year_locked($data['school_year'])) {
+            return redirect()->route('registrar.promotion.index')->with('error', 'Cannot propose — school year ' . $data['school_year'] . ' is locked.');
+        }
+
         $created = 0;
         $errors = [];
 
@@ -174,6 +179,11 @@ class PromotionWorkflowController extends Controller
             : [];
         if (!empty($holds)) {
             return back()->with('error', 'Cannot execute — holds must be cleared first. ' . \App\Services\HoldService::blockingMessage($holds));
+        }
+
+        // Locked school years are frozen — nothing moves into them.
+        if (school_year_locked($proposal->school_year)) {
+            return back()->with('error', 'Cannot execute — school year ' . $proposal->school_year . ' is locked.');
         }
 
         $proposal->update([

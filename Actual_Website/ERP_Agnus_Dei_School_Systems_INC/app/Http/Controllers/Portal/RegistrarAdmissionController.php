@@ -146,6 +146,11 @@ class RegistrarAdmissionController extends Controller
             }
         }
 
+        // Locked school years are frozen — no new enrollments into them.
+        if (school_year_locked($admission->school_year)) {
+            return back()->with('error', 'Cannot enroll — school year ' . $admission->school_year . ' is locked.');
+        }
+
         $data = $request->validate([
             'section_id' => 'required|exists:sections,id',
             'subject_ids' => 'required|array',

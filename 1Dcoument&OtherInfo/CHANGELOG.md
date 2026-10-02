@@ -1,5 +1,11 @@
 # Release Notes
 
+## [Unreleased] — Crash Fixes + School-Year Lock Enforcement — 2026-10-01
+- **Nurse log 500 fixed:** `treatment` column now nullable (form allowed empty, DB rejected it)
+- **Book delete guarded:** refusing books with loan history (was FK-violation 500) with direction to deactivate instead
+- **Lock enforced:** new `school_year_locked()` helper now guards registrar approvals, promotion propose/sign-off, cashier payments, all teacher grade/assessment/attendance/submit writes, fee assignment, directress fee writes, and principal schedule CRUD/import — the toggle finally means what it says
+- **Verification:** 7/7 incl. live lock/unlock cycle (try/finally, no stuck locks); smoke **238/238**
+
 ## [Unreleased] — Registrar/Cashier/Teacher Deep-Check Fixes — 2026-10-01
 - **Money bug fixed:** first payment on a ledger-less student recorded `total_paid` twice (create set it, then the common path added again) — now skipped via the (previously unused) first-payment flag; verified live with a synthetic student (500 recorded once, fully cleaned up); recomputed 2 seed-era drifted ledgers to their actual paid totals
 - **Grade lock enforced:** all four teacher write paths now skip Submitted rows (assessments also preserve locked students' rows instead of wiping the class); skip counts reported with unlock directions; `batchSubmitGrades` log/message corrected (it saves Pending, not submits); submit notification rerouted from IT to Principal + Registrar with mail-failure guard
