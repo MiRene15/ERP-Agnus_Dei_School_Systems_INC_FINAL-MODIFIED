@@ -41,13 +41,21 @@ class TeacherController extends Controller
             return $c->enrollments->where('status', 'Active')->count();
         });
 
+        // Correction workflow status, so approved unlocks get acted on.
+        $unlockPending = \App\Models\GradeUnlockRequest::where('requested_by', $teacherId)
+            ->where('status', \App\Models\GradeUnlockRequest::STATUS_PENDING)
+            ->count();
+        $unlockApproved = \App\Models\GradeUnlockRequest::where('requested_by', $teacherId)
+            ->where('status', \App\Models\GradeUnlockRequest::STATUS_APPROVED)
+            ->count();
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.teacher.partials.dashboard-results', compact('classes', 'todaySchedule', 'totalStudents', 'schoolYear', 'schoolYears'))->render(),
+                'html' => view('portal.teacher.partials.dashboard-results', compact('classes', 'todaySchedule', 'totalStudents', 'schoolYear', 'schoolYears', 'unlockPending', 'unlockApproved'))->render(),
             ]);
         }
 
-        return view('portal.teacher.dashboard', compact('classes', 'todaySchedule', 'totalStudents', 'schoolYear', 'schoolYears'));
+        return view('portal.teacher.dashboard', compact('classes', 'todaySchedule', 'totalStudents', 'schoolYear', 'schoolYears', 'unlockPending', 'unlockApproved'));
     }
 
     public function classes(Request $request)
@@ -143,8 +151,20 @@ class TeacherController extends Controller
             'grades.*' => 'nullable|numeric|min:0|max:100',
         ]);
 
+        // Submitted grades are locked — only an approved unlock reopens them.
+        $lockedIds = Grade::where('class_id', $class->id)
+            ->where('grading_period', $data['grading_period'])
+            ->where('status', 'Submitted')
+            ->pluck('enrollment_id')
+            ->flip();
+
+        $skipped = 0;
         foreach ($data['grades'] as $enrollmentId => $finalGrade) {
             if ($finalGrade === null || $finalGrade === '') {
+                continue;
+            }
+            if (isset($lockedIds[$enrollmentId])) {
+                $skipped++;
                 continue;
             }
 
@@ -161,9 +181,14 @@ class TeacherController extends Controller
             );
         }
 
-        log_activity($class, 'Grades Saved', auth()->user()->name . ' saved grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count(array_filter($data['grades'])) . ' grade(s) recorded.');
+        log_activity($class, 'Grades Saved', auth()->user()->name . ' saved grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count(array_filter($data['grades'])) . ' grade(s) recorded.' . ($skipped ? " {$skipped} submitted (locked) grade(s) skipped." : ''));
 
-        return back()->with('success', 'Grades saved for ' . $data['grading_period'] . '.');
+        $message = 'Grades saved for ' . $data['grading_period'] . '.';
+        if ($skipped) {
+            $message .= " {$skipped} submitted grade(s) were skipped (locked) — request a correction unlock to change them.";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function submitGrades(Request $request, Classes $class)
@@ -181,9 +206,14 @@ class TeacherController extends Controller
             ->where('status', 'Pending')
             ->update(['status' => 'Submitted']);
 
-        $recipients = User::whereIn('role_id', [1, 2])->pluck('email')->filter();
-        foreach ($recipients as $email) {
-            Mail::to($email)->send(new GradesSubmittedMail($class, $data['grading_period']));
+        // Principal + Registrar are notified (IT is out of the academic loop).
+        $recipients = User::whereIn('role_id', [2, 9])->pluck('email')->filter();
+        try {
+            foreach ($recipients as $email) {
+                Mail::to($email)->send(new GradesSubmittedMail($class, $data['grading_period']));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Grades-submitted mail failed: ' . $e->getMessage(), ['class_id' => $class->id]);
         }
 
         log_activity($class, 'Grades Submitted', auth()->user()->name . ' submitted grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . $gradeCount . ' grade(s) submitted.');
@@ -298,12 +328,27 @@ class TeacherController extends Controller
             'assessments.*.*.max_score' => 'nullable|numeric|min:0',
         ]);
 
+        // Submitted finals lock their assessments too — only an approved
+        // unlock reopens them. Never wipe locked students' assessments.
+        $lockedIds = Grade::where('class_id', $class->id)
+            ->where('grading_period', $data['grading_period'])
+            ->where('status', 'Submitted')
+            ->pluck('enrollment_id')
+            ->flip()
+            ->toArray();
+
         Assessment::where('class_id', $class->id)
             ->where('grading_period', $data['grading_period'])
+            ->when(!empty($lockedIds), fn($q) => $q->whereNotIn('enrollment_id', array_keys($lockedIds)))
             ->delete();
 
         $inserts = [];
+        $skipped = 0;
         foreach ($data['assessments'] as $enrollmentId => $items) {
+            if (isset($lockedIds[$enrollmentId])) {
+                $skipped++;
+                continue;
+            }
             foreach ($items as $item) {
                 if (empty($item['title']) && empty($item['raw_score'])) {
                     continue;
@@ -326,9 +371,14 @@ class TeacherController extends Controller
             Assessment::insert($inserts);
         }
 
-        log_activity($class, 'Assessments Saved', auth()->user()->name . ' saved assessments for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count($inserts) . ' assessment(s) recorded.');
+        log_activity($class, 'Assessments Saved', auth()->user()->name . ' saved assessments for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count($inserts) . ' assessment(s) recorded.' . ($skipped ? " {$skipped} submitted (locked) student(s) skipped." : ''));
 
-        return back()->with('success', 'Assessments saved for ' . $data['grading_period'] . '.');
+        $message = 'Assessments saved for ' . $data['grading_period'] . '.';
+        if ($skipped) {
+            $message .= " {$skipped} submitted student(s) were skipped (locked) — request a correction unlock to change them.";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function schedule(Request $request)
@@ -528,6 +578,16 @@ class TeacherController extends Controller
             'assessments.*.max_score' => 'nullable|numeric|min:0',
         ]);
 
+        // A submitted final grade locks this student's assessments too.
+        $locked = Grade::where('class_id', $class->id)
+            ->where('enrollment_id', $enrollmentId)
+            ->where('grading_period', $data['grading_period'])
+            ->where('status', 'Submitted')
+            ->exists();
+        if ($locked) {
+            return back()->with('error', 'These assessments are locked (final grade already submitted) — request a correction unlock to change them.');
+        }
+
         Assessment::where('class_id', $class->id)
             ->where('enrollment_id', $enrollmentId)
             ->where('grading_period', $data['grading_period'])
@@ -673,7 +733,19 @@ class TeacherController extends Controller
             abort(403);
         }
 
+        // Submitted grades are locked — this saves as Pending (correct via unlock flow).
+        $lockedIds = Grade::where('class_id', $class->id)
+            ->where('grading_period', $data['grading_period'])
+            ->where('status', 'Submitted')
+            ->pluck('enrollment_id')
+            ->flip();
+
+        $skipped = 0;
         foreach ($data['grades'] as $gradeData) {
+            if (isset($lockedIds[$gradeData['enrollment_id']])) {
+                $skipped++;
+                continue;
+            }
             Grade::updateOrCreate(
                 [
                     'enrollment_id' => $gradeData['enrollment_id'],
@@ -687,8 +759,13 @@ class TeacherController extends Controller
             );
         }
 
-        log_activity($class, 'Batch Grades Submitted', auth()->user()->name . ' batch-submitted grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count($data['grades']) . ' grade(s) submitted.');
+        log_activity($class, 'Batch Grades Saved', auth()->user()->name . ' batch-saved grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count($data['grades']) . ' grade(s) saved.' . ($skipped ? " {$skipped} submitted (locked) grade(s) skipped." : ''));
 
-        return back()->with('success', count($data['grades']) . ' grade(s) saved for ' . $data['grading_period'] . '.');
+        $message = count($data['grades']) . ' grade(s) saved for ' . $data['grading_period'] . ' (Pending — submit to lock).';
+        if ($skipped) {
+            $message .= " {$skipped} submitted grade(s) were skipped (locked) — request a correction unlock to change them.";
+        }
+
+        return back()->with('success', $message);
     }
 }

@@ -62,6 +62,11 @@ class SectionController extends Controller
             return back()->withInput()->with('error', "Section {$data['section_name']} already exists for {$data['grade_level']}.");
         }
 
+        // Advisers must be teacher accounts (the dropdown lists teachers only).
+        if (!empty($data['adviser_id']) && (int) User::where('id', $data['adviser_id'])->value('role_id') !== 4) {
+            return back()->withInput()->with('error', 'Adviser must be a teacher account.');
+        }
+
         Section::create([
             'grade_level' => $data['grade_level'],
             'section_name' => $data['section_name'],
@@ -101,6 +106,11 @@ class SectionController extends Controller
             return back()->withInput()->with('error', "Section {$data['section_name']} already exists for {$data['grade_level']}.");
         }
 
+        // Advisers must be teacher accounts (the dropdown lists teachers only).
+        if (!empty($data['adviser_id']) && (int) User::where('id', $data['adviser_id'])->value('role_id') !== 4) {
+            return back()->withInput()->with('error', 'Adviser must be a teacher account.');
+        }
+
         $section->update([
             'grade_level' => $data['grade_level'],
             'section_name' => $data['section_name'],
@@ -118,6 +128,14 @@ class SectionController extends Controller
     {
         if ($section->enrollments()->where('status', 'Active')->exists()) {
             return back()->with('error', 'Cannot delete — section has active enrollments. Deactivate it instead.');
+        }
+        // Classes reference sections by (grade_level, section) name — no FK to
+        // cascade, so deleting a class-bearing section would orphan class rows.
+        $hasClasses = \App\Models\Classes::where('grade_level', $section->grade_level)
+            ->where('section', $section->section_name)
+            ->exists();
+        if ($hasClasses) {
+            return back()->with('error', 'Cannot delete — section still has classes. Deactivate it instead.');
         }
         $section->delete();
         log_activity($section, 'Deleted', "Deleted section: {$section->section_name} ({$section->grade_level})");

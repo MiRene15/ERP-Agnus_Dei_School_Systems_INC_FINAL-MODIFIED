@@ -72,7 +72,7 @@
     @if(empty($readOnly))
     <div class="mb-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <details>
-            <summary class="cursor-pointer text-sm font-semibold text-gray-700">Import from CSV (hybrid — manual stays)</summary>
+            <summary class="cursor-pointer text-sm font-semibold text-gray-700">Import from CSV (staged — Principal approves before anything goes live)</summary>
             <div class="mt-3 flex flex-col gap-3">
                 <p class="text-xs text-gray-500">CSV: <code>subject_code,name,grade_level,category</code> — category = Core/Contextualized/Specialized/TVL. Duplicates skipped.</p>
                 <div class="flex gap-2 items-center flex-wrap">

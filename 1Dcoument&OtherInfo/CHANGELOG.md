@@ -1,5 +1,12 @@
 # Release Notes
 
+## [Unreleased] — Registrar/Cashier/Teacher Deep-Check Fixes — 2026-10-01
+- **Money bug fixed:** first payment on a ledger-less student recorded `total_paid` twice (create set it, then the common path added again) — now skipped via the (previously unused) first-payment flag; verified live with a synthetic student (500 recorded once, fully cleaned up); recomputed 2 seed-era drifted ledgers to their actual paid totals
+- **Grade lock enforced:** all four teacher write paths now skip Submitted rows (assessments also preserve locked students' rows instead of wiping the class); skip counts reported with unlock directions; `batchSubmitGrades` log/message corrected (it saves Pending, not submits); submit notification rerouted from IT to Principal + Registrar with mail-failure guard
+- **Section guards:** delete now also refuses class-bearing sections (classes link by name, no FK to cascade); adviser must be a teacher account (was any user id); subjects import copy now says staged-for-approval
+- **Dashboard work queues:** registrar (withdrawals, unlock reviews, missing ledgers), cashier (discounts to apply, refunds to release), teacher (unlock decisions/reopened) — all link straight to their pages
+- **Verification:** 9/9 targeted checks; smoke harness (+1 admin-403 test) → **238/238 PASS**
+
 ## [Unreleased] — Reform Follow-ups: Clearance, Teacher Assignment, Subject Approvals — 2026-10-01
 - **Clearance auto-update (Phase 1 loose end):** `LedgerService::refreshClearance()` derives Cleared/Uncleared from balance after every money mutation (payment, refund release, void, discount apply, promotion carry, bulk assign); live backfill (17 → Cleared, 66 → Uncleared); student ledger "IT Confirmation" row relabeled to Clearance; float-dust bug (settled accounts stuck Uncleared) found in verification and fixed with cents rounding
 - **Teacher-class assignment (Principal):** verified nothing ever wrote `classes.teacher_id` — new Principal "Teachers" page (grade filter, per-row assign/unassign, non-teacher rejection, audit-logged) feeding the existing schedule conflict detection

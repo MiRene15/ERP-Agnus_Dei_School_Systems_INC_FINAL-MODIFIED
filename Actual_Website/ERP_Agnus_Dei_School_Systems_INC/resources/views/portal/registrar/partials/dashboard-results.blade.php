@@ -11,6 +11,24 @@
     </div>
 </div>
 
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <a href="{{ route('registrar.withdrawals.index') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition block">
+        <h3 class="text-sm font-semibold text-gray-500 mb-1">Pending Withdrawals</h3>
+        <p class="text-3xl font-bold {{ ($pendingWithdrawals ?? 0) > 0 ? 'text-amber-600' : 'text-gray-900' }}">{{ $pendingWithdrawals ?? 0 }}</p>
+        <p class="text-sm text-gray-500 mt-1">Awaiting review</p>
+    </a>
+    <a href="{{ route('registrar.grade-unlocks.index') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition block">
+        <h3 class="text-sm font-semibold text-gray-500 mb-1">Grade Unlock Reviews</h3>
+        <p class="text-3xl font-bold {{ ($pendingUnlocks ?? 0) > 0 ? 'text-amber-600' : 'text-gray-900' }}">{{ $pendingUnlocks ?? 0 }}</p>
+        <p class="text-sm text-gray-500 mt-1">Teacher correction requests</p>
+    </a>
+    <a href="{{ route('registrar.fee-assignment.index') }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition block">
+        <h3 class="text-sm font-semibold text-gray-500 mb-1">Missing Ledgers</h3>
+        <p class="text-3xl font-bold {{ ($missingLedgers ?? 0) > 0 ? 'text-red-600' : 'text-gray-900' }}">{{ $missingLedgers ?? 0 }}</p>
+        <p class="text-sm text-gray-500 mt-1">Enrollments without fees</p>
+    </a>
+</div>
+
 @if($recentAdmissions->isNotEmpty())
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
     <h3 class="font-semibold text-gray-900 mb-4">Recent Applications</h3>

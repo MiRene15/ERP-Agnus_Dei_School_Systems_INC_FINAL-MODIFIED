@@ -26,13 +26,20 @@ class CashierController extends Controller
         $todayCollection = Payment::whereDate('payment_date', today())->sum('amount_paid');
         $receiptsToday = Payment::whereDate('payment_date', today())->count();
 
+        // Work queues: approved discounts to apply + refund payouts to release.
+        $approvedDiscounts = \App\Models\DiscountRequest::where('status', \App\Models\DiscountRequest::STATUS_APPROVED)->count();
+        $pendingRefunds = \App\Models\Withdrawal::where('status', 'Approved')
+            ->where('refund_amount', '>', 0)
+            ->whereNull('refund_processed_at')
+            ->count();
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.dashboard-results', compact('todayCollection', 'receiptsToday'))->render(),
+                'html' => view('portal.cashier.partials.dashboard-results', compact('todayCollection', 'receiptsToday', 'approvedDiscounts', 'pendingRefunds'))->render(),
             ]);
         }
 
-        return view('portal.cashier.dashboard', compact('todayCollection', 'receiptsToday'));
+        return view('portal.cashier.dashboard', compact('todayCollection', 'receiptsToday', 'approvedDiscounts', 'pendingRefunds'));
     }
 
     public function payments(Request $request)
@@ -261,13 +268,17 @@ class CashierController extends Controller
                             $ledger->discount_type = $data['discount_type'];
                         }
                     }
-
-                    $ledger->total_paid += $data['amount_paid'];
-                    $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
-
-                    $ledger->save();
-                    \App\Services\LedgerService::refreshClearance($ledger);
                 }
+
+                // First payment on a just-created ledger is already recorded by
+                // create() above — adding it again would double total_paid.
+                if (empty($isFirstPayment)) {
+                    $ledger->total_paid += $data['amount_paid'];
+                }
+                $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
+
+                $ledger->save();
+                \App\Services\LedgerService::refreshClearance($ledger);
 
                 $receiptNumber = null;
                 for ($attempt = 0; $attempt < 5; $attempt++) {
