@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Enrollment;
-use App\Models\Setting;
 use App\Models\Student;
 use App\Models\StudentLedger;
 use App\Models\Withdrawal;
@@ -115,25 +114,14 @@ class WithdrawalController extends Controller
         $student = $withdrawal->student;
         $enrollment = $withdrawal->enrollment;
 
-        $currentTerm = Setting::getValue('current_term', '1st Term');
-
-        $hasGrades = $enrollment->grades()->exists();
-
-        if ($currentTerm === '1st Term' && !$hasGrades) {
-            $refundPercentage = 1.0;
-        } elseif ($currentTerm === '1st Term') {
-            $refundPercentage = 0.5;
-        } elseif ($currentTerm === '2nd Term') {
-            $refundPercentage = 0.25;
-        } else {
-            $refundPercentage = 0;
-        }
+        // Refund policy: flat 25% of total paid, regardless of term.
+        $refundPercentage = 0.25;
 
         $ledger = $student->ledger;
         $totalPaid = $ledger ? $ledger->total_paid : 0;
         $refundAmount = round($totalPaid * $refundPercentage, 2);
 
-        DB::transaction(function () use ($withdrawal, $student, $enrollment, $refundAmount, $refundPercentage) {
+        DB::transaction(function () use ($withdrawal, $student, $enrollment, $refundAmount) {
             $withdrawal->status = 'Approved';
             $withdrawal->processed_by = auth()->id();
             $withdrawal->refund_amount = $refundAmount;
@@ -142,9 +130,9 @@ class WithdrawalController extends Controller
 
             $enrollment->update(['status' => 'Withdrawn']);
 
-            $refundLabel = $refundPercentage > 0
-                ? " — Refund due: ₱" . number_format($refundAmount, 2) . " (" . ($refundPercentage * 100) . "%, awaiting Cashier release)"
-                : " — No refund (0%)";
+            $refundLabel = $refundAmount > 0
+                ? " — Refund due: ₱" . number_format($refundAmount, 2) . " (flat 25% of total paid, awaiting Cashier release)"
+                : " — No refund (nothing paid)";
 
             log_activity($student, 'Withdrawal Approved', auth()->user()->name . " (Registrar) approved withdrawal for {$student->first_name} {$student->last_name}{$refundLabel}");
         });

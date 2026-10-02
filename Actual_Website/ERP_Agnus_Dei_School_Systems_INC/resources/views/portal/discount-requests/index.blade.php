@@ -30,10 +30,10 @@
         @csrf
         <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 dark:text-[#C1C4DC] mb-1">Student (active enrollment) *</label>
-            <select name="student_ledger_id" required class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <select name="student_ledger_id" id="ledger-select" required class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="">Select student…</option>
                 @foreach($ledgers as $ledger)
-                    <option value="{{ $ledger->id }}" {{ old('student_ledger_id') == $ledger->id ? 'selected' : '' }}>
+                    <option value="{{ $ledger->id }}" data-assessed="{{ $ledger->total_assessed }}" {{ old('student_ledger_id') == $ledger->id ? 'selected' : '' }}>
                         {{ $ledger->student->first_name }} {{ $ledger->student->last_name }} — {{ $ledger->student->user->email ?? '' }} (₱{{ number_format($ledger->total_assessed, 2) }} assessed)
                     </option>
                 @endforeach
@@ -49,7 +49,14 @@
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-[#C1C4DC] mb-1">Amount (₱) *</label>
-            <input type="number" name="discount_amount" value="{{ old('discount_amount') }}" required min="0" step="0.01" class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="number" name="discount_amount" id="discount-amount" value="{{ old('discount_amount') }}" required min="0" step="0.01" class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <div class="flex gap-2 mt-2 flex-wrap">
+                <span class="text-xs text-gray-500 dark:text-[#8A90B0] self-center">Quick % of assessed:</span>
+                @foreach([5, 10, 15, 20, 30] as $pct)
+                <button type="button" onclick="setDiscountPreset({{ $pct }})" class="px-3 py-1 rounded-lg text-xs font-semibold border border-gray-300 dark:border-[#3B4172] text-gray-700 dark:text-[#C1C4DC] hover:border-indigo-500 hover:text-indigo-600 transition">{{ $pct }}%</button>
+                @endforeach
+                <span id="preset-hint" class="text-xs text-indigo-600 dark:text-[#8A90B0] self-center"></span>
+            </div>
         </div>
         <div class="md:col-span-2">
             <label class="block text-sm font-medium text-gray-700 dark:text-[#C1C4DC] mb-1">Proof Details *</label>
@@ -60,6 +67,22 @@
         </div>
     </form>
 </div>
+
+<script>
+function setDiscountPreset(pct) {
+    var sel = document.getElementById('ledger-select');
+    var hint = document.getElementById('preset-hint');
+    var opt = sel.options[sel.selectedIndex];
+    var assessed = opt ? parseFloat(opt.getAttribute('data-assessed') || '0') : 0;
+    if (!opt || !opt.value || assessed <= 0) {
+        hint.textContent = 'Select a student first.';
+        return;
+    }
+    var amount = Math.round(assessed * pct) / 100;
+    document.getElementById('discount-amount').value = amount.toFixed(2);
+    hint.textContent = pct + '% of ₱' + assessed.toLocaleString('en-PH', {minimumFractionDigits: 2}) + ' = ₱' + amount.toLocaleString('en-PH', {minimumFractionDigits: 2});
+}
+</script>
 
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
     <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">All Requests</h3>
