@@ -46,7 +46,7 @@ class StudentAccountController extends Controller
         $label = $user->status === 'active' ? 'activated' : 'deactivated';
         log_activity($user, 'Status Changed', "Student account status changed to {$label} for {$user->name}");
         return redirect()->route('admin.student-accounts.index')
-            ->with('success', "Account for {$user->name} has been {$label}.");
+            ->with('success', 'Account for ' . e($user->name) . " has been {$label}.");
     }
 
     public function resetPassword(User $user)
@@ -56,6 +56,6 @@ class StudentAccountController extends Controller
 
         log_activity($user, 'Password Reset', "Password reset for student {$user->name}");
         return redirect()->route('admin.student-accounts.index')
-            ->with('success', "Password reset for {$user->name}. New temporary password: <strong>{$rawPassword}</strong>");
+            ->with('success', 'Password reset for ' . e($user->name) . ". New temporary password: <strong>{$rawPassword}</strong>");
     }
 }
