@@ -1,5 +1,10 @@
 # Release Notes
 
+## [Unreleased] — Inquiry Anti-Spam + Unlock Lock-Guard — 2026-10-01
+- **Inquiry protection per capstone spec:** throttle is now 5/hr per IP + 3/day per email (was 5/min/IP; lockout inherent in the decay); exact-duplicate applications (same name + email) rejected with directions instead of spawning duplicate accounts — siblings sharing an email still pass; honeypot field fakes success for bots while creating nothing
+- **Unlock approvals respect locked years** (previously the approval was meaningless there since teacher writes refuse anyway)
+- **Verification:** limiter config proven (5/3600s + 3/86400s) and observed firing live (429); duplicate/sibling/honeypot cycles with full cleanup; lock-guard cycle; all green
+
 ## [Unreleased] — Queued Inquiry Mail + Library Notices + Expense Visual — 2026-10-01
 - **Inquiry mail queued:** `InquiryCredentialsMail` finally implements `ShouldQueue` like the other five — public inquiry no longer hangs on the broken Resend path (fast 302, mail queued for the worker); side effect: each inquiry now adds one `jobs` row until a worker runs
 - **Library urgent-notices banner (V-2):** dashboard lists overdue unreturned loans (student, book, due date) with a link to loans

@@ -106,6 +106,12 @@ class GradeUnlockController extends Controller
             return back()->with('error', 'Only pending requests can be approved.');
         }
 
+        // Locked school years are frozen — reopening grades there is meaningless
+        // (the teacher write guards would refuse every correction anyway).
+        if ($unlockRequest->schoolClass && school_year_locked($unlockRequest->schoolClass->school_year)) {
+            return back()->with('error', 'School year ' . $unlockRequest->schoolClass->school_year . ' is locked — unlocks can no longer be approved for it.');
+        }
+
         $reopened = Grade::where('class_id', $unlockRequest->class_id)
             ->where('grading_period', $unlockRequest->grading_period)
             ->where('status', 'Submitted')

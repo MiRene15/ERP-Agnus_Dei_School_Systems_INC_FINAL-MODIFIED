@@ -12,6 +12,10 @@
     <div class="card glass-effect">
         <form action="/inquiry" method="POST">
             @csrf
+            {{-- Honeypot: invisible to humans, irresistible to bots. --}}
+            <div style="position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true">
+                <label>Website <input type="text" name="website" value="" tabindex="-1" autocomplete="off"></label>
+            </div>
             
             <div style="margin-bottom: 20px;">
                 <label for="first_name" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--primary-navy);">First Name</label>

@@ -22,6 +22,12 @@ class InquiryController extends Controller
 
     public function store(Request $request)
     {
+        // Honeypot: bots fill this hidden field; humans never see it.
+        // Fake success without creating anything (don't tip off spammers).
+        if ($request->filled('website')) {
+            return redirect('/inquiry')->with('success', true);
+        }
+
         $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -34,6 +40,20 @@ class InquiryController extends Controller
                     $domain = substr(strrchr($value, '@'), 1);
                     if (!in_array(strtolower($domain), $allowed)) {
                         $fail('Please use a verified email provider (Gmail, Yahoo, Proton, or Outlook).');
+                    }
+                },
+                // No duplicate applications: same child (name) + same contact
+                // email already in the system. Siblings (different names) pass.
+                function ($attribute, $value, $fail) use ($request) {
+                    $first = strtolower(trim((string) $request->first_name));
+                    $last = strtolower(trim((string) $request->last_name));
+                    $email = strtolower(trim((string) $value));
+                    $dup = Student::whereRaw('LOWER(TRIM(first_name)) = ?', [$first])
+                        ->whereRaw('LOWER(TRIM(last_name)) = ?', [$last])
+                        ->whereRaw('LOWER(TRIM(personal_email)) = ?', [$email])
+                        ->exists();
+                    if ($dup) {
+                        $fail('An application with this name and email already exists. Please log in or contact the registrar instead of applying again.');
                     }
                 },
             ],
