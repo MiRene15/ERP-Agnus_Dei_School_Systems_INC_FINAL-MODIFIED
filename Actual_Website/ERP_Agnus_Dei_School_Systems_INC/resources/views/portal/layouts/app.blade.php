@@ -476,6 +476,7 @@
             </header>
 
             {{-- Welcome bar --}}
+            @if(request()->routeIs('dashboard') || request()->routeIs('*.dashboard'))
             <div class="px-5 pt-5 pb-2 flex items-end justify-between flex-shrink-0">
                 <div>
                     <h1 class="text-lg font-semibold" style="color: var(--navy-text);" x-text="greeting + ', {{ Auth::user()->name }}.'"></h1>
@@ -486,6 +487,7 @@
                     <div class="text-[10px]" style="color: var(--muted); margin-top: 1px;" x-text="date"></div>
                 </div>
             </div>
+            @endif
 
             {{-- Content --}}
             <main class="flex-1 overflow-x-hidden overflow-y-auto px-5 pb-5">
