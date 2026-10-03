@@ -31,13 +31,24 @@ class LibrarianController extends Controller
             ->take(5)
             ->get();
 
+        // Urgent notices: overdue unreturned loans, oldest first.
+        $urgentOverdue = LibraryTransaction::with('student', 'book')
+            ->where('status', 'Borrowed')
+            ->where('return_date', '<', now())
+            ->where('return_date', '>', '1970-01-02')
+            ->whereNotNull('return_date')
+            ->whereNull('returned_at')
+            ->orderBy('return_date')
+            ->take(10)
+            ->get();
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.librarian.partials.dashboard-results', compact('totalBooks', 'availableBooks', 'borrowedBooks', 'overdueBooks', 'recentTransactions'))->render(),
+                'html' => view('portal.librarian.partials.dashboard-results', compact('totalBooks', 'availableBooks', 'borrowedBooks', 'overdueBooks', 'recentTransactions', 'urgentOverdue'))->render(),
             ]);
         }
 
-        return view('portal.librarian.dashboard', compact('totalBooks', 'availableBooks', 'borrowedBooks', 'overdueBooks', 'recentTransactions'));
+        return view('portal.librarian.dashboard', compact('totalBooks', 'availableBooks', 'borrowedBooks', 'overdueBooks', 'recentTransactions', 'urgentOverdue'));
     }
 
     // ─── Book Management ─────────────────────────────────────────

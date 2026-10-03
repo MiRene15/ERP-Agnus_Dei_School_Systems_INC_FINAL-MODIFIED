@@ -1,3 +1,17 @@
+@if(($urgentOverdue ?? collect())->isNotEmpty())
+<div class="mb-6 p-4 bg-red-50 dark:bg-[rgba(248,113,113,0.08)] border border-red-200 dark:border-[rgba(248,113,113,0.25)] rounded-xl">
+    <div class="flex items-center justify-between mb-2">
+        <p class="font-semibold text-red-800 dark:text-[#FCA5A5] text-sm">⚠ Urgent: {{ $urgentOverdue->count() }} overdue unreturned loan(s)</p>
+        <a href="{{ route('librarian.loans') }}" class="text-xs font-semibold text-red-700 dark:text-[#FCA5A5] hover:underline">Open loans →</a>
+    </div>
+    <ul class="text-xs text-red-700 dark:text-[#FCA5A5] space-y-1">
+        @foreach($urgentOverdue as $loan)
+        <li>{{ $loan->student->first_name ?? '' }} {{ $loan->student->last_name ?? '' }} — “{{ $loan->book->title ?? $loan->book_title }}” (due {{ \Carbon\Carbon::parse($loan->return_date)->format('M d, Y') }})</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6] mb-4 flex items-center">

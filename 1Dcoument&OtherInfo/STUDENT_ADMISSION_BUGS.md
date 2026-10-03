@@ -1,5 +1,7 @@
 # Student Admission Bugs & Navbar Checkmarks Analysis
 
+> **SUPERSEDED 2026-10-01** — analysis concluded the flows work: requirements upload lives on the admission-status page (route `student.admission.requirements`), and the 6-step form has a checkmarked step indicator (`admission-apply.blade.php`, verified live). Kept for history.
+
 ## Three Issues Reported
 
 1. **Requirements upload missing** -- Where do students upload requirements?

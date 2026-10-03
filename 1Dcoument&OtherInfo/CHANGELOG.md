@@ -1,5 +1,12 @@
 # Release Notes
 
+## [Unreleased] — Queued Inquiry Mail + Library Notices + Expense Visual — 2026-10-01
+- **Inquiry mail queued:** `InquiryCredentialsMail` finally implements `ShouldQueue` like the other five — public inquiry no longer hangs on the broken Resend path (fast 302, mail queued for the worker); side effect: each inquiry now adds one `jobs` row until a worker runs
+- **Library urgent-notices banner (V-2):** dashboard lists overdue unreturned loans (student, book, due date) with a link to loans
+- **Expense visual (VI-1):** pure-CSS paid/discount/balance bar with peso legend atop the cashier Fee Breakdown (no Chart.js — dead under ajax `x-html`, same rule as before)
+- **Docs retired:** BYTEA (executed), FILE_STORAGE (superseded by bytea), STUDENT_ADMISSION_BUGS (flows verified working)
+- **Verification:** 4/4 targeted checks; smoke **238/238**
+
 ## [Unreleased] — Crash Fixes + School-Year Lock Enforcement — 2026-10-01
 - **Nurse log 500 fixed:** `treatment` column now nullable (form allowed empty, DB rejected it)
 - **Book delete guarded:** refusing books with loan history (was FK-violation 500) with direction to deactivate instead

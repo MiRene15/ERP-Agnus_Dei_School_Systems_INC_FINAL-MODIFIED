@@ -1,5 +1,7 @@
 # Switch to BYTEA Database Storage
 
+> **SUPERSEDED 2026-10-01** — executed: requirements files moved to PostgreSQL BYTEA (`2026_08_14_120000_switch_requirements_to_bytea`, `file_content` column; seeder writes current schema). Kept for history.
+
 ## Why
 
 Supabase Storage is overkill for a school ERP. BYTEA is simpler:

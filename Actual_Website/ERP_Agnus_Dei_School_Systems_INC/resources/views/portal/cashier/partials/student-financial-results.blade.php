@@ -193,6 +193,30 @@
 
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
     <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">Fee Breakdown</h3>
+    @php
+        $vizTuition = $feeSchedules->sum('tuition_fee');
+        $vizMisc = $feeSchedules->sum('misc_fee');
+        $vizLibrary = $libraryTotal ?? 0;
+        $vizDiscount = $student->ledger->discount_applied ?? 0;
+        $vizPaid = $student->ledger->total_paid ?? 0;
+        $vizTotal = max(0.01, $vizTuition + $vizMisc + $vizLibrary);
+        $vizPaidW = min(100, max(0, $vizPaid / $vizTotal * 100));
+        $vizDiscW = min(100 - $vizPaidW, max(0, $vizDiscount / $vizTotal * 100));
+        $vizBalW = max(0, 100 - $vizPaidW - $vizDiscW);
+    @endphp
+    <div class="mb-4">
+        <div class="flex h-4 rounded-full overflow-hidden bg-gray-100 dark:bg-[#161A33]">
+            <div style="width: {{ $vizPaidW }}%" class="bg-green-500" title="Paid"></div>
+            <div style="width: {{ $vizDiscW }}%" class="bg-blue-500" title="Discount"></div>
+            <div style="width: {{ $vizBalW }}%" class="bg-red-500" title="Balance"></div>
+        </div>
+        <div class="flex gap-4 mt-2 text-xs flex-wrap">
+            <span class="inline-flex items-center gap-1.5 text-gray-600 dark:text-[#C1C4DC]"><span class="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"></span>Paid ₱{{ number_format($vizPaid, 2) }}</span>
+            <span class="inline-flex items-center gap-1.5 text-gray-600 dark:text-[#C1C4DC]"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>Discount ₱{{ number_format($vizDiscount, 2) }}</span>
+            <span class="inline-flex items-center gap-1.5 text-gray-600 dark:text-[#C1C4DC]"><span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"></span>Balance ₱{{ number_format(max(0, $vizTotal - $vizPaid - $vizDiscount), 2) }}</span>
+            <span class="text-gray-400 dark:text-[#8A90B0]">of ₱{{ number_format($vizTotal, 2) }} (tuition ₱{{ number_format($vizTuition, 2) }} + misc ₱{{ number_format($vizMisc, 2) }}@if($vizLibrary > 0) + library ₱{{ number_format($vizLibrary, 2) }}@endif)</span>
+        </div>
+    </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead><tr class="border-b border-gray-200 dark:border-[#2A2F58]"><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Item</th><th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Amount</th></tr></thead>

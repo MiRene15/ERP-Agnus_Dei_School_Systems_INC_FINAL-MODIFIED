@@ -1,5 +1,7 @@
 # Database File Storage Review - Requirements Upload
 
+> **SUPERSEDED 2026-10-01** — resolved differently: requirements files moved to PostgreSQL BYTEA (`file_content` column), not Supabase Storage. Local-disk loss concern is moot — files live in the database (included in DB backups). Kept for history.
+
 ## Current State
 
 Files are stored **locally** on disk at `storage/app/public/requirements/` via the `public` disk. The `requirements` table saves the relative file path (VARCHAR 255). Files are served through a `public/storage` symlink.
