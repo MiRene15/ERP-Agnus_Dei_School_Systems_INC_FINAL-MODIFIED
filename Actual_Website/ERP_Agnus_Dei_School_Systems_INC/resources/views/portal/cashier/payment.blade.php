@@ -1,7 +1,9 @@
 @extends('portal.layouts.app')
 
 @section('breadcrumbs')
-    <a href="{{ route('cashier.dashboard') }}" class="no-underline" style="color: var(--muted);">Cashier Dashboard</a>
+    <a href="{{ route('cashier.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
+    <span class="opacity-40">/</span>
+    <a href="{{ route('cashier.payments') }}" class="no-underline" style="color: var(--muted);">Process Payments</a>
     <span class="opacity-40">/</span>
     <span class="current">{{ $student->first_name }} {{ $student->last_name }}</span>
 @endsection

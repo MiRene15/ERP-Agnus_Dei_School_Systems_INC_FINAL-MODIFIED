@@ -438,8 +438,6 @@
                         </svg>
                     </button>
                     <nav class="flex items-center gap-1.5 text-xs" style="color: var(--muted);">
-                        <a href="{{ route('dashboard') }}" class="no-underline transition-colors hover:opacity-70" style="color: var(--muted);">Home</a>
-                        <span class="opacity-40">/</span>
                         @yield('breadcrumbs', '<span style="color: var(--navy-text); font-weight: 600;">Dashboard</span>')
                     </nav>
                 </div>

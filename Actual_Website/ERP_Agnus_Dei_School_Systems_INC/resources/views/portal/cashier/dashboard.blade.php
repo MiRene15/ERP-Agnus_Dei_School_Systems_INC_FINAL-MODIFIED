@@ -1,6 +1,6 @@
 ﻿@extends('portal.layouts.app')
 
-@section('breadcrumbs') <span class="current">Cashier Dashboard</span> @endsection
+@section('breadcrumbs') <span class="current">Dashboard</span> @endsection
 
 @section('content')
 <div class="mb-6">

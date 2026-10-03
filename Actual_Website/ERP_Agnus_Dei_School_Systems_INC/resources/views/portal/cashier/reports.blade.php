@@ -1,6 +1,6 @@
 @extends('portal.layouts.app')
 @section('breadcrumbs')
-    <a href="{{ route('cashier.dashboard') }}" style="color: var(--muted);">Cashier Dashboard</a><span class="opacity-40">/</span><span class="current">Reports</span>
+    <a href="{{ route('cashier.dashboard') }}" style="color: var(--muted);">Dashboard</a><span class="opacity-40">/</span><span class="current">Reports</span>
 @endsection
 @section('content')
 <div class="mb-6">

@@ -1,7 +1,7 @@
 @extends('portal.layouts.app')
 
 @section('breadcrumbs')
-    <span class="current">Registrar Dashboard</span>
+    <span class="current">Dashboard</span>
 @endsection
 
 @section('content')
