@@ -1,5 +1,5 @@
 {
-    "generated_at": "2026-10-03 11:14:04",
+    "generated_at": "2026-10-03 12:36:22",
     "password": "Agnus2026!",
     "staff": {
         "admin": "admin@agnusdei.local",
@@ -74,9 +74,9 @@
         "discount_applied": "0.00",
         "total_paid": "20000.01",
         "balance": "0.00",
-        "clearance_status": "Uncleared",
+        "clearance_status": "Cleared",
         "created_at": "2026-09-17 15:42:35",
-        "updated_at": "2026-10-03 01:59:47",
+        "updated_at": "2026-10-03 11:19:18",
         "it_confirmed_at": "2026-09-17 17:52:02",
         "carried_over_balance": "0.00",
         "discount_type": null

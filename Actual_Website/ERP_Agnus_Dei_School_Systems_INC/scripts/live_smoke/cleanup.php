@@ -63,6 +63,13 @@ if ($snapshot && !empty($snapshot['id'])) {
     unset($snapshot['id'], $snapshot['created_at'], $snapshot['updated_at']);
     DB::table('student_ledgers')->where('id', $acc['payment_ledger_snapshot']['id'])->update($snapshot);
     $deleted['ledger(restored)'] = 1;
+    // Snapshots predate auto-clearance: re-derive status from restored numbers.
+    $restored = DB::table('student_ledgers')->where('id', $acc['payment_ledger_snapshot']['id'])->first();
+    if ($restored) {
+        DB::table('student_ledgers')->where('id', $restored->id)->update([
+            'clearance_status' => round((float) $restored->balance, 2) <= 0 ? 'Cleared' : 'Uncleared',
+        ]);
+    }
 }
 
 // 8. API tokens issued during the run
