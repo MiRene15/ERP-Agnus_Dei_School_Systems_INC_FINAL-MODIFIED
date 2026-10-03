@@ -7,7 +7,6 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Welcome to your Portal</h2>
         <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">
             @if(!$student->student_number && !$pendingAdmission)
                 Please complete your admission application to get started.
