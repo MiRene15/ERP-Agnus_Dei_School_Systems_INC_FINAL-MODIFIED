@@ -18,6 +18,7 @@ This skill is the implementation half of the `/spec` workflow. It takes an appro
 5. **Code standards**: All code follows `AGENTS.md` §2 - `declare(strict_types=1)`, explicit types, slim controllers, FormRequests (no inline `$request->validate()`), services/actions for domain logic, `DB::transaction()` for multi-table writes, tuple route syntax.
 6. **Destructive operations are forbidden**: `migrate:fresh`, `db:wipe`, `rm -rf`, `.env` edits, new dependencies, global middleware changes = hard stop (`AGENTS.md` §4).
 7. **Summary before execution**: Never present an implementation plan or write code before showing the plain-language execution summary and getting the user's re-calibration answer (Phase 2).
+8. **Recommendation-first questions**: Never ask an open/blank question. Every question offers **2-4 concrete options with your recommended default first and a one-line reason** (use the `question` tool) — `AGENTS.md` §1.5. Act as the SME (`AGENTS.md` §1.6-§1.7): you propose, the user decides.
 
 ---
 
@@ -25,7 +26,7 @@ This skill is the implementation half of the `/spec` workflow. It takes an appro
 
 1. Find the spec:
    - If the user named a file or feature, use it directly.
-   - Otherwise list `1Dcoument&OtherInfo/specs/` and ask ONE question: which spec to execute.
+   - Otherwise list `1Dcoument&OtherInfo/specs/` and ask ONE question via the `question` tool: which spec to execute (each spec file = one option, recommended/most recently approved first).
 2. Read the full spec file.
 3. **Gate check** (all must pass, else hard stop with a clear message):
    - `Status: Approved` and the Approval block is filled.
@@ -57,11 +58,12 @@ Before proposing a plan or writing any code, send **one message** containing:
    - Key rules (must-always / must-never, 3-5 bullets)
    - What's out of scope
    - How we'll know it works (one line: N acceptance checks)
+   - Role & UX impact: effects on other roles (registrar, cashier, teacher, parent...), plus flow/UX notes from the spec (placement, primary action) — `AGENTS.md` §1.6-§1.7
    - Context-audit findings: anything in the spec that looked stale, missing, or conflicting (empty if none)
-2. **One question** (use the `question` tool):
+2. **One question** via the `question` tool — 3 concrete options, recommended first with a one-line reason:
 
    *"Anything to re-calibrate before we start?"*
-   - **No - proceed to planning** → Phase 3
+   - **No - proceed to planning (Recommended)** — summary matches the spec and audit found no conflicts → Phase 3
    - **Yes - the spec needs adjusting** → apply the Spec Gaps rule (update spec, reset to `Draft`, re-approval required), then re-present the summary
    - **Yes - the summary is wrong** → correct the summary to match the spec (or flag a spec gap if the spec itself is unclear) and re-present it
 
@@ -75,7 +77,7 @@ Present a step-by-step plan **in chat before writing any code**:
 
 - Slice the work by layer, typically: **data/migrations → domain logic (services/actions) → HTTP (routes/requests/controllers) → UI (views) → tests**.
 - Each slice lists: goal, files to create/modify, and which spec section it satisfies.
-- Number the slices and ask ONE question: *"Plan looks good — start with slice 1?"*
+- Number the slices and ask ONE question via the `question` tool: *"Plan looks good?"* with options: **Approve - start slice 1 (Recommended)** / Adjust the plan (say what) / Reorder slices.
 
 No coding until the user approves the plan.
 
@@ -89,7 +91,7 @@ For each slice, in order:
 2. **Implement**: minimal, spec-covered code only.
 3. **Report**: list files changed with one line each on what happened.
 4. **Verify**: delegate the relevant command to the user as a code block (e.g., `php artisan test --filter=X`), then wait for their output before continuing.
-5. **Checkpoint**: ask ONE question - *"Slice N done — proceed to slice N+1?"*
+5. **Checkpoint**: ask ONE question with options - *"Slice N done."* → **Proceed to slice N+1 (Recommended)** / Pause here / Stop and review.
 
 If a slice grows beyond the plan, stop and re-plan with the user rather than expanding scope.
 
@@ -101,7 +103,7 @@ If implementation reveals a requirement the spec doesn't cover, or contradicts i
 
 1. **Stop immediately.** Do not improvise domain logic (`AGENTS.md` §1.5).
 2. State the gap in plain language: what's missing and why it blocks work.
-3. Propose the exact spec wording to add/change.
+3. Present your proposed spec wording as options (use the `question` tool): **Use my wording (Recommended)** / Edit it / Handle another way.
 4. On the user's approval, edit the spec file with the new rule and **reset `Status` to `Draft`** with a note that re-approval is required for the changed part (`spec-rules.md` §6).
 5. Wait for explicit re-approval before resuming implementation.
 
@@ -122,7 +124,7 @@ When all slices are implemented:
 
 After all checks pass:
 
-1. Ask ONE question: *"All acceptance checks passed — mark the spec Implemented?"*
+1. Ask ONE question with options: *"All acceptance checks passed."* → **Mark spec Implemented (Recommended)** / Not yet - hold.
 2. On yes, update the spec file:
    - `Status: Implemented`
    - Add a one-line implementation note (date, summary).
