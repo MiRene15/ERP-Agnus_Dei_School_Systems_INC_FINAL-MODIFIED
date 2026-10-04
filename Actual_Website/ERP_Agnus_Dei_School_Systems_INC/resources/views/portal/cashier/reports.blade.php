@@ -7,10 +7,10 @@
     <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Reports</h2>
     <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Collections and receivables.</p>
 </div>
-<div x-data="{ tab: 'collections' }">
-    <div class="flex gap-2 mb-6 border-b border-gray-200 dark:border-[#2A2F58]">
-        <button @click="tab='collections'" :class="tab==='collections' ? 'border-b-2 border-blue-600 text-blue-700 dark:text-[#60A5FA] font-semibold' : 'text-gray-500 dark:text-[#8A90B0]'" class="px-4 py-2 text-sm">Collections Report</button>
-        <button @click="tab='receivables'" :class="tab==='receivables' ? 'border-b-2 border-blue-600 text-blue-700 dark:text-[#60A5FA] font-semibold' : 'text-gray-500 dark:text-[#8A90B0]'" class="px-4 py-2 text-sm">Receivables Report</button>
+<div x-data="{ tab: (new URLSearchParams(window.location.search).get('view') === 'receivables') ? 'receivables' : 'collections', setTab(v) { this.tab = v; const u = new URL(window.location.href); if (v === 'collections') { u.searchParams.delete('view'); } else { u.searchParams.set('view', v); } window.history.replaceState({}, '', u); } }">
+    <div class="inline-flex gap-1 mb-6 p-1 rounded-xl bg-gray-100 dark:bg-[#23274C]" role="tablist" aria-label="Report type">
+        <button @click="setTab('collections')" :class="tab==='collections' ? 'text-white shadow font-semibold' : 'text-gray-500 dark:text-[#8A90B0]'" :style="tab==='collections' ? 'background: var(--navy);' : ''" class="px-4 py-2 text-sm rounded-lg transition" role="tab" :aria-selected="tab==='collections'">Collections Report</button>
+        <button @click="setTab('receivables')" :class="tab==='receivables' ? 'text-white shadow font-semibold' : 'text-gray-500 dark:text-[#8A90B0]'" :style="tab==='receivables' ? 'background: var(--navy);' : ''" class="px-4 py-2 text-sm rounded-lg transition" role="tab" :aria-selected="tab==='receivables'">Receivables Report</button>
     </div>
     <div x-show="tab==='collections'" x-cloak>
         <div x-data="ajaxTable('{{ route('cashier.collections-report') }}', { date_from: '{{ now()->startOfMonth()->format('Y-m-d') }}', date_to: '{{ now()->format('Y-m-d') }}' })">
