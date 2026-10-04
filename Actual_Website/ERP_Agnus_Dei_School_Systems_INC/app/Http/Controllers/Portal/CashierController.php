@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Portal\ProjectionFilterRequest;
 use App\Mail\PaymentConfirmationMail;
 use App\Models\Enrollment;
 use App\Models\FeeSchedule;
@@ -10,6 +11,8 @@ use App\Models\Payment;
 use App\Models\Student;
 use App\Models\StudentLedger;
 use App\Models\Withdrawal;
+use App\Services\CashierProjectionService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +21,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CashierController extends Controller
 {
-    public function index(Request $request)
+    public function index(ProjectionFilterRequest $request, CashierProjectionService $projectionService)
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
@@ -33,13 +36,110 @@ class CashierController extends Controller
             ->whereNull('refund_processed_at')
             ->count();
 
+        [$periodFrom, $periodTo] = $this->resolveDashboardPeriod($request);
+
+        $summary = $projectionService->summaryForPeriod($periodFrom, $periodTo);
+
+        $viewData = [
+            'todayCollection' => $todayCollection,
+            'receiptsToday' => $receiptsToday,
+            'approvedDiscounts' => $approvedDiscounts,
+            'pendingRefunds' => $pendingRefunds,
+            'summary' => $summary,
+            'dateFrom' => $periodFrom->toDateString(),
+            'dateTo' => $periodTo->toDateString(),
+            'periodLabel' => $this->periodLabel($periodFrom, $periodTo),
+            'earliestDate' => $projectionService->earliestSelectableDate(),
+        ];
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.dashboard-results', compact('todayCollection', 'receiptsToday', 'approvedDiscounts', 'pendingRefunds'))->render(),
+                'html' => view('portal.cashier.partials.dashboard-results', $viewData)->render(),
             ]);
         }
 
-        return view('portal.cashier.dashboard', compact('todayCollection', 'receiptsToday', 'approvedDiscounts', 'pendingRefunds'));
+        return view('portal.cashier.dashboard', $viewData);
+    }
+
+    public function projections(ProjectionFilterRequest $request, CashierProjectionService $projectionService)
+    {
+        $schoolYear = $request->input('school_year', active_school_year());
+
+        [$periodFrom, $periodTo] = $this->resolveProjectionPeriod($request, $schoolYear, $projectionService);
+
+        $series = $projectionService->monthlySeriesForRange($periodFrom, $periodTo);
+
+        $schoolYears = all_school_years();
+        if ($schoolYears->isEmpty()) {
+            $schoolYears = collect([$schoolYear]);
+        }
+
+        $summary = $projectionService->summaryForPeriod($periodFrom, $periodTo);
+
+        return view('portal.cashier.projections', array_merge($series, [
+            'schoolYear' => $schoolYear,
+            'schoolYears' => $schoolYears,
+            'summary' => $summary,
+            'dateFrom' => $periodFrom->toDateString(),
+            'dateTo' => $periodTo->toDateString(),
+            'periodLabel' => $this->periodLabel($periodFrom, $periodTo),
+            'earliestDate' => $projectionService->earliestSelectableDate(),
+            'usingCustomDates' => $request->input('date_from') !== null && $request->input('date_to') !== null,
+        ]));
+    }
+
+    private function periodLabel(Carbon $from, Carbon $to): string
+    {
+        $today = Carbon::now();
+
+        if ($from->equalTo($today->copy()->startOfMonth()) && $to->equalTo($today)) {
+            return 'Month to Date';
+        }
+
+        if ($from->equalTo($today->copy()->startOfMonth()) && $to->equalTo($today->copy()->endOfMonth())) {
+            return 'This Month';
+        }
+
+        if ($from->year === $to->year) {
+            return $from->format('M j') . ' - ' . $to->format('M j, Y');
+        }
+
+        return $from->format('M j, Y') . ' - ' . $to->format('M j, Y');
+    }
+
+    /**
+     * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon}
+     */
+    private function resolveDashboardPeriod(
+        ProjectionFilterRequest $request,
+        CashierProjectionService $projectionService
+    ): array {
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        if ($dateFrom !== null && $dateTo !== null) {
+            return $projectionService->clampRange(Carbon::parse($dateFrom), Carbon::parse($dateTo));
+        }
+
+        return $projectionService->defaultDashboardRange();
+    }
+
+    /**
+     * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon}
+     */
+    private function resolveProjectionPeriod(
+        ProjectionFilterRequest $request,
+        string $schoolYear,
+        CashierProjectionService $projectionService
+    ): array {
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        if ($dateFrom !== null && $dateTo !== null) {
+            return $projectionService->clampRange(Carbon::parse($dateFrom), Carbon::parse($dateTo));
+        }
+
+        return $projectionService->monthRangeForSchoolYear($schoolYear);
     }
 
     public function payments(Request $request)
@@ -508,7 +608,7 @@ class CashierController extends Controller
         ]);
     }
 
-    public function receivablesReportExport()
+    public function receivablesReportExport(Request $request)
     {
         $ledgers = \App\Models\StudentLedger::with(['student', 'payments' => fn($q) => $q->orderByDesc('payment_date')->orderByDesc('id')])
             ->where('balance', '>', 0)

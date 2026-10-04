@@ -210,6 +210,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/cashier/refunds/{withdrawal}/release', [CashierController::class, 'releasePayout'])->name('cashier.refunds.release');
         // Void an erroneous collection via offsetting reversal (original kept for audit).
         Route::post('/cashier/payments/{payment}/void', [CashierController::class, 'voidPayment'])->name('cashier.payments.void');
+        Route::get('/cashier/projections', [CashierController::class, 'projections'])->name('cashier.projections');
     });
 
     Route::middleware(['role:4'])->group(function() {

@@ -5,14 +5,29 @@
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Cashier's Office</h2>
-    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Overview of today's collections.</p>
+    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Overview of collections and collectibles.</p>
 </div>
 
 @if(session('success'))
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
 
-<div x-data="ajaxTable('{{ route('cashier.dashboard') }}')">
+<div x-data="ajaxTable('{{ route('cashier.dashboard') }}', { date_from: '{{ $dateFrom }}', date_to: '{{ $dateTo }}' })">
+    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4 mb-6">
+        <form class="flex flex-wrap gap-3 items-end" @submit.prevent="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-[#8A90B0] mb-1">From</label>
+                <input type="date" x-model="filters.date_from" :max="filters.date_to || '{{ date('Y-m-d') }}'" max="{{ date('Y-m-d') }}" min="{{ $earliestDate }}" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-[#8A90B0] mb-1">To</label>
+                <input type="date" x-model="filters.date_to" :min="filters.date_from || '{{ $earliestDate }}'" max="{{ date('Y-m-d') }}" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-sm">
+            </div>
+            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Apply</button>
+            <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 dark:bg-[#23274C] text-gray-700 dark:text-[#C1C4DC] hover:bg-gray-200 dark:hover:bg-[#2A2F58]">Reset</button>
+            <p x-show="filters.date_from && filters.date_to && filters.date_to < filters.date_from" class="w-full text-red-500 text-xs">End date can't be before start date.</p>
+        </form>
+    </div>
     <div x-show="loading" class="space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <template x-for="i in 2" :key="i">

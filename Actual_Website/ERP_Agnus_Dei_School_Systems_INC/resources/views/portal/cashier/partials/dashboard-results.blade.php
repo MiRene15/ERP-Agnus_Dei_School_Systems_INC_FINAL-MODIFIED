@@ -54,4 +54,5 @@
             </div>
         </div>
     </a>
+    @include('portal.cashier.partials.projection-summary-cards')
 </div>
