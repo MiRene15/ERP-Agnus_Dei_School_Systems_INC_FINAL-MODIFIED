@@ -18,14 +18,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
 class CashierController extends Controller
 {
-    public function index(ProjectionFilterRequest $request, CashierProjectionService $projectionService)
+    public function index(): View
     {
-        $isAjax = $request->boolean('ajax');
-        $request->query->remove('ajax');
-
         $todayCollection = Payment::whereDate('payment_date', today())->sum('amount_paid');
         $receiptsToday = Payment::whereDate('payment_date', today())->count();
 
@@ -36,29 +34,12 @@ class CashierController extends Controller
             ->whereNull('refund_processed_at')
             ->count();
 
-        [$periodFrom, $periodTo] = $this->resolveDashboardPeriod($request, $projectionService);
-
-        $summary = $projectionService->summaryForPeriod($periodFrom, $periodTo);
-
-        $viewData = [
+        return view('portal.cashier.dashboard', [
             'todayCollection' => $todayCollection,
             'receiptsToday' => $receiptsToday,
             'approvedDiscounts' => $approvedDiscounts,
             'pendingRefunds' => $pendingRefunds,
-            'summary' => $summary,
-            'dateFrom' => $periodFrom->toDateString(),
-            'dateTo' => $periodTo->toDateString(),
-            'periodLabel' => $this->periodLabel($periodFrom, $periodTo),
-            'earliestDate' => $projectionService->earliestSelectableDate(),
-        ];
-
-        if ($isAjax) {
-            return response()->json([
-                'html' => view('portal.cashier.partials.dashboard-results', $viewData)->render(),
-            ]);
-        }
-
-        return view('portal.cashier.dashboard', $viewData);
+        ]);
     }
 
     public function projections(ProjectionFilterRequest $request, CashierProjectionService $projectionService)
@@ -76,6 +57,11 @@ class CashierController extends Controller
 
         $summary = $projectionService->summaryForPeriod($periodFrom, $periodTo);
 
+        // Receivables are a real position to date, so the card never advertises a day
+        // that has not happened yet. A school year runs to May, so the default period
+        // ends in the future for most of the year while the figure is already "now".
+        $receivablesAsOfLabel = $periodTo->copy()->min(Carbon::today())->format('M j, Y');
+
         return view('portal.cashier.projections', array_merge($series, [
             'schoolYear' => $schoolYear,
             'schoolYears' => $schoolYears,
@@ -83,6 +69,7 @@ class CashierController extends Controller
             'dateFrom' => $periodFrom->toDateString(),
             'dateTo' => $periodTo->toDateString(),
             'periodLabel' => $this->periodLabel($periodFrom, $periodTo),
+            'receivablesAsOfLabel' => $receivablesAsOfLabel,
             'earliestDate' => $projectionService->earliestSelectableDate(),
             'usingCustomDates' => $request->input('date_from') !== null && $request->input('date_to') !== null,
         ]));
@@ -105,23 +92,6 @@ class CashierController extends Controller
         }
 
         return $from->format('M j, Y') . ' - ' . $to->format('M j, Y');
-    }
-
-    /**
-     * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon}
-     */
-    private function resolveDashboardPeriod(
-        ProjectionFilterRequest $request,
-        CashierProjectionService $projectionService
-    ): array {
-        $dateFrom = $request->input('date_from');
-        $dateTo = $request->input('date_to');
-
-        if ($dateFrom !== null && $dateTo !== null) {
-            return $projectionService->clampRange(Carbon::parse($dateFrom), Carbon::parse($dateTo));
-        }
-
-        return $projectionService->defaultDashboardRange();
     }
 
     /**

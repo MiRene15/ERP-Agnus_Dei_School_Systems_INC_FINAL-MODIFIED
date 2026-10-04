@@ -5,7 +5,7 @@
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Projections</h2>
-    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Monthly collections vs collectibles.</p>
+    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Monthly collections vs receivables.</p>
 </div>
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4 mb-6">
     <div class="flex flex-wrap gap-3 items-end">
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function () {
             labels: @json($labels),
             datasets: [
                 { label: 'Collected', data: @json($collected), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.08)', fill: false, tension: 0.4, pointBackgroundColor: '#10B981', pointRadius: 4, pointHoverRadius: 6 },
-                { label: 'Collectibles', data: @json($outstanding), borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.08)', fill: false, tension: 0.4, pointBackgroundColor: '#EF4444', pointRadius: 4, pointHoverRadius: 6 }
+                { label: 'Receivables', data: @json($outstanding), borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.08)', fill: false, tension: 0.4, pointBackgroundColor: '#EF4444', pointRadius: 4, pointHoverRadius: 6 }
             ]
         },
         options: {

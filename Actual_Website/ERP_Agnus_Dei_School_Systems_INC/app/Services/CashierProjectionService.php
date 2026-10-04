@@ -40,16 +40,6 @@ class CashierProjectionService
     /**
      * @return array{0: Carbon, 1: Carbon}
      */
-    public function defaultDashboardRange(): array
-    {
-        $today = Carbon::now();
-
-        return [$today->copy()->startOfMonth(), $today->copy()];
-    }
-
-    /**
-     * @return array{0: Carbon, 1: Carbon}
-     */
     public function clampRange(Carbon $from, Carbon $to): array
     {
         if ($to->lessThan($from)) {

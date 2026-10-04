@@ -1,6 +1,6 @@
 # Spec: Cashier Collections & Collectibles Chart
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-04
 - **Approved by**: user on 2026-10-04
 - **Parent**: `cashier-reports-hub.md` (child 3 of 3 — needs toggle + cleanup)
@@ -8,6 +8,7 @@
 - **Re-approved by**: user on 2026-10-04 (revised scope, verified in browser)
 - **Implemented**: 2026-10-04 — see §11
 - **Revised again**: 2026-10-04 — production defect found in the cashier dashboard; fix specified in §12. Status was reset to **Draft**; re-approved by user on 2026-10-04 for the §12 defect fix only (`spec-rules.md` §6). The scope agreed in §1–§9 is unchanged.
+- **§12 implemented**: 2026-10-04 — one-line fix at `CashierController.php:39` supplied the missing argument. **Verified in production by the user** (cashier sign-in, all six figures, date filter, Projections chart). Spec closed as `Implemented`.
 
 ## 1. Why We Need This
 Cashiers see what's collected and what's owed, but had to export and do the math by hand to see it over time. Two plain figures plus a monthly trend answers "where are we?" without any interpretation.
@@ -114,7 +115,7 @@ Issues found and fixed during verification, recorded so they are not reintroduce
 
 ## 12. Production Defect Fix (2026-10-04)
 
-*Status: specified, awaiting implementation. No change to the scope in §1–§9 — the agreed feature is unchanged; what follows repairs a fault in how it was built.*
+*Status: **implemented and verified in production 2026-10-04** — see the `§12 implemented` line in the header. No change to the scope in §1–§9; what follows repairs a fault in how it was built.*
 
 ### 12.1 What staff experienced
 
