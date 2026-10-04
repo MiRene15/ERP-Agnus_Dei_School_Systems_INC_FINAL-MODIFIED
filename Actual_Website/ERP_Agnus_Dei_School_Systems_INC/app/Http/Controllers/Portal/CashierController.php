@@ -36,7 +36,7 @@ class CashierController extends Controller
             ->whereNull('refund_processed_at')
             ->count();
 
-        [$periodFrom, $periodTo] = $this->resolveDashboardPeriod($request);
+        [$periodFrom, $periodTo] = $this->resolveDashboardPeriod($request, $projectionService);
 
         $summary = $projectionService->summaryForPeriod($periodFrom, $periodTo);
 

@@ -1,12 +1,13 @@
 # Spec: Cashier Collections & Collectibles Chart
 
-- **Status**: Implemented
+- **Status**: Approved
 - **Created**: 2026-10-04
 - **Approved by**: user on 2026-10-04
 - **Parent**: `cashier-reports-hub.md` (child 3 of 3 — needs toggle + cleanup)
 - **Revised**: 2026-10-04 — the pace-based **Estimate was removed** at the user's request during implementation. Scope reduced to two factual figures (Collectibles, Collections) plus a date-filtered monthly chart. Nothing projects or forecasts.
 - **Re-approved by**: user on 2026-10-04 (revised scope, verified in browser)
 - **Implemented**: 2026-10-04 — see §11
+- **Revised again**: 2026-10-04 — production defect found in the cashier dashboard; fix specified in §12. Status was reset to **Draft**; re-approved by user on 2026-10-04 for the §12 defect fix only (`spec-rules.md` §6). The scope agreed in §1–§9 is unchanged.
 
 ## 1. Why We Need This
 Cashiers see what's collected and what's owed, but had to export and do the math by hand to see it over time. Two plain figures plus a monthly trend answers "where are we?" without any interpretation.
@@ -92,6 +93,8 @@ None.
 - View variable naming is load-bearing: `outstanding` is the multi-month **array** the chart plots, `summary['receivables']` is the single peso **figure** the card shows. They must not share a name — the Projections view merges both into one array, and a collision silently breaks the chart line.
 
 ## 11. Implementation Note (2026-10-04)
+
+> **Superseded in part by §12.** The original note below records the build as "verified in the browser". The dashboard half of that verification did not happen: the new dashboard version was never opened on the development machine, and it failed for every production cashier on first load. §12 is the correction.
 Built and verified in the browser by the user. Read-only throughout: **no migrations, no new tables, no writes to balances, receipts or reminders.** `student_ledgers` and `payments` are read only.
 
 Delivered: `CashierProjectionService`, `ProjectionFilterRequest`, `CashierController::projections()` + a filter-aware `index()`, the Projections page, the cashier sidebar entry, the shared two-card partial, and `tests/Feature/CashierProjectionTest.php`.
@@ -106,3 +109,52 @@ Issues found and fixed during verification, recorded so they are not reintroduce
 **Not committed.** No commit was made; the user runs git themselves per `AGENTS.md` §1.4.
 
 **Cleanup outstanding:** `resources/views/portal/cashier/partials/projection-summary-card.blade.php` is an unused leftover from the single-card iteration and should be deleted.
+
+---
+
+## 12. Production Defect Fix (2026-10-04)
+
+*Status: specified, awaiting implementation. No change to the scope in §1–§9 — the agreed feature is unchanged; what follows repairs a fault in how it was built.*
+
+### 12.1 What staff experienced
+
+A cashier signs in and is met by a "Server Error" page instead of the Cashier's Office. They cannot take payments, cannot print receipts, and cannot look up a family. The page fails on **every** sign-in, so the cashier's entire day is blocked until IT intervenes.
+
+The system itself reported nothing. The failure was discovered because a cashier said so. Production error messages were switched off and unreachable (`config/logging.php:57`), so nobody could have seen it first.
+
+### 12.2 Why it happened
+
+The dashboard asked for the helper that works out which dates to measure, but left out the second piece that helper needs. When a page leaves out something a helper requires, the page cannot run at all — it stops before a single figure is calculated.
+
+This was not a slow page, not a data problem, and not a connection problem. It was **certain to fail every time**, and it failed in a way that produced no useful clue on the page itself.
+
+### 12.3 The fix
+
+Supply the missing piece when calling the helper. One line, in one file.
+
+### 12.4 Why it escaped
+
+1. **The new dashboard was never opened on the development machine.** The last local cashier request in the project's log is timestamped 20:31; the version containing the fault landed at 20:54. The first time this code ran anywhere was production.
+2. **The local server can keep running an older copy of a file from memory** after the file on disk has changed. A local pass may therefore not reflect the code on disk. Restart the local server before trusting any local result.
+
+### 12.5 Success Checks
+
+- [ ] A cashier signs in and sees the Cashier's Office — no error page.
+- [ ] All six dashboard figures appear: Today's Collection, Receipts Issued Today, Discounts to Apply, Refunds to Release, Collectibles, Collections.
+- [ ] Changing the From/To dates still updates Collectibles and Collections.
+- [ ] The Projections page still opens from the left menu and draws its chart.
+- [ ] No other role's landing page changes behaviour.
+- [ ] A repeat sign-in does not re-break the page.
+
+### 12.6 Technical Notes
+
+- Faulty call: `app/Http/Controllers/Portal/CashierController.php:39` — `$this->resolveDashboardPeriod($request)` passes **one** argument.
+- Faulty declaration: `CashierController.php:113-116` — `resolveDashboardPeriod(ProjectionFilterRequest $request, CashierProjectionService $projectionService)` declares **two** required parameters.
+- PHP raises `ArgumentCountError` before a single statement of the method executes. This is not recoverable, not catchable at the call site, and does not depend on data, dates, or filters.
+- **Fix:** pass `$projectionService` as the second argument at line 39.
+- **Do not change** `resolveProjectionPeriod()` — the call at line 68 already supplies all three of its arguments (declared at line 130). It is correct as written.
+- **Standing rule this defect creates:** any private helper that is handed an injected service must receive that service at *every* call site. A missing required argument is invisible to code review of the method body and fatal at runtime.
+- **Local verification gap:** no local request to the cashier dashboard exists in `storage/logs/laravel.log` after commit `2450500`. Confirm with a fresh local request before pushing, not only after.
+- **OPcache:** XAMPP may continue executing a previously compiled copy of a file. Restart Apache to force a re-read before trusting a local result.
+- **Production visibility (cross-reference: Safe Release):** `LOG_CHANNEL=stack` with no `LOG_STACK` falls back to the `single` channel, which writes to a file inside the container; Render displays only console output, so production errors are invisible. Set `LOG_CHANNEL=stderr` on Render. Until that is done, any further production fault will again reach a user before it reaches IT.
+- **Not covered by this spec:** three separate pages (Subjects, Sections, Staff Accounts) fail on every action for an unrelated reason — they call a method the project's base controller does not provide. Found during this investigation; requires its own spec and commit.
