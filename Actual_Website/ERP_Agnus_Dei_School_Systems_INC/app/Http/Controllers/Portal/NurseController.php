@@ -41,23 +41,23 @@ class NurseController extends Controller
 
         if (request('search')) {
             $query->whereHas('student', function ($q) {
-                $q->where('first_name', 'like', '%' . request('search') . '%')
-                    ->orWhere('last_name', 'like', '%' . request('search') . '%');
+                $q->where('first_name', 'ilike', '%' . request('search') . '%')
+                    ->orWhere('last_name', 'ilike', '%' . request('search') . '%');
             });
         }
 
         if (request('incident_type') && request('incident_type') !== 'All') {
             $type = request('incident_type');
             $query->where(function ($q) use ($type) {
-                $q->where('complaint', 'like', "%{$type}%")
-                    ->orWhere('symptoms', 'like', "%{$type}%")
-                    ->orWhere('diagnosis', 'like', "%{$type}%");
+                $q->where('complaint', 'ilike', "%{$type}%")
+                    ->orWhere('symptoms', 'ilike', "%{$type}%")
+                    ->orWhere('diagnosis', 'ilike', "%{$type}%");
             });
         }
 
         if (request('sickness') && request('sickness') !== 'All') {
             $sickness = request('sickness');
-            $query->where('diagnosis', 'like', "%{$sickness}%");
+            $query->where('diagnosis', 'ilike', "%{$sickness}%");
         }
 
         if (request('month') && request('month') !== 'All') {

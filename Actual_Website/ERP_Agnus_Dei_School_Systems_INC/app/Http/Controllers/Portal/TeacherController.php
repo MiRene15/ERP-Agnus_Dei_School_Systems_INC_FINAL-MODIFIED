@@ -74,8 +74,8 @@ class TeacherController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('subject', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('subject_code', 'like', "%{$search}%");
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('subject_code', 'ilike', "%{$search}%");
             });
         }
 
@@ -462,8 +462,8 @@ class TeacherController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('subject', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('subject_code', 'like', "%{$search}%");
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('subject_code', 'ilike', "%{$search}%");
             });
         }
 

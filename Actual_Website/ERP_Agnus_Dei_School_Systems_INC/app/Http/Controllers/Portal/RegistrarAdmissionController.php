@@ -29,9 +29,9 @@ class RegistrarAdmissionController extends Controller
             $search = request('search');
             $query->where(function ($q) use ($search) {
                 $q->whereHas('student.user', function ($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                })->orWhere('application_number', 'like', "%{$search}%");
+                    $sq->where('name', 'ilike', "%{$search}%")
+                        ->orWhere('email', 'ilike', "%{$search}%");
+                })->orWhere('application_number', 'ilike', "%{$search}%");
             });
         }
 

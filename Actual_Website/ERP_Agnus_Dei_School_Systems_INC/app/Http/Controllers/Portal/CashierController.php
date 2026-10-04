@@ -170,28 +170,48 @@ class CashierController extends Controller
             })
             ->with(['enrollments.section', 'ledger'])
             ->limit(10)
-            ->get()
-            ->map(function ($student) use ($schoolYear) {
-                $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
-                $gradeLevel = $enrollment?->section?->grade_level;
+            ->get();
 
-                $totalAssessed = 0;
-                if ($gradeLevel) {
-                    $feeSchedules = FeeSchedule::where('grade_level', $gradeLevel)
-                        ->where('school_year', $schoolYear)
-                        ->get();
-                    $totalAssessed = $feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee');
-                }
+        $gradeLevelByStudent = [];
 
-                $totalPaid = $student->ledger?->total_paid ?? 0;
-                $discountApplied = $student->ledger?->discount_applied ?? 0;
-                $balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
+        foreach ($students as $student) {
+            $active = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
+            $gradeLevelByStudent[$student->getKey()] = $active?->section?->grade_level;
+        }
 
-                $student->computed_balance = $balance;
-                return $student;
-            });
+        $assessedByGradeLevel = $this->assessedTotalsByGradeLevel(
+            array_values(array_unique(array_filter($gradeLevelByStudent))),
+            $schoolYear
+        );
+
+        foreach ($students as $student) {
+            $totalAssessed = $assessedByGradeLevel[$gradeLevelByStudent[$student->getKey()] ?? ''] ?? 0;
+
+            $totalPaid = $student->ledger?->total_paid ?? 0;
+            $discountApplied = $student->ledger?->discount_applied ?? 0;
+
+            $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
+        }
 
         return response()->json($students);
+    }
+
+    /**
+     * @param  array<int, string>  $gradeLevels
+     * @return array<string, float>
+     */
+    private function assessedTotalsByGradeLevel(array $gradeLevels, string $schoolYear): array
+    {
+        if ($gradeLevels === []) {
+            return [];
+        }
+
+        return FeeSchedule::where('school_year', $schoolYear)
+            ->whereIn('grade_level', $gradeLevels)
+            ->get(['grade_level', 'tuition_fee', 'misc_fee'])
+            ->groupBy('grade_level')
+            ->map(fn ($schedules) => (float) $schedules->sum('tuition_fee') + (float) $schedules->sum('misc_fee'))
+            ->all();
     }
 
     public function showPayment(Student $student)
@@ -629,10 +649,10 @@ class CashierController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('student', function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
+                $q->where('first_name', 'ilike', "%{$search}%")
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
                     ->orWhereHas('user', function ($q2) use ($search) {
-                        $q2->where('email', 'like', "%{$search}%");
+                        $q2->where('email', 'ilike', "%{$search}%");
                     });
             });
         }

@@ -4,6 +4,50 @@ import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 
+export const SEARCH_PAUSE_MS = 600;
+
+/**
+ * Builds a search method that waits for a pause in typing before it runs.
+ *
+ * The pause lives here, in the function, rather than in the markup's
+ * `@input.debounce` modifier. A modifier can be forgotten or typed wrong and the
+ * search then fires on every keystroke. Debouncing inside the function means the
+ * binding cannot get it wrong: `@input="scheduleSearch()"` behaves correctly
+ * whether or not `.debounce` is present in the attribute.
+ *
+ * Usage inside a component returned from x-data:
+ *   performSearch: debounceSearch(function () { return this.runSearch(); }),
+ *   scheduleSearch() { this.performSearch(); },
+ *
+ * Anything that is an explicit user action rather than typing - submitting the
+ * form, changing a dropdown, pressing Refresh, a rate-limit countdown retry -
+ * must call `performSearch.run()` so it searches immediately instead of waiting.
+ *
+ * @param {Function} search
+ * @param {number} wait
+ * @returns {Function & { run: Function }}
+ */
+function debounceSearch(search, wait = SEARCH_PAUSE_MS) {
+    let timer = null;
+
+    const debounced = function () {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+            timer = null;
+            search.apply(this, arguments);
+        }, wait);
+    };
+
+    debounced.run = function () {
+        if (timer) { clearTimeout(timer); timer = null; }
+        search.apply(this, arguments);
+    };
+
+    return debounced;
+}
+
+window.AgnusSearch = { debounce: debounceSearch, pauseMs: SEARCH_PAUSE_MS };
+
 /**
  * Reusable AJAX table/list component with skeleton loading.
  *

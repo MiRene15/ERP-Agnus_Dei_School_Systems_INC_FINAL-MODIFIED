@@ -41,8 +41,8 @@
 <div x-data="loansManager()">
 <div class="mb-4 flex gap-2 flex-wrap items-center">
     <!-- Search Form -->
-    <form @submit.prevent="performSearch()" class="flex gap-2 flex-1 flex-wrap">
-        <input type="text" x-model="filters.search" @input.debounce.600ms="performSearch()" placeholder="Search by student name or book title..."
+    <form @submit.prevent="performSearch.run()" class="flex gap-2 flex-1 flex-wrap">
+        <input type="text" x-model="filters.search" @input="performSearch()" placeholder="Search by student name or book title..."
                class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
         <label class="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" x-model="filters.overdue" class="rounded border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-red-600 focus:ring-red-500">
@@ -65,7 +65,7 @@
 
     <div x-show="error" x-cloak class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3">
         <span x-text="error"></span>
-        <button type="button" @click="performSearch()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+        <button type="button" @click="performSearch.run()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
     </div>
 
     <!-- Loans Table (kept while typing/loading; never blanked) -->
@@ -157,7 +157,7 @@
 
 <script>
 function loansManager() {
-    return {
+    const component = {
         transactions: [],
         loading: true,
         error: '',
@@ -172,7 +172,7 @@ function loansManager() {
                 if (this.retryAfter <= 0) {
                     if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                     this.error = '';
-                    this.performSearch();
+                    this.performSearch.run();
                 }
             }, 1000);
         },
@@ -187,9 +187,9 @@ function loansManager() {
             overdue: false
         },
         init() {
-            this.performSearch();
+            this.performSearch.run();
         },
-        async performSearch() {
+        async searchNow() {
             if (this._controller) { try { this._controller.abort(); } catch (e) {} }
             this._controller = new AbortController();
             const signal = this._controller.signal;
@@ -242,7 +242,7 @@ function loansManager() {
         goToPage(page) {
             if (page < 1 || page > this.totalPages) return;
             this.currentPage = page;
-            this.performSearch();
+            this.performSearch.run();
         },
         get paginationRange() {
             const range = [];
@@ -259,7 +259,7 @@ function loansManager() {
             this.currentPage = 1;
             this.error = '';
             this.retryAfter = 0;
-            this.performSearch();
+            this.performSearch.run();
         },
         isValidDue(date) {
             if (!date) return false;
@@ -287,7 +287,13 @@ function loansManager() {
                 this.selectedIds = [];
             }
         }
-    }
+    };
+
+    component.performSearch = window.AgnusSearch.debounce(function () {
+        return this.searchNow();
+    });
+
+    return component;
 }
 </script>
 @endsection

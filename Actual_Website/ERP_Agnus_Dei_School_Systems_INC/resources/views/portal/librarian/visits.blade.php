@@ -29,7 +29,7 @@
                 <input type="hidden" name="student_id" :value="selectedStudentId" required>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Search Student</label>
                 <div class="relative">
-                    <input type="text" x-model="studentQuery" @input.debounce.600ms="searchStudents()" @focus="showResults = true"
+                    <input type="text" x-model="studentQuery" @input="searchStudents()" @focus="showResults = true"
                            placeholder="Type name, student number, or LRN..." autocomplete="off"
                            class="w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-blue-500">
 
@@ -118,7 +118,7 @@
 
 <script>
 function clockInForm() {
-    return {
+    const component = {
         studentQuery: '',
         students: [],
         searching: false,
@@ -137,11 +137,11 @@ function clockInForm() {
                 if (this.retryAfter <= 0) {
                     if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                     this.searchError = '';
-                    this.searchStudents();
+                    this.searchStudents.run();
                 }
             }, 1000);
         },
-        async searchStudents() {
+        async searchNow() {
             if ((this.studentQuery || '').trim().length < 2) {
                 if (this._controller) { try { this._controller.abort(); } catch (e) {} }
                 if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
@@ -201,7 +201,13 @@ function clockInForm() {
             this.selectedStudentId = null;
             this.selectedStudentName = '';
         }
-    }
+    };
+
+    component.searchStudents = window.AgnusSearch.debounce(function () {
+        return this.searchNow();
+    });
+
+    return component;
 }
 </script>
 @endsection

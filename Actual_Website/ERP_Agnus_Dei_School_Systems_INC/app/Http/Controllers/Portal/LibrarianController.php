@@ -59,15 +59,15 @@ class LibrarianController extends Controller
         if (request('search')) {
             $search = request('search');
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('author', 'like', "%{$search}%")
-                    ->orWhere('isbn', 'like', "%{$search}%")
-                    ->orWhere('serial_number', 'like', "%{$search}%");
+                $q->where('title', 'ilike', "%{$search}%")
+                    ->orWhere('author', 'ilike', "%{$search}%")
+                    ->orWhere('isbn', 'ilike', "%{$search}%")
+                    ->orWhere('serial_number', 'ilike', "%{$search}%");
             });
         }
 
         if (request('publisher')) {
-            $query->where('publisher', 'like', '%' . request('publisher') . '%');
+            $query->where('publisher', 'ilike', '%' . request('publisher') . '%');
         }
 
         if (request('availability') === 'available') {
@@ -192,9 +192,9 @@ class LibrarianController extends Controller
         if (request('search')) {
             $search = request('search');
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('author', 'like', "%{$search}%")
-                    ->orWhere('serial_number', 'like', "%{$search}%");
+                $q->where('title', 'ilike', "%{$search}%")
+                    ->orWhere('author', 'ilike', "%{$search}%")
+                    ->orWhere('serial_number', 'ilike', "%{$search}%");
             });
         }
 
@@ -266,14 +266,14 @@ class LibrarianController extends Controller
         if (request('search')) {
             $search = request('search');
             $query->where(function ($q) use ($search) {
-                $q->where('book_title', 'like', "%{$search}%")
+                $q->where('book_title', 'ilike', "%{$search}%")
                     ->orWhereHas('book', function ($bq) use ($search) {
-                        $bq->where('title', 'like', "%{$search}%")
-                            ->orWhere('serial_number', 'like', "%{$search}%");
+                        $bq->where('title', 'ilike', "%{$search}%")
+                            ->orWhere('serial_number', 'ilike', "%{$search}%");
                     })
                     ->orWhereHas('student', function ($sq) use ($search) {
-                        $sq->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
+                        $sq->where('first_name', 'ilike', "%{$search}%")
+                            ->orWhere('last_name', 'ilike', "%{$search}%");
                     });
             });
         }
@@ -356,10 +356,10 @@ class LibrarianController extends Controller
                 $q->where('status', 'Active')->where('school_year', active_school_year());
             })
             ->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('student_number', 'like', "%{$search}%")
-                    ->orWhere('legacy_lrn', 'like', "%{$search}%");
+                $q->where('first_name', 'ilike', "%{$search}%")
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhere('student_number', 'ilike', "%{$search}%")
+                    ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
             })
             ->select('id', 'first_name', 'last_name', 'student_number', 'legacy_lrn')
             ->limit(10)
@@ -454,8 +454,8 @@ class LibrarianController extends Controller
         if (request('search')) {
             $search = request('search');
             $query->whereHas('student', function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%");
+                $q->where('first_name', 'ilike', "%{$search}%")
+                    ->orWhere('last_name', 'ilike', "%{$search}%");
             });
         }
 
@@ -522,18 +522,18 @@ class LibrarianController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('author', 'like', "%{$search}%")
-                    ->orWhere('isbn', 'like', "%{$search}%");
+                $q->where('title', 'ilike', "%{$search}%")
+                    ->orWhere('author', 'ilike', "%{$search}%")
+                    ->orWhere('isbn', 'ilike', "%{$search}%");
             });
         }
 
         if ($request->filled('serial_number')) {
-            $query->where('serial_number', 'like', '%' . $request->serial_number . '%');
+            $query->where('serial_number', 'ilike', '%' . $request->serial_number . '%');
         }
 
         if ($request->filled('publisher')) {
-            $query->where('publisher', 'like', '%' . $request->publisher . '%');
+            $query->where('publisher', 'ilike', '%' . $request->publisher . '%');
         }
 
         if ($request->input('availability') === 'available') {
@@ -575,8 +575,8 @@ class LibrarianController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('book_title', 'like', "%{$search}%")
-                  ->orWhereHas('student', fn($sq) => $sq->where('first_name','like',"%{$search}%")->orWhere('last_name','like',"%{$search}%"));
+                $q->where('book_title', 'ilike', "%{$search}%")
+                  ->orWhereHas('student', fn($sq) => $sq->where('first_name','ilike',"%{$search}%")->orWhere('last_name','ilike',"%{$search}%"));
             });
         }
         if ($request->filled('status') && $request->status !== 'All') $query->where('status', $request->status);
@@ -639,14 +639,14 @@ class LibrarianController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('book_title', 'like', "%{$search}%")
+                $q->where('book_title', 'ilike', "%{$search}%")
                     ->orWhereHas('book', function ($bq) use ($search) {
-                        $bq->where('title', 'like', "%{$search}%")
-                            ->orWhere('serial_number', 'like', "%{$search}%");
+                        $bq->where('title', 'ilike', "%{$search}%")
+                            ->orWhere('serial_number', 'ilike', "%{$search}%");
                     })
                     ->orWhereHas('student', function ($sq) use ($search) {
-                        $sq->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
+                        $sq->where('first_name', 'ilike', "%{$search}%")
+                            ->orWhere('last_name', 'ilike', "%{$search}%");
                     });
             });
         }

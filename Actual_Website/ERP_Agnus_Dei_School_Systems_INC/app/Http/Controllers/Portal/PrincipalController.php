@@ -59,9 +59,9 @@ class PrincipalController extends Controller
         if (request('search')) {
             $search = request('search');
             $query->where(function ($q) use ($search) {
-                $q->whereHas('subject', fn($sq) => $sq->where('name', 'like', "%{$search}%")
-                    ->orWhere('subject_code', 'like', "%{$search}%"))
-                    ->orWhereHas('teacher', fn($sq) => $sq->where('name', 'like', "%{$search}%"));
+                $q->whereHas('subject', fn($sq) => $sq->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('subject_code', 'ilike', "%{$search}%"))
+                    ->orWhereHas('teacher', fn($sq) => $sq->where('name', 'ilike', "%{$search}%"));
             });
         }
 
@@ -381,10 +381,10 @@ class PrincipalController extends Controller
             $search = request('search');
             $query->where(function ($q) use ($search) {
                 $q->whereHas('student', function ($sq) use ($search) {
-                    $sq->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%");
+                    $sq->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%");
                 })->orWhereHas('section', function ($sq) use ($search) {
-                    $sq->where('section_name', 'like', "%{$search}%");
+                    $sq->where('section_name', 'ilike', "%{$search}%");
                 });
             });
         }
@@ -413,7 +413,7 @@ class PrincipalController extends Controller
         $query = Announcement::query();
 
         if (request('search')) {
-            $query->where('title', 'like', '%' . request('search') . '%');
+            $query->where('title', 'ilike', '%' . request('search') . '%');
         }
 
         if (request('type') && request('type') !== 'All') {

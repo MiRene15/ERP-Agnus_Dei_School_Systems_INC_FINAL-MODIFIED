@@ -27,10 +27,10 @@ class ReportCardController extends Controller
             $search = request('search');
             $query->where(function ($q) use ($search) {
                 $q->whereHas('student', function ($sq) use ($search) {
-                    $sq->where('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%");
+                    $sq->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%");
                 })->orWhereHas('section', function ($sq) use ($search) {
-                    $sq->where('section_name', 'like', "%{$search}%");
+                    $sq->where('section_name', 'ilike', "%{$search}%");
                 });
             });
         }

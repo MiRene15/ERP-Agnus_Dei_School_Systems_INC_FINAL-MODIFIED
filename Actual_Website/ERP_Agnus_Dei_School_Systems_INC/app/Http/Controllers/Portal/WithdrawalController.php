@@ -77,10 +77,10 @@ class WithdrawalController extends Controller
             $search = request('search');
             $query->where(function ($q) use ($search) {
                 $q->whereHas('student.user', function ($sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%");
+                    $sq->where('name', 'ilike', "%{$search}%");
                 })->orWhereHas('enrollment', function ($sq) use ($search) {
                     $sq->whereHas('section', function ($s) use ($search) {
-                        $s->where('section_name', 'like', "%{$search}%");
+                        $s->where('section_name', 'ilike', "%{$search}%");
                     });
                 });
             });

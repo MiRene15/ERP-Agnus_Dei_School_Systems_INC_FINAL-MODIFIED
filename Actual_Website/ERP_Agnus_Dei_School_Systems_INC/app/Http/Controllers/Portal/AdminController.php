@@ -145,11 +145,11 @@ class AdminController extends Controller
         $search = trim((string) $request->input('search', ''));
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                    ->orWhere('event', 'like', "%{$search}%")
-                    ->orWhere('subject_type', 'like', "%{$search}%")
+                $q->where('description', 'ilike', "%{$search}%")
+                    ->orWhere('event', 'ilike', "%{$search}%")
+                    ->orWhere('subject_type', 'ilike', "%{$search}%")
                     ->orWhereHas('causer', function ($cq) use ($search) {
-                        $cq->where('name', 'like', "%{$search}%");
+                        $cq->where('name', 'ilike', "%{$search}%");
                     });
             });
         }

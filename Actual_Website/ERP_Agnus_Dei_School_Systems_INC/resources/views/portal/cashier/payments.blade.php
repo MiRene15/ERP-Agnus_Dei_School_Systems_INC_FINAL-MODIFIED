@@ -21,13 +21,13 @@
     <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Search Student</h3>
     </div>
-    <form @submit.prevent="performSearch()" class="flex gap-3 items-center">
-        <select x-model="selectedYear" @change="performSearch()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+    <form @submit.prevent="performSearch.run()" class="flex gap-3 items-center">
+        <select x-model="selectedYear" @change="performSearch.run()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
             @foreach($schoolYears as $sy)
                 <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
             @endforeach
         </select>
-        <input type="text" x-model="searchQuery" @input.debounce.600ms="performSearch()" placeholder="Search by name, student number, or LRN..."
+        <input type="text" x-model="searchQuery" @input="performSearch()" placeholder="Search by name, student number, or LRN..."
                class="flex-1 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] placeholder-gray-400 dark:placeholder-[#6A7094] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
         <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap" style="background: var(--navy);">Search</button>
         <button type="button" @click="clearSearch()" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
@@ -44,11 +44,17 @@
 
     <div x-show="error" x-cloak class="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3">
         <span x-text="error"></span>
-        <button type="button" @click="performSearch()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+        <button type="button" @click="performSearch.run()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+    </div>
+
+    <div x-show="loading && students.length > 0" x-cloak x-transition
+         class="mt-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+        Showing results for &quot;<span class="font-semibold" x-text="displayedQuery"></span>&quot; &mdash; searching for &quot;<span class="font-semibold" x-text="searchQuery"></span>&quot;&hellip;
     </div>
 
     <!-- Search Results (kept while typing/loading; never blanked) -->
-    <div x-show="searchQuery.trim().length >= 2" class="mt-4" x-cloak x-transition>
+    <div x-show="searchQuery.trim().length >= 2" class="mt-4" x-cloak x-transition
+         :class="loading && students.length > 0 ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'">
         <template x-if="students.length > 0">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -101,8 +107,9 @@
 
 <script>
 function searchPayments() {
-    return {
+    const component = {
         searchQuery: '',
+        displayedQuery: '',
         selectedYear: '{{ $schoolYear }}',
         students: [],
         loading: false,
@@ -118,7 +125,7 @@ function searchPayments() {
                 if (this.retryAfter <= 0) {
                     if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                     this.error = '';
-                    this.performSearch();
+                    this.performSearch.run();
                 }
             }, 1000);
         },
@@ -127,17 +134,19 @@ function searchPayments() {
             if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
             this._seq++;
             this.searchQuery = '';
+            this.displayedQuery = '';
             this.students = [];
             this.error = '';
             this.retryAfter = 0;
             this.loading = false;
         },
-        async performSearch() {
+        async searchNow() {
             const q = (this.searchQuery || '').trim();
             if (q.length < 2) {
                 if (this._controller) { try { this._controller.abort(); } catch (e) {} }
                 this._seq++;
                 this.students = [];
+                this.displayedQuery = '';
                 this.error = '';
                 this.loading = false;
                 return;
@@ -170,6 +179,7 @@ function searchPayments() {
                 if (signal.aborted || mySeq !== this._seq) return;
                 if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                 this.students = Array.isArray(data) ? data : (data.data || []);
+                this.displayedQuery = q;
                 this.error = '';
                 this.retryAfter = 0;
             } catch (e) {
@@ -181,7 +191,13 @@ function searchPayments() {
                 if (mySeq === this._seq) this.loading = false;
             }
         }
-    }
+    };
+
+    component.performSearch = window.AgnusSearch.debounce(function () {
+        return this.searchNow();
+    });
+
+    return component;
 }
 </script>
 @endsection

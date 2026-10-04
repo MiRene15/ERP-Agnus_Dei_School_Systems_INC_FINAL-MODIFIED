@@ -24,10 +24,10 @@
 
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6" x-data="booksManager()">
     <!-- Basic Filters -->
-    <form @submit.prevent="performSearch()" class="mb-4">
+    <form @submit.prevent="performSearch.run()" class="mb-4">
         <div class="flex gap-2 items-center flex-wrap">
-            <input type="text" x-model="filters.search" @input.debounce.600ms="performSearch()" placeholder="Search by title, author, or ISBN..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <select x-model="filters.active" @change="performSearch()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <input type="text" x-model="filters.search" @input="performSearch()" placeholder="Search by title, author, or ISBN..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.active" @change="performSearch.run()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
                 <option value="all">All</option>
@@ -42,9 +42,9 @@
         <!-- Advanced Filters (collapsible) -->
         <div x-show="showAdvanced" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" class="mt-3 pt-3 border-t border-gray-100 dark:border-[#2A2F58]" style="display: none;">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                <input type="text" x-model="filters.serial_number" @input.debounce.600ms="performSearch()" placeholder="Serial number..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <input type="text" x-model="filters.publisher" @input.debounce.600ms="performSearch()" placeholder="Publisher..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <select x-model="filters.availability" @change="performSearch()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="text" x-model="filters.serial_number" @input="performSearch()" placeholder="Serial number..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="text" x-model="filters.publisher" @input="performSearch()" placeholder="Publisher..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <select x-model="filters.availability" @change="performSearch.run()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">All Availability</option>
                     <option value="available">Available</option>
                     <option value="unavailable">Unavailable</option>
@@ -52,10 +52,10 @@
                 <div></div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <input type="number" x-model="filters.year_from" @input.debounce.600ms="performSearch()" placeholder="Year from..." min="1900" max="2099" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <input type="number" x-model="filters.year_to" @input.debounce.600ms="performSearch()" placeholder="Year to..." min="1900" max="2099" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <input type="number" x-model="filters.price_min" @input.debounce.600ms="performSearch()" placeholder="Min price (₱)..." min="0" step="0.01" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <input type="number" x-model="filters.price_max" @input.debounce.600ms="performSearch()" placeholder="Max price (₱)..." min="0" step="0.01" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="number" x-model="filters.year_from" @input="performSearch()" placeholder="Year from..." min="1900" max="2099" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="number" x-model="filters.year_to" @input="performSearch()" placeholder="Year to..." min="1900" max="2099" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="number" x-model="filters.price_min" @input="performSearch()" placeholder="Min price (₱)..." min="0" step="0.01" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="number" x-model="filters.price_max" @input="performSearch()" placeholder="Max price (₱)..." min="0" step="0.01" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
             </div>
             <div class="mt-3 flex justify-end">
                 <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Apply Filters</button>
@@ -74,7 +74,7 @@
 
     <div x-show="error" x-cloak class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3">
         <span x-text="error"></span>
-        <button type="button" @click="performSearch()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+        <button type="button" @click="performSearch.run()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
     </div>
 
     <!-- Books Table (kept while typing/loading; never blanked) -->
@@ -211,7 +211,7 @@
 
 <script>
 function booksManager() {
-    return {
+    const component = {
         books: [],
         loading: true,
         error: '',
@@ -226,7 +226,7 @@ function booksManager() {
                 if (this.retryAfter <= 0) {
                     if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                     this.error = '';
-                    this.performSearch();
+                    this.performSearch.run();
                 }
             }, 1000);
         },
@@ -248,9 +248,9 @@ function booksManager() {
             price_max: ''
         },
         init() {
-            this.performSearch();
+            this.performSearch.run();
         },
-        async performSearch() {
+        async searchNow() {
             if (this._controller) { try { this._controller.abort(); } catch (e) {} }
             this._controller = new AbortController();
             const signal = this._controller.signal;
@@ -310,7 +310,7 @@ function booksManager() {
         goToPage(page) {
             if (page < 1 || page > this.totalPages) return;
             this.currentPage = page;
-            this.performSearch();
+            this.performSearch.run();
         },
         get paginationRange() {
             const range = [];
@@ -327,7 +327,7 @@ function booksManager() {
             this.currentPage = 1;
             this.error = '';
             this.retryAfter = 0;
-            this.performSearch();
+            this.performSearch.run();
         },
         openDeactivateModal(book) {
             window.dispatchEvent(new CustomEvent('open-deactivate', { detail: { id: book.id, title: book.title } }));
@@ -335,7 +335,13 @@ function booksManager() {
         openReplaceModal(book) {
             window.dispatchEvent(new CustomEvent('open-replace', { detail: { id: book.id, title: book.title } }));
         }
-    }
+    };
+
+    component.performSearch = window.AgnusSearch.debounce(function () {
+        return this.searchNow();
+    });
+
+    return component;
 }
 
 function deactivateModal() {
