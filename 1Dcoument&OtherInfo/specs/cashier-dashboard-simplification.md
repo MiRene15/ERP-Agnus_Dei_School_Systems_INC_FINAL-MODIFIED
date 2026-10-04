@@ -1,9 +1,10 @@
 # Spec: Cashier Dashboard Simplification
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-04
 - **Approved by**: user on 2026-10-04
 - **Revision**: 2026-10-04 — card count corrected from five to **six** (§5, §8) after Slice 1 surfaced a miscount during drafting. No behavioural change; the dashboard has always been specified as four figures plus two report links. Status was reset to **Draft** for re-approval of the corrected checks (`spec-rules.md` §6), then **re-approved by user on 2026-10-04**. Slice 1 was completed before the correction.
+- **Implemented**: 2026-10-04 — see §12
 
 ## 1. Why We Need This
 
@@ -158,3 +159,27 @@ Every role dashboard in this project follows the same shape: its controller hold
 ## 11. Approval
 
 > Approved by user on 2026-10-04. Card-count correction (§5, §8) re-approved by user on 2026-10-04.
+
+## 12. Implementation Note (2026-10-04)
+
+**Read-only throughout: no migrations, no schema change, no writes to balances, receipts or reminders.** Nothing to roll back.
+
+Delivered:
+
+- **Controller** — `index()` now takes no parameters and returns `View`; the background-reload branch, the date-range resolution, `$summary` and the five view keys it fed are gone; `resolveDashboardPeriod()` deleted.
+- **Service** — `defaultDashboardRange()` deleted. `summaryForPeriod()`, `receivablesAsOf()`, `clampRange()` and `earliestSelectableDate()` all retained; Projections still depends on them.
+- **Dashboard** — rewritten as a single self-contained page. Six cards, no date picker, no Apply/Reset, no skeleton, no background reload. Description reads "Today's takings and items waiting for you."
+- **Report links** — both cards now open the same Reports hub: Collections to `cashier.reports`, Receivables to `cashier.reports` with `view=receivables`. A new indigo clipboard-list card carries "Receivables Report / Money still owed"; indigo was the one accent colour unused on that page, so it reads as distinct rather than a fifth variation.
+- **Projections wording** — description, chart series and legend, and card title all read "Receivables". A case-insensitive search for `collectible` across all Blade views now returns nothing.
+- **"As of" cap** — `projections()` supplies a separate `receivablesAsOfLabel` capped at today via `min($periodTo, Carbon::today())`. `summaryForPeriod()` was deliberately left untouched because its `periodTo` is asserted by `CashierProjectionTest.php:72`; the date inputs still show the real period end, so the filter still describes what was chosen.
+- **Dead code removed** — `partials/dashboard-results.blade.php` (its only reference was the deleted reload branch) and `partials/projection-summary-card.blade.php` (singular, referenced by nothing).
+
+**Verification.** `php -l` clean on both PHP files. The user confirmed in the browser that the pages work correctly.
+
+**Recorded honestly:** the §8 acceptance checks were confirmed by the user as a whole ("working properly") rather than walked one by one against each box. If a specific check is later found unsatisfied, treat it as an open item against this spec rather than as a passed check.
+
+**The cashier dashboard is now the only dashboard in the project without the background-reload pattern** — see the "Deliberate divergence" note in §10. This is accepted, not accidental.
+
+**Not committed by the agent** — the user runs git themselves (`AGENTS.md` §1.4).
+
+**Tests unchanged.** `tests/Feature/CashierProjectionTest.php` needed no edit: it references only `summaryForPeriod()` and `clampRange()`. The suite still does not run in this project (PHPUnit not installed), so those 20 tests remain unexecuted coverage.
