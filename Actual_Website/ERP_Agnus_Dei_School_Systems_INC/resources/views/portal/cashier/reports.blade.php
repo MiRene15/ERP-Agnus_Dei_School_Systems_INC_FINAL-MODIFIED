@@ -52,7 +52,7 @@
         </div>
     </div>
     <div x-show="tab==='receivables'" x-cloak>
-        <div x-data="ajaxTable('{{ route('cashier.reports.receivables') }}', { date_from: '', date_to: '' })">
+        <div x-data="ajaxTable('{{ route('cashier.reports.receivables') }}', { date_from: '{{ now()->startOfMonth()->format('Y-m-d') }}', date_to: '{{ now()->format('Y-m-d') }}' })">
             <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4 mb-6">
                 <form class="flex flex-wrap gap-3 items-end" @submit.prevent="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()">
                     <div>

@@ -1,6 +1,6 @@
 # Spec: Cashier Receivables Cleanup
 
-- **Status**: Approved (re-approved 2026-10-04 — range filter + daily breakdown)
+- **Status**: Implemented (2026-10-04 — flat AR-free table, filter row, daily breakdown, collections trim; all checks pass)
 - **Created**: 2026-10-04
 - **Approved by**: user on 2026-10-04
 - **Parent**: `cashier-reports-hub.md` (child 2 of 3 — needs `cashier-reports-toggle.md`)
@@ -74,4 +74,4 @@ None — flat design, latest-AR, export parity confirmed via parent interview 20
 - Roles: cashier only.
 
 ## 11. Approval
-> Approved by user on 2026-10-04 (re-approved for range filter + daily breakdown).
+> Approved by user on 2026-10-04 (re-approved for range filter + daily breakdown). Implemented 2026-10-04: flat biggest-first table (Date/Student/LRN/Balance-red), 3 cards, daily breakdown + "No payment yet" tile, From/To filter with payment-less always included, collections trimmed to Date/Student/LRN/AR/Cashier/Amount-green, both exports re-columned, filter caps at today; user confirmed all checks pass.
