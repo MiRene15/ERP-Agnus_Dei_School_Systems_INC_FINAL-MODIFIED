@@ -453,11 +453,20 @@ class CashierController extends Controller
     public function receivablesReport(Request $request) {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
-        $receivables = \App\Models\StudentLedger::with('student.enrollments.section')->where('balance','>',0)->orderByDesc('balance')->get()->groupBy(fn($l)=>$l->student->enrollments->where('status','Active')->first()?->section?->grade_level ?? 'Unknown');
-        $totalReceivable = \App\Models\StudentLedger::where('balance','>',0)->sum('balance');
-        $countReceivable = \App\Models\StudentLedger::where('balance','>',0)->count();
-        if ($isAjax) return response()->json(['html'=>view('portal.cashier.partials.receivables-results', compact('receivables','totalReceivable','countReceivable'))->render()]);
-        return view('portal.cashier.reports', compact('receivables','totalReceivable','countReceivable'));
+        $receivables = \App\Models\StudentLedger::with(['student', 'payments' => fn($q) => $q->orderByDesc('payment_date')->orderByDesc('id')])->where('balance','>',0)->orderByDesc('balance')->get();
+        $dateFrom = $request->date_from;
+        $dateTo = $request->date_to;
+        if ($dateFrom || $dateTo) {
+            $receivables = $receivables->filter(fn($l) => $l->payments->isEmpty() || (($d = $l->payments->first()?->payment_date?->format('Y-m-d')) && (!$dateFrom || $d >= $dateFrom) && (!$dateTo || $d <= $dateTo)))->values();
+        }
+        $dailyBreakdown = $receivables->filter(fn($l) => $l->payments->isNotEmpty())->groupBy(fn($l) => $l->payments->first()->payment_date->format('Y-m-d'))->map(fn($g, $date) => ['date' => $date, 'count' => $g->count(), 'total' => $g->sum('balance')])->sortKeys()->values();
+        $unpaidDues = $receivables->filter(fn($l) => $l->payments->isEmpty());
+        $unpaid = ['count' => $unpaidDues->count(), 'total' => $unpaidDues->sum('balance')];
+        $byPlan = $receivables->groupBy(fn($l) => $l->payment_plan ?? 'N/A')->map(fn($g) => ['count' => $g->count(), 'total' => $g->sum('balance')]);
+        $totalReceivable = $receivables->sum('balance');
+        $countReceivable = $receivables->count();
+        if ($isAjax) return response()->json(['html'=>view('portal.cashier.partials.receivables-results', compact('receivables','byPlan','dailyBreakdown','unpaid','totalReceivable','countReceivable'))->render()]);
+        return view('portal.cashier.reports', compact('receivables','byPlan','dailyBreakdown','unpaid','totalReceivable','countReceivable'));
     }
     public function reports(Request $request) {
         // just show the tabbed wrapper, data loaded via AJAX for each tab
@@ -480,16 +489,16 @@ class CashierController extends Controller
 
         return response()->stream(function () use ($payments, $filename) {
             $fh = fopen('php://output', 'w');
-            fputcsv($fh, ['Date', 'Student', 'Amount', 'Receipt No.', 'AR No.', 'Plan', 'Cashier']);
+            fputcsv($fh, ['Date', 'Student', 'Number', 'LRN', 'AR No.', 'Cashier', 'Amount']);
             foreach ($payments as $p) {
                 fputcsv($fh, [
                     $p->payment_date->format('Y-m-d'),
                     ($p->ledger?->student?->first_name ?? '') . ' ' . ($p->ledger?->student?->last_name ?? ''),
-                    $p->amount_paid,
-                    $p->receipt_number,
+                    $p->ledger?->student?->student_number ?? '',
+                    $p->ledger?->student?->legacy_lrn ?? '',
                     $p->ar_number ?? '',
-                    $p->ledger?->payment_plan ?? '',
                     $p->cashier?->name ?? '',
+                    $p->amount_paid,
                 ]);
             }
             fclose($fh);
@@ -501,10 +510,15 @@ class CashierController extends Controller
 
     public function receivablesReportExport()
     {
-        $ledgers = \App\Models\StudentLedger::with('student.enrollments.section')
+        $ledgers = \App\Models\StudentLedger::with(['student', 'payments' => fn($q) => $q->orderByDesc('payment_date')->orderByDesc('id')])
             ->where('balance', '>', 0)
             ->orderByDesc('balance')
             ->get();
+        $dateFrom = $request->date_from;
+        $dateTo = $request->date_to;
+        if ($dateFrom || $dateTo) {
+            $ledgers = $ledgers->filter(fn($l) => $l->payments->isEmpty() || (($d = $l->payments->first()?->payment_date?->format('Y-m-d')) && (!$dateFrom || $d >= $dateFrom) && (!$dateTo || $d <= $dateTo)))->values();
+        }
 
         $total = $ledgers->sum('balance');
         $filename = 'receivables-' . now()->format('Y-m-d') . '.csv';
@@ -513,19 +527,19 @@ class CashierController extends Controller
 
         return response()->stream(function () use ($ledgers, $total) {
             $fh = fopen('php://output', 'w');
-            fputcsv($fh, ['Grade Level', 'Student', 'LRN', 'Section', 'Balance']);
+            fputcsv($fh, ['Date', 'Student', 'Number', 'LRN', 'Balance']);
             foreach ($ledgers as $ledger) {
                 $student = $ledger->student;
-                $enrollment = $student?->enrollments->where('status', 'Active')->first();
+                $pay = $ledger->payments->first();
                 fputcsv($fh, [
-                    $enrollment?->section?->grade_level ?? 'Unknown',
+                    $pay?->payment_date?->format('Y-m-d') ?? '',
                     trim(($student?->first_name ?? '') . ' ' . ($student?->last_name ?? '')),
                     $student?->student_number ?? '',
-                    $enrollment?->section?->section_name ?? '—',
-                    number_format($ledger->balance, 2),
+                    $student?->legacy_lrn ?? '',
+                    $ledger->balance,
                 ]);
             }
-            fputcsv($fh, ['', 'TOTAL', '', '', number_format($total, 2)]);
+            fputcsv($fh, ['', 'TOTAL', '', '', $total]);
             fclose($fh);
         }, 200, [
             'Content-Type' => 'text/csv',

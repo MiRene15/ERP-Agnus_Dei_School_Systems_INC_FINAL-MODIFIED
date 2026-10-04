@@ -84,11 +84,11 @@
             </div>
             <div class="min-w-[130px]">
                 <label class="block text-xs font-medium text-gray-500 mb-1">From</label>
-                <input type="date" x-model="filters.date_from" :max="filters.date_to || ''" min="1987-01-01" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full rounded-lg border-gray-300 text-sm">
+                <input type="date" x-model="filters.date_from" :max="filters.date_to || '{{ date('Y-m-d') }}'" max="{{ date('Y-m-d') }}" min="1987-01-01" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full rounded-lg border-gray-300 text-sm">
             </div>
             <div class="min-w-[130px]">
                 <label class="block text-xs font-medium text-gray-500 mb-1">To</label>
-                <input type="date" x-model="filters.date_to" :min="filters.date_from || '1987-01-01'" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full rounded-lg border-gray-300 text-sm">
+                <input type="date" x-model="filters.date_to" :min="filters.date_from || '1987-01-01'" max="{{ date('Y-m-d') }}" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full rounded-lg border-gray-300 text-sm">
             </div>
             <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Filter</button>
             <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Clear</button>

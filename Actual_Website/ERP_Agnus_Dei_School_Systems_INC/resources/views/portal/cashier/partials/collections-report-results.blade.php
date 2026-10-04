@@ -48,11 +48,10 @@
         <tr>
             <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">Date</th>
             <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">Student</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">Amount</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">Receipt No.</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">LRN</th>
             <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">AR No.</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">Plan</th>
             <th class="text-left px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">Cashier</th>
+            <th class="text-right px-4 py-3 font-semibold text-gray-600 dark:text-[#C1C4DC]">Amount</th>
         </tr>
     </thead>
     <tbody class="divide-y divide-gray-100 dark:divide-[#2A2F58]">
@@ -60,28 +59,14 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-[#1E2447]">
             <td class="px-4 py-2 text-gray-900 dark:text-[#E8EAF6]">{{ $p->payment_date->format('M d, Y') }}</td>
             <td class="px-4 py-2 text-gray-900 dark:text-[#E8EAF6]">{{ $p->ledger?->student?->first_name }} {{ $p->ledger?->student?->last_name }}</td>
-            <td class="px-4 py-2 font-medium text-gray-900 dark:text-[#E8EAF6]">₱ {{ number_format($p->amount_paid, 2) }}</td>
-            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->receipt_number }}</td>
+            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->ledger?->student?->legacy_lrn ?? $p->ledger?->student?->student_number ?? '—' }}</td>
             <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->ar_number ?? '—' }}</td>
-            <td class="px-4 py-2">
-                <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ ($p->ledger?->payment_plan ?? '') === 'full' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' }}">
-                    {{ ucfirst($p->ledger?->payment_plan ?? 'N/A') }}
-                </span>
-            </td>
             <td class="px-4 py-2 text-gray-500 dark:text-[#8A90B0] text-xs">{{ $p->cashier?->name }}</td>
+            <td class="px-4 py-2 text-right font-medium text-green-700 dark:text-green-400">₱ {{ number_format($p->amount_paid, 2) }}</td>
         </tr>
         @empty
-        <tr><td colspan="7" class="px-4 py-8 text-center text-gray-400 dark:text-[#8A90B0]">No payments found for the selected date range.</td></tr>
+        <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400 dark:text-[#8A90B0]">No payments found for the selected date range.</td></tr>
         @endforelse
     </tbody>
-    @if($payments->isNotEmpty())
-    <tfoot>
-        <tr class="bg-blue-50 dark:bg-[rgba(96,165,250,0.12)] border-t border-blue-200 dark:border-[rgba(96,165,250,0.25)] font-semibold">
-            <td class="px-4 py-3 text-gray-700 dark:text-[#C1C4DC] text-xs uppercase" colspan="2">Total Collections ({{ $payments->count() }} receipt(s))</td>
-            <td class="px-4 py-3 text-blue-800 dark:text-[#60A5FA]">₱ {{ number_format($payments->sum('amount_paid'), 2) }}</td>
-            <td colspan="4"></td>
-        </tr>
-    </tfoot>
-    @endif
 </table>
 </div>

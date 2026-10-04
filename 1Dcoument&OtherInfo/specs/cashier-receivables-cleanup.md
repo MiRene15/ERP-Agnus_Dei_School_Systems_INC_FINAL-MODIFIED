@@ -1,6 +1,6 @@
 # Spec: Cashier Receivables Cleanup
 
-- **Status**: Approved
+- **Status**: Approved (re-approved 2026-10-04 — range filter + daily breakdown)
 - **Created**: 2026-10-04
 - **Approved by**: user on 2026-10-04
 - **Parent**: `cashier-reports-hub.md` (child 2 of 3 — needs `cashier-reports-toggle.md`)
@@ -15,54 +15,63 @@ Receivables looks nothing like Collections: grade-group boxes with an 'Unknown' 
 ## 3. Business Flow: Today vs After
 - **As-is**: receivables groups ledgers by grade ('Unknown' for section-less students) with Student | Section | Balance rows; export carries Grade/Section columns.
 - **To-be**:
-  1. Cashier opens Receivables — three summary cards (Total Receivable, Students with Balance, plus range-free count line), then one flat table ordered biggest balance first.
-  2. Each row shows Student (name + number), AR No. (latest receipt's AR, '—' when the ledger has no payment yet), Balance, and a blue totals footer — mirroring Collections.
-  3. No grade groups, no 'Unknown' header, no Section column anywhere including export.
+  1. Cashier opens Receivables — three summary cards (Total Receivable, Students with Balance, By Payment Plan breakdown), then one flat table ordered biggest balance first.
+  2. Each row shows Date (latest payment date, '—' when the ledger has no payment yet), Student (name + number), LRN, Balance — balance rightmost in red. No Cashier column, no AR column: a receivable is still-to-get money with no receipt yet.
+  3. Receivables has the same From/To + Generate + Export filter row as Collections (with the same From≤To pairing). The range filters rows by latest-payment date; ledgers with no payment yet always show — owed money can't be filtered away.
+  4. Below the cards, a daily breakdown mirrors Collections: one tile per day (dues count + balance owed for rows whose latest payment falls that day) plus a "No payment yet" tile (count + balance). Tiles reflect the active range.
+  5. Collections table becomes Date | Student | LRN | AR No. | Cashier | Amount — amount rightmost in green. Receipt No. and Plan columns are removed (AR proves the payment; plans live on the card).
+  6. No bottom totals footers on either table — the cards carry totals. No grade groups, no 'Unknown' header, no Section column anywhere including exports.
 - **Preserved**: every ledger peso stays in totals and export; audit trail; payment plans; refunds/corrections handling.
-- **Exceptions**: section-less students list with '—' and full pesos counted; ledgers with no payment show AR '—'.
+- **Exceptions**: section-less students list in full with pesos counted; ledgers with no payment show '—' dates and always survive filtering.
 
 ## 4. How It Should Work
-1. Receivables loads — cards on top, flat table below, footer totals the shown rows.
-2. Cashier taps Export — CSV carries Student, Number, AR No., Balance (no Grade/Section).
-3. Empty → "All settled", never blank.
+1. Receivables loads — filter row, cards, daily breakdown, flat table below, no footer.
+2. Cashier picks From/To + Generate — rows filter by latest-payment date; payment-less dues always stay.
+3. Cashier taps Export — CSV carries the filtered rows as Date, Student, Number, LRN, Balance (no Grade/Section/AR).
+3. Collections Export — CSV carries Date, Student, Number, LRN, AR No., Cashier, Amount (no Receipt No./Plan).
+4. Empty → "All settled", never blank.
 
 ## 5. Look & Feel (UX)
-- Same cards, table, hover, footer, and dark-mode styles as Collections. One primary action: Export.
+- Same cards, table, and hover styles as Collections (no footers — cards carry totals). One primary action: Export.
 - Key states: default (all open balances), empty ("All settled"), error ("unavailable — Refresh"), cashier-only as today.
 
 ## 6. Business Rules
 ### Must always be true
 - Totals and export include every peso, including section-less and payment-less ledgers.
-- AR shown is the ledger's latest receipt AR by payment date.
+- Money sits rightmost: green amounts (collections), red balances (receivables).
+- Range never hides payment-less dues; breakdown tiles match the filtered rows.
 - Export matches the screen.
 
 ### Must never happen
 - A peso disappears with the groups.
 - 'Unknown' or Section reappears in any new copy.
-- Collections view changes.
+- A totals footer returns to either table.
 
 ### Edge cases and what happens then
-- No active section → row '—', counted.
-- No payment yet → AR '—', balance still listed.
+- No active section → row listed in full, pesos counted (no section shown anywhere).
+- No payment yet → Date and AR show '—', balance still listed.
 - All settled → cards show ₱0.00 / 0 with "All settled" table note.
 
 ## 7. Out of Scope
 - Toggle mechanics (child 1), projection chart (child 3), directress copies, reminders, per-student projections.
 
 ## 8. Success Checks
-- [ ] Receivables shows 3 cards + flat biggest-first table with Student, AR No., Balance + footer — no 'Unknown', no Section.
-- [ ] A section-less student appears with '—' and pesos in totals.
-- [ ] Export CSV has Student, Number, AR No., Balance columns matching the screen.
+- [ ] Receivables shows 3 cards + flat biggest-first table with Date, Student, LRN, Balance (rightmost, red) + no footer — no 'Unknown', no Section, no Cashier, no AR.
+- [ ] Collections shows Date, Student, LRN, AR No., Cashier, Amount (rightmost, green) + no footer — no Receipt No., no Plan.
+- [ ] Receivables filter row mirrors Collections (From/To + Generate + Export with From≤To pairing); picking a range keeps payment-less rows and narrows dated rows and tiles.
+- [ ] Daily breakdown shows per-day dues tiles plus a "No payment yet" tile matching the table.
+- [ ] A payment-less row shows '—' dates with pesos in totals even under an active range.
+- [ ] Both exports match their screens column for column.
 
 ## 9. Open Questions (if any)
 None — flat design, latest-AR, export parity confirmed via parent interview 2026-10-04.
 
 ## 10. Technical Notes (for developers)
 *Plain-language pointer only — the source of truth is the code and this appendix.*
-- Affected: `CashierController:453-461` (`receivablesReport` — drop `groupBy`, eager-load latest payment for AR), `:502+` (`receivablesReportExport` — swap Grade/Section columns for AR No.), `partials/receivables-results.blade.php` (rebuild flat mirroring `collections-report-results.blade.php`).
-- AR source: ledger's latest payment by date (`payments` relation exists on `StudentLedger`); '—' when none.
+- Affected: `CashierController:453-461` (`receivablesReport` — flat biggest-first with latest payment for Date; apply From/To to latest-payment date, always include payment-less), `:467+` (collections export — drop Receipt/Plan columns), `:502+` (`receivablesReportExport` — respect the same range; Date/Student/Number/LRN/Balance), `partials/receivables-results.blade.php` (filter row + flat rebuild + daily tiles), `partials/collections-report-results.blade.php` (column trim + green rightmost money + drop footer), `portal/cashier/reports.blade.php` (receivables tab gets the filter row).
+- AR source: ledger's latest payment by date (`payments` relation exists on `StudentLedger`); Date shown is that payment's date, '—' when none. LRN is `legacy_lrn`, falling back to student number, then '—'.
 - Data: read-only reshaping; no balance math changes.
 - Roles: cashier only.
 
 ## 11. Approval
-> Approved by user on 2026-10-04.
+> Approved by user on 2026-10-04 (re-approved for range filter + daily breakdown).

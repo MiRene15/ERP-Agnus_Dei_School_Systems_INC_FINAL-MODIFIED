@@ -78,11 +78,11 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-[#8A90B0] uppercase mb-1">Date From</label>
-                        <input type="date" x-model="filters.date_from" :max="filters.date_to || ''" min="1987-01-01" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="date" x-model="filters.date_from" :max="filters.date_to || '{{ date('Y-m-d') }}'" max="{{ date('Y-m-d') }}" min="1987-01-01" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-[#8A90B0] uppercase mb-1">Date To</label>
-                        <input type="date" x-model="filters.date_to" :min="filters.date_from || '1987-01-01'" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="date" x-model="filters.date_to" :min="filters.date_from || '1987-01-01'" max="{{ date('Y-m-d') }}" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                     <p x-show="filters.date_from && filters.date_to && filters.date_to < filters.date_from" class="text-red-500 text-xs mt-2">End date can't be before start date.</p>
                 </div>

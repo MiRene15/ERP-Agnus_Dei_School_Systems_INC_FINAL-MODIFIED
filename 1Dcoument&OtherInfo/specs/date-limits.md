@@ -1,6 +1,6 @@
 # Spec: Date Limits
 
-- **Status**: Implemented (2026-10-04 — birth/school guards, dues cap, filter pairing; all 4 checks pass)
+- **Status**: Approved (re-approved 2026-10-04 — filter boxes cap at today)
 - **Created**: 2026-10-04
 - **Approved by**: user on 2026-10-04
 
@@ -28,7 +28,7 @@ Staff can save impossible dates today: a birth date tomorrow, an incident in 198
 2. Teacher marks attendance — date box only allows 1987-01-01 through today (as today).
 3. Nurse logs an incident — date box only allows 1987-01-01 through today.
 4. Librarian records borrow and return — borrow box only allows 1987-01-01 through today, and return (the due date) must be on or after borrow and at most 3 weeks out.
-5. Any staff runs a report with From and To — To must be on or after From.
+5. Any staff runs a report with From and To — To must be on or after From; both boxes cap at today so advance dates can't be picked.
 6. Blocked dates show a plain message under the box, e.g. "Birth date can't be in the future." or "End date can't be before start date."
 
 ## 5. Look & Feel (UX)
@@ -45,7 +45,7 @@ Staff can save impossible dates today: a birth date tomorrow, an incident in 198
 ### Must always be true
 - Birth dates are between 1950-01-01 and today, never tomorrow.
 - Attendance, incident, and borrow dates are between 1987-01-01 (school founding) and today. Return (due) dates are on or after borrow and at most 3 weeks out.
-- Return date is on or after borrow date. Report To is on or after From.
+- Return date is on or after borrow date. Report To is on or after From. Report From and To never accept future dates.
 - Announcements may be dated in the future — excluded from past-only guards.
 
 ### Must never happen
@@ -74,6 +74,7 @@ Staff can save impossible dates today: a birth date tomorrow, an incident in 198
 - [ ] Enter a return date before its borrow date — refused with a plain message.
 - [ ] Enter a return due date more than 3 weeks out — refused with a plain message.
 - [ ] Run any report with From after To — refused with a plain message.
+- [ ] Try a future date in any report filter — day can't be picked (capped at today).
 
 ## 9. Open Questions (if any)
 None.
@@ -94,4 +95,4 @@ None.
 - Roles/permissions involved: no permission change; registrar primary, teachers, nurse, librarian, cashier covered.
 
 ## 11. Approval
-> Approved by user on 2026-10-04 (re-approved for return dues up to 3 weeks out). Implemented 2026-10-04: save-path rules + picker clamps + filter pairing across admissions, attendance, clinic, library, and 7 report filter pairs; user confirmed all 4 acceptance checks pass.
+> Approved by user on 2026-10-04 (re-approved for filter cap at today).
