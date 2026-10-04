@@ -21,7 +21,7 @@
         <form method="GET" class="flex flex-wrap gap-3 items-end" @submit.prevent="reload()">
             <div class="flex-1 min-w-[200px]">
                 <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
-                <input type="text" x-model="filters.search" @input.debounce.300ms="reload()" placeholder="Title, author, or serial number..."
+                <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Title, author, or serial number..."
                        class="w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
             <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Search</button>
@@ -31,7 +31,7 @@
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <!-- Skeleton loading -->
-        <div x-show="loading" class="p-4 space-y-3">
+        <div x-show="loading && !html" class="p-4 space-y-3">
             <template x-for="i in 5" :key="i">
                 <div class="skelly sk-card">
                     <div class="grid grid-cols-7 gap-4 px-2">
@@ -47,7 +47,8 @@
         </div>
 
         <!-- Results injected via AJAX -->
-        <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+        <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
+        <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
 @endsection

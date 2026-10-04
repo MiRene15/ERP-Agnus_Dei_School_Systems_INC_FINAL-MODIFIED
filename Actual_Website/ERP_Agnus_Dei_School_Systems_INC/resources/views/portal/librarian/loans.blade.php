@@ -42,7 +42,7 @@
 <div class="mb-4 flex gap-2 flex-wrap items-center">
     <!-- Search Form -->
     <form @submit.prevent="performSearch()" class="flex gap-2 flex-1 flex-wrap">
-        <input type="text" x-model="filters.search" placeholder="Search by student name or book title..."
+        <input type="text" x-model="filters.search" @input.debounce.600ms="performSearch()" placeholder="Search by student name or book title..."
                class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
         <label class="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" x-model="filters.overdue" class="rounded border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] text-red-600 focus:ring-red-500">
@@ -54,8 +54,8 @@
 </div>
 
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
-    <!-- Skeleton Loading -->
-    <div x-show="loading" class="space-y-3">
+    <!-- Skeleton Loading (first load only; list kept while typing) -->
+    <div x-show="loading && transactions.length === 0" class="space-y-3">
         <div class="skelly sk-line-md"></div>
         <div class="skelly sk-line-lg"></div>
         <div class="skelly sk-line-md"></div>
@@ -63,8 +63,13 @@
         <div class="skelly sk-line-md"></div>
     </div>
 
-    <!-- Loans Table -->
-    <div x-show="!loading" x-cloak>
+    <div x-show="error" x-cloak class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3">
+        <span x-text="error"></span>
+        <button type="button" @click="performSearch()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+    </div>
+
+    <!-- Loans Table (kept while typing/loading; never blanked) -->
+    <div x-show="transactions.length > 0 || !loading" x-cloak>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
@@ -155,6 +160,22 @@ function loansManager() {
     return {
         transactions: [],
         loading: true,
+        error: '',
+        retryAfter: 0,
+        _controller: null,
+        _seq: 0,
+        _countdown: null,
+        startCountdown() {
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+            this._countdown = setInterval(() => {
+                if (this.retryAfter > 0) { this.retryAfter--; this.error = `Too many searches - wait ${this.retryAfter}s.`; }
+                if (this.retryAfter <= 0) {
+                    if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                    this.error = '';
+                    this.performSearch();
+                }
+            }, 1000);
+        },
         selectedIds: [],
         currentPage: 1,
         totalPages: 1,
@@ -169,6 +190,17 @@ function loansManager() {
             this.performSearch();
         },
         async performSearch() {
+            if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+            this._controller = new AbortController();
+            const signal = this._controller.signal;
+            const mySeq = ++this._seq;
+            // While throttled, coalesce: no new fetch — countdown requeues latest at 0.
+            if (this.retryAfter > 0) {
+                try { this._controller.abort(); } catch (e) {}
+                this.loading = false;
+                if (!this._countdown) this.startCountdown();
+                return;
+            }
             this.loading = true;
             try {
                 const params = new URLSearchParams();
@@ -176,19 +208,35 @@ function loansManager() {
                 if (this.filters.overdue) params.append('overdue', '1');
                 params.append('page', this.currentPage);
 
-                const response = await fetch(`/librarian/loans/search?${params.toString()}`);
+                const response = await fetch(`/librarian/loans/search?${params.toString()}`, { signal });
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (response.status === 429) {
+                    const retry = parseInt(response.headers.get('Retry-After') || '20', 10);
+                    this.retryAfter = Number.isFinite(retry) && retry > 0 ? retry : 20;
+                    this.error = `Too many searches - wait ${this.retryAfter}s.`;
+                    console.info(`[search] 429 throttled, retry in ${this.retryAfter}s — showing wait box.`);
+                    this.startCountdown();
+                    return;
+                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                 this.transactions = data.data;
                 this.currentPage = data.current_page;
                 this.totalPages = data.last_page;
                 this.total = data.total;
                 this.from = data.from || 0;
                 this.to = data.to || 0;
+                this.error = '';
+                this.retryAfter = 0;
             } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                if (signal.aborted || mySeq !== this._seq) return;
                 console.error('Search failed:', e);
-                this.transactions = [];
+                this.error = 'Search failed — Refresh.';
             } finally {
-                this.loading = false;
+                if (mySeq === this._seq) this.loading = false;
             }
         },
         goToPage(page) {
@@ -204,8 +252,13 @@ function loansManager() {
             return range;
         },
         resetFilters() {
+            if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+            this._seq++;
             this.filters = { search: '', overdue: false };
             this.currentPage = 1;
+            this.error = '';
+            this.retryAfter = 0;
             this.performSearch();
         },
         isValidDue(date) {

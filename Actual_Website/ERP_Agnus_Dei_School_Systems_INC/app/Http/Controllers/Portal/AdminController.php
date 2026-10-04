@@ -155,6 +155,8 @@ class AdminController extends Controller
             ]);
         }
 
-        return view('portal.admin.audit-logs', compact('logs', 'events', 'users'));
+        $searchMetrics = \App\Services\SearchMetricsService::summary();
+
+        return view('portal.admin.audit-logs', compact('logs', 'events', 'users', 'searchMetrics'));
     }
 }

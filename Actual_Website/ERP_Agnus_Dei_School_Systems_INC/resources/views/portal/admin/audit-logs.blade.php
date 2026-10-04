@@ -10,6 +10,30 @@
     <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Track all user activity across the system.</p>
 </div>
 
+@if(true)
+<div class="mb-6 bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4">
+    <h3 class="text-sm font-semibold text-gray-900 dark:text-[#E8EAF6]">Search health today (counts only — no search words stored)</h3>
+    <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-gray-600 dark:text-[#C1C4DC]">
+        <div>
+            <p class="font-semibold uppercase tracking-wide">Wait shown per list</p>
+            @forelse(($searchMetrics['hits'] ?? []) as $route => $count)
+                <p>{{ $route }}: {{ $count }}</p>
+            @empty
+                <p>None today.</p>
+            @endforelse
+        </div>
+        <div>
+            <p class="font-semibold uppercase tracking-wide">Slow lists (&gt;2s)</p>
+            @forelse(($searchMetrics['slow'] ?? []) as $route => $count)
+                <p>{{ $route }}: {{ $count }}</p>
+            @empty
+                <p>None today.</p>
+            @endforelse
+        </div>
+    </div>
+</div>
+@endif
+
 <div x-data="ajaxTable('{{ route('admin.audit-logs') }}', @js([
         'user_id' => (string) request('user_id'),
         'event' => (string) request('event'),
@@ -21,7 +45,7 @@
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
         <form @submit.prevent="reload()">
             <div class="flex gap-2 items-center flex-wrap">
-                <input type="text" x-model="filters.search" @input.debounce.300ms="reload()" placeholder="Search description or event..."
+                <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Search description or event..."
                        class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <button type="button" @click="showAdvanced = !showAdvanced" class="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-[#C1C4DC] bg-gray-100 dark:bg-[#23274C] hover:bg-gray-200 dark:hover:bg-[#2A2F58] transition">
                     <svg class="w-4 h-4 transition-transform duration-200" :class="showAdvanced ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -68,7 +92,7 @@
     <!-- Results -->
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
         <!-- Skeleton loading -->
-        <div x-show="loading" class="p-4 space-y-3">
+        <div x-show="loading && !html" class="p-4 space-y-3">
             <template x-for="i in 5" :key="i">
                 <div class="skelly sk-card">
                     <div class="grid grid-cols-4 gap-4 px-2">
@@ -82,7 +106,8 @@
         </div>
 
         <!-- Results injected via AJAX -->
-        <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+        <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
+        <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
 @endsection

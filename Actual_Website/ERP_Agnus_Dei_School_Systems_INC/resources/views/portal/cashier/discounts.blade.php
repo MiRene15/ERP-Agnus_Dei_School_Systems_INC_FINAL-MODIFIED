@@ -66,7 +66,7 @@
         <form class="flex gap-4 items-end" @submit.prevent="reload()">
             <div class="flex-1">
                 <label class="block text-xs font-semibold text-gray-500 dark:text-[#8A90B0] uppercase mb-1">Search Student</label>
-                <input type="text" x-model="filters.search" @input.debounce.300ms="reload()" placeholder="Name or email..."
+                <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Name or email..."
                        class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
             </div>
             <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">Search</button>
@@ -75,7 +75,7 @@
     </div>
 
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
-        <div x-show="loading" class="p-4 space-y-3">
+        <div x-show="loading && !html" class="p-4 space-y-3">
             <template x-for="i in 5" :key="i">
                 <div class="skelly sk-card">
                     <div class="grid grid-cols-5 gap-4 px-2">
@@ -87,7 +87,8 @@
                 </div>
             </template>
         </div>
-        <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+        <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
+        <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
 @endsection

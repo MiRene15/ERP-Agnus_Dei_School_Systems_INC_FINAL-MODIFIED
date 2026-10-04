@@ -10,14 +10,15 @@ window.Alpine = Alpine;
  * Usage:
  *   <div x-data="ajaxTable('{{ route('some.route') }}', { search: '', status: '' })">
  *     <form @submit.prevent="reload()">
- *       <input x-model="filters.search" @input.debounce.300ms="reload()">
+ *       <input x-model="filters.search" @input.debounce.600ms="reload()">
  *       <select x-model="filters.status" @change="reload()">...</select>
  *       <button type="submit">Search</button>
  *       <button type="button" @click="reset()">Clear</button>
  *     </form>
  *
- *     <div x-show="loading" class="space-y-3"> skeleton blocks </div>
- *     <div x-show="!loading" x-cloak x-html="html" class="fade-in"></div>
+ *     <div x-show="loading && !html" class="space-y-3"> skeleton blocks </div>
+ *     <div x-show="error" x-cloak><span x-text="error"></span><button @click="reload()">Refresh</button></div>
+ *     <div x-show="html || !loading" x-cloak x-html="html" class="fade-in"></div>
  *   </div>
  *
  * The controller must return JSON { html: '<rendered partial>' } when the
@@ -28,10 +29,31 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
     filters: { ...initialFilters },
     loading: true,
     html: '',
+    error: '',
+    isRateLimited: false,
+    retryAfter: 0,
     lastKey: null,
+    _controller: null,
+    _seq: 0,
+    _countdown: null,
     showAdvanced: Object.values(initialFilters || {}).some((v) => v !== '' && v !== null && v !== undefined),
     init() {
         this.reload();
+    },
+    startCountdown() {
+        if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+        this._countdown = setInterval(() => {
+            if (this.retryAfter > 0) {
+                this.retryAfter--;
+                this.error = `Too many searches - wait ${this.retryAfter}s.`;
+            }
+            if (this.retryAfter <= 0) {
+                if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                this.isRateLimited = false;
+                this.error = '';
+                this.reload();
+            }
+        }, 1000);
     },
     async reload() {
         // Auto-reset page when any real filter changes between requests.
@@ -42,7 +64,28 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
         }
         this.lastKey = baseKey;
 
+        // While throttled, coalesce: drop stale work, keep latest filters,
+        // no new fetch — the running countdown requeues one retry at 0.
+        if (this.isRateLimited && this.retryAfter > 0) {
+            if (this._controller) {
+                try { this._controller.abort(); } catch (e) { /* noop */ }
+            }
+            this._seq++;
+            this.loading = false;
+            if (!this._countdown) this.startCountdown();
+            return;
+        }
+
+        // Drop prior unfinished work so only the latest text wins.
+        if (this._controller) {
+            try { this._controller.abort(); } catch (e) { /* noop */ }
+        }
+        this._controller = new AbortController();
+        const signal = this._controller.signal;
+        const mySeq = ++this._seq;
+
         this.loading = true;
+        // Keep last good list on screen; surface status via error hint only.
         try {
             const params = new URLSearchParams();
             Object.entries(this.filters).forEach(([key, value]) => {
@@ -53,18 +96,51 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
             params.append('ajax', '1');
 
             const response = await fetch(`${this.url}?${params.toString()}`, {
+                signal,
                 headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
             });
+            if (signal.aborted || mySeq !== this._seq) return;
+            if (response.status === 429) {
+                const retry = parseInt(response.headers.get('Retry-After') || '20', 10);
+                this.retryAfter = Number.isFinite(retry) && retry > 0 ? retry : 20;
+                this.isRateLimited = true;
+                this.error = `Too many searches - wait ${this.retryAfter}s.`;
+                console.info(`[search] 429 throttled, retry in ${this.retryAfter}s — showing wait box.`);
+                this.startCountdown();
+                return;
+            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
+            if (signal.aborted || mySeq !== this._seq) return;
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
             this.html = data.html || '';
+            this.error = '';
+            this.isRateLimited = false;
+            this.retryAfter = 0;
         } catch (e) {
+            if (e && e.name === 'AbortError') return;
+            if (signal.aborted || mySeq !== this._seq) return;
             console.error('AJAX load failed:', e);
-            this.html = '<div class="py-8 text-center text-gray-500 text-sm">Failed to load data.</div>';
+            // Keep last good list; show Refresh hint (list never blanked).
+            if (!this.html) {
+                this.html = '';
+            }
+            this.error = 'Search failed — Refresh.';
         } finally {
-            this.loading = false;
+            // Only the latest request clears the loading hint.
+            if (mySeq === this._seq) this.loading = false;
         }
     },
     reset() {
+        // Clear always works instantly (Child 1): drop wait + countdown too.
+        if (this._controller) {
+            try { this._controller.abort(); } catch (e) { /* noop */ }
+        }
+        if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+        this._seq++;
+        this.error = '';
+        this.isRateLimited = false;
+        this.retryAfter = 0;
         Object.keys(this.filters).forEach((key) => (this.filters[key] = ''));
         this.reload();
     },

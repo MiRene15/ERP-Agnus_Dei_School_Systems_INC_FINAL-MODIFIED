@@ -12,6 +12,12 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        // Search backstop on list only; creations/updates never throttled.
+        $this->middleware('throttle:search')->only('index');
+    }
+
     protected function normalizePhone(?string $raw): ?string
     {
         if (!$raw || trim($raw) === '') return null;

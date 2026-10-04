@@ -21,27 +21,34 @@
     <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Search Student</h3>
     </div>
-    <div class="flex gap-3 items-center">
+    <form @submit.prevent="performSearch()" class="flex gap-3 items-center">
         <select x-model="selectedYear" @change="performSearch()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
             @foreach($schoolYears as $sy)
                 <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
             @endforeach
         </select>
-        <input type="text" x-model="searchQuery" @input.debounce.300ms="performSearch()" placeholder="Search by name, student number, or LRN..."
+        <input type="text" x-model="searchQuery" @input.debounce.600ms="performSearch()" placeholder="Search by name, student number, or LRN..."
                class="flex-1 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] placeholder-gray-400 dark:placeholder-[#6A7094] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
-        <button type="button" @click="performSearch()" class="px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap" style="background: var(--navy);">Search</button>
-    </div>
+        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white whitespace-nowrap" style="background: var(--navy);">Search</button>
+        <button type="button" @click="clearSearch()" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
+    </form>
+    <div x-show="loading && students.length === 0" class="mt-4 text-xs text-gray-500">Searching…</div>
 
-    <!-- Skeleton Loading -->
-    <div x-show="loading" class="mt-4 space-y-3">
+    <!-- Skeleton Loading (first load only; list kept while typing) -->
+    <div x-show="loading && students.length === 0" class="mt-4 space-y-3">
         <div class="skelly sk-line-md"></div>
         <div class="skelly sk-line-lg"></div>
         <div class="skelly sk-line-md"></div>
         <div class="skelly sk-line-sm"></div>
     </div>
 
-    <!-- Search Results -->
-    <div x-show="!loading && searchQuery.length >= 2" class="mt-4" x-cloak x-transition>
+    <div x-show="error" x-cloak class="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3">
+        <span x-text="error"></span>
+        <button type="button" @click="performSearch()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+    </div>
+
+    <!-- Search Results (kept while typing/loading; never blanked) -->
+    <div x-show="searchQuery.trim().length >= 2" class="mt-4" x-cloak x-transition>
         <template x-if="students.length > 0">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -81,7 +88,7 @@
                 </table>
             </div>
         </template>
-        <template x-if="students.length === 0">
+        <template x-if="students.length === 0 && !loading && !error">
             <div class="py-12 text-center">
                 <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <p class="text-sm font-medium text-gray-500" x-text="'No students found matching &quot;' + searchQuery + '&quot;.'"></p>
@@ -99,20 +106,79 @@ function searchPayments() {
         selectedYear: '{{ $schoolYear }}',
         students: [],
         loading: false,
+        error: '',
+        retryAfter: 0,
+        _controller: null,
+        _seq: 0,
+        _countdown: null,
+        startCountdown() {
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+            this._countdown = setInterval(() => {
+                if (this.retryAfter > 0) { this.retryAfter--; this.error = `Too many searches - wait ${this.retryAfter}s.`; }
+                if (this.retryAfter <= 0) {
+                    if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                    this.error = '';
+                    this.performSearch();
+                }
+            }, 1000);
+        },
+        clearSearch() {
+            if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+            this._seq++;
+            this.searchQuery = '';
+            this.students = [];
+            this.error = '';
+            this.retryAfter = 0;
+            this.loading = false;
+        },
         async performSearch() {
-            if (this.searchQuery.length < 2) {
+            const q = (this.searchQuery || '').trim();
+            if (q.length < 2) {
+                if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+                this._seq++;
                 this.students = [];
+                this.error = '';
+                this.loading = false;
+                return;
+            }
+            if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+            this._controller = new AbortController();
+            const signal = this._controller.signal;
+            const mySeq = ++this._seq;
+            // While throttled, coalesce: no new fetch — countdown requeues latest at 0.
+            if (this.retryAfter > 0) {
+                try { this._controller.abort(); } catch (e) {}
+                this.loading = false;
+                if (!this._countdown) this.startCountdown();
                 return;
             }
             this.loading = true;
             try {
-                const response = await fetch(`/cashier/search?search=${encodeURIComponent(this.searchQuery)}&school_year=${encodeURIComponent(this.selectedYear)}`);
-                this.students = await response.json();
+                const response = await fetch(`/cashier/search?search=${encodeURIComponent(this.searchQuery)}&school_year=${encodeURIComponent(this.selectedYear)}`, { signal });
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (response.status === 429) {
+                    const retry = parseInt(response.headers.get('Retry-After') || '20', 10);
+                    this.retryAfter = Number.isFinite(retry) && retry > 0 ? retry : 20;
+                    this.error = `Too many searches - wait ${this.retryAfter}s.`;
+                    console.info(`[search] 429 throttled, retry in ${this.retryAfter}s — showing wait box.`);
+                    this.startCountdown();
+                    return;
+                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                this.students = Array.isArray(data) ? data : (data.data || []);
+                this.error = '';
+                this.retryAfter = 0;
             } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                if (signal.aborted || mySeq !== this._seq) return;
                 console.error('Search failed:', e);
-                this.students = [];
+                this.error = 'Search failed — Refresh.';
             } finally {
-                this.loading = false;
+                if (mySeq === this._seq) this.loading = false;
             }
         }
     }

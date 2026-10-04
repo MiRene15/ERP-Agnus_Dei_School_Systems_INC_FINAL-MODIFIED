@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'search.metrics' => \App\Http\Middleware\TrackSearchMetrics::class,
         ]);
         $middleware->trustProxies(
             at: '*',

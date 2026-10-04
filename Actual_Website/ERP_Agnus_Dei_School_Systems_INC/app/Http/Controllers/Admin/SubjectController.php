@@ -8,6 +8,11 @@ use Illuminate\Http\Request;
 
 class SubjectController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('throttle:search')->only('index');
+    }
+
     public function index(Request $request)
     {
         $isAjax = $request->boolean('ajax');

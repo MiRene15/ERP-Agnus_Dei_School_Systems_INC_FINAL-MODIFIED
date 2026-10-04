@@ -29,7 +29,7 @@
 <div x-data="ajaxTable('{{ route('admin.users.index') }}', { search: '{{ request('search') }}', role_id: '{{ request('role_id') }}', status: '{{ request('status') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
-            <input type="text" x-model="filters.search" @input.debounce.300ms="reload()"
+            <input type="text" x-model="filters.search" @input.debounce.600ms="reload()"
                    placeholder="Search by name or email..."
                    class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
             <select x-model="filters.role_id" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
@@ -50,7 +50,7 @@
 
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
         <!-- Skeleton loading -->
-        <div x-show="loading" class="p-4 space-y-3">
+        <div x-show="loading && !html" class="p-4 space-y-3">
             <template x-for="i in 5" :key="i">
                 <div class="skelly sk-card">
                     <div class="grid grid-cols-5 gap-4 px-2">
@@ -65,7 +65,8 @@
         </div>
 
         <!-- Results injected via AJAX -->
-        <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+        <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
+        <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
 @endsection

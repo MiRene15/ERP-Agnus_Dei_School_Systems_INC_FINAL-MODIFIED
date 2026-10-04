@@ -26,7 +26,7 @@
     <!-- Basic Filters -->
     <form @submit.prevent="performSearch()" class="mb-4">
         <div class="flex gap-2 items-center flex-wrap">
-            <input type="text" x-model="filters.search" @input.debounce.300ms="performSearch()" placeholder="Search by title, author, or ISBN..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <input type="text" x-model="filters.search" @input.debounce.600ms="performSearch()" placeholder="Search by title, author, or ISBN..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
             <select x-model="filters.active" @change="performSearch()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
@@ -42,8 +42,8 @@
         <!-- Advanced Filters (collapsible) -->
         <div x-show="showAdvanced" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" class="mt-3 pt-3 border-t border-gray-100 dark:border-[#2A2F58]" style="display: none;">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                <input type="text" x-model="filters.serial_number" @input.debounce.300ms="performSearch()" placeholder="Serial number..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <input type="text" x-model="filters.publisher" @input.debounce.300ms="performSearch()" placeholder="Publisher..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="text" x-model="filters.serial_number" @input.debounce.600ms="performSearch()" placeholder="Serial number..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="text" x-model="filters.publisher" @input.debounce.600ms="performSearch()" placeholder="Publisher..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <select x-model="filters.availability" @change="performSearch()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">All Availability</option>
                     <option value="available">Available</option>
@@ -52,10 +52,10 @@
                 <div></div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <input type="number" x-model="filters.year_from" @input.debounce.300ms="performSearch()" placeholder="Year from..." min="1900" max="2099" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <input type="number" x-model="filters.year_to" @input.debounce.300ms="performSearch()" placeholder="Year to..." min="1900" max="2099" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <input type="number" x-model="filters.price_min" @input.debounce.300ms="performSearch()" placeholder="Min price (₱)..." min="0" step="0.01" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <input type="number" x-model="filters.price_max" @input.debounce.300ms="performSearch()" placeholder="Max price (₱)..." min="0" step="0.01" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="number" x-model="filters.year_from" @input.debounce.600ms="performSearch()" placeholder="Year from..." min="1900" max="2099" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="number" x-model="filters.year_to" @input.debounce.600ms="performSearch()" placeholder="Year to..." min="1900" max="2099" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="number" x-model="filters.price_min" @input.debounce.600ms="performSearch()" placeholder="Min price (₱)..." min="0" step="0.01" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input type="number" x-model="filters.price_max" @input.debounce.600ms="performSearch()" placeholder="Max price (₱)..." min="0" step="0.01" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
             </div>
             <div class="mt-3 flex justify-end">
                 <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Apply Filters</button>
@@ -63,8 +63,8 @@
         </div>
     </form>
 
-    <!-- Skeleton Loading -->
-    <div x-show="loading" class="space-y-3">
+    <!-- Skeleton Loading (first load only; list kept while typing) -->
+    <div x-show="loading && books.length === 0" class="space-y-3">
         <div class="skelly sk-line-md"></div>
         <div class="skelly sk-line-lg"></div>
         <div class="skelly sk-line-md"></div>
@@ -72,8 +72,13 @@
         <div class="skelly sk-line-md"></div>
     </div>
 
-    <!-- Books Table -->
-    <div x-show="!loading" x-cloak>
+    <div x-show="error" x-cloak class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3">
+        <span x-text="error"></span>
+        <button type="button" @click="performSearch()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+    </div>
+
+    <!-- Books Table (kept while typing/loading; never blanked) -->
+    <div x-show="books.length > 0 || !loading" x-cloak>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
@@ -209,6 +214,22 @@ function booksManager() {
     return {
         books: [],
         loading: true,
+        error: '',
+        retryAfter: 0,
+        _controller: null,
+        _seq: 0,
+        _countdown: null,
+        startCountdown() {
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+            this._countdown = setInterval(() => {
+                if (this.retryAfter > 0) { this.retryAfter--; this.error = `Too many searches - wait ${this.retryAfter}s.`; }
+                if (this.retryAfter <= 0) {
+                    if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                    this.error = '';
+                    this.performSearch();
+                }
+            }, 1000);
+        },
         currentPage: 1,
         totalPages: 1,
         total: 0,
@@ -230,6 +251,17 @@ function booksManager() {
             this.performSearch();
         },
         async performSearch() {
+            if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+            this._controller = new AbortController();
+            const signal = this._controller.signal;
+            const mySeq = ++this._seq;
+            // While throttled, coalesce: no new fetch — countdown requeues latest at 0.
+            if (this.retryAfter > 0) {
+                try { this._controller.abort(); } catch (e) {}
+                this.loading = false;
+                if (!this._countdown) this.startCountdown();
+                return;
+            }
             this.loading = true;
             try {
                 const params = new URLSearchParams();
@@ -244,19 +276,35 @@ function booksManager() {
                 if (this.filters.price_max) params.append('price_max', this.filters.price_max);
                 params.append('page', this.currentPage);
 
-                const response = await fetch(`/librarian/books/search?${params.toString()}`);
+                const response = await fetch(`/librarian/books/search?${params.toString()}`, { signal });
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (response.status === 429) {
+                    const retry = parseInt(response.headers.get('Retry-After') || '20', 10);
+                    this.retryAfter = Number.isFinite(retry) && retry > 0 ? retry : 20;
+                    this.error = `Too many searches - wait ${this.retryAfter}s.`;
+                    console.info(`[search] 429 throttled, retry in ${this.retryAfter}s — showing wait box.`);
+                    this.startCountdown();
+                    return;
+                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                 this.books = data.data;
                 this.currentPage = data.current_page;
                 this.totalPages = data.last_page;
                 this.total = data.total;
                 this.from = data.from || 0;
                 this.to = data.to || 0;
+                this.error = '';
+                this.retryAfter = 0;
             } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                if (signal.aborted || mySeq !== this._seq) return;
                 console.error('Search failed:', e);
-                this.books = [];
+                this.error = 'Search failed — Refresh.';
             } finally {
-                this.loading = false;
+                if (mySeq === this._seq) this.loading = false;
             }
         },
         goToPage(page) {
@@ -272,8 +320,13 @@ function booksManager() {
             return range;
         },
         resetFilters() {
+            if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+            this._seq++;
             this.filters = { search: '', serial_number: '', publisher: '', availability: '', active: 'active', year_from: '', year_to: '', price_min: '', price_max: '' };
             this.currentPage = 1;
+            this.error = '';
+            this.retryAfter = 0;
             this.performSearch();
         },
         openDeactivateModal(book) {

@@ -122,14 +122,14 @@ Route::middleware('auth')->group(function () {
          Route::post('admin/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
          Route::post('admin/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('admin.users.reset-password');
          // Student Account Management
-         Route::get('admin/student-accounts', [\App\Http\Controllers\Admin\StudentAccountController::class, 'index'])->name('admin.student-accounts.index');
+         Route::get('admin/student-accounts', [\App\Http\Controllers\Admin\StudentAccountController::class, 'index'])->name('admin.student-accounts.index')->middleware('throttle:search');
          Route::post('admin/student-accounts/{user}/toggle-status', [\App\Http\Controllers\Admin\StudentAccountController::class, 'toggleStatus'])->name('admin.student-accounts.toggle-status');
          Route::post('admin/student-accounts/{user}/reset-password', [\App\Http\Controllers\Admin\StudentAccountController::class, 'resetPassword'])->name('admin.student-accounts.reset-password');
          // School Settings
          Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
          Route::post('/admin/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
          // Audit Logs
-         Route::get('/admin/audit-logs', [AdminController::class, 'auditLogs'])->name('admin.audit-logs');
+         Route::get('/admin/audit-logs', [AdminController::class, 'auditLogs'])->name('admin.audit-logs')->middleware(['throttle:search', 'search.metrics']);
          // Exports
         Route::get('/admin/exports/enrollments', [ExportController::class, 'enrollments'])->name('admin.exports.enrollments');
         Route::get('/admin/exports/grades', [ExportController::class, 'grades'])->name('admin.exports.grades');
@@ -168,25 +168,25 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['role:2'])->group(function() {
         Route::get('/registrar/dashboard', [RegistrarController::class, 'index'])->name('registrar.dashboard');
-        Route::get('/registrar/admissions', [RegistrarAdmissionController::class, 'index'])->name('registrar.admissions.index');
+        Route::get('/registrar/admissions', [RegistrarAdmissionController::class, 'index'])->name('registrar.admissions.index')->middleware('throttle:search');
         Route::get('/registrar/admissions/{admission}', [RegistrarAdmissionController::class, 'show'])->name('registrar.admissions.show');
         Route::post('/registrar/admissions/{admission}/approve', [RegistrarAdmissionController::class, 'approve'])->name('registrar.admissions.approve');
         Route::post('/registrar/admissions/{admission}/reject', [RegistrarAdmissionController::class, 'reject'])->name('registrar.admissions.reject');
         Route::post('/registrar/admissions/{admission}/verify-all', [RegistrarAdmissionController::class, 'verifyAll'])->name('registrar.admissions.verify-all');
         Route::post('/registrar/requirements/{requirement}/verify', [RegistrarAdmissionController::class, 'verifyRequirement'])->name('registrar.admissions.verify-requirement');
-        Route::get('/registrar/withdrawals', [WithdrawalController::class, 'index'])->name('registrar.withdrawals.index');
+        Route::get('/registrar/withdrawals', [WithdrawalController::class, 'index'])->name('registrar.withdrawals.index')->middleware('throttle:search');
         Route::post('/registrar/withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('registrar.withdrawals.approve');
         Route::post('/registrar/withdrawals/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('registrar.withdrawals.reject');
         // Report Cards
-        Route::get('/registrar/report-cards', [ReportCardController::class, 'index'])->name('registrar.report-cards.index');
+        Route::get('/registrar/report-cards', [ReportCardController::class, 'index'])->name('registrar.report-cards.index')->middleware('throttle:search');
         Route::get('/registrar/report-cards/{enrollment}', [ReportCardController::class, 'show'])->name('registrar.report-cards.show');
         Route::get('/registrar/report-cards/{enrollment}/print', [ReportCardController::class, 'print'])->name('registrar.report-cards.print');
     });
 
     Route::middleware(['role:3'])->group(function() {
         Route::get('/cashier/dashboard', [CashierController::class, 'index'])->name('cashier.dashboard');
-        Route::get('/cashier/payments', [CashierController::class, 'payments'])->name('cashier.payments');
-        Route::get('/cashier/search', [CashierController::class, 'searchStudents'])->name('cashier.search');
+        Route::get('/cashier/payments', [CashierController::class, 'payments'])->name('cashier.payments')->middleware('throttle:search');
+         Route::get('/cashier/search', [CashierController::class, 'searchStudents'])->name('cashier.search')->middleware(['throttle:search', 'search.metrics']);
         Route::get('/cashier/payment/{student}', [CashierController::class, 'showPayment'])->name('cashier.payment');
         Route::post('/cashier/payment/{student}/process', [CashierController::class, 'processPayment'])->name('cashier.payment.process');
         Route::get('/cashier/financial/{student}', [CashierController::class, 'studentFinancial'])->name('cashier.student-financial');
@@ -196,7 +196,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/cashier/reports', [CashierController::class, 'reports'])->name('cashier.reports');
         Route::get('/cashier/reports/receivables', [CashierController::class, 'receivablesReport'])->name('cashier.reports.receivables');
         Route::get('/cashier/reports/receivables/export', [CashierController::class, 'receivablesReportExport'])->name('cashier.reports.receivables.export');
-        Route::get('/cashier/discounts', [CashierController::class, 'discounts'])->name('cashier.discounts');
+        Route::get('/cashier/discounts', [CashierController::class, 'discounts'])->name('cashier.discounts')->middleware('throttle:search');
         // Discounts are request-based now: Directress approves -> Cashier applies. No direct edits.
         Route::post('/cashier/discounts/apply/{discountRequest}', [CashierController::class, 'applyDiscount'])->name('cashier.discounts.apply');
         // Graduation-fee paid marking — Cashier only (moved from Directress).
@@ -210,7 +210,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['role:4'])->group(function() {
         Route::get('/teacher/dashboard', [TeacherController::class, 'index'])->name('teacher.dashboard');
-        Route::get('/teacher/classes', [TeacherController::class, 'classes'])->name('teacher.classes');
+        Route::get('/teacher/classes', [TeacherController::class, 'classes'])->name('teacher.classes')->middleware('throttle:search');
         Route::get('/teacher/classes/{class}', [TeacherController::class, 'showClass'])->name('teacher.classes.show');
         Route::post('/teacher/classes/{class}/grades', [TeacherController::class, 'storeGrades'])->name('teacher.grades.store');
         Route::post('/teacher/classes/{class}/submit', [TeacherController::class, 'submitGrades'])->name('teacher.grades.submit');
@@ -219,7 +219,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/teacher/schedule', [TeacherController::class, 'schedule'])->name('teacher.schedule');
 
         // New sub-tabs
-        Route::get('/teacher/class-list', [TeacherController::class, 'classList'])->name('teacher.class-list');
+        Route::get('/teacher/class-list', [TeacherController::class, 'classList'])->name('teacher.class-list')->middleware('throttle:search');
         Route::get('/teacher/class-list/{class}/students', [TeacherController::class, 'classStudents'])->name('teacher.class-list.students');
         Route::get('/teacher/grade-assessment', [TeacherController::class, 'gradeAssessment'])->name('teacher.grade-assessment');
         Route::get('/teacher/grade-assessment/{class}/student/{enrollment}', [TeacherController::class, 'gradeAssessmentStudent'])->name('teacher.grade-assessment.student');
@@ -236,38 +236,38 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware(['role:5'])->group(function() {
         Route::get('/librarian/dashboard', [LibrarianController::class, 'index'])->name('librarian.dashboard');
-        Route::get('/librarian/books', [LibrarianController::class, 'books'])->name('librarian.books');
+        Route::get('/librarian/books', [LibrarianController::class, 'books'])->name('librarian.books')->middleware('throttle:search');
         Route::get('/librarian/books/create', [LibrarianController::class, 'createBook'])->name('librarian.books.create');
         Route::post('/librarian/books', [LibrarianController::class, 'storeBook'])->name('librarian.books.store');
         Route::get('/librarian/books/{book}/edit', [LibrarianController::class, 'editBook'])->name('librarian.books.edit');
         Route::patch('/librarian/books/{book}', [LibrarianController::class, 'updateBook'])->name('librarian.books.update');
         Route::delete('/librarian/books/{book}', [LibrarianController::class, 'destroyBook'])->name('librarian.books.destroy');
         // Inactive Books
-        Route::get('/librarian/inactive-logs', [LibrarianController::class, 'inactiveBooks'])->name('librarian.inactive-logs');
+        Route::get('/librarian/inactive-logs', [LibrarianController::class, 'inactiveBooks'])->name('librarian.inactive-logs')->middleware('throttle:search');
         Route::post('/librarian/books/{book}/replace', [LibrarianController::class, 'replaceBook'])->name('librarian.books.replace');
         Route::patch('/librarian/books/{book}/deactivate', [LibrarianController::class, 'deactivateBook'])->name('librarian.books.deactivate');
         Route::patch('/librarian/books/{book}/reactivate', [LibrarianController::class, 'reactivateBook'])->name('librarian.books.reactivate');
         // Loan Management
-        Route::get('/librarian/loans', [LibrarianController::class, 'loans'])->name('librarian.loans');
+        Route::get('/librarian/loans', [LibrarianController::class, 'loans'])->name('librarian.loans')->middleware('throttle:search');
         Route::get('/librarian/loans/borrow', [LibrarianController::class, 'borrowForm'])->name('librarian.loans.borrow');
         Route::post('/librarian/loans/borrow', [LibrarianController::class, 'storeBorrow'])->name('librarian.loans.store');
         Route::get('/librarian/loans/{transaction}/return', [LibrarianController::class, 'returnForm'])->name('librarian.loans.return-form');
         Route::patch('/librarian/loans/{transaction}/return', [LibrarianController::class, 'processReturn'])->name('librarian.loans.process-return');
         Route::post('/librarian/loans/batch-return', [LibrarianController::class, 'batchReturn'])->name('librarian.loans.batch-return');
-        Route::get('/librarian/students/search', [LibrarianController::class, 'searchStudents'])->name('librarian.students.search');
-        Route::get('/librarian/books/search', [LibrarianController::class, 'searchBooks'])->name('librarian.books.search');
-        Route::get('/librarian/loans/search', [LibrarianController::class, 'searchLoans'])->name('librarian.loans.search');
+        Route::get('/librarian/students/search', [LibrarianController::class, 'searchStudents'])->name('librarian.students.search')->middleware(['throttle:search', 'search.metrics']);
+        Route::get('/librarian/books/search', [LibrarianController::class, 'searchBooks'])->name('librarian.books.search')->middleware(['throttle:search', 'search.metrics']);
+        Route::get('/librarian/loans/search', [LibrarianController::class, 'searchLoans'])->name('librarian.loans.search')->middleware(['throttle:search', 'search.metrics']);
         // Library Visits
-        Route::get('/librarian/visits', [LibrarianController::class, 'visits'])->name('librarian.visits');
+        Route::get('/librarian/visits', [LibrarianController::class, 'visits'])->name('librarian.visits')->middleware('throttle:search');
         Route::post('/librarian/visits/clock-in', [LibrarianController::class, 'clockIn'])->name('librarian.visits.clock-in');
         Route::patch('/librarian/visits/{visit}/clock-out', [LibrarianController::class, 'clockOut'])->name('librarian.visits.clock-out');
         // History
-        Route::get('/librarian/history', [LibrarianController::class, 'history'])->name('librarian.history');
+        Route::get('/librarian/history', [LibrarianController::class, 'history'])->name('librarian.history')->middleware('throttle:search');
     });
 
     Route::middleware(['role:6'])->group(function() {
         Route::get('/nurse/dashboard', [NurseController::class, 'index'])->name('nurse.dashboard');
-        Route::get('/nurse/logs', [NurseController::class, 'logs'])->name('nurse.logs');
+        Route::get('/nurse/logs', [NurseController::class, 'logs'])->name('nurse.logs')->middleware('throttle:search');
         Route::get('/nurse/logs/create', [NurseController::class, 'createLog'])->name('nurse.logs.create');
         Route::post('/nurse/logs', [NurseController::class, 'storeLog'])->name('nurse.logs.store');
         // Open cases raise a clearance Hold — closing lifts it.
@@ -351,7 +351,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:9'])->group(function() {
         Route::get('/principal/dashboard', [PrincipalController::class, 'index'])->name('principal.dashboard');
         // Schedules — manual + hybrid CSV + edit
-        Route::get('/principal/schedules', [PrincipalController::class, 'schedules'])->name('principal.schedules');
+        Route::get('/principal/schedules', [PrincipalController::class, 'schedules'])->name('principal.schedules')->middleware('throttle:search');
         Route::get('/principal/schedules/manage', [PrincipalController::class, 'schedulesManage'])->name('principal.schedules.manage');
         Route::post('/principal/schedules', [PrincipalController::class, 'schedulesStore'])->name('principal.schedules.store');
         Route::get('/principal/schedules/{schedule}/edit', [PrincipalController::class, 'schedulesEdit'])->name('principal.schedules.edit');
@@ -360,7 +360,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/principal/schedules/template', [PrincipalController::class, 'schedulesTemplate'])->name('principal.schedules.template');
         Route::post('/principal/schedules/import', [PrincipalController::class, 'schedulesImport'])->name('principal.schedules.import');
         // Grades
-        Route::get('/principal/grades', [PrincipalController::class, 'grades'])->name('principal.grades');
+        Route::get('/principal/grades', [PrincipalController::class, 'grades'])->name('principal.grades')->middleware('throttle:search');
         // Promotion approvals — Principal approves Registrar proposals.
         Route::get('/principal/promotion', [PromotionWorkflowController::class, 'principalIndex'])->name('principal.promotion.index');
         Route::post('/principal/promotion/{proposal}/approve', [PromotionWorkflowController::class, 'principalApprove'])->name('principal.promotion.approve');
@@ -375,7 +375,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/principal/teacher-assignments', [PrincipalController::class, 'teacherAssignments'])->name('principal.teacher-assignments.index');
         Route::patch('/principal/teacher-assignments/{class}', [PrincipalController::class, 'assignTeacher'])->name('principal.teacher-assignments.assign');
         // Announcements
-        Route::get('/principal/announcements', [PrincipalController::class, 'announcements'])->name('principal.announcements');
+        Route::get('/principal/announcements', [PrincipalController::class, 'announcements'])->name('principal.announcements')->middleware('throttle:search');
         Route::get('/principal/announcements/create', [PrincipalController::class, 'announcementsCreate'])->name('principal.announcements.create');
         Route::post('/principal/announcements', [PrincipalController::class, 'announcementsStore'])->name('principal.announcements.store');
         Route::get('/principal/announcements/{announcement}/edit', [PrincipalController::class, 'announcementsEdit'])->name('principal.announcements.edit');

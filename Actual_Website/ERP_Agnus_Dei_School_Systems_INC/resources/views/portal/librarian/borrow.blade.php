@@ -29,7 +29,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Student *</label>
                 <div class="relative">
-                    <input type="text" x-model="studentQuery" @input.debounce.300ms="searchStudents()" @focus="showResults = true" placeholder="Type name, student number, or LRN..."
+                    <input type="text" x-model="studentQuery" @input.debounce.600ms="searchStudents()" @focus="showResults = true" placeholder="Type name, student number, or LRN..."
                            class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" autocomplete="off">
                     <input type="hidden" name="student_id" :value="selectedStudentId" required>
 
@@ -70,6 +70,8 @@
                          class="absolute z-10 w-full mt-1 bg-white dark:bg-[#1A1E3B] border border-gray-200 rounded-lg shadow-lg">
                         <div class="px-3 py-2 text-sm text-gray-500 dark:text-[#8A90B0]">No students found</div>
                     </div>
+
+                    <div x-show="searchError" x-cloak class="mt-1 text-xs text-red-600" x-text="searchError"></div>
                 </div>
                 @error('student_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
@@ -129,20 +131,69 @@ function borrowForm() {
         showResults: false,
         selectedStudentId: null,
         selectedStudentName: '',
+        searchError: '',
+        retryAfter: 0,
+        _controller: null,
+        _seq: 0,
+        _countdown: null,
+        startCountdown() {
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+            this._countdown = setInterval(() => {
+                if (this.retryAfter > 0) { this.retryAfter--; this.searchError = `Too many searches - wait ${this.retryAfter}s.`; }
+                if (this.retryAfter <= 0) {
+                    if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                    this.searchError = '';
+                    this.searchStudents();
+                }
+            }, 1000);
+        },
         async searchStudents() {
-            if (this.studentQuery.length < 2) {
+            if ((this.studentQuery || '').trim().length < 2) {
+                if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+                if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                this._seq++;
                 this.students = [];
+                this.searchError = '';
+                this.retryAfter = 0;
+                this.searching = false;
+                return;
+            }
+            if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+            this._controller = new AbortController();
+            const signal = this._controller.signal;
+            const mySeq = ++this._seq;
+            // While throttled, coalesce: no new fetch — countdown requeues latest at 0.
+            if (this.retryAfter > 0) {
+                try { this._controller.abort(); } catch (e) {}
+                this.searching = false;
+                if (!this._countdown) this.startCountdown();
                 return;
             }
             this.searching = true;
             try {
-                const response = await fetch(`/librarian/students/search?search=${encodeURIComponent(this.studentQuery)}`);
-                this.students = await response.json();
+                const response = await fetch(`/librarian/students/search?search=${encodeURIComponent(this.studentQuery)}`, { signal });
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (response.status === 429) {
+                    const retry = parseInt(response.headers.get('Retry-After') || '20', 10);
+                    this.retryAfter = Number.isFinite(retry) && retry > 0 ? retry : 20;
+                    this.searchError = `Too many searches - wait ${this.retryAfter}s.`;
+                    console.info(`[search] 429 throttled, retry in ${this.retryAfter}s — showing wait note.`);
+                    this.startCountdown();
+                    return;
+                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                this.students = Array.isArray(data) ? data : (data.data || []);
+                this.searchError = '';
+                this.retryAfter = 0;
             } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                if (signal.aborted || mySeq !== this._seq) return;
                 console.error('Search failed:', e);
-                this.students = [];
             } finally {
-                this.searching = false;
+                if (mySeq === this._seq) this.searching = false;
             }
         },
         selectStudent(student) {

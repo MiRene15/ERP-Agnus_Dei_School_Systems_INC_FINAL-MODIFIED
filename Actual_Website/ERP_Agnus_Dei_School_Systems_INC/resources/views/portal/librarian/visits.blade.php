@@ -29,7 +29,7 @@
                 <input type="hidden" name="student_id" :value="selectedStudentId" required>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Search Student</label>
                 <div class="relative">
-                    <input type="text" x-model="studentQuery" @input.debounce.300ms="searchStudents()" @focus="showResults = true"
+                    <input type="text" x-model="studentQuery" @input.debounce.600ms="searchStudents()" @focus="showResults = true"
                            placeholder="Type name, student number, or LRN..." autocomplete="off"
                            class="w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-blue-500">
 
@@ -66,6 +66,8 @@
                          class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
                         <div class="px-3 py-2 text-sm text-gray-500">No students found</div>
                     </div>
+
+                    <div x-show="searchError" x-cloak class="mt-1 text-xs text-red-600" x-text="searchError"></div>
                 </div>
             </div>
             <button type="submit" class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Clock In</button>
@@ -77,7 +79,7 @@
         <form method="GET" class="flex flex-wrap gap-3 items-end mb-4" @submit.prevent="reload()">
             <div class="flex-1 min-w-[150px]">
                 <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
-                <input type="text" x-model="filters.search" @input.debounce.300ms="reload()" placeholder="Student name..."
+                <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Student name..."
                        class="w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
             <div class="min-w-[130px]">
@@ -93,7 +95,7 @@
         </form>
 
         <!-- Skeleton loading -->
-        <div x-show="loading" class="space-y-3">
+        <div x-show="loading && !html" class="space-y-3">
             <template x-for="i in 5" :key="i">
                 <div class="skelly sk-card">
                     <div class="grid grid-cols-5 gap-4 px-2">
@@ -107,7 +109,9 @@
         </div>
 
         <!-- Results injected via AJAX -->
-        <div x-show="!loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+        <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
+
+        <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
 
@@ -120,20 +124,69 @@ function clockInForm() {
         showResults: false,
         selectedStudentId: null,
         selectedStudentName: '',
+        searchError: '',
+        retryAfter: 0,
+        _controller: null,
+        _seq: 0,
+        _countdown: null,
+        startCountdown() {
+            if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+            this._countdown = setInterval(() => {
+                if (this.retryAfter > 0) { this.retryAfter--; this.searchError = `Too many searches - wait ${this.retryAfter}s.`; }
+                if (this.retryAfter <= 0) {
+                    if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                    this.searchError = '';
+                    this.searchStudents();
+                }
+            }, 1000);
+        },
         async searchStudents() {
-            if (this.studentQuery.length < 2) {
+            if ((this.studentQuery || '').trim().length < 2) {
+                if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+                if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                this._seq++;
                 this.students = [];
+                this.searchError = '';
+                this.retryAfter = 0;
+                this.searching = false;
+                return;
+            }
+            if (this._controller) { try { this._controller.abort(); } catch (e) {} }
+            this._controller = new AbortController();
+            const signal = this._controller.signal;
+            const mySeq = ++this._seq;
+            // While throttled, coalesce: no new fetch — countdown requeues latest at 0.
+            if (this.retryAfter > 0) {
+                try { this._controller.abort(); } catch (e) {}
+                this.searching = false;
+                if (!this._countdown) this.startCountdown();
                 return;
             }
             this.searching = true;
             try {
-                const response = await fetch(`/librarian/students/search?search=${encodeURIComponent(this.studentQuery)}`);
-                this.students = await response.json();
+                const response = await fetch(`/librarian/students/search?search=${encodeURIComponent(this.studentQuery)}`, { signal });
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (response.status === 429) {
+                    const retry = parseInt(response.headers.get('Retry-After') || '20', 10);
+                    this.retryAfter = Number.isFinite(retry) && retry > 0 ? retry : 20;
+                    this.searchError = `Too many searches - wait ${this.retryAfter}s.`;
+                    console.info(`[search] 429 throttled, retry in ${this.retryAfter}s — showing wait note.`);
+                    this.startCountdown();
+                    return;
+                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (signal.aborted || mySeq !== this._seq) return;
+                if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
+                this.students = Array.isArray(data) ? data : (data.data || []);
+                this.searchError = '';
+                this.retryAfter = 0;
             } catch (e) {
+                if (e && e.name === 'AbortError') return;
+                if (signal.aborted || mySeq !== this._seq) return;
                 console.error('Search failed:', e);
-                this.students = [];
             } finally {
-                this.searching = false;
+                if (mySeq === this._seq) this.searching = false;
             }
         },
         selectStudent(student) {
