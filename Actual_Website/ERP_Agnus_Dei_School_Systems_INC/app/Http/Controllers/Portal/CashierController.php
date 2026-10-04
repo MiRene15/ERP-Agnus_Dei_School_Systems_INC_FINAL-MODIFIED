@@ -129,24 +129,27 @@ class CashierController extends Controller
                 })
             ->with(['user', 'enrollments.section', 'ledger'])
             ->limit(20)
-                ->get()
-                ->map(function ($student) use ($schoolYear) {
-                    $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
-                    $gradeLevel = $enrollment?->section?->grade_level;
+            ->get();
 
-                    $totalAssessed = 0;
-                    if ($gradeLevel) {
-                        $feeSchedules = FeeSchedule::where('grade_level', $gradeLevel)
-                            ->where('school_year', $schoolYear)
-                            ->get();
-                        $totalAssessed = $feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee');
-                    }
+            $gradeLevelByStudent = [];
 
-                    $totalPaid = $student->ledger?->total_paid ?? 0;
-                    $discountApplied = $student->ledger?->discount_applied ?? 0;
-                    $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
-                    return $student;
-                });
+            foreach ($students as $student) {
+                $active = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
+                $gradeLevelByStudent[$student->getKey()] = $active?->section?->grade_level;
+            }
+
+            $assessedByGradeLevel = $this->assessedTotalsByGradeLevel(
+                array_values(array_unique(array_filter($gradeLevelByStudent))),
+                $schoolYear
+            );
+
+            foreach ($students as $student) {
+                $totalAssessed = $assessedByGradeLevel[$gradeLevelByStudent[$student->getKey()] ?? ''] ?? 0;
+
+                $totalPaid = $student->ledger?->total_paid ?? 0;
+                $discountApplied = $student->ledger?->discount_applied ?? 0;
+                $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
+            }
         }
 
         return view('portal.cashier.payments', compact('students', 'search', 'schoolYear', 'schoolYears'));

@@ -1,8 +1,9 @@
 # Spec: Safe Release
 
-- **Status**: Approved
+- **Status**: Draft
 - **Created**: 2026-10-04
 - **Approved by**: user on 2026-10-04
+- **Revised**: 2026-10-05 — a pre-release check for case-sensitive searches was added to §4, per `case-insensitive-search.md` slice 3. Status reset to **Draft** for re-approval (`spec-rules.md` §6). The three-release requirement in §8 is unchanged and still outstanding.
 
 ## 1. Why We Need This
 
@@ -45,6 +46,13 @@ This spec fixes that with no new software: a short routine you run around every 
 
 - [ ] You are on `main`, and your working tree is clean — nothing half-finished is riding along.
 - [ ] You know **which roles this touches.** If you changed anything shared, the answer is *all of them*.
+- [ ] **If you wrote or changed any search, it ignores capitalisation.** Run this and confirm every hit is deliberate:
+
+```powershell
+Get-ChildItem app -Recurse -Filter *.php | Select-String -Pattern "'like',\s*[`"']%"
+```
+
+  - Each hit must be a machine-written identifier matched by prefix, where exactness is intended. Anything else should be `'ilike'`. See `case-insensitive-search.md`.
 - [ ] You have noted the commit you are about to push, so you can reverse it later:
 
 ```powershell

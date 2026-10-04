@@ -1,9 +1,9 @@
 # Spec: Case-Insensitive Search
 
-- **Status**: Approved — **not fully delivered.** Slice 1 of 3 done; slices 2 and 3 outstanding (see §12)
+- **Status**: Implemented
 - **Created**: 2026-10-05
 - **Approved by**: user on 2026-10-05
-- **Implemented**: 2026-10-05, slice 1 of 3 — see §12
+- **Implemented**: 2026-10-05 — see §12
 - **Origin**: found by the user while testing `safe-actions-everywhere.md`, 2026-10-05
 
 ## 1. Why We Need This
@@ -180,4 +180,11 @@ The scope decision in §4 was correct and was applied correctly; only the invent
 
 **Verification.** `ilike` totals 78, `like` totals 2 — both accounted for above. The user confirmed in the browser that searches now find records typed in any capitalisation across the roles checked, and that the void path is unchanged.
 
-**Slices 2 and 3 of the plan were not implemented.** The rule has **not** been written into `AGENTS.md`, and the pre-release check has **not** been added to `safe-release.md`. Both remain outstanding — see §8's last two checks, which are unticked. **This spec is not fully delivered.**
+**Slices 2 and 3 — delivered the same day.**
+
+- **Slice 2:** the rule is written into `AGENTS.md` §2.1, inside the Eloquent bullet — one entry recording that text searches must be case-insensitive, that `ilike` costs nothing because a leading wildcard already prevents index use, and that the only exception is a machine-written identifier matched by prefix. It sits where searches are written, so it is read before code is authored rather than discovered afterwards.
+- **Slice 3:** a pre-release check added to `safe-release.md` §4 ("Before you push"), with the command and the instruction that every hit must be a deliberate prefix match.
+
+**The check was validated rather than assumed.** Against the current tree it returns zero hits — which is the correct result, but a zero is equally what a broken pattern returns. It was therefore tested against a fixture of six cases: leading-wildcard `like` on a title and on a name were both flagged; an existing `ilike`, the `VOID-` marker and the `AR-` marker were all correctly left quiet; and a line with two `like` calls was flagged. The two legitimate prefix exclusions are ignored by design, because the pattern requires a `%` immediately after the quote.
+
+**Consequence:** `safe-release.md` is now `Draft` for re-approval, as predicted in §10. Its three-release requirement in §8 is untouched and still outstanding.

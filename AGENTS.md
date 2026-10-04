@@ -78,6 +78,7 @@ This document defines the mandatory operational boundaries, technical standards,
   * Enforce strict `$fillable` arrays.
   * Define explicit return types on all relationships (e.g., `public function student(): BelongsTo`).
   * Ensure migrations include explicit foreign key constraints, indexes, and cascades where necessary.
+  * **Text searches must be case-insensitive.** Use `where('col', 'ilike', "%{$term}%")`, never `'like'` — PostgreSQL's `like` is case-sensitive, so `'like'` silently fails to match a name typed in different capitalisation. `ilike` costs nothing here because a leading wildcard already prevents any index from being used. The only legitimate exception is a **machine-written identifier matched by prefix** (e.g. the `VOID-` and `AR-` receipt markers), where exactness is intended and an index can apply. See `1Dcoument&OtherInfo/specs/case-insensitive-search.md`.
 * **Routing**: Use tuple array syntax (`[StudentController::class, 'index']`) inside `routes/web.php` or `routes/api.php`.
 
 ### 2.2 Quality & Type Safety
