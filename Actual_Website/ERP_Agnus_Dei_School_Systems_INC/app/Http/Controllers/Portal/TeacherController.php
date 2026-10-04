@@ -268,9 +268,12 @@ class TeacherController extends Controller
         }
 
         $data = $request->validate([
-            'marked_on' => 'required|date|before_or_equal:today',
+            'marked_on' => 'required|date|after_or_equal:1987-01-01|before_or_equal:today',
             'status' => 'required|array',
             'status.*' => 'required|in:present,absent,late,excused',
+        ], [
+            'marked_on.after_or_equal' => 'Attendance date is too far back.',
+            'marked_on.before_or_equal' => "Attendance date can't be in the future.",
         ]);
 
         // Locked school years are frozen — attendance can no longer be changed.

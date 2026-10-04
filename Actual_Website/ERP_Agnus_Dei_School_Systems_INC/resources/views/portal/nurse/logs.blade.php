@@ -24,7 +24,7 @@
 
 <div x-data="ajaxTable('{{ route('nurse.logs') }}', { search: '{{ request('search') }}', incident_type: '{{ request('incident_type') }}', sickness: '{{ request('sickness') }}', month: '{{ request('month') }}', grade_level: '{{ request('grade_level') }}', date_from: '{{ request('date_from') }}', date_to: '{{ request('date_to') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
-        <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
+        <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()">
             <input type="text" name="search" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Search by student name..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
             <select name="incident_type" x-model="filters.incident_type" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="All">All Types</option>
@@ -65,8 +65,9 @@
                 <option value="Grade 11">Grade 11</option>
                 <option value="Grade 12">Grade 12</option>
             </select>
-            <input type="date" name="date_from" x-model="filters.date_from" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="From">
-            <input type="date" name="date_to" x-model="filters.date_to" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="To">
+            <input type="date" name="date_from" x-model="filters.date_from" :max="filters.date_to || ''" min="1987-01-01" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="From">
+            <input type="date" name="date_to" x-model="filters.date_to" :min="filters.date_from || '1987-01-01'" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="To">
+            <p x-show="filters.date_from && filters.date_to && filters.date_to < filters.date_from" class="text-red-500 text-xs">End date can't be before start date.</p>
             <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Filter</button>
             <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
         </form>

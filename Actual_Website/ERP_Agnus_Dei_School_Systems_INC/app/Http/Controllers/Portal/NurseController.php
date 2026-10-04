@@ -106,13 +106,16 @@ class NurseController extends Controller
     {
         $data = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'incident_date' => 'required|date',
+            'incident_date' => 'required|date|after_or_equal:1987-01-01|before_or_equal:today',
             'complaint' => 'nullable|string',
             'diagnosis' => 'nullable|string',
             'treatment' => 'nullable|string',
             'notes' => 'nullable|string',
             'referred_to' => 'nullable|string|max:255',
             'is_open' => 'nullable|boolean',
+        ], [
+            'incident_date.after_or_equal' => 'Visit date is too far back.',
+            'incident_date.before_or_equal' => "Visit date can't be in the future.",
         ]);
 
         $data['nurse_id'] = auth()->id();

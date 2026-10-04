@@ -93,13 +93,13 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Borrow Date *</label>
-                    <input type="date" name="borrow_date" value="{{ old('borrow_date', date('Y-m-d')) }}" required
+                    <input type="date" name="borrow_date" value="{{ old('borrow_date', date('Y-m-d')) }}" required min="1987-01-01" max="{{ date('Y-m-d') }}"
                            class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     @error('borrow_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Return Date *</label>
-                    <input type="date" name="return_date" value="{{ old('return_date') }}" required
+                    <input type="date" name="return_date" value="{{ old('return_date') }}" required min="1987-01-01" max="{{ date('Y-m-d', strtotime('+3 weeks')) }}"
                            class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                     @error('return_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>

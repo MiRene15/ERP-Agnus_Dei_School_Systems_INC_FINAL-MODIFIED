@@ -43,7 +43,7 @@
     ]))">
     <!-- Basic Filters -->
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
-        <form @submit.prevent="reload()">
+        <form @submit.prevent="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()">
             <div class="flex gap-2 items-center flex-wrap">
                 <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Search description or event..."
                        class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
@@ -78,12 +78,13 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-[#8A90B0] uppercase mb-1">Date From</label>
-                        <input type="date" x-model="filters.date_from" @change="reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="date" x-model="filters.date_from" :max="filters.date_to || ''" min="1987-01-01" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 dark:text-[#8A90B0] uppercase mb-1">Date To</label>
-                        <input type="date" x-model="filters.date_to" @change="reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input type="date" x-model="filters.date_to" :min="filters.date_from || '1987-01-01'" @change="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()" class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
+                    <p x-show="filters.date_from && filters.date_to && filters.date_to < filters.date_from" class="text-red-500 text-xs mt-2">End date can't be before start date.</p>
                 </div>
             </div>
         </form>

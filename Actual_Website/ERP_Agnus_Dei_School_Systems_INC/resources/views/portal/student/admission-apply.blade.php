@@ -163,7 +163,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
-                    <input type="date" name="date_of_birth" x-model="f.date_of_birth" required
+                    <input type="date" name="date_of_birth" x-model="f.date_of_birth" required min="1950-01-01" max="{{ date('Y-m-d') }}"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 </div>
                 <div>

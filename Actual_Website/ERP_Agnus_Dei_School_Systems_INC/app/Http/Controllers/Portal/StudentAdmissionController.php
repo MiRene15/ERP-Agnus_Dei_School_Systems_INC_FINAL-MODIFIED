@@ -75,7 +75,7 @@ class StudentAdmissionController extends Controller
             'first_name' => 'nullable|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'nullable|string|max:100',
-            'date_of_birth' => 'nullable|date',
+            'date_of_birth' => 'nullable|date|after_or_equal:1950-01-01|before_or_equal:today',
             'place_of_birth' => 'nullable|string|max:255',
             'citizenship' => 'nullable|string|max:100',
             'religion' => 'nullable|string|max:100',
@@ -149,7 +149,7 @@ class StudentAdmissionController extends Controller
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'required|string|max:100',
-            'date_of_birth' => 'required|date',
+            'date_of_birth' => 'required|date|after_or_equal:1950-01-01|before_or_equal:today',
             'place_of_birth' => 'nullable|string|max:255',
             'citizenship' => 'nullable|string|max:100',
             'religion' => 'nullable|string|max:100',
@@ -173,6 +173,9 @@ class StudentAdmissionController extends Controller
 
             'previous_school' => 'nullable|string|max:255',
             'previous_school_address' => 'nullable|string|max:500',
+        ], [
+            'date_of_birth.after_or_equal' => 'Birth date is too far back.',
+            'date_of_birth.before_or_equal' => "Birth date can't be in the future.",
         ]);
 
         $data['contact_number'] = $this->normalizePhone($data['contact_number'] ?? null);

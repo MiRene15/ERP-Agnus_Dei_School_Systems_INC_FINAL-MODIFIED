@@ -295,9 +295,14 @@ class LibrarianController extends Controller
         $data = $request->validate([
             'student_id' => 'required|exists:students,id',
             'book_id' => 'required|exists:books,id',
-            'borrow_date' => 'required|date',
-            'return_date' => 'required|date|after_or_equal:borrow_date',
+            'borrow_date' => 'required|date|after_or_equal:1987-01-01|before_or_equal:today',
+            'return_date' => 'required|date|after_or_equal:borrow_date|after_or_equal:1987-01-01|before_or_equal:' . now()->addWeeks(3)->toDateString(),
             'condition_at_borrow' => 'required|in:Good,Minor Damage,Major Damage,Lost',
+        ], [
+            'borrow_date.after_or_equal' => 'Borrow date is too far back.',
+            'borrow_date.before_or_equal' => "Borrow date can't be in the future.",
+            'return_date.after_or_equal' => "Return date can't be before borrow date.",
+            'return_date.before_or_equal' => "Return due date can't be more than 3 weeks out.",
         ]);
 
         $book = Book::find($data['book_id']);

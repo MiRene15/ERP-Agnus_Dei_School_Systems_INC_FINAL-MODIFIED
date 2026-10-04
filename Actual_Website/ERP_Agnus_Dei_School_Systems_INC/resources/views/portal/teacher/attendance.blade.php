@@ -26,7 +26,7 @@
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
     <form method="GET" action="{{ route('teacher.attendance', $class) }}" class="flex items-center gap-3 flex-wrap">
         <label class="text-sm font-medium text-gray-700 dark:text-[#C1C4DC]">Date:</label>
-        <input type="date" name="date" value="{{ $markedOn }}" max="{{ date('Y-m-d') }}" onchange="this.form.submit()"
+        <input type="date" name="date" value="{{ $markedOn }}" min="1987-01-01" max="{{ date('Y-m-d') }}" onchange="this.form.submit()"
                class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
         @if($recentDates->isNotEmpty())
         <span class="text-xs text-gray-400">Marked days: {{ $recentDates->map(fn($d) => \Carbon\Carbon::parse($d)->format('M d'))->implode(', ') }}</span>
