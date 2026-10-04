@@ -1,127 +1,102 @@
-# Spec: System Health Dashboard
+# Spec: System Health Dashboard — Combined Trends Revision
 
-- **Status**: Implemented (2026-10-04 — System Health with 4 cards, detail pages, strict per-row ack, 14-day graphs, dashboard strip; all acceptance checks pass)
+- **Status**: Implemented (2026-10-04 — cards top, Chart.js Patterns/minis, Uptime bars, boxed hovers; all 5 checks pass)
 - **Author**: Muse Spark (spec interview)
-- **Created**: 2026-10-04
-- **Approved by**: user on 2026-10-04 (re-approved 2026-10-04 for strict per-row ack, card order Uptime first, charts-first layout, 10-row pagination, navy buttons)
+- **Created**: 2026-10-04 (original) / Revised: 2026-10-04
+- **Approved by**: user on 2026-10-04
 - **Parent follow-up of**: `search-rate-limit-tracking.md` (the promised IT health page)
 
 ## 1. Why We Need This
+IT sees four small graphs today, one per problem type. When enrollment rush or fee-due days hit, IT can't tell at a glance if Abuse, Slow lists, and Login spikes rose together. With only one day of history the graphs also show as a single dot, not a line, so patterns are invisible.
 
-IT is blind today. When searches spike, logins spike, or lists slow down, IT only finds out after staff complain or the system feels slow — by digging through audit logs and guessing if it was normal rush or abuse. This page gives IT one calm place to see health at a glance and catch abuse or spam early, with clear alerts instead of detective work.
+This change adds one combined crossing picture on top so IT can oversee and monitor patterns in one look.
 
 ## 2. Who Is Affected
-
-- **IT admin** — primary and only viewer in v1. Owns the page, checks alerts, acknowledges or clears them.
-- **Cashier, registrar, librarian, teachers, nurse, other staff** — protected by it. They never open this page; their daily work is unchanged.
-- **Principal / directress** — intentionally out of v1. No new view for them yet (noted for later).
-- **Students and parents** — gain steadier peak days and privacy: what they typed is never shown here.
+* **IT admin** — primary viewer. Gets the combined picture and keeps the per-type minis below.
+* **Cashier, registrar, librarian, teachers, nurse** — unchanged. They never open this page.
+* **Principal / directress, students, parents** — unchanged. No new view for them.
 
 ## 3. Business Flow: Today vs After
-
-- **As-is**: IT opens audit logs, filters by user/date/words, and tries to tell rush from abuse. No warning light. No single health view.
+- **As-is**: IT opens System Health, sees 4 separate small line pictures. With 1 day of data each shows as a dot. To compare, IT must eyeball across four boxes.
 - **To-be**:
-  1. IT opens **System Health** from the left menu.
-  2. IT sees 4 status cards in fixed order: Uptime, Abuse / Spam Alerts, Slow Lists, Logins + New Accounts Spikes.
-  3. IT taps a card to see the detail list (which list, when, how often — never what was typed).
-  4. IT taps **Acknowledge** on an alert — the red dot clears and the action is kept as a record.
-- **Preserved**: Everything that must stay — who may see which list, receipts, grade locks, money records, and the full audit trail. This page only watches; it never changes money or grades.
-- **Exceptions**: Transfers, refunds, corrections, and late cases are untouched. If the health page itself has no data, it says so plainly and offers Refresh — it never blocks other work.
+  1. IT opens System Health, sees the 4 status cards first, then the 14-day pictures below (Abuse + Slow + Logins together) with a color key.
+  2. Uptime is shown as bottom-to-top bars below the combined picture (tall bar = OK, flat = issue), titled `Uptime (14d)`.
+  3. The 4 small pictures below that use the same chart style as `Patterns (14d)`, drawn as proper lines when 2+ days exist. Combined picture is titled `Patterns (14d)` with no extra words.
+  4. IT can hover for the day's number and tap the color key to show / hide a line.
+- **Preserved**: Only IT can see it. Only counts are shown, never what anyone typed. Every Acknowledge still keeps who did it and when. Daily snapshot still fills the history.
+- **Exceptions**: Transfers, refunds, corrections, late cases are untouched. No data or 1 day of data never blocks other work.
 
 ## 4. How It Should Work
-
-1. IT taps **System Health** in the left menu (IT menu only).
-2. The page shows 4 cards in fixed order (Uptime, Abuse / Spam Alerts, Slow Lists, Logins + New Accounts Spikes) with green / yellow / red dots.
-3. If a critical alert is unacknowledged, the left menu shows a small red dot on System Health.
-4. IT taps a card — a designated detail page opens (`portal/admin/system-health/{type}` for `abuse`, `slow`, `uptime`, `logins`) with the full detail table (which list or area, when it happened, how many times) plus per-row and Acknowledge-all actions.
-5. IT taps **Acknowledge** on an alert — the dot clears and the who/when is kept as a record.
-6. IT taps **Refresh** any time to re-check.
-7. Non-IT staff see no menu item and cannot open the page even by direct link — they get the normal “no permission” message.
+1. IT taps System Health in the left menu.
+2. Top shows the 4 status cards first. Below the cards shows the `Patterns (14d)` picture for the last 14 days with dates `m/d → m/d`.
+3. Below it shows the `Uptime (14d)` bars rising from the bottom, then the 4 small pictures in fixed order using the same chart style as `Patterns (14d)`.
+4. IT hovers (or taps on touch) a point to see that day's number.
+5. IT taps a color-key item to hide / show that line.
+6. With only 1 day of history, pictures show a dot plus "run snapshot tomorrow for lines".
+7. Refresh reloads combined + small pictures together.
 
 ## 5. Look & Feel (UX)
-
-- Where it lives: left menu item **System Health**, IT admin only, next to Audit Logs. Cards link to their designated detail pages (`portal/admin/system-health/{type}`). The one primary action per alert is **Acknowledge** (per row and Acknowledge-all on detail pages).
-- What IT sees first: 14-day line graphs on top (inline SVG, no new NPM dependency, Uptime first), then the 4 cards in fixed order (Uptime, Abuse / Spam Alerts, Slow Lists, Logins + New Accounts Spikes) with visual status graphics — then the tapped card's full detail table on its own page (chart first, then table at 10 rows per page) with clear Acknowledged confirmation. Refresh reloads graphs and lists together; primary buttons use the system navy style.
-- What IT sees first: the 4 cards on top, then the detail list. Plain labels: “All calm”, “Unusual searches”, “Possible abuse — logins spiking”, “Slow list”.
+- Where it lives: main System Health page only, pictures below the status cards. Detail pages and dashboard strip stay single-type to avoid crowding.
+- One primary job: spot patterns fast. The big `Patterns (14d)` picture and the 4 small pictures use the same chart style as the directress demographics page (smooth lines, day labels across the bottom, number scale on the side, boxed hover that follows the mouse). `Uptime (14d)` uses bottom-to-top bars (tall = OK, flat = issue). Color key: red = Abuse, amber = Slow, blue = Logins, green = Uptime. Titles are short: `Patterns (14d)` and `Uptime (14d)`.
+- What IT sees first: status cards, then `Patterns (14d)`, then `Uptime (14d)`, then minis.
 - Key states:
-  - Default: cards with green / yellow / red dots + counts.
-  - Empty (all calm): “All calm — no alerts in the last 24 hours. Refresh to re-check.”
-  - Warning: yellow dot + “Unusual searches on Payments — tap for details.”
-  - Critical: red dot + menu badge + “Possible abuse — tap to review and Acknowledge.”
-  - Error: “Health data unavailable — Refresh.” Never blank.
-  - Permission-denied: normal “You don’t have access” for non-IT.
-- Fewer clicks: 2 taps max from menu to alert detail. Same look in light and dark mode; cards stack on narrow screens.
+  - Default: crossing lines with dots at each day.
+  - Empty / 1 day: dot + "Collecting trends — run the daily snapshot, then graphs appear here. Run again tomorrow for lines."
+  - Error: "Health data unavailable — Refresh." Never blank.
+  - Permission-denied: normal "You don't have access" for non-IT.
+- Same look in light and dark mode. Pictures stack on narrow screens. Plain labels: "All calm", "Unusual searches", "Possible abuse".
 
 ## 6. Business Rules
-
 ### Must always be true
-
-- Only IT admin may open the page; all others are denied.
-- Alerts fire on patterns (many limit-hits in a short time), never on one busy cashier or one enrollment rush.
-- Enrollment-week rush stays green — normal peak is not called abuse.
-- Only counts are shown (how many, which list, when). What anyone typed is never stored or shown.
-- Every Acknowledge / Clear keeps who did it and when as a record — stored by reusing the existing `activity_log` table (event `System Health Acknowledged`, `causer_id` = IT user, `properties` = {alert_type, route/list, counts, rows snapshot, acknowledged_at}); no new table for acks.
-- Strict accuracy: an Acknowledge button (per-row or bulk) appears ONLY when there is NEW unacknowledged activity (current count for that list exceeds the count stored at the last acknowledge, or the list was never acknowledged). Otherwise the row/card shows `Acknowledged ✓ by <name> at <time>` with no button.
-- Checking health never slows or blocks payments, grades, logins, or searches.
+- Only IT admin may open the page.
+- Only counts are shown (how many, which list, when). What anyone typed is never shown.
+- A proper line needs 2+ days. With 1 day show dot + hint, never a fake flat line.
+- Uptime is shown as bars from the bottom because tall/flat reads instantly for OK vs issue.
+- Checking health never slows payments, grades, logins, or searches.
 
 ### Must never happen
-
 - A normal cashier line or admissions rush is labeled abuse.
 - Search words, names, or ID numbers appear on this page.
-- An account is locked or blocked automatically from this page.
-- A shared-computer spam incident locks anyone out.
+- An account is locked automatically from this page.
 - The menu badge stays after all critical alerts are acknowledged.
-- Different cards invent different wording for the same state.
 
 ### Edge cases and what happens then
-
-- Enrollment-week rush → stays green; counts rise but no red alert.
-- Shared computer spam → pattern is flagged, person is not locked; list of where/when only.
-- False alarm → IT taps Acknowledge / Dismiss with reason kept as a record.
-- Health data missing or slow → “Health data unavailable — Refresh”, never a blank page.
-- Cashier mid-payment while IT acknowledges → payment is unaffected; only the health record changes.
+- 1 snapshot → dot + hint "run snapshot tomorrow for lines".
+- 0 snapshots → empty message + what to do next.
+- Enrollment-week rush → all lines rise together but stay green; counts rise, no false red.
+- Small screen → lines stack, key wraps, no sideways scroll.
+- Missing history → "unavailable — Refresh", never blank.
 
 ## 7. Out of Scope
-
-- Auto-blocking addresses or accounts.
-- Email or text push to IT on critical.
-- Different alert limits per role.
-- Long trend exports or custom reports (CSV export stays out; 14-day on-screen line graphs from the new history table are in scope).
-- Principal summary view in v1 (noted for later).
+- New history table or snapshot change (reuse what exists).
+- Change to detail pages or dashboard strip in v1.
+- Email or text alerts to IT.
+- Long exports or custom reports.
+- New paid chart tools. `Patterns (14d)`, the 4 small pictures, and `Uptime (14d)` reuse the directress chart approach (free CDN script already used on the demographics page).
 
 ## 8. Success Checks
-
-- [ ] Open System Health as IT — 4 cards show with status dots plus 14-day line graphs per metric; admin dashboard shows the compact health strip with a View link.
-- [ ] Acknowledge the alert — bulk and per-row buttons appear only when there is NEW activity; otherwise `Acknowledged ✓ by/when` shows with no button, and the menu red dot clears instantly with who/when kept.
-- [ ] Spam search fast on a list — an alert appears with Refresh, list itself stays usable.
-- [ ] Tap a card — its designated detail page opens with the full detail table and per-row plus always-available bulk Acknowledge-all.
-- [ ] Open as cashier / teacher — no System Health menu and direct link is denied.
-- [ ] Break or slow the data (or open with no data) — “unavailable — Refresh” appears, never blank.
+- [ ] Open System Health as IT — 4 status cards on top, then `Patterns (14d)` as a smooth 3-line chart with day labels + number scale (same feel as directress), `Uptime (14d)` bars rising from the bottom below, 4 minis below in the same chart style as lines when 2+ days exist.
+- [ ] Hover a point in `Patterns (14d)` — boxed tip follows the mouse showing date + Abuse/Slow/Logins. Tap key item — that line hides / shows.
+- [ ] With 1 day of data — dot + "run snapshot tomorrow for lines", not a fake line.
+- [ ] Open as cashier / teacher — no menu, direct link denied.
+- [ ] Refresh — combined + minis update together.
 
 ## 9. Open Questions (if any)
-
-None — all interview topics were confirmed. Assumptions confirmed at approval: IT-only in v1; pattern-based alerts only; enrollment rush stays green.
+None — uptime-separate, keep-minis-as-lines, dot+hint, main-page-only, include simple interactivity all confirmed on 2026-10-04.
 
 ## 10. Technical Notes (for developers)
-
 *Plain-language pointer only — the source of truth is the code and this appendix.*
-
 - Affected screens/pages:
-  - Existing: `portal/admin/dashboard` gets a compact health strip (4 status dots + View System Health link; never slows the dashboard).
-  - New: `portal/admin/system-health` page (cards with visual status graphics + links).
-  - New: `portal/admin/system-health/{type}` designated detail pages for `abuse`, `slow`, `uptime`, `logins` (full detail table + per-row Acknowledge + Acknowledge-all + clear Acknowledged confirmation).
-  - Existing to reuse: `portal/admin/audit-logs` (filters + `searchMetrics` summary), IT dashboard recent activity, `portal/partials/sidebar-admin`.
-- Likely areas of the codebase (from read-only inspection):
-  - Overview pattern: `Actual_Website/.../app/Http/Controllers/Portal/AdminController.php` `index()` (counts + `ActivityLog::with('causer')` recent 5) and `auditLogs()` (filters + `SearchMetricsService::summary()` passed as `searchMetrics` to `portal.admin.audit-logs`).
-  - Protection + counters to reuse: `app/Providers/AppServiceProvider.php` `RateLimiter::for('search')` (60/min per-person on ajax/search GET only, counts-only `recordHit` + `log_activity('Search throttled')`, never raw search words) and `app/Services/SearchMetricsService.php` `recordHit()` / `summary()`; login spam signals in `app/Http/Requests/Auth/LoginRequest.php` (5-attempt throttle).
-  - Routes to extend: `routes/web.php` `throttle:search` + `search.metrics` list/search GET routes (admin users / student-accounts / audit-logs, cashier search/payments, librarian books/student/loan search + history/visits, registrar admissions/withdrawals/report-cards, principal schedules/grades/announcements, teacher classes/class-list, nurse logs).
-  - Menu badge: `resources/views/portal/partials/sidebar-admin.blade.php` next to Audit Logs link; red-dot condition = unacknowledged critical count > 0.
-- Data/records touched: counts (via `SearchMetricsService`/Cache) and alert-acknowledge records (reuse `activity_log`) plus NEW `system_health_daily` history table (one row per day: abuse_hits, slow_total, login_failed, login_locked, new_accounts, uptime_ok, uptime_fail) filled by a daily snapshot artisan command (backfilled from `activity_log` for logins/acks); no search-word store; no student PII store.
-- Charts: inline SVG line graphs (no new Composer/NPM dependency) reading `system_health_daily` last 14 days for abuse, slow, logins/new-accounts, and uptime.
-- Roles/permissions involved: IT admin only (role 1) may view/acknowledge; all other roles denied; no permission change for their daily lists.
+  - Change: `portal/admin/system-health` main page (combined + minis).
+  - Unchanged: `portal/admin/system-health/{type}` detail pages, `portal/admin/dashboard` strip.
+  - Reuse: `portal/admin/partials/system-health-charts.blade.php` partial.
+- Likely areas of the codebase (files, routes, tables) - fill from code inspection:
+  - Trends source: `app/Services/SystemHealthService.php` `trends()` reading last 14 rows from `system_health_daily`.
+  - View: `resources/views/portal/admin/partials/system-health-charts.blade.php` (`Patterns (14d)` + 4 minis as canvases reusing the directress demographics CDN pattern; `Uptime (14d)` as bars from the bottom, labels `m/d`).
+  - Page shell: `resources/views/portal/admin/system-health.blade.php` + `partials/system-health-overview-results.blade.php` (main only, below cards; Refresh must rebuild the canvas — same ajax-reload concern as any script inside `x-html`).
+  - Data fill: `app/Console/Commands/SnapshotSystemHealthDaily.php` (`system-health:snapshot`), scheduled daily 23:55 in `routes/console.php`.
+- Data/records touched: counts only from `system_health_daily` (abuse_hits, slow_total, login_failed+locked, uptime_ok). No search words, no PII.
+- Roles/permissions involved: IT admin only; others denied.
 
 ## 11. Approval
-
-> Approved by user on 2026-10-04. Re-approved 2026-10-04 for strict-ack (buttons only on NEW activity), fixed card order (Uptime, Abuse, Slow, Logins), charts-first layout with combined Refresh, 10-row pagination, and navy buttons.
->
-> Implemented 2026-10-04: overview + 4 detail pages + dashboard strip + history table/snapshot + SVG trends; user confirmed all acceptance checks pass.
+> Approved by user on 2026-10-04 (re-approved for Uptime bars + Chart.js minis). Implemented 2026-10-04: cards top, Chart.js Patterns (3 lines) + Chart.js minis, Uptime bars bottom-up, boxed follow-mouse hovers, below-cards layout; user confirmed all 5 acceptance checks pass.

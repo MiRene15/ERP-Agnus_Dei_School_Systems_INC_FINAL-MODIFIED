@@ -51,4 +51,98 @@
         </div>
     @endif
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+function renderHealthPatterns() {
+    if (typeof Chart === 'undefined') return;
+    document.querySelectorAll('.health-patterns-canvas').forEach(function (cv) {
+        try {
+            var labels = JSON.parse(cv.dataset.labels || '[]');
+            var abuse = JSON.parse(cv.dataset.abuse || '[]');
+            var slow = JSON.parse(cv.dataset.slow || '[]');
+            var logins = JSON.parse(cv.dataset.logins || '[]');
+            if (cv._chart) { try { cv._chart.destroy(); } catch (e) {} }
+            cv._chart = new Chart(cv, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Abuse', data: abuse, borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.08)', fill: false, tension: 0.4, pointBackgroundColor: '#EF4444', pointRadius: 4, pointHoverRadius: 6 },
+                        { label: 'Slow', data: slow, borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.08)', fill: false, tension: 0.4, pointBackgroundColor: '#F59E0B', pointRadius: 4, pointHoverRadius: 6 },
+                        { label: 'Logins', data: logins, borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.08)', fill: false, tension: 0.4, pointBackgroundColor: '#3B82F6', pointRadius: 4, pointHoverRadius: 6 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 }, padding: 12 } } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#f1f5f9' } },
+                        x: { ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } }
+                    }
+                }
+            });
+        } catch (e) { console.error('Patterns chart failed:', e); }
+    });
+    document.querySelectorAll('.health-uptime-canvas').forEach(function (cv) {
+        try {
+            var labels = JSON.parse(cv.dataset.labels || '[]');
+            var values = JSON.parse(cv.dataset.values || '[]');
+            if (cv._chart) { try { cv._chart.destroy(); } catch (e) {} }
+            cv._chart = new Chart(cv, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: values.map(function (v) { return (parseInt(v, 10) === 1) ? '#22C55E' : '#EF4444'; }),
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: function (ctx) { return ' ' + (parseInt(ctx.raw, 10) === 1 ? 'OK' : 'Issue'); } } }
+                    },
+                    scales: {
+                        y: { min: 0, max: 1, ticks: { stepSize: 1, font: { size: 11 }, callback: function (v) { return v === 1 ? 'OK' : (v === 0 ? 'Issue' : v); } }, grid: { color: '#f1f5f9' } },
+                        x: { ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } }
+                    }
+                }
+            });
+        } catch (e) { console.error('Uptime chart failed:', e); }
+    });
+    document.querySelectorAll('.health-mini-canvas').forEach(function (cv) {
+        try {
+            var labels = JSON.parse(cv.dataset.labels || '[]');
+            var values = JSON.parse(cv.dataset.values || '[]');
+            var title = cv.dataset.title || '';
+            var color = cv.dataset.color || '#3B82F6';
+            if (cv._chart) { try { cv._chart.destroy(); } catch (e) {} }
+            cv._chart = new Chart(cv, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: title, data: values, borderColor: color, backgroundColor: color, fill: false, tension: 0.4, pointBackgroundColor: color, pointRadius: 3, pointHoverRadius: 5 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+                        x: { ticks: { font: { size: 9 }, maxRotation: 45 }, grid: { display: false } }
+                    }
+                }
+            });
+        } catch (e) { console.error('Mini chart failed:', e); }
+    });
+}
+document.addEventListener('DOMContentLoaded', function () {
+    renderHealthPatterns();
+    var obs = new MutationObserver(function () { renderHealthPatterns(); });
+    obs.observe(document.body, { childList: true, subtree: true });
+});
+</script>
 @endsection
