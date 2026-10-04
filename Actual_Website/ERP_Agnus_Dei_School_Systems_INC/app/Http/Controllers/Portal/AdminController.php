@@ -3,9 +3,14 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AcknowledgeHealthAlertRequest;
 use App\Models\Setting;
 use App\Models\Student;
+use App\Services\SystemHealthService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class AdminController extends Controller
 {
@@ -26,13 +31,19 @@ class AdminController extends Controller
 
         $recentActivity = \App\Models\ActivityLog::with('causer')->latest()->take(5)->get();
 
+        try {
+            $systemHealth = SystemHealthService::overview();
+        } catch (\Throwable $e) {
+            $systemHealth = ['cards' => [], 'badge' => 0, 'hasData' => false];
+        }
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.admin.partials.dashboard-results', compact('totalUsers', 'activeRoles', 'totalStudents', 'activeSY', 'recentActivity'))->render(),
+                'html' => view('portal.admin.partials.dashboard-results', compact('totalUsers', 'activeRoles', 'totalStudents', 'activeSY', 'recentActivity', 'systemHealth'))->render(),
             ]);
         }
 
-        return view('portal.admin.dashboard', compact('totalUsers', 'activeRoles', 'totalStudents', 'activeSY', 'recentActivity'));
+        return view('portal.admin.dashboard', compact('totalUsers', 'activeRoles', 'totalStudents', 'activeSY', 'recentActivity', 'systemHealth'));
     }
 
     public function settings()
@@ -158,5 +169,97 @@ class AdminController extends Controller
         $searchMetrics = \App\Services\SearchMetricsService::summary();
 
         return view('portal.admin.audit-logs', compact('logs', 'events', 'users', 'searchMetrics'));
+    }
+
+    public function systemHealth(Request $request): View|JsonResponse
+    {
+        $health = SystemHealthService::overview();
+        $trends = SystemHealthService::trends();
+
+        if ($request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('portal.admin.partials.system-health-overview-results', [
+                    'cards' => $health['cards'],
+                    'badge' => $health['badge'],
+                    'hasData' => $health['hasData'],
+                    'acknowledged' => $health['acknowledged'] ?? [],
+                    'ackInfo' => $health['ackInfo'] ?? [],
+                    'trends' => $trends,
+                ])->render(),
+                'badge' => $health['badge'],
+            ]);
+        }
+
+        return view('portal.admin.system-health', [
+            'cards' => $health['cards'],
+            'badge' => $health['badge'],
+            'hasData' => $health['hasData'],
+            'acknowledged' => $health['acknowledged'] ?? [],
+            'ackInfo' => $health['ackInfo'] ?? [],
+            'trends' => $trends,
+        ]);
+    }
+
+    public function systemHealthDetail(Request $request, string $type): View|JsonResponse
+    {
+        if (! in_array($type, ['abuse', 'slow', 'uptime', 'logins'], true)) {
+            abort(404);
+        }
+
+        $detail = SystemHealthService::forDetail($type);
+        $trends = SystemHealthService::trends();
+
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = 10;
+        $rows = $detail['rows'] ?? [];
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            array_slice($rows, ($page - 1) * $perPage, $perPage),
+            count($rows),
+            $perPage,
+            $page,
+            ['path' => route('admin.system-health.show', $type)]
+        );
+
+        if ($request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('portal.admin.partials.system-health-detail-page-results', ['detail' => $detail, 'rows' => $paginator, 'trends' => $trends])->render(),
+            ]);
+        }
+
+        return view('portal.admin.system-health-show', ['detail' => $detail, 'trends' => $trends, 'rows' => $paginator]);
+    }
+
+    public function acknowledgeHealthAlert(AcknowledgeHealthAlertRequest $request): RedirectResponse|JsonResponse
+    {
+        $data = $request->validated();
+        $type = (string) ($data['alert_type'] ?? '');
+        $route = (string) ($data['route'] ?? '');
+
+        $rowsMap = [];
+        try {
+            $detail = SystemHealthService::forDetail($type);
+            foreach ($detail['rows'] ?? [] as $row) {
+                $area = (string) ($row['area'] ?? '');
+                if ($route === '' || $area === $route) {
+                    $rowsMap[$area] = (int) ($row['times'] ?? 0);
+                }
+            }
+        } catch (\Throwable $e) {
+            $rowsMap = [];
+        }
+
+        SystemHealthService::acknowledge(
+            $type,
+            $route,
+            (int) ($data['counts'] ?? 0),
+            (int) $request->user()->id,
+            $rowsMap
+        );
+
+        if ($request->expectsJson() || $request->boolean('ajax')) {
+            return response()->json(['ok' => true]);
+        }
+
+        return back()->with('success', 'Alert acknowledged.');
     }
 }

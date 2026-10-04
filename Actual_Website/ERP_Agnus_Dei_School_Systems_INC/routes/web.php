@@ -130,6 +130,10 @@ Route::middleware('auth')->group(function () {
          Route::post('/admin/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
          // Audit Logs
          Route::get('/admin/audit-logs', [AdminController::class, 'auditLogs'])->name('admin.audit-logs')->middleware(['throttle:search', 'search.metrics']);
+         // System Health (IT only, spec: it-search-health-dashboard.md)
+         Route::get('/admin/system-health', [AdminController::class, 'systemHealth'])->name('admin.system-health');
+         Route::get('/admin/system-health/{type}', [AdminController::class, 'systemHealthDetail'])->where('type', 'abuse|slow|uptime|logins')->name('admin.system-health.show');
+         Route::post('/admin/system-health/acknowledge', [AdminController::class, 'acknowledgeHealthAlert'])->name('admin.system-health.acknowledge');
          // Exports
         Route::get('/admin/exports/enrollments', [ExportController::class, 'enrollments'])->name('admin.exports.enrollments');
         Route::get('/admin/exports/grades', [ExportController::class, 'grades'])->name('admin.exports.grades');

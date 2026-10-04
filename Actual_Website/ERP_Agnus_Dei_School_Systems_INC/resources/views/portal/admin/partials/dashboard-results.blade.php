@@ -1,3 +1,20 @@
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-wrap items-center gap-3">
+    <span class="text-sm font-semibold text-gray-900">System Health</span>
+    @if(empty($systemHealth['cards'] ?? []))
+        <span class="text-xs text-gray-500">Health data unavailable — <a href="{{ route('admin.system-health') }}" class="text-blue-600 hover:underline">Refresh</a></span>
+    @else
+        @foreach(['uptime' => 'Uptime', 'abuse' => 'Abuse', 'slow' => 'Slow', 'logins' => 'Logins'] as $key => $label)
+            @php
+                $st = ($systemHealth['cards'][$key]['status'] ?? 'green');
+                $ct = (int) ($systemHealth['cards'][$key]['count'] ?? 0);
+                $acked = in_array($key, $systemHealth['acknowledged'] ?? [], true);
+                $dot = $acked ? 'bg-green-500' : ($st === 'red' ? 'bg-red-500' : ($st === 'yellow' ? 'bg-yellow-400' : 'bg-green-500'));
+            @endphp
+            <a href="{{ route('admin.system-health.show', $key) }}" class="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:underline"><span class="inline-block w-2 h-2 rounded-full {{ $dot }}"></span>{{ $label }} ({{ $ct }}){{ $acked ? ' ✓' : '' }}</a>
+        @endforeach
+    @endif
+    <a href="{{ route('admin.system-health') }}" class="ml-auto text-xs font-semibold text-blue-600 hover:underline">View System Health</a>
+</div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div class="flex items-center text-blue-600 mb-4">

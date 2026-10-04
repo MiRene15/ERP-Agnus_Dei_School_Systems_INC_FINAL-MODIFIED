@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('backup:database')->dailyAt('02:00');
 Schedule::command('reminders:payment')->dailyAt('08:00');
+Schedule::command('system-health:snapshot')->dailyAt('23:55');
