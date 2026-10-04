@@ -1,9 +1,11 @@
 # Spec: Portal Page Sweep
 
-- **Status**: Draft — **not approved, not started**
+- **Status**: Approved
 - **Created**: 2026-10-04
+- **Approved by**: user on 2026-10-04
 - **Origin**: deferred from `restore-blocked-admin-pages.md` §7, question 3 option 2 ("visit every page of every role")
 - **Related**: `safe-release.md` v2 (automated per-role check) — this is the manual precursor to it
+- **Resolved 2026-10-04:** §9 — run against the **live site, read-mostly**. Page count corrected from ~224 to **123** (§10).
 
 ## 1. Why We Need This
 
@@ -95,15 +97,19 @@ A one-off sweep will not solve that permanently — it is a snapshot that starts
 
 ## 9. Open Questions
 
-- Whether to run this against the live site or a copy with production-like data. Live is the only honest test of a page's real behaviour, but it carries the test-data risk noted in §3. **Decide before starting, not during.**
+None.
+
+**Resolved 2026-10-04: run against the live site, read-mostly.** A copy was rejected because pages depending on real enrolment or payment history would pass on fresh data while failing in production — reproducing the exact false confidence this work exists to remove. The test-data risk is managed by discipline rather than by moving to less realistic data: open forms and cancel; where a save genuinely must be proven, use an obviously temporary record and delete it before leaving that role. Never touch real student or payment records.
 
 ## 10. Technical Notes
 
-- **Size of the job.** `routes/web.php` defines ~206 explicit routes plus 3 resource routes that expand to roughly 6 actions each, giving **~224 portal pages** across 9 roles. `routes/api.php` adds 26 API routes, out of scope for this sweep. Expect roughly a day including recording and triage, at about a minute per page.
+- **Size of the job — corrected 2026-10-04.** An earlier draft of this spec estimated ~224 pages by counting every route definition. **That was wrong:** POST, PATCH and DELETE routes are *actions* reached from a page, not pages. Extracting only GET routes gives **123 visitable pages** across 9 roles, plus 26 API routes which are out of scope. Expect **roughly half a day** including recording and triage, at about two minutes per page.
+- **Method caveat.** The per-role counts come from parsing `routes/web.php` line by line, not from tracking group boundaries. `/profile` is attributed to Principal, and the `/dashboard` redirect is missed because its `->name()` sits on a later line. **The total is reliable; the per-role split is approximate and may be off by one in places.** `sweep-worklist.md` is authoritative for what to open.
+- **Per-role shape:** Directress 26 · Registrar 17 · Cashier 14 · Principal 14 · Librarian 13 · Admin 12 · Teacher 12 · Student 10 · Nurse 3 · plus two shared routes (Registrar+Cashier, Registrar+Principal). **Directress is the largest and highest-risk block** — much of it is rarely visited. **Nurse's 3 pages take five minutes** and make a good first run to build the habit.
 - Route inventory: `routes/web.php`, `routes/api.php`. Role guards appear at 12 places, covering roles 1–9.
 - The three known-broken pages and their cause are recorded in `restore-blocked-admin-pages.md` §10 — useful as the worked example of what a finding looks like.
 - **This is a snapshot, not a safeguard.** It is worth doing precisely because it is the cheap half of the durable version; the automated per-role check in `safe-release.md` v2 is what stops the decay.
 
 ## 11. Approval
 
-> Not approved. Not started.
+> Approved by user on 2026-10-04, with §9 resolved as live site / read-mostly. Not yet started.
