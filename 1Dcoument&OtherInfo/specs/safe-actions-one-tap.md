@@ -1,9 +1,10 @@
 # Spec: Safe Actions — One Tap
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-05
 - **Approved by**: user on 2026-10-05
 - **Parent**: `safe-actions-everywhere.md` (child B of 3 — needs A; C needs this)
+- **Implemented**: 2026-10-05 — global submit + link guards in `app.js`, admission-wizard local lock; all 8 checks pass (see §12).
 
 ## 1. Why We Need This
 One hammered button can fire the same work five times. A cashier double-taps Process Payment on a slow connection, a registrar double-saves an admission, a teacher double-saves grades — or someone hammers a menu link while a page loads slowly. Each hammer builds the same page or writes the same row again, overloading the system and slowing every load. One tap must mean one action: press → busy → once → released.
@@ -88,3 +89,13 @@ None.
 
 ## 11. Approval
 > Approved by user on 2026-10-05.
+
+## 12. Implementation Note (2026-10-05)
+
+**Delivered:** one global submit guard + one global link guard in `resources/js/app.js` (press → pressed button/link busy instantly; saves first-wins, loads latest-wins; every lock releases via unload, error path, 30s/5s backstops, or `pageshow`); admission-wizard local `submitting` lock (`portal/student/admission-apply.blade.php`), since `$refs.form.submit()` bypasses the submit event.
+
+**Fixed during verification, recorded so it is not reintroduced:** 30 `confirm()` forms need no change (cancel arrives `defaultPrevented`); programmatic submits of reads (filter selects, logout, login) and Alpine read-forms are deliberately outside the lock — reads are already safe via Child A's abort + sequence guard. Never wrap explicit actions in `.run()`-style indirection (see Child A §12 — nested calls lose component context).
+
+**Verification:** `npm run build` clean; user confirmed all 8 §8 checks pass in the browser (double-save-once, link-hammer-once, latest-load-wins, export-once, fail-releases, never-dead, deliberate-fires, nav-untouched).
+
+**Not committed by the agent** — the user runs git themselves (`AGENTS.md` §1.4).

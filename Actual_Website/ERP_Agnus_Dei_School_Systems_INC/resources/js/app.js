@@ -230,4 +230,97 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
     },
 }));
 
+// Safe Actions — One Tap, slice 1 (child B): one global submit guard.
+//
+// Press → the pressed button locks instantly (first press holds; further
+// hammers are dropped because a disabled button cannot submit again).
+// Traditional posts navigate away, which releases naturally. Failed native
+// validation never reaches us (the browser blocks submit first); a
+// cancelled confirm() arrives with defaultPrevented set, so it is never
+// locked. A backstop timer releases after a browser Stop; history
+// navigation is cleared on pageshow. Alpine-prevented read forms are
+// deliberately skipped here (their correctness already comes from the
+// abort + sequence guard in Child A).
+const SAFE_TAP_RELEASE_MS = 30000;
+
+document.addEventListener('submit', (event) => {
+    try {
+        if (event.defaultPrevented) return;
+        const form = event.target;
+        if (!form || form.tagName !== 'FORM') return;
+        let submitter = event.submitter || null;
+        if (!submitter) {
+            submitter = form.querySelector('button[type="submit"], input[type="submit"]');
+        }
+        if (!submitter || submitter.disabled) return;
+        submitter.disabled = true;
+        submitter.setAttribute('aria-disabled', 'true');
+        submitter.classList.add('is-busy');
+        window.setTimeout(() => {
+            try {
+                submitter.disabled = false;
+                submitter.removeAttribute('aria-disabled');
+                submitter.classList.remove('is-busy');
+            } catch (e) { /* noop */ }
+        }, SAFE_TAP_RELEASE_MS);
+    } catch (e) {
+        try {
+            const submitter = event.submitter;
+            if (submitter) {
+                submitter.disabled = false;
+                submitter.classList.remove('is-busy');
+            }
+        } catch (ignored) { /* noop */ }
+    }
+});
+
+window.addEventListener('pageshow', () => {
+    try {
+        document.querySelectorAll('.is-busy').forEach((el) => {
+            el.classList.remove('is-busy');
+            el.removeAttribute('aria-disabled');
+            if ('disabled' in el) el.disabled = false;
+        });
+    } catch (e) { /* noop */ }
+});
+
+// Safe Actions — One Tap, slice 2 (child B): one global link guard.
+//
+// A hammered menu/form link loads once: the first press goes busy and
+// further presses on the same link are dropped until the next page
+// renders (unload releases naturally; the pageshow clearer above covers
+// history navigation). Modified clicks, middle-click, new tabs and
+// right-clicks are untouched by design. Download links (Export/CSV,
+// templates) never unload, so they release on a short timer instead —
+// one file per double-tap, and a deliberate second export still works.
+// Alpine-handled links (pagination) preventDefault first and are skipped.
+const SAFE_LINK_RELEASE_MS = 5000;
+
+document.addEventListener('click', (event) => {
+    try {
+        if (event.defaultPrevented) return;
+        if (event.button !== 0) return;
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        const link = event.target instanceof Element ? event.target.closest('a[href]') : null;
+        if (!link || link.target === '_blank') return;
+        const href = link.getAttribute('href') || '';
+        if (href === '' || href.charAt(0) === '#') return;
+        if (link.getAttribute('aria-disabled') === 'true') {
+            event.preventDefault();
+            return;
+        }
+        const isDownload = link.hasAttribute('download') || /export|download|template|\.csv/i.test(href);
+        link.setAttribute('aria-disabled', 'true');
+        link.classList.add('is-busy');
+        if (isDownload) {
+            window.setTimeout(() => {
+                try {
+                    link.removeAttribute('aria-disabled');
+                    link.classList.remove('is-busy');
+                } catch (e) { /* noop */ }
+            }, SAFE_LINK_RELEASE_MS);
+        }
+    } catch (e) { /* never block navigation on guard failure */ }
+});
+
 Alpine.start();

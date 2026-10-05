@@ -351,10 +351,10 @@
             <div class="flex items-center justify-between mt-6">
                 <button type="button" @click="prev()"
                         class="px-5 py-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">&larr; Previous</button>
-                <button type="button" @click="submitAll()"
-                        class="px-6 py-2 rounded-lg text-sm font-semibold text-white transition"
+                <button type="button" @click="submitAll()" :disabled="submitting"
+                        class="px-6 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60 disabled:cursor-wait"
                         style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                    Submit Application
+                    <span x-text="submitting ? 'Submitting…' : 'Submit Application'">Submit Application</span>
                 </button>
             </div>
         </div>
@@ -365,6 +365,7 @@
         Alpine.data('admissionForm', () => ({
             step: {{ $draftStep ?? 1 }},
             saving: false,
+            submitting: false,
             f: {
                 application_type: @js($draftData['application_type'] ?? ''),
                 grade_level: @js($draftData['grade_level'] ?? ''),
@@ -457,6 +458,7 @@
             },
 
             submitAll() {
+                if (this.submitting) return;
                 let firstErrorStep = null;
                 for (let s = 1; s <= 6; s++) {
                     const box = this.$el.querySelector('[data-step="' + s + '"]');
@@ -478,7 +480,17 @@
                     this.goTo(firstErrorStep);
                     return;
                 }
-                this.$refs.form.submit();
+                // First press holds: $refs.form.submit() bypasses the submit
+                // event (and the global guard), so lock here. Validation
+                // failures return above with nothing locked.
+                this.submitting = true;
+                try {
+                    this.$refs.form.submit();
+                } catch (e) {
+                    this.submitting = false;
+                    throw e;
+                }
+                window.setTimeout(() => { this.submitting = false; }, 30000);
             },
 
             initForm() {
