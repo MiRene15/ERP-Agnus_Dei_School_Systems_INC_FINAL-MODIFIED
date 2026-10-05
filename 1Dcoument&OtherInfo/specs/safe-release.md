@@ -1,9 +1,9 @@
 # Spec: Safe Release
 
-- **Status**: Draft
+- **Status**: Approved
 - **Created**: 2026-10-04
-- **Approved by**: user on 2026-10-04
-- **Revised**: 2026-10-05 — a pre-release check for case-sensitive searches was added to §4, per `case-insensitive-search.md` slice 3. Status reset to **Draft** for re-approval (`spec-rules.md` §6). The three-release requirement in §8 is unchanged and still outstanding.
+- **Approved by**: user on 2026-10-04 (original); re-approved by user on 2026-10-05 for §4 ilike-check revision
+- **Revised**: 2026-10-05 — a pre-release check for case-sensitive searches was added to §4, per `case-insensitive-search.md` slice 3. Status was reset to **Draft** for re-approval (`spec-rules.md` §6) then **re-approved by user on 2026-10-05** ("please do 1 and 2"). The three-release requirement in §8 is unchanged and still outstanding.
 
 ## 1. Why We Need This
 
@@ -155,4 +155,4 @@ None.
 
 ## 11. Approval
 
-> Approved by user on 2026-10-04.
+> Approved by user on 2026-10-04 (original). Re-approved by user on 2026-10-05 for the §4 ilike-check revision ("please do 1 and 2").

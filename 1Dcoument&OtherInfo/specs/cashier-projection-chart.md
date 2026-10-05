@@ -9,6 +9,7 @@
 - **Implemented**: 2026-10-04 — see §11
 - **Revised again**: 2026-10-04 — production defect found in the cashier dashboard; fix specified in §12. Status was reset to **Draft**; re-approved by user on 2026-10-04 for the §12 defect fix only (`spec-rules.md` §6). The scope agreed in §1–§9 is unchanged.
 - **§12 implemented**: 2026-10-04 — one-line fix at `CashierController.php:39` supplied the missing argument. **Verified in production by the user** (cashier sign-in, all six figures, date filter, Projections chart). Spec closed as `Implemented`.
+- **Note 2026-10-05**: §12.5 dashboard checks annotated as superseded by `cashier-dashboard-simplification.md` (no Collectibles/Collections on dashboard, no date filter). Wording Collectibles → Receivables per that spec. No code change, annotation only ("please do 1 and 2").
 
 ## 1. Why We Need This
 Cashiers see what's collected and what's owed, but had to export and do the math by hand to see it over time. Two plain figures plus a monthly trend answers "where are we?" without any interpretation.
@@ -141,8 +142,8 @@ Supply the missing piece when calling the helper. One line, in one file.
 ### 12.5 Success Checks
 
 - [ ] A cashier signs in and sees the Cashier's Office — no error page.
-- [ ] All six dashboard figures appear: Today's Collection, Receipts Issued Today, Discounts to Apply, Refunds to Release, Collectibles, Collections.
-- [ ] Changing the From/To dates still updates Collectibles and Collections.
+- [ ] All six dashboard figures appear: Today's Collection, Receipts Issued Today, Discounts to Apply, Refunds to Release, Collectibles, Collections. **[Superseded 2026-10-05 by `cashier-dashboard-simplification.md` §§4/8: dashboard no longer carries Collectibles/Collections, no date filter, six items are Today's Collection + Receipts Today + 2 queues + 2 report-link cards. §12 fix itself (missing argument) remains valid and implemented.]**
+- [ ] Changing the From/To dates still updates Collectibles and Collections. **[Superseded 2026-10-05: no dashboard date filter after simplification; Projections filters unchanged.]**
 - [ ] The Projections page still opens from the left menu and draws its chart.
 - [ ] No other role's landing page changes behaviour.
 - [ ] A repeat sign-in does not re-break the page.

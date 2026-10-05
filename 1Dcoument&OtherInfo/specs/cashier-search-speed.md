@@ -1,7 +1,7 @@
 # Spec: Cashier Search Speed
 
-- **Status**: Approved
-- **Created**: 2026-10-04
+- **Status**: Approved — **Part A complete, Part B outstanding** (measurement and the second decision). See §12
+- **Created**: 2026-10-05
 - **Approved by**: user on 2026-10-05
 - **Revised**: 2026-10-05 — scope changed from *measure only* to **fix the repeated lookup first, then measure what remains**. Originally written as a pure diagnosis; that was unnecessary, because the main cause is visible in the code rather than something that has to be measured to discover. Renamed from `search-speed-diagnosis.md` on the same date, since a document carrying a code change should not be called a diagnosis.
 - **Parent**: follow-up to `search-resilience.md` (Implemented — the plumbing works, the speed does not)
@@ -179,3 +179,36 @@ Read `Execution Time` from each. Compare against the same search measured in the
 ## 11. Approval
 
 > Approved by user on 2026-10-05, with the revised scope: fix the repeated lookup first, then measure what remains.
+
+## 12. Implementation Note (2026-10-05)
+
+**Part A delivered. Part B outstanding.** Read-only throughout: no migrations, no schema change, no writes.
+
+### Part A — the repeated lookup, removed in both places
+
+`CashierController::searchStudents()` (limit 10) and `CashierController::payments()` (limit 20) both issued one `fee_schedules` query **per returned student**, inside a `->map()` callback. A search was therefore roughly **13 round trips** at limit 10, and about **23** at limit 20, against a database in Tokyo.
+
+Both now resolve grade levels from already-eager-loaded enrolments, collect the distinct levels, and fetch every schedule for those levels and the selected school year in **one** query, via a single private helper `assessedTotalsByGradeLevel()` (`CashierController.php:206`). The non-fee per-row logic — picking the active enrolment, reading the ledger — stayed where it was, in the callback.
+
+**Requests per search: ~13 → ~4 (search) and ~23 → ~4 (payments).**
+
+### Behaviours preserved deliberately
+
+| | |
+|---|---|
+| No active enrolment or no grade level | Assessed total **0**, as before |
+| School year source | The **request's** `school_year`, not the enrolment's |
+| The arithmetic | `sum(tuition_fee) + sum(misc_fee)` per grade level — same formula, grouped once instead of per row |
+| `showPayment()` | **Not touched.** It filters by the enrolment's own school year and orders by term; consolidating it would have silently changed the payment page |
+
+### Verified left alone
+
+The remaining `FeeSchedule::where` calls in `CashierController.php`, `ReportCardController`, `StudentController`, `DirectressController` and `FeeAssignmentController` are **single-enrolment lookups**, not loops — one page, one student. No N+1. `PromotionService.php:213` does iterate grade levels and is worth examining separately; it is a different screen and outside this spec.
+
+### Part B — outstanding
+
+Not yet done, and it is what decides whether any second fix is warranted: the four measurements in §10, then the decision rule. The **outcome may legitimately be "nothing further is needed"** — §4 states that as a welcome result, so no further work should be invented if the searches now land well under two seconds.
+
+Baseline for comparison, taken from `storage/logs/laravel.log` on 2026-10-04 before the change: ~150 `cashier.search` samples, modal **~2,050 ms**, cluster at 2,200–2,550 ms, spikes to 4,785 ms.
+
+**Not committed by the agent** — the user runs git themselves (`AGENTS.md` §1.4).

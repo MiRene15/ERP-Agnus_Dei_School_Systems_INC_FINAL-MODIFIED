@@ -2,7 +2,8 @@
 
 - **Status**: Approved
 - **Created**: 2026-10-04
-- **Approved by**: user on 2026-10-04
+- **Approved by**: user on 2026-10-04 (original); re-approved by user on 2026-10-05 for supersede notes below
+- **Revised**: 2026-10-05 — superseded in part by children: pace-based **Estimate removed** (`cashier-projection-chart.md` rev 2026-10-04) and **Collectibles → Receivables** wording (`cashier-dashboard-simplification.md` 2026-10-04). This parent remains the vision + build order; §§3–4 item 3, §6 Estimate rule, and §8 dashboard-strip check are superseded as noted inline. No other scope change.
 
 ## 1. Why We Need This
 Cashiers live in Reports during fee season, but Collections and Receivables feel like two different tools: two tabs, two designs, and a receivables table with an 'Unknown' group and a Section column that answers nothing. Cashiers also can't see where balances are heading without exporting and computing by hand. One hub vision fixes all three: one switch, one design language, and balances visible at a glance.
@@ -19,26 +20,27 @@ Cashiers live in Reports during fee season, but Collections and Receivables feel
 - **To-be**:
   1. Cashier opens Reports — one toggle switches Collections/Receivables on the same page.
   2. Receivables reads like Collections: summary cards, flat table with AR No., totals footer; no 'Unknown', no Section column.
-  3. Cashier opens the dashboard — outstanding + Estimate strip visible immediately; full projection on its own left-menu page.
+  3. Cashier opens the dashboard — outstanding + Estimate strip visible immediately; full projection on its own left-menu page. **\[Superseded 2026-10-05: Estimate removed per `cashier-projection-chart.md` rev; dashboard now per `cashier-dashboard-simplification.md` — today's takings + queues, no Estimate strip.\]**
 - **Preserved**: receipts/AR numbering, audit trail, payment plans, refunds/corrections handling, existing monthly payment reminders (untouched, no spec — see follow-ups).
 - **Exceptions**: transfers, refunds, and corrections stay in totals; students with no active section appear with '—' and their pesos still count.
 
 ## 4. How It Should Work
 1. Cashier taps Reports — toggle defaults to Collections with From/To, Generate, Export.
 2. Cashier flips the toggle — Receivables appears with its own filters and Export, same card/table/footer design.
-3. Cashier taps the dashboard — strip shows outstanding total plus Estimate for the month at current pace.
-4. Cashier taps Projections in the left menu — monthly collected-vs-outstanding lines with day labels.
+3. Cashier taps the dashboard — strip shows outstanding total plus Estimate for the month at current pace. **\[Superseded 2026-10-05: no Estimate strip; see `cashier-dashboard-simplification.md` §4.\]**
+4. Cashier taps Projections in the left menu — monthly collected-vs-outstanding lines with day labels. **\[Wording update 2026-10-05: outstanding = Receivables; see `cashier-dashboard-simplification.md` §4.8–4.9.\]**
 
 ## 5. Look & Feel (UX)
 - Where it lives: Reports page (toggle), cashier dashboard (strip), new left-menu Projections page. One primary action per view.
 - Key states: default (current month pre-filled), empty ("All settled" / "No Collections Yet"), error ("unavailable — Refresh", never blank), permission-denied (cashier-only, as today).
-- Plain labels: Collections, Receivables, Outstanding, Estimate, AR No. Blocked/empty states say what to do next.
+- Plain labels: Collections, Receivables, Outstanding, Estimate, AR No. **\[Superseded 2026-10-05: Estimate removed; labels are Collections / Receivables only.\]**
+ Blocked/empty states say what to do next.
 
 ## 6. Business Rules
 ### Must always be true
 - Collected and owed never mix in one total.
 - Every peso ties to a receipt/AR; totals always include every ledger peso, including section-less students.
-- Projection is labeled Estimate and derives from real collection pace only.
+- Projection is labeled Estimate and derives from real collection pace only. **\[Superseded 2026-10-05: Estimate removed — both figures are actuals only; see `cashier-projection-chart.md` §6.\]**
 - Export matches what's on screen for the same range.
 
 ### Must never happen
@@ -58,11 +60,12 @@ Cashiers live in Reports during fee season, but Collections and Receivables feel
 ## 8. Success Checks
 - [ ] Toggle swaps Collections/Receivables keeping each view's filters.
 - [ ] Receivables shows AR No. column, no 'Unknown', no Section column, matching collections design.
-- [ ] Dashboard strip shows outstanding + Estimate; Projections page opens from the left menu.
+- [ ] Dashboard strip shows outstanding + Estimate; Projections page opens from the left menu. **\[Superseded 2026-10-05: dashboard per `cashier-dashboard-simplification.md` §8; Projections wording Receivables, no Estimate.\]**
 - [ ] Empty states read "All settled" / "No Collections Yet".
 
 ## 9. Open Questions (if any)
-None — toggle style, flat receivables with AR, pace-based Estimate, wording, and follow-ups all confirmed 2026-10-04.
+None — toggle style, flat receivables with AR, pace-based Estimate, wording, and follow-ups all confirmed 2026-10-04. **\[Note 2026-10-05: pace-based Estimate later removed at user's request during build; see `cashier-projection-chart.md` §7 rev.\]**
+
 
 ## 10. Technical Notes (for developers)
 *Plain-language pointer only — the source of truth is the code and this appendix.*
@@ -73,4 +76,4 @@ None — toggle style, flat receivables with AR, pace-based Estimate, wording, a
 - Roles: cashier-only views, as today.
 
 ## 11. Approval
-> Approved by user on 2026-10-04.
+> Approved by user on 2026-10-04 (original). Re-approved by user on 2026-10-05 for supersede notes only ("please do 1 and 2") — scope in §§1–2, 7 unchanged.
