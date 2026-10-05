@@ -21,8 +21,8 @@
     <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Search Student</h3>
     </div>
-    <form @submit.prevent="performSearch.run()" class="flex gap-3 items-center">
-        <select x-model="selectedYear" @change="performSearch.run()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+    <form @submit.prevent="searchNow()" class="flex gap-3 items-center">
+        <select x-model="selectedYear" @change="searchNow()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm px-3 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
             @foreach($schoolYears as $sy)
                 <option value="{{ $sy }}" {{ $sy === $schoolYear ? 'selected' : '' }}>{{ $sy }}</option>
             @endforeach
@@ -44,7 +44,7 @@
 
     <div x-show="error" x-cloak class="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3">
         <span x-text="error"></span>
-        <button type="button" @click="performSearch.run()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+        <button type="button" @click="searchNow()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
     </div>
 
     <div x-show="loading && students.length > 0" x-cloak x-transition
@@ -125,7 +125,7 @@ function searchPayments() {
                 if (this.retryAfter <= 0) {
                     if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                     this.error = '';
-                    this.performSearch.run();
+                    this.searchNow();
                 }
             }, 1000);
         },

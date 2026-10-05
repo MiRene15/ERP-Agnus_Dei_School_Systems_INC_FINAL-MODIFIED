@@ -1,9 +1,10 @@
 # Spec: Safe Actions — Calm Search
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-05
 - **Approved by**: user on 2026-10-05
 - **Parent**: `safe-actions-everywhere.md` (child A of 3 — builds first, usable alone)
+- **Implemented**: 2026-10-05 — automatic pause in `app.js` + 18 lists converged + 5 bespoke verified/fixed + all-role sweep; all 8 checks pass (see §12).
 
 ## 1. Why We Need This
 Staff search all day — cashier finds a family with a line waiting, librarian finds a book, registrar finds an admission. Today calm searching works only where its author remembered to add it. One screen fires per keystroke while its neighbour waits for a pause, so the same name behaves differently in two places. Making the pause automatic — built into the shared behaviour once — means no future screen can get it wrong.
@@ -88,3 +89,13 @@ None.
 
 ## 11. Approval
 > Approved by user on 2026-10-05.
+
+## 12. Implementation Note (2026-10-05)
+
+**Delivered:** automatic typing pause in `resources/js/app.js` (`scheduleReload()` + `debounceSearch.cancel()` + `reload()` cancelling a pending wait — one press, one request); 18 shared lists converged from `@input.debounce.600ms` to `scheduleReload()`; 5 bespoke components (cashier payments, librarian books/loans/borrow/visits) given direct `searchNow()` explicit actions with all 20 `.run()` call sites eliminated; `librarian/history` (the one form-less list) given Enter handling; all-role sweep confirms zero `@input.debounce` and zero `.run()` remain in any portal view.
+
+**Fixed during verification, recorded so it is not reintroduced:** arrow closures over the factory object bypass Alpine reactivity (writes never render) — explicit actions must call `searchNow()`/`reload()` directly as component methods; never wrap them in `.run()`-style indirection. A nested `fn.run()` call loses component context where a bare `fn()` keeps it.
+
+**Verification:** `npm run build` clean; user confirmed all 8 §8 checks pass in the browser (slow-type-once, Enter-instant, fast-type-latest, Clear-full, fail-kept, bespoke-parity, short-text, new-screen-automatic).
+
+**Not committed by the agent** — the user runs git themselves (`AGENTS.md` §1.4).

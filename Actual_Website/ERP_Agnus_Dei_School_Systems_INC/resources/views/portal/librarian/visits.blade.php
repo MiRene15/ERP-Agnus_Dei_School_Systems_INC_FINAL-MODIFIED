@@ -79,7 +79,7 @@
         <form method="GET" class="flex flex-wrap gap-3 items-end mb-4" @submit.prevent="if(!(filters.date_from&&filters.date_to&&filters.date_to<filters.date_from))reload()">
             <div class="flex-1 min-w-[150px]">
                 <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
-                <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Student name..."
+                <input type="text" x-model="filters.search" @input="scheduleReload()" placeholder="Student name..."
                        class="w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
             <div class="min-w-[130px]">
@@ -137,7 +137,7 @@ function clockInForm() {
                 if (this.retryAfter <= 0) {
                     if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                     this.searchError = '';
-                    this.searchStudents.run();
+                    this.searchNow();
                 }
             }, 1000);
         },

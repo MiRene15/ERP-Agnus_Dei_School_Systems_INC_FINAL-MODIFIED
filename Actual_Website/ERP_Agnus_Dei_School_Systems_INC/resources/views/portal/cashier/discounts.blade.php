@@ -66,7 +66,7 @@
         <form class="flex gap-4 items-end" @submit.prevent="reload()">
             <div class="flex-1">
                 <label class="block text-xs font-semibold text-gray-500 dark:text-[#8A90B0] uppercase mb-1">Search Student</label>
-                <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Name or email..."
+                <input type="text" x-model="filters.search" @input="scheduleReload()" placeholder="Name or email..."
                        class="w-full border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500">
             </div>
             <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">Search</button>

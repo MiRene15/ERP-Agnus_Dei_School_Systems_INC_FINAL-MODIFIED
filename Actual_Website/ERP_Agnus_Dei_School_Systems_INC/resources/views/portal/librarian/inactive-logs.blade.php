@@ -21,7 +21,7 @@
         <form method="GET" class="flex flex-wrap gap-3 items-end" @submit.prevent="reload()">
             <div class="flex-1 min-w-[200px]">
                 <label class="block text-xs font-medium text-gray-500 mb-1">Search</label>
-                <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Title, author, or serial number..."
+                <input type="text" x-model="filters.search" @input="scheduleReload()" placeholder="Title, author, or serial number..."
                        class="w-full rounded-lg border-gray-300 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
             <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Search</button>

@@ -9,7 +9,7 @@
 </div>
 <div x-data="ajaxTable('{{ route('librarian.history') }}', { search: '', status: 'All' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
-        <input type="text" x-model="filters.search" @input.debounce.600ms="reload()" placeholder="Search by student or book..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <input type="text" x-model="filters.search" @input="scheduleReload()" @keydown.enter="reload()" placeholder="Search by student or book..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
         <select x-model="filters.status" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm"><option value="All">All Status</option><option value="Borrowed">Borrowed</option><option value="Returned">Returned</option></select>
         <button type="button" @click="reload()" class="px-4 py-2 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Filter</button>
         <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 hover:bg-gray-200">Clear</button>

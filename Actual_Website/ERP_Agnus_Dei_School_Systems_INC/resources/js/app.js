@@ -43,6 +43,13 @@ function debounceSearch(search, wait = SEARCH_PAUSE_MS) {
         search.apply(this, arguments);
     };
 
+    // Cancel a pending wait without firing (e.g. an explicit Search/Enter
+    // already ran it). Call sites use arrow closures over their component,
+    // so neither path depends on what `this` the template gives them.
+    debounced.cancel = function () {
+        if (timer) { clearTimeout(timer); timer = null; }
+    };
+
     return debounced;
 }
 
@@ -80,9 +87,23 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
     _controller: null,
     _seq: 0,
     _countdown: null,
+    _debouncedReload: null,
     showAdvanced: Object.values(initialFilters || {}).some((v) => v !== '' && v !== null && v !== undefined),
     init() {
+        // The wait stays inside the debounced function (see debounceSearch),
+        // so a screen author cannot forget it. Typing calls scheduleReload();
+        // explicit actions call reload() directly and stay instant.
+        this._debouncedReload = debounceSearch(function () { return this.reload(); });
         this.reload();
+    },
+    // Typing path (safe-actions-calm-search): waits for a pause automatically,
+    // so a screen author cannot forget it. Explicit actions (submit, select,
+    // Refresh, pagination) keep calling reload() directly and stay instant.
+    scheduleReload() {
+        if (!this._debouncedReload) {
+            this._debouncedReload = debounceSearch(function () { return this.reload(); });
+        }
+        return this._debouncedReload();
     },
     startCountdown() {
         if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
@@ -100,6 +121,11 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
         }, 1000);
     },
     async reload() {
+        // An explicit Search/Enter/select already expresses the latest
+        // intent: drop any pending typed wait so one press means one request.
+        if (this._debouncedReload && this._debouncedReload.cancel) {
+            try { this._debouncedReload.cancel(); } catch (e) { /* noop */ }
+        }
         // Auto-reset page when any real filter changes between requests.
         const baseEntries = Object.entries(this.filters).filter(([key]) => key !== 'page');
         const baseKey = JSON.stringify(baseEntries);

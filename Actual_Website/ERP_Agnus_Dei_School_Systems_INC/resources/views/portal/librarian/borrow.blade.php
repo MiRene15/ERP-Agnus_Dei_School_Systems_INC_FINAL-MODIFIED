@@ -143,7 +143,7 @@ function borrowForm() {
                 if (this.retryAfter <= 0) {
                     if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                     this.searchError = '';
-                    this.searchStudents.run();
+                    this.searchNow();
                 }
             }, 1000);
         },

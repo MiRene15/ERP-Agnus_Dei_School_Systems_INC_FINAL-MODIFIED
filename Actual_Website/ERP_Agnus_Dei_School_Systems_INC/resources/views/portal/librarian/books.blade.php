@@ -24,10 +24,10 @@
 
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6" x-data="booksManager()">
     <!-- Basic Filters -->
-    <form @submit.prevent="performSearch.run()" class="mb-4">
+    <form @submit.prevent="searchNow()" class="mb-4">
         <div class="flex gap-2 items-center flex-wrap">
             <input type="text" x-model="filters.search" @input="performSearch()" placeholder="Search by title, author, or ISBN..." class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <select x-model="filters.active" @change="performSearch.run()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.active" @change="searchNow()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="active">Active Only</option>
                 <option value="inactive">Inactive Only</option>
                 <option value="all">All</option>
@@ -44,7 +44,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
                 <input type="text" x-model="filters.serial_number" @input="performSearch()" placeholder="Serial number..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <input type="text" x-model="filters.publisher" @input="performSearch()" placeholder="Publisher..." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <select x-model="filters.availability" @change="performSearch.run()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <select x-model="filters.availability" @change="searchNow()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     <option value="">All Availability</option>
                     <option value="available">Available</option>
                     <option value="unavailable">Unavailable</option>
@@ -74,7 +74,7 @@
 
     <div x-show="error" x-cloak class="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3">
         <span x-text="error"></span>
-        <button type="button" @click="performSearch.run()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
+        <button type="button" @click="searchNow()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
     </div>
 
     <!-- Books Table (kept while typing/loading; never blanked) -->
@@ -226,7 +226,7 @@ function booksManager() {
                 if (this.retryAfter <= 0) {
                     if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
                     this.error = '';
-                    this.performSearch.run();
+                    this.searchNow();
                 }
             }, 1000);
         },
@@ -248,7 +248,7 @@ function booksManager() {
             price_max: ''
         },
         init() {
-            this.performSearch.run();
+            this.searchNow();
         },
         async searchNow() {
             if (this._controller) { try { this._controller.abort(); } catch (e) {} }
@@ -310,7 +310,7 @@ function booksManager() {
         goToPage(page) {
             if (page < 1 || page > this.totalPages) return;
             this.currentPage = page;
-            this.performSearch.run();
+            this.searchNow();
         },
         get paginationRange() {
             const range = [];
@@ -327,7 +327,7 @@ function booksManager() {
             this.currentPage = 1;
             this.error = '';
             this.retryAfter = 0;
-            this.performSearch.run();
+            this.searchNow();
         },
         openDeactivateModal(book) {
             window.dispatchEvent(new CustomEvent('open-deactivate', { detail: { id: book.id, title: book.title } }));
