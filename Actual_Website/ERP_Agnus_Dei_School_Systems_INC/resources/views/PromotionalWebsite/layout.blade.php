@@ -7,12 +7,11 @@
     <link rel="icon" type="image/png" href="{{ asset('images/agnus_logo.png') }}">
     <script>
         (function () {
+            // Public site is always light (spec: promo-light-only.md) — never
+            // follow the device setting or the account portal's saved preference.
+            // The dormant dark styling below stays as a safety net.
             try {
-                var stored = localStorage.getItem('theme');
-                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (stored === 'dark' || (stored !== 'light' && prefersDark)) {
-                    document.documentElement.classList.add('dark');
-                }
+                document.documentElement.classList.remove('dark');
             } catch (e) {}
             // Account Portal / Login always light
             if (window.location.pathname === '/login') {
@@ -421,6 +420,7 @@
         html.dark .nav-links a.active::after { background: #E5C06A; }
         html.dark .nav-links .dropdown-menu a { color: #E8EAF6; }
         html.dark .btn-outline { color: #E8EAF6; border-color: #3B4172; }
+        html.dark .btn-primary { color: #FFFFFF; } /* dormant insurance (spec: promo-light-only.md) — text var flips dark, background stays navy */
         html.dark .btn-outline:hover { background: rgba(163,159,233,0.12); border-color: #A39FE9; }
         html.dark footer { background: #0E1124; color: #E8EAF6; }
         html.dark [style*="color: var(--primary-navy)"] { color: #E8EAF6 !important; }
