@@ -12,6 +12,7 @@ use App\Models\Section;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class PrincipalController extends Controller
 {
@@ -548,5 +549,55 @@ class PrincipalController extends Controller
         log_activity($class, 'Teacher Assigned', auth()->user()->name . " (Principal) assigned {$label}: {$old} → {$new}.");
 
         return back()->with('success', "Teacher updated for {$label}: {$new}.");
+    }
+
+    /**
+     * Approvals hub — Promotions / Subject Approvals / Grade Edit on one page
+     * (spec: principal-menu-restructure.md). Composition only: the same
+     * queries as the three standalone pages, so lists and badge counts can
+     * never drift apart. Standalone routes stay valid by being untouched.
+     * Grade Edit data is a read-only reuse of the shared registrar page —
+     * the registrar path is untouched.
+     */
+    public function approvals(): View
+    {
+        // Promotions tab — same data as PromotionWorkflowController@principalIndex.
+        $proposals = \App\Models\PromotionProposal::with(['enrollment.student.ledger', 'enrollment.section', 'enrollment.grades.schoolClass.subject', 'proposer'])
+            ->where('status', \App\Models\PromotionProposal::STATUS_PROPOSED)
+            ->latest()
+            ->get();
+        $passingGrade = (int) \App\Models\Setting::getValue('passing_grade', '75');
+
+        // Subject Approvals tab — same data as SubjectApprovalController@index.
+        // Renamed to avoid colliding with the unlock $pending/$history below.
+        $subjectPending = \App\Models\SubjectChangeRequest::with('subject', 'requester')
+            ->where('status', \App\Models\SubjectChangeRequest::STATUS_PENDING)
+            ->latest()
+            ->get();
+        $subjectHistory = \App\Models\SubjectChangeRequest::with('subject', 'requester', 'reviewer')
+            ->whereIn('status', [\App\Models\SubjectChangeRequest::STATUS_APPROVED, \App\Models\SubjectChangeRequest::STATUS_REJECTED])
+            ->latest()
+            ->take(50)
+            ->get();
+
+        // Grade Edit tab — same data as GradeUnlockController@reviewIndex.
+        $pending = \App\Models\GradeUnlockRequest::with(['schoolClass.subject', 'schoolClass.teacher', 'requester'])
+            ->where('status', \App\Models\GradeUnlockRequest::STATUS_PENDING)
+            ->latest()
+            ->get();
+        $history = \App\Models\GradeUnlockRequest::with(['schoolClass.subject', 'requester', 'reviewer'])
+            ->whereIn('status', [\App\Models\GradeUnlockRequest::STATUS_APPROVED, \App\Models\GradeUnlockRequest::STATUS_REJECTED])
+            ->latest()
+            ->take(50)
+            ->get();
+
+        // Badges — counted from the same collections above, so they always match.
+        $badgeCounts = [
+            'promotions' => $proposals->count(),
+            'subject-approvals' => $subjectPending->count(),
+            'grade-edit' => $pending->count(),
+        ];
+
+        return view('portal.principal.approvals', compact('proposals', 'passingGrade', 'subjectPending', 'subjectHistory', 'pending', 'history', 'badgeCounts'));
     }
 }

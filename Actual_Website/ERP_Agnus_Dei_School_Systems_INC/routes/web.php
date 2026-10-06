@@ -393,6 +393,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/principal/announcements/{announcement}/edit', [PrincipalController::class, 'announcementsEdit'])->name('principal.announcements.edit');
         Route::patch('/principal/announcements/{announcement}', [PrincipalController::class, 'announcementsUpdate'])->name('principal.announcements.update');
         Route::delete('/principal/announcements/{announcement}', [PrincipalController::class, 'announcementsDestroy'])->name('principal.announcements.destroy');
+        // Approvals hub — principal menu restructure (spec: principal-menu-restructure.md).
+        // Approval tabs have no search inputs, so no throttle here.
+        Route::get('/principal/approvals', [PrincipalController::class, 'approvals'])->name('principal.approvals');
     });
 
     // Profile Management (Provided by Breeze)
