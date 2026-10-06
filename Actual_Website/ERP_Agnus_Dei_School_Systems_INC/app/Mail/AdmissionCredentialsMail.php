@@ -28,9 +28,11 @@ class AdmissionCredentialsMail extends Mailable implements ShouldQueue
         );
     }
 
-    public function build(): void
+    public function content(): Content
     {
-        $this->text('emails.admission-credentials-mail');
+        return new Content(
+            view: 'emails.admission-credentials-mail',
+        );
     }
 
     public function attachments(): array

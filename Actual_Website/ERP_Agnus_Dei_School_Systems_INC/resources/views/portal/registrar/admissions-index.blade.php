@@ -27,6 +27,9 @@
 @if(session('success'))
     <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
 @endif
+@if(session('error'))
+    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
+@endif
 
 <div x-data="ajaxTable('{{ route('registrar.admissions.index') }}', { search: '{{ request('search') }}', status: '{{ request('status') }}', grade_level: '{{ request('grade_level') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">

@@ -10,11 +10,9 @@ use App\Models\Requirement;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\User;
-use App\Mail\AdmissionCredentialsMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class RegistrarAdmissionController extends Controller
 {
@@ -196,14 +194,21 @@ class RegistrarAdmissionController extends Controller
 
             log_activity($admission, 'Approved', 'Approved admission for ' . $student->first_name . ' ' . $student->last_name);
 
-            if ($student->user?->email) {
-                $admissionMail = new AdmissionCredentialsMail($student);
-                $admissionMail->idempotencyMarker = $request->input('_idempotency_key');
-                Mail::to($student->user->email)->send($admissionMail);
+            // Approval email goes in its own guarded step AFTER the commit
+            // (spec: applicant-email-reliability.md): a mail-provider outage
+            // must never report an enrolled student as "failed to approve".
+            $mailSent = app(\App\Services\FamilyEmailService::class)
+                ->sendAdmissionApproval($student, $request->input('_idempotency_key'));
+
+            $enrolledMsg = 'Admission approved for ' . $student->first_name . ' ' . $student->last_name . '. Student has been enrolled with ' . count($data['subject_ids']) . ' subject(s).';
+
+            if ($mailSent) {
+                return redirect()->route('registrar.admissions.index')
+                    ->with('success', $enrolledMsg . ' Confirmation email sent.');
             }
 
             return redirect()->route('registrar.admissions.index')
-                ->with('success', 'Admission approved for ' . $student->first_name . ' ' . $student->last_name . '. Student has been enrolled with ' . count($data['subject_ids']) . ' subject(s).');
+                ->with('error', $enrolledMsg . ' BUT the confirmation email could not be sent. Open the admission record and use Resend.');
         } catch (\Exception $e) {
             Log::error('Admission approval failed: ' . $e->getMessage(), [
                 'admission_id' => $admission->id,
@@ -226,5 +231,25 @@ class RegistrarAdmissionController extends Controller
 
         return redirect()->route('registrar.admissions.index')
             ->with('success', 'Admission application has been rejected.');
+    }
+
+    public function resendApprovalEmail(\App\Http\Requests\Registrar\ResendAdmissionEmailRequest $request, Admission $admission)
+    {
+        if ($admission->status !== 'Approved By Registrar') {
+            return back()->with('error', 'Only approved admissions can receive a confirmation email.');
+        }
+
+        $student = $admission->student;
+
+        $mailSent = app(\App\Services\FamilyEmailService::class)
+            ->sendAdmissionApproval($student, $request->input('_idempotency_key'));
+
+        if ($mailSent) {
+            log_activity($admission, 'Approval Email Resent', auth()->user()->name . ' resent the approval email for ' . $student->first_name . ' ' . $student->last_name . '.');
+
+            return back()->with('success', 'Confirmation email sent.');
+        }
+
+        return back()->with('error', 'The confirmation email could not be sent. Check mail settings and try again.');
     }
 }

@@ -34,7 +34,13 @@
                 @endif
                 <div>
                     <dt class="text-gray-500">Personal Email</dt>
-                    <dd class="font-medium text-gray-900">{{ $admission->student->personal_email ?? 'N/A' }}</dd>
+                    <dd class="font-medium text-gray-900">{{ $admission->student->personal_email ?? 'N/A' }}
+                        @if($admission->student?->user?->hasVerifiedEmail())
+                            <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Verified</span>
+                        @else
+                            <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Unverified</span>
+                        @endif
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Institutional Email</dt>
@@ -182,6 +188,15 @@
                 <button type="submit"
                         class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 transition mt-2">
                     Reject Application
+                </button>
+            </form>
+            @endif
+            @if($admission->status === 'Approved By Registrar')
+            <form method="POST" action="{{ route('registrar.admissions.resend-approval-email', $admission) }}" class="mt-2">
+                @csrf
+                <button type="submit"
+                        class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 transition">
+                    Resend Confirmation Email
                 </button>
             </form>
             @endif

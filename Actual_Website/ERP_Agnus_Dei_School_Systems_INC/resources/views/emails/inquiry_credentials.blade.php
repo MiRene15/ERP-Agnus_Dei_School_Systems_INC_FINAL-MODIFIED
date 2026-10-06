@@ -17,6 +17,19 @@ Please use the following credentials to access the Agnus Dei Portal:
 Access Portal
 </x-mail::button>
 
+---
+
+## One more step: confirm your email
+
+Please confirm your personal email address so we know our messages reach you. This link works for 24 hours — you can request a fresh one when you log in.
+
+<x-mail::button :url="$verifyUrl">
+Confirm My Email
+</x-mail::button>
+
+If the button doesn't work, copy this address into your browser:
+{{ $verifyUrl }}
+
 For your security, we strongly advise changing this password upon first login.
 
 Warm regards,<br>

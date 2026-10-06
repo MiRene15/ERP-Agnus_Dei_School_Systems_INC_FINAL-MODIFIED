@@ -9,6 +9,7 @@ use App\Models\Student;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Mail\InquiryCredentialsMail;
@@ -43,7 +44,7 @@ class InquiryController extends Controller
                     }
                 },
                 // No duplicate applications: same child (name) + same contact
-                // email already in the system. Siblings (different names) pass.
+                // email already in the system.
                 function ($attribute, $value, $fail) use ($request) {
                     $first = strtolower(trim((string) $request->first_name));
                     $last = strtolower(trim((string) $request->last_name));
@@ -54,6 +55,20 @@ class InquiryController extends Controller
                         ->exists();
                     if ($dup) {
                         $fail('An application with this name and email already exists. Please log in or contact the registrar instead of applying again.');
+                    }
+                },
+                // Strict 1 student 1 email (spec:
+                // applicant-email-reliability.md): any other applicant reusing
+                // an inbox is blocked, no override.
+                function ($attribute, $value, $fail) use ($request) {
+                    $first = strtolower(trim((string) $request->first_name));
+                    $last = strtolower(trim((string) $request->last_name));
+                    $email = strtolower(trim((string) $value));
+                    $taken = Student::whereRaw('LOWER(TRIM(personal_email)) = ?', [$email])
+                        ->whereRaw('(LOWER(TRIM(first_name)) != ? OR LOWER(TRIM(last_name)) != ?)', [$first, $last])
+                        ->exists();
+                    if ($taken) {
+                        $fail('This email address was already used for another application. Each applicant needs their own email address — please apply with a different one.');
                     }
                 },
             ],
@@ -95,11 +110,21 @@ class InquiryController extends Controller
             });
 
             // Mail is sent AFTER the commit: a mail-provider outage must never
-            // roll back (or block) the inquiry itself.
+            // roll back (or block) the inquiry itself. The account is created
+            // unverified; the verification link below activates it (spec:
+            // applicant-email-reliability.md). A failed send is reported
+            // honestly — never as success, never as a failed application.
+            $mailSent = false;
             try {
-                $credentialsMail = new InquiryCredentialsMail($firstName, $institutionalEmail, $password);
+                $verifyUrl = URL::temporarySignedRoute(
+                    'verification.verify',
+                    now()->addHours(24),
+                    ['id' => $createdUser->id, 'hash' => sha1($createdUser->email)]
+                );
+                $credentialsMail = new InquiryCredentialsMail($firstName, $institutionalEmail, $password, $verifyUrl);
                 $credentialsMail->idempotencyMarker = $request->input('_idempotency_key');
                 Mail::to($personalEmail)->send($credentialsMail);
+                $mailSent = true;
             } catch (\Exception $mailError) {
                 Log::warning('Inquiry credentials email failed: ' . $mailError->getMessage(), [
                     'personal_email' => $personalEmail,
@@ -111,7 +136,11 @@ class InquiryController extends Controller
                 log_activity($createdUser, 'Account Created', 'Pre-admission account created via public inquiry: ' . $createdUser->name . ' (' . $createdUser->email . '). Credentials emailed to ' . $request->personal_email . '.');
             }
 
-            return redirect('/inquiry')->with('success', true);
+            if ($mailSent) {
+                return redirect('/inquiry')->with('success', true);
+            }
+
+            return redirect('/inquiry')->with('mail_failed', true);
 
         } catch (\Exception $e) {
             Log::error('Inquiry submission failed: ' . $e->getMessage());

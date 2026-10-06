@@ -177,6 +177,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/registrar/admissions/{admission}/approve', [RegistrarAdmissionController::class, 'approve'])->name('registrar.admissions.approve');
         Route::post('/registrar/admissions/{admission}/reject', [RegistrarAdmissionController::class, 'reject'])->name('registrar.admissions.reject');
         Route::post('/registrar/admissions/{admission}/verify-all', [RegistrarAdmissionController::class, 'verifyAll'])->name('registrar.admissions.verify-all');
+        // Approval-email resend (spec: applicant-email-reliability.md).
+        Route::post('/registrar/admissions/{admission}/resend-approval-email', [RegistrarAdmissionController::class, 'resendApprovalEmail'])->name('registrar.admissions.resend-approval-email');
         Route::post('/registrar/requirements/{requirement}/verify', [RegistrarAdmissionController::class, 'verifyRequirement'])->name('registrar.admissions.verify-requirement');
         Route::get('/registrar/withdrawals', [WithdrawalController::class, 'index'])->name('registrar.withdrawals.index')->middleware('throttle:search');
         Route::post('/registrar/withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('registrar.withdrawals.approve');
@@ -287,7 +289,9 @@ Route::middleware('auth')->group(function () {
     });
 
     // Using role 7 for Students (and potentially Parents/Guardians under unified)
-    Route::middleware(['role:7'])->group(function() {
+    // Verified-student gate (spec: applicant-email-reliability.md): unverified
+    // logins see the verify-email notice instead of the portal. Other roles untouched.
+    Route::middleware(['role:7', 'verified'])->group(function() {
         Route::get('/student/dashboard', [StudentController::class, 'index'])->name('student.dashboard');
         Route::get('/student/admission/apply', [StudentAdmissionController::class, 'create'])->name('student.admission.create');
         Route::post('/student/admission/apply', [StudentAdmissionController::class, 'store'])->name('student.admission.store');

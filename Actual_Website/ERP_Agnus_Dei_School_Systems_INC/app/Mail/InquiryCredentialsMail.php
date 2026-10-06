@@ -17,15 +17,17 @@ class InquiryCredentialsMail extends Mailable implements ShouldQueue
     public $firstName;
     public $institutionalEmail;
     public $password;
+    public $verifyUrl;
 
     /**
      * Create a new message instance.
      */
-    public function __construct($firstName, $institutionalEmail, $password)
+    public function __construct(string $firstName, string $institutionalEmail, string $password, string $verifyUrl)
     {
         $this->firstName = $firstName;
         $this->institutionalEmail = $institutionalEmail;
         $this->password = $password;
+        $this->verifyUrl = $verifyUrl;
     }
 
     /**
@@ -49,6 +51,7 @@ class InquiryCredentialsMail extends Mailable implements ShouldQueue
                 'firstName' => $this->firstName,
                 'email' => $this->institutionalEmail,
                 'password' => $this->password,
+                'verifyUrl' => $this->verifyUrl,
             ],
         );
     }

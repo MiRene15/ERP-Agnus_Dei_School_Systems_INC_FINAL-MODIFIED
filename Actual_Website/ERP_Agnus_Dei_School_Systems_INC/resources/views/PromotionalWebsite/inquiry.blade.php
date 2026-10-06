@@ -54,6 +54,11 @@
             {{ session('error') }}
         </div>
     @endif
+    @if(session('mail_failed'))
+        <div class="error-box" style="padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.95rem;">
+            Your account was created, but the email with your login details could not be sent. Please use the <a href="/forgot-password">Forgot Password</a> page with your personal email to set a password — do not submit another application. If that fails, contact the registrar.
+        </div>
+    @endif
 </div>
 
 <!-- Success Modal -->
@@ -63,7 +68,7 @@
         <button onclick="closeSuccessModal()" class="modal-close-btn">&times;</button>
         <div class="modal-icon">&#10003;</div>
         <h2 class="modal-title">Inquiry Submitted!</h2>
-        <p class="modal-text">Your institutional credentials have been generated.<br>Please check your email inbox to find your login details.</p>
+        <p class="modal-text">Your institutional credentials have been generated.<br>Please check your email inbox to find your login details and confirm your email address.</p>
         <div class="modal-timer">
             <div class="timer-bar" id="timer-bar"></div>
             <span id="timer-count">5</span>
