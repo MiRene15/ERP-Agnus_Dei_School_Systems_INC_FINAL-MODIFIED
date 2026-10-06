@@ -1,6 +1,6 @@
 # Spec: Safe Actions Everywhere
 
-- **Status**: Approved
+- **Status**: Implemented (2026-10-06 — children A, B, C all Implemented and verified; coverage rule holds)
 - **Created**: 2026-10-05
 - **Approved by**: user on 2026-10-05
 - **Scope decision**: user confirmed 2026-10-05 — **all writes protected, all reads calmed, across all nine roles**
@@ -199,3 +199,5 @@ None.
 ## 11. Approval
 
 > Approved by user on 2026-10-05, with the coverage rule in §4: all writes protected, all reads calmed, across all nine roles. All three parts in scope; to be delivered in three verified passes.
+>
+> Closed 2026-10-06: children `safe-actions-calm-search.md`, `safe-actions-one-tap.md`, `safe-actions-one-submission.md` all Implemented and verified (user sign-off per child). Coverage rule holds across all nine roles.
