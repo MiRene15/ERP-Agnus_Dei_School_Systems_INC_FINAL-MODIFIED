@@ -7,6 +7,7 @@
 node_modules
 vendor
 public/build
+bootstrap/cache/config.php
 public/hot
 public/storage
 storage/app
