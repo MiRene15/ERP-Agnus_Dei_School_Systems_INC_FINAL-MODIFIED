@@ -208,6 +208,8 @@ Route::middleware('auth')->group(function () {
         // Refund payouts — Registrar approves withdrawals, Cashier releases the money.
         Route::get('/cashier/refunds', [CashierController::class, 'refunds'])->name('cashier.refunds.index');
         Route::post('/cashier/refunds/{withdrawal}/release', [CashierController::class, 'releasePayout'])->name('cashier.refunds.release');
+        // Requests hub — Discounts / Discount Requests / Refunds on one page (spec: cashier-requests-hub.md).
+        Route::get('/cashier/requests', [CashierController::class, 'requests'])->name('cashier.requests');
         // Void an erroneous collection via offsetting reversal (original kept for audit).
         Route::post('/cashier/payments/{payment}/void', [CashierController::class, 'voidPayment'])->name('cashier.payments.void');
         Route::get('/cashier/projections', [CashierController::class, 'projections'])->name('cashier.projections');

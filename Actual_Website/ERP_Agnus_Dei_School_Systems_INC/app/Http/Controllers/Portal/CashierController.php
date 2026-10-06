@@ -693,6 +693,59 @@ class CashierController extends Controller
     }
 
     /**
+     * Requests hub — Discounts / Discount Requests / Refunds on one page
+     * (spec: cashier-requests-hub.md). Composition only: the same queries as
+     * the three standalone pages, so lists and badge counts can never drift
+     * apart. Standalone routes, registrar path, and throttle coverage stay
+     * valid by being untouched. Tab markup below copies the standalone views
+     * verbatim (same variable names), so future diffs stay trivial.
+     */
+    public function requests()
+    {
+        // Discounts tab — apply queue, same data as discounts().
+        $approvedRequests = \App\Models\DiscountRequest::with('ledger.student.user', 'ledger.student.enrollments.section', 'requester', 'reviewer')
+            ->where('status', \App\Models\DiscountRequest::STATUS_APPROVED)
+            ->latest()
+            ->get();
+
+        // Requests tab — same data as DiscountRequestController@index.
+        $requests = \App\Models\DiscountRequest::with(['ledger.student.user', 'ledger.student.enrollments.section', 'requester', 'reviewer'])
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+        $ledgers = StudentLedger::with('student.user')
+            ->whereHas('student.enrollments', function ($q) {
+                $q->where('status', 'Active')->where('school_year', active_school_year());
+            })
+            ->orderBy('id')
+            ->get();
+        $discountTypes = \App\Models\DiscountRequest::TYPES;
+
+        // Refunds tab — same data as refunds().
+        $pending = Withdrawal::with('student.user', 'enrollment.section', 'processor')
+            ->where('status', 'Approved')
+            ->where('refund_amount', '>', 0)
+            ->whereNull('refund_processed_at')
+            ->latest()
+            ->get();
+        $released = Withdrawal::with('student.user')
+            ->where('status', 'Approved')
+            ->whereNotNull('refund_processed_at')
+            ->latest('refund_processed_at')
+            ->take(50)
+            ->get();
+
+        // Badges — counted from the same collections above, so they always match.
+        $badgeCounts = [
+            'discounts' => $approvedRequests->count(),
+            'requests' => \App\Models\DiscountRequest::where('status', \App\Models\DiscountRequest::STATUS_PENDING)->count(),
+            'refunds' => $pending->count(),
+        ];
+
+        return view('portal.cashier.requests', compact('approvedRequests', 'requests', 'ledgers', 'discountTypes', 'pending', 'released', 'badgeCounts'));
+    }
+
+    /**
      * Apply a Directress-approved discount request. Cashier never grants directly —
      * every discount on this page comes from an approved request.
      */
