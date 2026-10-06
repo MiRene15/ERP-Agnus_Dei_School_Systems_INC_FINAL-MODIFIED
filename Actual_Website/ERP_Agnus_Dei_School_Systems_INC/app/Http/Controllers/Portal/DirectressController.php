@@ -10,6 +10,7 @@ use App\Models\StudentGraduationFee;
 use App\Models\Enrollment;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class DirectressController extends Controller
 {
@@ -662,5 +663,60 @@ class DirectressController extends Controller
             fclose($file);
         };
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Assign Fees hub — Fee Assign / Graduation Fees on one page
+     * (spec: directress-menu-restructure.md). Composition only: the same
+     * queries as the two standalone pages, so lists can never drift apart.
+     * Standalone routes stay valid by being untouched. First paint is
+     * unfiltered; tab searches post to the standalone addresses.
+     */
+    public function assignFees(): View
+    {
+        // Fee Assign tab — same data as fees() (unfiltered first paint).
+        $fees = FeeSchedule::query()->orderBy('grade_level')->orderBy('term')->get()->groupBy('grade_level');
+        $terms = ['1st Term', '2nd Term', '3rd Term'];
+        $schoolYears = all_school_years();
+
+        // Graduation Fees tab — same data as graduationFees().
+        // Named $gradFees to avoid colliding with the fee tab's $fees.
+        $gradFees = GraduationFee::orderBy('grade_level')->orderBy('school_year')->get()->groupBy('grade_level');
+
+        return view('portal.directress.assign-fees', compact('fees', 'terms', 'schoolYears', 'gradFees'));
+    }
+
+    /**
+     * Approvals hub — Discount Approvals / Promotion sign-off on one page
+     * (spec: directress-menu-restructure.md). Composition only: the same
+     * queries as the two standalone pages, so lists and badge counts can
+     * never drift apart. Standalone routes stay valid by being untouched.
+     */
+    public function approvals(): View
+    {
+        // Discount Approvals tab — same data as DiscountRequestController@reviewIndex.
+        $pending = \App\Models\DiscountRequest::with(['ledger.student.user', 'ledger.student.enrollments.section', 'requester'])
+            ->where('status', \App\Models\DiscountRequest::STATUS_PENDING)
+            ->latest()
+            ->get();
+        $history = \App\Models\DiscountRequest::with(['ledger.student.user', 'requester', 'reviewer'])
+            ->whereIn('status', [\App\Models\DiscountRequest::STATUS_APPROVED, \App\Models\DiscountRequest::STATUS_REJECTED, \App\Models\DiscountRequest::STATUS_APPLIED])
+            ->latest()
+            ->take(50)
+            ->get();
+
+        // Promotion tab — same data as PromotionWorkflowController@directressIndex.
+        $proposals = \App\Models\PromotionProposal::with(['enrollment.student.ledger', 'enrollment.section', 'proposer'])
+            ->where('status', \App\Models\PromotionProposal::STATUS_PRINCIPAL_APPROVED)
+            ->latest()
+            ->get();
+
+        // Badges — counted from the same collections above, so they always match.
+        $badgeCounts = [
+            'discount-approvals' => $pending->count(),
+            'promotion' => $proposals->count(),
+        ];
+
+        return view('portal.directress.approvals', compact('pending', 'history', 'proposals', 'badgeCounts'));
     }
 }

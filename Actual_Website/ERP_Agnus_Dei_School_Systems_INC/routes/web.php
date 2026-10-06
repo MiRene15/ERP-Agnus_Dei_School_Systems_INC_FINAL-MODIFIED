@@ -342,6 +342,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/directress/announcements', [DirectressController::class, 'announcements'])->name('directress.announcements.index');
         Route::post('/directress/announcements/{announcement}/acknowledge', [DirectressController::class, 'acknowledgeAnnouncement'])->name('directress.announcements.acknowledge');
 
+        // Menu hubs (spec: directress-menu-restructure.md). Composition only — standalone routes below stay valid.
+        Route::get('/directress/assign-fees', [DirectressController::class, 'assignFees'])->name('directress.assign-fees');
+        Route::get('/directress/approvals', [DirectressController::class, 'approvals'])->name('directress.approvals');
         // Reports Hub (Collections / Receivables / Clinic / Library / Students)
         Route::get('/directress/reports', [DirectressController::class, 'reports'])->name('directress.reports');
         Route::get('/directress/reports/collections', [DirectressController::class, 'collectionsReport'])->name('directress.reports.collections');
