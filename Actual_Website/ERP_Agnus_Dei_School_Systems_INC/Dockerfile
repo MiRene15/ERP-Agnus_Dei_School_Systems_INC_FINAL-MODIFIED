@@ -4,6 +4,7 @@ FROM php:8.2-cli
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
+    ca-certificates \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
