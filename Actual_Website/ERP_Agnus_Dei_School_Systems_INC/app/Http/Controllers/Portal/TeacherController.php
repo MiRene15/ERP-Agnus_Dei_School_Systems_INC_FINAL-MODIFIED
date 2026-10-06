@@ -219,8 +219,15 @@ class TeacherController extends Controller
         // Principal + Registrar are notified (IT is out of the academic loop).
         $recipients = User::whereIn('role_id', [2, 9])->pluck('email')->filter();
         try {
-            foreach ($recipients as $email) {
-                Mail::to($email)->send(new GradesSubmittedMail($class, $data['grading_period']));
+            $submissionMarker = $request->input('_idempotency_key');
+            foreach ($recipients as $index => $email) {
+                $gradesMail = new GradesSubmittedMail($class, $data['grading_period']);
+                // Per-recipient suffix: one submission notifies several people and each
+                // notice is its own intent. Deterministic UUID — never personal data.
+                $gradesMail->idempotencyMarker = is_string($submissionMarker) && $submissionMarker !== ''
+                    ? \App\Models\IdempotencyKey::referenceFor($submissionMarker, (string) $index)
+                    : null;
+                Mail::to($email)->send($gradesMail);
             }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('Grades-submitted mail failed: ' . $e->getMessage(), ['class_id' => $class->id]);

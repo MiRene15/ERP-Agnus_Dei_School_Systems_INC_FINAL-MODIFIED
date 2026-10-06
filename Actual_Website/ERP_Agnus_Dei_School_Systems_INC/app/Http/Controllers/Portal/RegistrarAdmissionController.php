@@ -197,7 +197,9 @@ class RegistrarAdmissionController extends Controller
             log_activity($admission, 'Approved', 'Approved admission for ' . $student->first_name . ' ' . $student->last_name);
 
             if ($student->user?->email) {
-                Mail::to($student->user->email)->send(new AdmissionCredentialsMail($student));
+                $admissionMail = new AdmissionCredentialsMail($student);
+                $admissionMail->idempotencyMarker = $request->input('_idempotency_key');
+                Mail::to($student->user->email)->send($admissionMail);
             }
 
             return redirect()->route('registrar.admissions.index')

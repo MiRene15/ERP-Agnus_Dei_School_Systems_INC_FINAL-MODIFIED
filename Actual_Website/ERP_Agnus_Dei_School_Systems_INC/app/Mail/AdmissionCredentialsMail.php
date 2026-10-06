@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class AdmissionCredentialsMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, SkipsDuplicateSends;
 
     public $student;
 

@@ -13,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 
 class GradesSubmittedMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, SkipsDuplicateSends;
 
     public $class;
     public $gradingPeriod;

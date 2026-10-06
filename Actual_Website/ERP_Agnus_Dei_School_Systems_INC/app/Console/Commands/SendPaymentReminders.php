@@ -33,6 +33,8 @@ class SendPaymentReminders extends Command
             ->get();
 
         $sentCount = 0;
+        $cycle = $today->format('Y-m');
+        $mailRoute = 'mail:'.PaymentReminderMail::class;
 
         foreach ($students as $student) {
             if (!$student->user?->email) {
@@ -46,10 +48,16 @@ class SendPaymentReminders extends Command
 
             $schoolYear = $enrollment?->school_year ?? now()->format('Y') . '-' . (now()->format('Y') + 1);
 
+            // Re-run safe: a reminder already queued for this student and cycle is skipped.
+            $reminderMarker = \App\Models\IdempotencyKey::referenceFor('reminder', (string) $student->id, $cycle);
+            if (\App\Models\IdempotencyKey::where('reference', $reminderMarker)->where('route', $mailRoute)->exists()) {
+                continue;
+            }
+
             try {
-                Mail::to($student->user->email)->send(
-                    new PaymentReminderMail($student, $student->ledger->balance, $schoolYear)
-                );
+                $reminderMail = new PaymentReminderMail($student, $student->ledger->balance, $schoolYear);
+                $reminderMail->idempotencyMarker = $reminderMarker;
+                Mail::to($student->user->email)->send($reminderMail);
                 $sentCount++;
                 $this->info("Sent reminder to: {$student->user->email}");
             } catch (\Exception $e) {

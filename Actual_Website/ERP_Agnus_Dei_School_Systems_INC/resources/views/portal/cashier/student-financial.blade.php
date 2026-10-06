@@ -9,6 +9,9 @@
 @endsection
 
 @section('content')
+@if(session('success'))
+    <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">{{ session('success') }}</div>
+@endif
 <div x-data="ajaxTable('{{ route('cashier.student-financial', $student) }}')">
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
         <div x-show="loading" class="p-4 space-y-3">

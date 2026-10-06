@@ -423,7 +423,9 @@ class CashierController extends Controller
                 if ($student->personal_email) {
                     $email = $student->personal_email;
                 }
-                Mail::to($email)->send(new PaymentConfirmationMail($lastPayment));
+                $confirmationMail = new PaymentConfirmationMail($lastPayment);
+                $confirmationMail->idempotencyMarker = $request->input('_idempotency_key');
+                Mail::to($email)->send($confirmationMail);
             } catch (\Exception $e) {
                 Log::warning('Failed to send payment confirmation email: ' . $e->getMessage(), [
                     'student_id' => $student->id,

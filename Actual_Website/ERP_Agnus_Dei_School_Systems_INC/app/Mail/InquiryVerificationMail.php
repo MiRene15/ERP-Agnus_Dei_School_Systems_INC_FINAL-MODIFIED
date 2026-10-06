@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 
 class InquiryVerificationMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, SkipsDuplicateSends;
 
     /**
      * Create a new message instance.

@@ -256,6 +256,23 @@ document.addEventListener('submit', (event) => {
         submitter.disabled = true;
         submitter.setAttribute('aria-disabled', 'true');
         submitter.classList.add('is-busy');
+        // Safe Actions — One Submission (child C): mint a fresh single-use
+        // reference per submission attempt (spec: safe-actions-one-submission.md).
+        // A browser-level resend replays the stamped value (recognized as a
+        // repeat); every new attempt mints anew, so deliberate repeats always
+        // carry a new reference. Minting must never block a submit.
+        try {
+            let keyInput = form.querySelector('input[name="_idempotency_key"]');
+            if (!keyInput) {
+                keyInput = document.createElement('input');
+                keyInput.type = 'hidden';
+                keyInput.name = '_idempotency_key';
+                form.appendChild(keyInput);
+            }
+            keyInput.value = (window.crypto && typeof window.crypto.randomUUID === 'function')
+                ? window.crypto.randomUUID()
+                : 'key-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+        } catch (e) { /* noop: minting must never block a submit */ }
         window.setTimeout(() => {
             try {
                 submitter.disabled = false;

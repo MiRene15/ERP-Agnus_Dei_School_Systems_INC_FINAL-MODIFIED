@@ -484,6 +484,21 @@
                 // event (and the global guard), so lock here. Validation
                 // failures return above with nothing locked.
                 this.submitting = true;
+                // One Submission (child C): programmatic submit bypasses the
+                // global guard, so mint the single-use reference here
+                // (spec: safe-actions-one-submission.md).
+                try {
+                    let keyInput = this.$refs.form.querySelector('input[name="_idempotency_key"]');
+                    if (!keyInput) {
+                        keyInput = document.createElement('input');
+                        keyInput.type = 'hidden';
+                        keyInput.name = '_idempotency_key';
+                        this.$refs.form.appendChild(keyInput);
+                    }
+                    keyInput.value = (window.crypto && typeof window.crypto.randomUUID === 'function')
+                        ? window.crypto.randomUUID()
+                        : 'key-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+                } catch (e) { /* noop: minting must never block a submit */ }
                 try {
                     this.$refs.form.submit();
                 } catch (e) {

@@ -97,7 +97,9 @@ class InquiryController extends Controller
             // Mail is sent AFTER the commit: a mail-provider outage must never
             // roll back (or block) the inquiry itself.
             try {
-                Mail::to($personalEmail)->send(new InquiryCredentialsMail($firstName, $institutionalEmail, $password));
+                $credentialsMail = new InquiryCredentialsMail($firstName, $institutionalEmail, $password);
+                $credentialsMail->idempotencyMarker = $request->input('_idempotency_key');
+                Mail::to($personalEmail)->send($credentialsMail);
             } catch (\Exception $mailError) {
                 Log::warning('Inquiry credentials email failed: ' . $mailError->getMessage(), [
                     'personal_email' => $personalEmail,

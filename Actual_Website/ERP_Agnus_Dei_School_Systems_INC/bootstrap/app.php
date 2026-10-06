@@ -23,6 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
                       \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT |
                       \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO
         );
+
+        // spec: safe-actions-one-submission.md — new middleware only; existing pipeline untouched.
+        // Kill-switch: IDEMPOTENCY_ENABLED=false bypasses it entirely (default on).
+        if (env('IDEMPOTENCY_ENABLED', true)) {
+            $middleware->appendToGroup('web', \App\Http\Middleware\EnsureIdempotentSubmission::class);
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
