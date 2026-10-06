@@ -156,3 +156,9 @@ None.
 ## 11. Approval
 
 > Approved by user on 2026-10-04 (original). Re-approved by user on 2026-10-05 for the §4 ilike-check revision ("please do 1 and 2").
+
+## 12. Release log (operational records — §8 needs three of these before this spec can close)
+
+| # | Date | Shipped | Roles checked | Result |
+|---|------|---------|---------------|--------|
+| 1 | 2026-10-06 | One-submission idempotency (child C); other uncommitted work may have ridden along (C confirmed, riders unverified — pre-push ship-list never returned) | All nine, per user report | Pass, per user report |
