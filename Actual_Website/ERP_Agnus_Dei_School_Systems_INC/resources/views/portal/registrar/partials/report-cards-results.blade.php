@@ -1,6 +1,6 @@
 @forelse($enrollments as $grade => $group)
 <div class="p-6 border-b border-gray-100 last:border-b-0">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">Grade {{ $grade }}</h3>
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ $grade }}</h3>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead>
