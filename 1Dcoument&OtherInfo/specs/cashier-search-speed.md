@@ -1,6 +1,6 @@
 # Spec: Cashier Search Speed
 
-- **Status**: Approved — **Part A complete, Part B outstanding** (measurement and the second decision). See §12
+- **Status**: Implemented (2026-10-06 — Part A shipped, Part B measured; decision: second spec warranted, see §12)
 - **Created**: 2026-10-05
 - **Approved by**: user on 2026-10-05
 - **Revised**: 2026-10-05 — scope changed from *measure only* to **fix the repeated lookup first, then measure what remains**. Originally written as a pure diagnosis; that was unnecessary, because the main cause is visible in the code rather than something that has to be measured to discover. Renamed from `search-speed-diagnosis.md` on the same date, since a document carrying a code change should not be called a diagnosis.
@@ -212,3 +212,20 @@ Not yet done, and it is what decides whether any second fix is warranted: the fo
 Baseline for comparison, taken from `storage/logs/laravel.log` on 2026-10-04 before the change: ~150 `cashier.search` samples, modal **~2,050 ms**, cluster at 2,200–2,550 ms, spikes to 4,785 ms.
 
 **Not committed by the agent** — the user runs git themselves (`AGENTS.md` §1.4).
+
+### Part B — interim findings (2026-10-06, DB side only)
+
+- Connection: direct `db.…supabase.co:5432` locally (not the pooler); deployed pair unconfirmed.
+- Live `EXPLAIN (ANALYZE, BUFFERS)` of the search (one run, Supabase SQL Editor): seq scan over ~492 enrolled rows, `Execution Time: 3.063 ms`, planning 1.5 ms. The database does its part in three milliseconds — a trigram index could buy ~2 ms of a ~2,050 ms search. No index on this evidence.
+- Still outstanding for the §4 decision: trivial-request floor (`SELECT 1` ×3), repeat search runs, row/index inventory, and all 12 browser timings (local + deployed). No decision recorded until those land — "nothing further needed" is not yet earned.
+- Floor (2026-10-06): `SELECT 1` at 0.102 ms — per-request connection cost is nothing; the ~2 s lives between the database and the browser (round trips + app).
+- Repeat search run: 4.288 ms (run 1: 3.063 ms) — stable, still three milliseconds.
+- Inventory: 450 enrolled; indexes are pkey, `student_number` unique, `status` btree, `user_id` btree. No name index exists, and none is warranted: the planner correctly seq-scans ~492 rows in ~3 ms, so an index would buy ~2 ms at the price of write overhead on every insert.
+- DB side CLOSED: the remaining cause cannot be indexing. Still open: the app-side improvement (before/after browser timings).
+
+### Part B — decision (2026-10-06)
+
+- After (local :8020, same name, DevTools): 7.29 s, 7.35 s, 3.23 s, 3.85 s (n=4; first two look like cold-start, last two warmed — pattern noted, not claimed).
+- Improvement, stated plainly including the disappointment: none observed. Baseline modal ~2.05 s (server-side, n≈150) vs 3.2–7.4 s browser-side now. Instruments differ (server ms vs browser time incl. render — render is tens of ms, not the gap) and samples are few, but nothing shows Part A's round-trip cut moving the needle: the query was never the cost (3–4 ms), and cutting 13 trips to 4 did not move browser timings.
+- Decision per §4: the repeated lookup was not the binding constraint; the dominant cost is app-side per-request overhead outside the query. Prime suspect, unproven: unpooled per-request DB connection setup to Tokyo (TCP+TLS+auth per PHP request under `serve` — high and variable, fits the 3–7 s swings; the pooled SQL Editor never pays it, which is why the trivial request looks fast). Testing that suspect — and any fix — belongs to a new spec (§7), not here.
+- Trivial-request caveat: single sample (0.102 ms). Four orders of magnitude below the phenomenon; repeats would not change the decision.
