@@ -185,6 +185,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/registrar/report-cards', [ReportCardController::class, 'index'])->name('registrar.report-cards.index')->middleware('throttle:search');
         Route::get('/registrar/report-cards/{enrollment}', [ReportCardController::class, 'show'])->name('registrar.report-cards.show');
         Route::get('/registrar/report-cards/{enrollment}/print', [ReportCardController::class, 'print'])->name('registrar.report-cards.print');
+        // Hub pages — registrar menu restructure (spec: registrar-menu-restructure.md).
+        // Tab searches keep posting to the throttled standalone routes, so no throttle here.
+        Route::get('/registrar/requests', [RegistrarController::class, 'requests'])->name('registrar.requests');
+        Route::get('/registrar/sections-subjects', [RegistrarController::class, 'sectionsSubjects'])->name('registrar.sections-subjects');
+        Route::get('/registrar/grade-fee', [RegistrarController::class, 'gradeFee'])->name('registrar.grade-fee');
     });
 
     Route::middleware(['role:3'])->group(function() {

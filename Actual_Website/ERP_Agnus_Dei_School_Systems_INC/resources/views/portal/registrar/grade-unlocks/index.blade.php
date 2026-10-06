@@ -3,12 +3,12 @@
 @section('breadcrumbs')
     <a href="{{ auth()->user()->role_id === 9 ? route('principal.dashboard') : route('registrar.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
     <span class="opacity-40">/</span>
-    <span class="current">Grade Unlocks</span>
+    <span class="current">Grade Edit</span>
 @endsection
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Grade Unlock Requests</h2>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Grade Edit</h2>
     <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Teachers ask to reopen submitted grades for correction. Approving returns those grades to Pending — the teacher corrects and re-submits.</p>
 </div>
 
