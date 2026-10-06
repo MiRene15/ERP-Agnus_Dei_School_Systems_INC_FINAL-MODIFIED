@@ -1,8 +1,9 @@
 # Spec: Applicant Email Reliability
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-06
 - **Approved by**: user on 2026-10-06 (re-approved after strict 1-student-1-email change)
+- **Implemented**: 2026-10-07
 
 ## 1. Why We Need This
 
@@ -112,3 +113,16 @@ None — all decisions made in interview (both emails in scope, personal-inbox-o
 ## 11. Approval
 
 > Approved by user on 2026-10-06.
+
+## 12. Closure Log (2026-10-07)
+
+**Built in four slices:** (1) verification switch (`MustVerifyEmail` + backfill migration + applicant-route gate); (2) inquiry send (verification link, honest failure message, applicant resend via existing throttled route); (3) approval send (`FamilyEmailService` personal-first guarded send, normalized mailer, staff resend endpoint + FormRequest); (4) registrar UI (verified pills, resend button, strict one-email-per-applicant validation). Static checks `php -l` / `route:list` / `view:cache` / `migrate` clean; live inbox receipt confirmed delivery end to end.
+
+**Root cause found during rollout (infra, outside code):** every mailer implements `ShouldQueue`, so `send()` parks mail in the `jobs` table — but no worker runs, and `QUEUE_CONNECTION` was `database`. All mail piled up unsent with success screens everywhere. Fix: `QUEUE_CONNECTION=sync` (all sends already guarded, so inline delivery is safe). Stuck backlog recovers via resends, not automatically. Dockerfile now installs `ca-certificates`; `.dockerignore` excludes the frozen config cache so dashboard env always rules.
+
+**Files changed (one commit, one spec):**
+- `app/Models/User.php`, `database/migrations/2026_10_06_000002_*`, `routes/web.php` (+1 resend route)
+- `app/Http/Controllers/PromotionalWebsite/InquiryController.php`, `app/Mail/InquiryCredentialsMail.php`, `resources/views/emails/inquiry_credentials.blade.php`, `resources/views/PromotionalWebsite/inquiry.blade.php`
+- `app/Services/FamilyEmailService.php` (new), `app/Mail/AdmissionCredentialsMail.php`, `app/Http/Controllers/Portal/RegistrarAdmissionController.php`, `app/Http/Requests/Registrar/ResendAdmissionEmailRequest.php` (new)
+- `resources/views/portal/registrar/admissions-index.blade.php`, `partials/admissions-results.blade.php`, `partials/admissions-show-results.blade.php`
+- this spec file.
