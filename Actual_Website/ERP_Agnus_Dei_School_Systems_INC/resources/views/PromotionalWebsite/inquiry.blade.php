@@ -192,4 +192,64 @@
 </script>
 @endif
 
+<script>
+// Safe Actions coverage sweep (spec: safe-actions-coverage-sweep.md): local
+// press-lock + per-submit marker for the public inquiry form. Mirrors the
+// portal's global guard, which never loads on this shell. Honeypot,
+// browser validation, and the success modal flow are untouched: invalid
+// forms never fire submit (no lock), navigation releases naturally.
+(function () {
+    var form = document.querySelector('form[action="/inquiry"]');
+    if (!form || form.dataset.safeGuarded === '1') return;
+    form.dataset.safeGuarded = '1';
+    var RELEASE_MS = 30000;
+    function release(btn) {
+        try {
+            btn.disabled = false;
+            btn.removeAttribute('aria-disabled');
+            btn.classList.remove('is-busy');
+        } catch (e) { /* noop */ }
+    }
+    form.addEventListener('submit', function (event) {
+        try {
+            if (event.defaultPrevented) return;
+            var submitter = event.submitter || form.querySelector('button[type="submit"], input[type="submit"]');
+            if (!submitter || submitter.disabled) return;
+            submitter.disabled = true;
+            submitter.setAttribute('aria-disabled', 'true');
+            submitter.classList.add('is-busy');
+            try {
+                var keyInput = form.querySelector('input[name="_idempotency_key"]');
+                if (!keyInput) {
+                    keyInput = document.createElement('input');
+                    keyInput.type = 'hidden';
+                    keyInput.name = '_idempotency_key';
+                    form.appendChild(keyInput);
+                }
+                keyInput.value = (window.crypto && typeof window.crypto.randomUUID === 'function')
+                    ? window.crypto.randomUUID()
+                    : 'key-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+            } catch (e) { /* noop: minting must never block a submit */ }
+            window.setTimeout(function () { release(submitter); }, RELEASE_MS);
+        } catch (e) {
+            try {
+                if (event.submitter) release(event.submitter);
+            } catch (ignored) { /* noop */ }
+        }
+    });
+    window.addEventListener('pageshow', function () {
+        try {
+            form.querySelectorAll('.is-busy').forEach(function (el) {
+                el.classList.remove('is-busy');
+                el.removeAttribute('aria-disabled');
+                if ('disabled' in el) el.disabled = false;
+            });
+        } catch (e) { /* noop */ }
+    });
+})();
+</script>
+<style>
+form[action="/inquiry"] button.is-busy { opacity: .7; cursor: wait; }
+</style>
+
 @endsection
