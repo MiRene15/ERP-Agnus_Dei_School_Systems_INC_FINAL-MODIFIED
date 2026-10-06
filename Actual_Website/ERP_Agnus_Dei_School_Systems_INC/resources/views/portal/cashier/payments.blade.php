@@ -47,14 +47,14 @@
         <button type="button" @click="searchNow()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button>
     </div>
 
-    <div x-show="loading && students.length > 0" x-cloak x-transition
-         class="mt-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+    <div x-show="(loading || retryAfter > 0) && students.length > 0" x-cloak x-transition
+         class="mt-4 px-3 py-2 rounded-lg bg-amber-50 dark:bg-[rgba(245,158,11,0.12)] border border-amber-200 dark:border-[rgba(245,158,11,0.3)] text-xs text-amber-800 dark:text-[#FCD34D]">
         Showing results for &quot;<span class="font-semibold" x-text="displayedQuery"></span>&quot; &mdash; searching for &quot;<span class="font-semibold" x-text="searchQuery"></span>&quot;&hellip;
     </div>
 
     <!-- Search Results (kept while typing/loading; never blanked) -->
     <div x-show="searchQuery.trim().length >= 2" class="mt-4" x-cloak x-transition
-         :class="loading && students.length > 0 ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'">
+         :class="(loading || retryAfter > 0) && students.length > 0 ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'">
         <template x-if="students.length > 0">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">

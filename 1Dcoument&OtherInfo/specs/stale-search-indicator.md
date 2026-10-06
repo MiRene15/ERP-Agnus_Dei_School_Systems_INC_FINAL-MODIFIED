@@ -1,6 +1,6 @@
 # Spec: Stale Search Indicator
 
-- **Status**: Approved
+- **Status**: Implemented (2026-10-06 — cashier slice; all 8 §8 checks pass, see §12)
 - **Created**: 2026-10-05
 - **Approved by**: user on 2026-10-05
 - **Origin**: found by the user while testing `cashier-search-speed.md`, 2026-10-05
@@ -123,3 +123,9 @@ None.
 ## 11. Approval
 
 > Approved by user on 2026-10-05.
+
+## 12. Implementation Note (2026-10-06)
+
+**Delivered (cashier slice):** the banner + dimming already existed from the shared calm-search work; this slice extended both conditions to cover the rate-limit wait (`(loading || retryAfter > 0) && students.length > 0`) and themed the banner for dark mode. Display-only — no change to requests, debounce, rate limit, results, or controller. All 8 §8 checks pass (429-wait case by shared-condition + code path). Librarian screens per §7 remain a follow-up, untouched.
+
+**Not committed by the agent** — the user runs git themselves (`AGENTS.md` §1.4).
