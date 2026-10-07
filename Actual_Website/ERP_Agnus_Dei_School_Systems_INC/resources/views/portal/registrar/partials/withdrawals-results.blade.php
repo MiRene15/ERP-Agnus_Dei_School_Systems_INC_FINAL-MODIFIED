@@ -37,8 +37,20 @@
                     @endif
                 </td>
                 <td class="py-3 px-2">
-                    @if($w->status === 'Pending')
-                    <div class="flex gap-1">
+                    <div class="flex gap-1 items-center flex-wrap">
+                        <button type="button" onclick="openWithdrawalModal(this)"
+                            data-student="{{ $w->student->first_name }} {{ $w->student->last_name }}"
+                            data-number="{{ $w->student->student_number ?? 'N/A' }}"
+                            data-section="{{ $w->enrollment->section->grade_level ?? '' }} {{ $w->enrollment->section->section_name ?? 'N/A' }}"
+                            data-reason="{{ $w->reason }}"
+                            data-status="{{ $w->status }}"
+                            data-refund="₱{{ number_format($w->refund_amount ?? $w->possible_refund, 2) }}"
+                            data-refund-date="{{ $w->refund_processed_at?->format('M d, Y') ?? '—' }}"
+                            data-decided-by="{{ $w->processor?->name ?? '—' }}"
+                            data-remarks="{{ $w->remarks ?? '—' }}"
+                            data-filed="{{ $w->created_at?->format('M d, Y h:i A') ?? '—' }}"
+                            class="px-2 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded">View</button>
+                        @if($w->status === 'Pending')
                         <form method="POST" action="{{ route('registrar.withdrawals.approve', $w) }}" class="inline">
                             @csrf
                             <button type="submit" class="px-2 py-1 text-xs font-medium text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 rounded">Approve</button>
@@ -48,10 +60,10 @@
                             <input type="text" name="remarks" placeholder="Optional remarks..." class="w-32 px-2 py-1 text-xs border border-gray-200 rounded">
                             <button type="submit" class="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded">Reject</button>
                         </form>
+                        @else
+                            <span class="text-xs text-gray-400">{{ $w->status }} by Head Registrar — {{ $w->processor?->name ?? 'System' }}</span>
+                        @endif
                     </div>
-                    @else
-                        <span class="text-xs text-gray-400">{{ $w->status }} by {{ $w->processor?->name ?? 'System' }}</span>
-                    @endif
                 </td>
             </tr>
             @empty

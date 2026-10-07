@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Registrar\BatchGradeUnlockRequest;
 use App\Models\Classes;
 use App\Models\Grade;
 use App\Models\GradeUnlockRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Grade correction unlocks (role reform Phase 2c).
@@ -86,8 +88,26 @@ class GradeUnlockController extends Controller
     // ─── Review (Principal / Registrar) ──────────────────────────
     public function reviewIndex()
     {
+        $isAjax = request()->boolean('ajax');
+        request()->query->remove('ajax');
+
+        $schoolYear = request('school_year', active_school_year());
+
         $pending = GradeUnlockRequest::with(['schoolClass.subject', 'schoolClass.teacher', 'requester'])
             ->where('status', GradeUnlockRequest::STATUS_PENDING)
+            ->when(request('search'), function ($q) {
+                $search = request('search');
+                $q->whereHas('schoolClass.subject', function ($sq) use ($search) {
+                    $sq->where('name', 'ilike', "%{$search}%");
+                })->orWhereHas('requester', function ($rq) use ($search) {
+                    $rq->where('name', 'ilike', "%{$search}%");
+                })->orWhere('reason', 'ilike', "%{$search}%");
+            })
+            ->when(request('school_year') && request('school_year') !== 'All', function ($q) {
+                $q->whereHas('schoolClass', function ($sq) {
+                    $sq->where('school_year', request('school_year'));
+                });
+            })
             ->latest()
             ->get();
 
@@ -97,7 +117,19 @@ class GradeUnlockController extends Controller
             ->take(50)
             ->get();
 
-        return view('portal.registrar.grade-unlocks.index', compact('pending', 'history'));
+        $schoolYears = \App\Models\Enrollment::distinct()
+            ->where('status', 'Active')
+            ->pluck('school_year')
+            ->sort()
+            ->values();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.registrar.partials.grade-unlocks-results', compact('pending'))->render(),
+            ]);
+        }
+
+        return view('portal.registrar.grade-unlocks.index', compact('pending', 'history', 'schoolYears'));
     }
 
     public function approve(GradeUnlockRequest $unlockRequest)
@@ -145,5 +177,91 @@ class GradeUnlockController extends Controller
         log_activity($unlockRequest, 'Grade Unlock Rejected', auth()->user()->name . ' rejected the grade unlock request for ' . $unlockRequest->grading_period . '.');
 
         return back()->with('success', 'Unlock request rejected — grades stay submitted.');
+    }
+
+    public function batchApprove(BatchGradeUnlockRequest $request)
+    {
+        $ids = array_map('intval', $request->validated()['selected']);
+
+        $result = DB::transaction(function () use ($ids) {
+            $approved = 0;
+            $skipped = 0;
+
+            foreach ($ids as $id) {
+                $unlockRequest = GradeUnlockRequest::find($id);
+
+                if ($unlockRequest === null || $unlockRequest->status !== GradeUnlockRequest::STATUS_PENDING) {
+                    $skipped++;
+                    continue;
+                }
+
+                if ($unlockRequest->schoolClass && school_year_locked($unlockRequest->schoolClass->school_year)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $reopened = Grade::where('class_id', $unlockRequest->class_id)
+                    ->where('grading_period', $unlockRequest->grading_period)
+                    ->where('status', 'Submitted')
+                    ->update(['status' => 'Pending']);
+
+                $unlockRequest->update([
+                    'status' => GradeUnlockRequest::STATUS_APPROVED,
+                    'reviewed_by' => auth()->id(),
+                    'reviewed_at' => now(),
+                ]);
+
+                $class = $unlockRequest->schoolClass;
+                $label = $class ? "{$class->subject->name} ({$class->grade_level} {$class->section})" : "class #{$unlockRequest->class_id}";
+                log_activity($unlockRequest, 'Grade Unlock Approved', auth()->user()->name . " batch-reopened {$unlockRequest->grading_period} grades for {$label} — {$reopened} grade(s) returned to Pending for correction.");
+                $approved++;
+            }
+
+            return ['approved' => $approved, 'skipped' => $skipped];
+        });
+
+        $message = "Batch unlocked: {$result['approved']} request(s) reopened.";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} skipped (already decided or locked year).";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    public function batchReject(BatchGradeUnlockRequest $request)
+    {
+        $ids = array_map('intval', $request->validated()['selected']);
+
+        $result = DB::transaction(function () use ($ids) {
+            $rejected = 0;
+            $skipped = 0;
+
+            foreach ($ids as $id) {
+                $unlockRequest = GradeUnlockRequest::find($id);
+
+                if ($unlockRequest === null || $unlockRequest->status !== GradeUnlockRequest::STATUS_PENDING) {
+                    $skipped++;
+                    continue;
+                }
+
+                $unlockRequest->update([
+                    'status' => GradeUnlockRequest::STATUS_REJECTED,
+                    'reviewed_by' => auth()->id(),
+                    'reviewed_at' => now(),
+                ]);
+
+                log_activity($unlockRequest, 'Grade Unlock Rejected', auth()->user()->name . ' batch-rejected the grade unlock request for ' . $unlockRequest->grading_period . '.');
+                $rejected++;
+            }
+
+            return ['rejected' => $rejected, 'skipped' => $skipped];
+        });
+
+        $message = "Batch rejected: {$result['rejected']} request(s) — grades stay submitted.";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} skipped (already decided).";
+        }
+
+        return back()->with('success', $message);
     }
 }

@@ -53,12 +53,16 @@
 @endif
 
 <div x-data="ajaxTable('{{ request()->routeIs('principal.*') ? route('principal.subjects.index') : route('registrar.subjects.index') }}', { search: '{{ request('search') }}', grade_level: '{{ request('grade_level') }}' })">
-    <div class="mb-4 flex gap-2 flex-wrap items-center">
+    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Search Subjects</h3>
+        </div>
+    <div class="flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <input type="text" x-model="filters.search" @input="scheduleReload()"
                    placeholder="Search by name or code..."
-                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-            <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="All">All Grade Levels</option>
                 @foreach($gradeLevels as $gl)
                     <option value="{{ $gl }}">{{ $gl }}</option>
@@ -68,31 +72,7 @@
             <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
         </form>
     </div>
-
-    @if(empty($readOnly))
-    <div class="mb-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-        <details>
-            <summary class="cursor-pointer text-sm font-semibold text-gray-700">Import from CSV (staged — Principal approves before anything goes live)</summary>
-            <div class="mt-3 flex flex-col gap-3">
-                <p class="text-xs text-gray-500">CSV: <code>subject_code,name,grade_level,category</code> — category = Core/Contextualized/Specialized/TVL. Duplicates skipped.</p>
-                <div class="flex gap-2 items-center flex-wrap">
-                    <a href="{{ route('registrar.subjects.template') }}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Download template</a>
-                </div>
-                <form method="POST" action="{{ route('registrar.subjects.import') }}" enctype="multipart/form-data" class="flex gap-2 items-center flex-wrap">
-                    @csrf
-                    <input type="file" name="file" accept=".csv,.txt" required class="text-sm border border-gray-300 rounded-lg px-3 py-1.5">
-                    <button type="submit" class="px-4 py-1.5 rounded-lg text-sm font-semibold text-white" style="background: var(--navy);">Import CSV</button>
-                </form>
-                @if(session('import_errors') || session('import_skipped'))
-                    <div class="text-xs space-y-1">
-                        @if(session('import_errors'))<p class="font-semibold text-red-600">Errors:</p><ul class="list-disc ml-4 text-red-600">@foreach(session('import_errors') as $e)<li>{{ $e }}</li>@endforeach</ul>@endif
-                        @if(session('import_skipped'))<p class="font-semibold text-amber-600 mt-2">Skipped:</p><ul class="list-disc ml-4 text-amber-600">@foreach(session('import_skipped') as $s)<li>{{ $s }}</li>@endforeach</ul>@endif
-                    </div>
-                @endif
-            </div>
-        </details>
     </div>
-    @endif
 
     <!-- Skeleton loading -->
     <div x-show="loading && !html" class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 space-y-3">
@@ -110,6 +90,7 @@
 
     <!-- Results injected via AJAX -->
     <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
-    <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+    <div x-show="(loading || isRateLimited) && html" x-cloak class="px-3 py-2 rounded-lg bg-amber-50 dark:bg-[rgba(245,158,11,0.12)] border border-amber-200 dark:border-[rgba(245,158,11,0.3)] text-xs text-amber-800 dark:text-[#FCD34D]">Showing results for &quot;<span class="font-semibold" x-text="displayedSearch"></span>&quot; &mdash; searching for &quot;<span class="font-semibold" x-text="filters.search"></span>&quot;&hellip;</div>
+    <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in" :class="((loading || isRateLimited) && html) ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'"></div>
 </div>
 @endsection

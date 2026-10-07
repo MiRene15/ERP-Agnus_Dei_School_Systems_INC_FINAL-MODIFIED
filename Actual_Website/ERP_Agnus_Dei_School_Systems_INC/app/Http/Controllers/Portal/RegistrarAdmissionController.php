@@ -20,8 +20,9 @@ class RegistrarAdmissionController extends Controller
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
+        $schoolYear = $request->input('school_year', active_school_year());
         $query = Admission::with('student.user')
-            ->where('school_year', active_school_year());
+            ->where('school_year', $schoolYear);
 
         if (request('search')) {
             $search = request('search');
@@ -49,13 +50,15 @@ class RegistrarAdmissionController extends Controller
         $pendingCount = $admissions->where('status', 'Pending')->count();
         $approvedCount = $admissions->where('status', 'Approved By Registrar')->count();
 
+        $schoolYears = Admission::distinct()->orderBy('school_year', 'desc')->pluck('school_year');
+
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.registrar.partials.admissions-results', compact('admissions'))->render(),
             ]);
         }
 
-        return view('portal.registrar.admissions-index', compact('admissions', 'pendingCount', 'approvedCount'));
+        return view('portal.registrar.admissions-index', compact('admissions', 'pendingCount', 'approvedCount', 'schoolYears'));
     }
 
     public function show(Request $request, Admission $admission)

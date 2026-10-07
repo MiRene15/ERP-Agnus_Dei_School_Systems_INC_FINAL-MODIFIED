@@ -139,7 +139,11 @@
         </div>
 
         <div x-data="ajaxTable('{{ route('registrar.withdrawals.index') }}', { search: '{{ request('search') }}', status: '{{ request('status') }}' })">
-            <div class="mb-4 flex gap-2 flex-wrap items-center">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900">Search Withdrawals</h3>
+                </div>
+            <div class="flex gap-2 flex-wrap items-center">
                 <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
                     <input type="text" x-model="filters.search" @input="scheduleReload()"
                            placeholder="Search by student name or section..."
@@ -153,6 +157,7 @@
                     <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
                     <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
                 </form>
+            </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -172,7 +177,8 @@
 
                 <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
 
-                <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in"></div>
+                <div x-show="(loading || isRateLimited) && html" x-cloak class="m-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">Showing results for &quot;<span class="font-semibold" x-text="displayedSearch"></span>&quot; &mdash; searching for &quot;<span class="font-semibold" x-text="filters.search"></span>&quot;&hellip;</div>
+                <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in" :class="((loading || isRateLimited) && html) ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'"></div>
             </div>
         </div>
     </div>
@@ -188,7 +194,7 @@
             <p class="text-sm text-gray-500 dark:text-[#8A90B0] py-4">No active enrollments found.</p>
         </div>
         @else
-        <form method="POST" action="{{ route('registrar.promotion.propose') }}" onsubmit="return confirm('Send the selected proposals to the Principal for approval?')">
+        <form method="POST" action="{{ route('registrar.promotion.propose') }}">
             @csrf
             <div class="mb-5 flex items-center gap-3 flex-wrap bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4">
                 <label class="text-sm font-medium text-gray-700 dark:text-[#C1C4DC] whitespace-nowrap">New School Year:</label>
@@ -199,7 +205,8 @@
                     @endforeach
                     <option value="{{ date('Y') . '-' . (date('Y') + 1) }}">{{ date('Y') . '-' . (date('Y') + 1) }} (New)</option>
                 </select>
-                <button type="submit" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Send Proposals to Principal</button>
+                <button type="submit" onclick="return confirm('Send the selected proposals to the Principal for approval?')" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Send Proposals to Principal</button>
+                <button type="submit" formaction="{{ route('registrar.promotion.batch-qualified') }}" onclick="return confirm('Propose promotion for all qualified students? Unqualified students and open proposals will be skipped.')" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Batch Qualified — Level Up Only</button>
             </div>
 
             @foreach($enrollments as $gradeLevel => $gradeEnrollments)
@@ -294,4 +301,6 @@
         @endif
     </div>
 </div>
+
+@include('portal.registrar.partials.withdrawal-modal')
 @endsection

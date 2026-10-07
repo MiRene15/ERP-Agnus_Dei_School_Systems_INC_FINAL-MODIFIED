@@ -143,12 +143,12 @@ Route::middleware('auth')->group(function () {
     // Registrar owns subjects + sections together (moved from Admin); Principal reviews read-only.
     Route::middleware(['role:2'])->group(function() {
         Route::resource('registrar/sections', \App\Http\Controllers\Admin\SectionController::class)->except(['show'])->names('registrar.sections');
-        Route::get('registrar/subjects/template', [\App\Http\Controllers\Admin\SubjectController::class, 'template'])->name('registrar.subjects.template');
-        Route::post('registrar/subjects/import', [\App\Http\Controllers\Admin\SubjectController::class, 'import'])->name('registrar.subjects.import');
+        Route::post('registrar/sections/bulk-assign', [\App\Http\Controllers\Admin\SectionController::class, 'bulkAssign'])->name('registrar.sections.bulk-assign');
         Route::resource('registrar/subjects', \App\Http\Controllers\Admin\SubjectController::class)->except(['show'])->names('registrar.subjects');
         // Promotion — Registrar prepares proposals (Principal approves, Directress signs off + executes)
         Route::get('/registrar/promotion', [PromotionWorkflowController::class, 'registrarIndex'])->name('registrar.promotion.index');
         Route::post('/registrar/promotion/propose', [PromotionWorkflowController::class, 'registrarPropose'])->name('registrar.promotion.propose');
+        Route::post('/registrar/promotion/batch-qualified', [PromotionWorkflowController::class, 'registrarBatchQualified'])->name('registrar.promotion.batch-qualified');
         // Fee assignment — bulk from enrollment (replaces one-by-one assignment)
         Route::get('/registrar/fee-assignment', [FeeAssignmentController::class, 'index'])->name('registrar.fee-assignment.index');
         Route::post('/registrar/fee-assignment/ledgers', [FeeAssignmentController::class, 'assignLedgers'])->name('registrar.fee-assignment.ledgers');
@@ -168,6 +168,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/registrar/grade-unlocks', [GradeUnlockController::class, 'reviewIndex'])->name('registrar.grade-unlocks.index');
         Route::post('/registrar/grade-unlocks/{unlockRequest}/approve', [GradeUnlockController::class, 'approve'])->name('registrar.grade-unlocks.approve');
         Route::post('/registrar/grade-unlocks/{unlockRequest}/reject', [GradeUnlockController::class, 'reject'])->name('registrar.grade-unlocks.reject');
+        Route::post('/registrar/grade-unlocks/batch-approve', [GradeUnlockController::class, 'batchApprove'])->name('registrar.grade-unlocks.batch-approve');
+        Route::post('/registrar/grade-unlocks/batch-reject', [GradeUnlockController::class, 'batchReject'])->name('registrar.grade-unlocks.batch-reject');
     });
 
     Route::middleware(['role:2'])->group(function() {

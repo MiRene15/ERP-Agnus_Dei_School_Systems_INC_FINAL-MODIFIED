@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Registrar\BulkSectionAssignRequest;
+use App\Models\Admission;
+use App\Models\Enrollment;
 use App\Models\Section;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SectionController extends Controller
 {
@@ -40,7 +44,19 @@ class SectionController extends Controller
             ]);
         }
 
-        return view('portal.registrar.sections.index', compact('sections', 'gradeLevels'));
+        $assignYear = active_school_year();
+        $assignEnrollments = Enrollment::with(['student', 'section'])
+            ->where('status', 'Active')
+            ->where('school_year', $assignYear)
+            ->get()
+            ->sortBy(fn($e) => ($e->student?->last_name ?? '') . ', ' . ($e->student?->first_name ?? ''))
+            ->values();
+        $assignSections = Section::where('is_active', true)
+            ->orderBy('grade_level')
+            ->orderBy('section_name')
+            ->get();
+
+        return view('portal.registrar.sections.index', compact('sections', 'gradeLevels', 'assignEnrollments', 'assignSections', 'assignYear'));
     }
 
     public function create()
@@ -145,5 +161,68 @@ class SectionController extends Controller
         $section->delete();
         log_activity($section, 'Deleted', "Deleted section: {$section->section_name} ({$section->grade_level})");
         return back()->with('success', 'Section deleted.');
+    }
+
+    public function bulkAssign(BulkSectionAssignRequest $request)
+    {
+        $data = $request->validated();
+        $section = Section::findOrFail($data['section_id']);
+
+        if (!$section->is_active) {
+            return back()->with('error', 'Cannot assign — the target section is inactive.');
+        }
+
+        $result = DB::transaction(function () use ($data, $section) {
+            $assigned = 0;
+            $reassigned = 0;
+            $skipped = 0;
+
+            foreach (array_map('intval', $data['enrollment_ids']) as $enrollmentId) {
+                $enrollment = Enrollment::with(['student', 'section'])->find($enrollmentId);
+
+                if ($enrollment === null || $enrollment->status !== 'Active') {
+                    $skipped++;
+                    continue;
+                }
+
+                if (school_year_locked($enrollment->school_year)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $gradeLevel = $enrollment->section?->grade_level;
+                if ($gradeLevel === null) {
+                    $gradeLevel = Admission::where('student_id', $enrollment->student_id)
+                        ->where('school_year', $enrollment->school_year)
+                        ->orderByDesc('id')
+                        ->value('grade_level');
+                }
+                if ($gradeLevel !== null && $gradeLevel !== $section->grade_level) {
+                    $skipped++;
+                    continue;
+                }
+
+                $wasAssigned = $enrollment->section_id !== null;
+                $enrollment->update(['section_id' => $section->id]);
+
+                if ($wasAssigned) {
+                    $reassigned++;
+                } else {
+                    $assigned++;
+                }
+
+                $name = $enrollment->student ? $enrollment->student->first_name . ' ' . $enrollment->student->last_name : "student #{$enrollment->student_id}";
+                log_activity($enrollment, 'Section Assigned', auth()->user()->name . " (Registrar) assigned {$name} to {$section->grade_level} — {$section->section_name}.");
+            }
+
+            return ['assigned' => $assigned, 'reassigned' => $reassigned, 'skipped' => $skipped];
+        });
+
+        $message = "Bulk assign done: {$result['assigned']} assigned, {$result['reassigned']} reassigned to {$section->grade_level} — {$section->section_name}.";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} skipped (inactive, locked year, or grade mismatch).";
+        }
+
+        return back()->with('success', $message);
     }
 }

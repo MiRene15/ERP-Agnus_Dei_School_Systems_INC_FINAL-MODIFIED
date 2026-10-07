@@ -111,6 +111,67 @@ class PromotionWorkflowController extends Controller
         return redirect()->route('registrar.promotion.index')->with('success', $message);
     }
 
+    public function registrarBatchQualified(Request $request)
+    {
+        $data = $request->validate([
+            'school_year' => 'required|string|max:20',
+        ]);
+
+        if (school_year_locked($data['school_year'])) {
+            return redirect()->route('registrar.promotion.index')->with('error', 'Cannot propose — school year ' . $data['school_year'] . ' is locked.');
+        }
+
+        $passing = (int) \App\Models\Setting::getValue('passing_grade', '75');
+
+        $created = 0;
+        $skipped = 0;
+
+        foreach ($this->activeEnrollments()->flatten() as $enrollment) {
+            $gradeLevel = $enrollment->section?->grade_level ?? 'Unknown';
+            $grades = $enrollment->grades ?? collect();
+            $finals = $grades->groupBy('class_id')->map(fn($g) => round($g->avg('final_grade'), 2));
+            $avg = $finals->isNotEmpty() ? round($finals->avg(), 2) : null;
+            $failCount = $finals->filter(fn($f) => $f < $passing)->count();
+            if ($avg === null || $avg < $passing || $failCount > 0) {
+                $skipped++;
+                continue;
+            }
+
+            $open = PromotionProposal::where('enrollment_id', $enrollment->id)
+                ->whereNotIn('status', [PromotionProposal::STATUS_REJECTED, PromotionProposal::STATUS_EXECUTED])
+                ->exists();
+            if ($open) {
+                $skipped++;
+                continue;
+            }
+
+            $action = $gradeLevel === 'Grade 12' ? 'graduate' : 'promote';
+
+            $proposal = PromotionProposal::create([
+                'enrollment_id' => $enrollment->id,
+                'action' => $action,
+                'school_year' => $data['school_year'],
+                'reason' => null,
+                'status' => PromotionProposal::STATUS_PROPOSED,
+                'proposed_by' => auth()->id(),
+            ]);
+
+            log_activity($proposal, 'Promotion Proposed', auth()->user()->name . " (Registrar) batch-proposed {$action} for {$enrollment->student->first_name} {$enrollment->student->last_name}.");
+            $created++;
+        }
+
+        if ($created === 0) {
+            return redirect()->route('registrar.promotion.index')->with('error', 'No qualified students found for this school year — nothing was proposed.');
+        }
+
+        $message = "Batch proposed: {$created} qualified student(s) sent to the Principal for approval.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} skipped (unqualified or already proposed).";
+        }
+
+        return redirect()->route('registrar.promotion.index')->with('success', $message);
+    }
+
     // ─── Principal: approve ──────────────────────────────────────
     public function principalIndex()
     {

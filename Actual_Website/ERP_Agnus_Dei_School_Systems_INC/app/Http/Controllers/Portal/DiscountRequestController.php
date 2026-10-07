@@ -17,7 +17,27 @@ class DiscountRequestController extends Controller
     // ─── Request (Cashier / Registrar) ───────────────────────────
     public function index()
     {
+        $isAjax = request()->boolean('ajax');
+        request()->query->remove('ajax');
+
+        $schoolYear = request('school_year', active_school_year());
+
         $requests = DiscountRequest::with(['ledger.student.user', 'ledger.student.enrollments.section', 'requester', 'reviewer'])
+            ->when(request('search'), function ($q) {
+                $search = request('search');
+                $q->whereHas('ledger.student', function ($sq) use ($search) {
+                    $sq->where('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%");
+                });
+            })
+            ->when(request('status') && request('status') !== 'All', function ($q) {
+                $q->where('status', request('status'));
+            })
+            ->when(request('school_year') && request('school_year') !== 'All', function ($q) {
+                $q->whereHas('ledger.student.enrollments', function ($sq) {
+                    $sq->where('school_year', request('school_year'));
+                });
+            })
             ->latest()
             ->paginate(20);
 
@@ -28,10 +48,26 @@ class DiscountRequestController extends Controller
             ->orderBy('id')
             ->get();
 
+        $schoolYears = \App\Models\Enrollment::distinct()
+            ->where('status', 'Active')
+            ->pluck('school_year')
+            ->sort()
+            ->values();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.discount-requests.partials.requests-results', [
+                    'requests' => $requests,
+                    'discountTypes' => DiscountRequest::TYPES,
+                ])->render(),
+            ]);
+        }
+
         return view('portal.discount-requests.index', [
             'requests' => $requests,
             'ledgers' => $ledgers,
             'discountTypes' => DiscountRequest::TYPES,
+            'schoolYears' => $schoolYears,
         ]);
     }
 

@@ -47,7 +47,8 @@ class ReportCardController extends Controller
 
         $enrollments = $query->get()
             ->sortBy(fn($e) => $e->student?->last_name . ', ' . $e->student?->first_name)
-            ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown');
+            ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown')
+            ->sortBy(fn($_, $k) => \App\Services\PromotionService::gradeRank()[$k] ?? 99);
 
         $sections = Section::where('is_active', true)
             ->orderBy('grade_level')

@@ -1,21 +1,21 @@
 <table class="w-full text-sm">
     <thead>
         <tr class="border-b border-gray-100 dark:border-[#2A2F58] bg-gray-50 dark:bg-[#161A33]/50">
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">App No.</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">Applicant</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">Type</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">Grade Level</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">Elective</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">School Year</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">Submitted</th>
-            <th class="text-left px-4 py-3 font-semibold text-gray-700">Status</th>
-            <th class="text-right px-4 py-3 font-semibold text-gray-700">Action</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Admission No.</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Applicant</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Type</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Grade Level</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Elective</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">School Year</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Submitted</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600">Action</th>
         </tr>
     </thead>
     <tbody class="divide-y divide-gray-50">
         @forelse($admissions as $admission)
         <tr class="hover:bg-gray-50 dark:hover:bg-[#161A33]/50 transition">
-            <td class="px-4 py-3 font-mono text-xs">{{ $admission->application_number }}</td>
+            <td class="px-4 py-3 text-gray-700 dark:text-[#C1C4DC]">{{ $admission->application_number }}</td>
             <td class="px-4 py-3 font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $admission->student->first_name }} {{ $admission->student->last_name }}
                 @if($admission->student?->user?->hasVerifiedEmail())
                     <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Verified</span>

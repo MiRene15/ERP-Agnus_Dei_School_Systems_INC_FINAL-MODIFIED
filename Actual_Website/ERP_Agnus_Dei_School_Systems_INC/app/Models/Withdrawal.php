@@ -15,6 +15,17 @@ class Withdrawal extends Model
         'refund_processed_at' => 'datetime',
     ];
 
+    /**
+     * Estimate of the refund due if this withdrawal is approved.
+     * Mirrors the flat-25%-of-total-paid policy in WithdrawalController@approve.
+     */
+    public function getPossibleRefundAttribute(): float
+    {
+        $totalPaid = $this->student?->ledger?->total_paid ?? 0;
+
+        return round((float) $totalPaid * 0.25, 2);
+    }
+
     public function enrollment()
     {
         return $this->belongsTo(Enrollment::class);

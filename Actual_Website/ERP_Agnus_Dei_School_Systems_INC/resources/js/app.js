@@ -84,6 +84,7 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
     isRateLimited: false,
     retryAfter: 0,
     lastKey: null,
+    displayedSearch: (initialFilters && initialFilters.search) || '',
     _controller: null,
     _seq: 0,
     _countdown: null,
@@ -184,6 +185,7 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
             if (signal.aborted || mySeq !== this._seq) return;
             if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
             this.html = data.html || '';
+            this.displayedSearch = this.filters.search || '';
             this.error = '';
             this.isRateLimited = false;
             this.retryAfter = 0;

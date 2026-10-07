@@ -84,37 +84,50 @@ function setDiscountPreset(pct) {
 }
 </script>
 
-<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
-    <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">All Requests</h3>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="border-b border-gray-200 dark:border-[#2A2F58]">
-                    <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Student</th>
-                    <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Type / Amount</th>
-                    <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Proof</th>
-                    <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Requested by</th>
-                    <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($requests as $req)
-                <tr class="border-b border-gray-50 dark:border-[#2A2F58]">
-                    <td class="py-2 px-2 font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $req->ledger->student->first_name }} {{ $req->ledger->student->last_name }}</td>
-                    <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $discountTypes[$req->discount_type] ?? $req->discount_type }} — ₱{{ number_format($req->discount_amount, 2) }}</td>
-                    <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC] text-xs max-w-xs">{{ $req->proof_details }}</td>
-                    <td class="py-2 px-2 text-xs text-gray-500">{{ $req->requester?->name ?? '—' }}</td>
-                    <td class="py-2 px-2">
-                        @php $badge = ['pending' => 'bg-amber-100 text-amber-700', 'approved' => 'bg-blue-100 text-blue-700', 'rejected' => 'bg-red-100 text-red-700', 'applied' => 'bg-green-100 text-green-700'][$req->status] ?? 'bg-gray-100 text-gray-600'; @endphp
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">{{ ucfirst($req->status) }}</span>
-                    </td>
-                </tr>
-                @empty
-                <tr><td colspan="5" class="py-6 text-center text-gray-500 text-sm">No requests yet.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+<div x-data="ajaxTable('{{ route('discount-requests.index') }}', { search: '{{ request('search') }}', status: '{{ request('status') }}', school_year: '{{ request('school_year', active_school_year()) }}' })">
+    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Search Discount Requests</h3>
+        </div>
+    <div class="flex gap-2 flex-wrap items-center">
+        <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
+            <select name="school_year" x-model="filters.school_year" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                @foreach($schoolYears as $sy)
+                    <option value="{{ $sy }}" {{ $sy === (request('school_year', active_school_year())) ? 'selected' : '' }}>{{ $sy }}</option>
+                @endforeach
+            </select>
+            <input type="text" x-model="filters.search" @input="scheduleReload()"
+                   placeholder="Search by student name or type..."
+                   class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <select name="status" x-model="filters.status" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="All">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Applied">Applied</option>
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
+            <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
+        </form>
     </div>
-    <div class="mt-4">{{ $requests->links() }}</div>
+    </div>
+
+    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
+        <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">All Requests</h3>
+        <div x-show="loading && !html" class="space-y-3">
+            <template x-for="i in 3" :key="i">
+                <div class="skelly sk-card">
+                    <div class="grid grid-cols-5 gap-4 px-2">
+                        <div class="skelly sk-line-md col-span-2"></div>
+                        <div class="skelly sk-line-md"></div>
+                        <div class="skelly sk-line-md"></div>
+                        <div class="skelly sk-line-sm"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <div x-show="(loading || isRateLimited) && html" x-cloak class="mb-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-[rgba(245,158,11,0.12)] border border-amber-200 dark:border-[rgba(245,158,11,0.3)] text-xs text-amber-800 dark:text-[#FCD34D]">Showing results for &quot;<span class="font-semibold" x-text="displayedSearch"></span>&quot; &mdash; searching for &quot;<span class="font-semibold" x-text="filters.search"></span>&quot;&hellip;</div>
+        <div x-show="html || !loading" x-cloak x-html="html" :class="((loading || isRateLimited) && html) ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'"></div>
+    </div>
 </div>
 @endsection

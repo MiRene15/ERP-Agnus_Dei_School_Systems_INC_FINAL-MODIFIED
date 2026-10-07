@@ -1,4 +1,7 @@
 @forelse($gradeLevels as $gl)
+    @if($gl === 'All')
+        @continue
+    @endif
     @php $glSections = $sections->get($gl, collect()); @endphp
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-4">
         <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-3">{{ $gl }} <span class="text-sm font-normal text-gray-500 dark:text-[#8A90B0]">({{ $glSections->count() }})</span></h3>

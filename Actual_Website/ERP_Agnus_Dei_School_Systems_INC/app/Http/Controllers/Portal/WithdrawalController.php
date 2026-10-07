@@ -71,7 +71,7 @@ class WithdrawalController extends Controller
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
-        $query = Withdrawal::with('student.user', 'enrollment.section', 'processor');
+        $query = Withdrawal::with('student.user', 'student.ledger', 'enrollment.section', 'processor');
 
         if (request('search')) {
             $search = request('search');
@@ -90,7 +90,15 @@ class WithdrawalController extends Controller
             $query->where('status', request('status'));
         }
 
+        if (request('school_year') && request('school_year') !== 'All') {
+            $query->whereHas('enrollment', function ($sq) {
+                $sq->where('school_year', request('school_year'));
+            });
+        }
+
         $withdrawals = $query->latest()->paginate(20)->withQueryString();
+
+        $schoolYears = Enrollment::distinct()->orderBy('school_year', 'desc')->pluck('school_year');
 
         if ($isAjax) {
             return response()->json([
@@ -98,7 +106,7 @@ class WithdrawalController extends Controller
             ]);
         }
 
-        return view('portal.registrar.withdrawals-index', compact('withdrawals'));
+        return view('portal.registrar.withdrawals-index', compact('withdrawals', 'schoolYears'));
     }
 
     /**
