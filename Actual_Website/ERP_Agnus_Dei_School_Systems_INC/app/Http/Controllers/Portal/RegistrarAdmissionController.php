@@ -44,13 +44,13 @@ class RegistrarAdmissionController extends Controller
 
         $admissions = $query->orderByRaw("CASE WHEN status = 'Pending' THEN 0 ELSE 1 END")
             ->latest()
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         $pendingCount = $admissions->where('status', 'Pending')->count();
         $approvedCount = $admissions->where('status', 'Approved By Registrar')->count();
 
-        $schoolYears = Admission::distinct()->orderBy('school_year', 'desc')->pluck('school_year');
+        $schoolYears = all_school_years();
 
         if ($isAjax) {
             return response()->json([

@@ -128,7 +128,7 @@ class CashierController extends Controller
                         ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
                 })
             ->with(['user', 'enrollments.section', 'ledger'])
-            ->limit(20)
+            ->limit(10)
             ->get();
 
             $gradeLevelByStudent = [];
