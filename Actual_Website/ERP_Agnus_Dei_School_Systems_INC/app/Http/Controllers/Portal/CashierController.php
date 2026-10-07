@@ -125,7 +125,8 @@ class CashierController extends Controller
                     $q->where('first_name', 'ilike', "%{$search}%")
                         ->orWhere('last_name', 'ilike', "%{$search}%")
                         ->orWhere('student_number', 'ilike', "%{$search}%")
-                        ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
+                        ->orWhere('legacy_lrn', 'ilike', "%{$search}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
                 })
             ->with(['user', 'enrollments.section', 'ledger'])
             ->limit(10)
@@ -169,7 +170,8 @@ class CashierController extends Controller
                 $q->where('first_name', 'ilike', "%{$search}%")
                     ->orWhere('last_name', 'ilike', "%{$search}%")
                     ->orWhere('student_number', 'ilike', "%{$search}%")
-                    ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
+                    ->orWhere('legacy_lrn', 'ilike', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
             })
             ->with(['enrollments.section', 'ledger'])
             ->limit(10)

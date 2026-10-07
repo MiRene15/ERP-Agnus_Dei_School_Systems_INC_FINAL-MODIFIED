@@ -2,7 +2,7 @@
 
 - **Status**: Approved
 - **Created**: 2026-10-07
-- **Approved by**: user on 2026-10-07
+- **Approved by**: user on 2026-10-07 (re-approved after full-phrase rule added)
 
 ## 1. Why We Need This
 Cashiers and registrars wait on lists that do the same fee work once per student shown. A 10-student list costs about a dozen database trips instead of a few, and it hurts worst with a line at the counter and rush at enrollment. Fixing the shape keeps every figure identical while removing the repeat.
@@ -22,7 +22,7 @@ Cashiers and registrars wait on lists that do the same fee work once per student
 ## 4. How It Should Work
 1. Staff opens cashier payments or registrar admissions and types a name (2 or more letters) or presses Enter.
 2. Page waits for the usual short pause, drops any older unfinished search, and keeps the last good list visible with a small loading hint.
-3. Page asks for the 10 matching rows with only the columns the screen shows, in the active school year only.
+3. Page asks for the 10 matching rows with only the columns the screen shows, in the active school year only. On cashier lists a row matches when the typed phrase appears in first name, last name, student number, or LRN — or in first name plus space plus last name together in that order (for example "Amber Aguilar", forgiving of capitalisation).
 4. Page gathers the grade levels of all rows shown and asks for all fee schedules for those levels in one go.
 5. Each row's total is worked out from that single gathered result; a row with no grade level or no schedule shows zero, exactly as today.
 6. New results replace the list once, in the same order as before; clearing the box returns the full list.
@@ -38,7 +38,7 @@ Cashiers and registrars wait on lists that do the same fee work once per student
 ### Must always be true
 - Same students, same order, same amounts as before on both lists.
 - Active school year only; nothing spans years differently.
-- Name search stays forgiving of capitalisation.
+- Name search stays forgiving of capitalisation. On cashier lists typing both names together in first-to-last order finds the student (reversed order is not required in this child).
 - Pause-before-search, drop-old-requests, kept-list with stale notice, wait-with-Refresh, and press protection all keep working.
 - 10 rows per page with only shown columns.
 
@@ -53,7 +53,7 @@ Cashiers and registrars wait on lists that do the same fee work once per student
 - Class with no grade level → total shows zero, no new error.
 - No fee schedule for that year and grade → zero, no new error.
 - Payment or enrollment lands mid-search → writes go through at once; the list catches up on the next pause.
-- Duplicate names, mixed case, special characters → same matches as today.
+- Duplicate names, mixed case, special characters → same matches as today. Typing both names together in first-to-last order (for example "Amber Aguilar") returns that student on cashier lists.
 - Cleared or too-short search → empty list with no totals call and no message about staleness.
 
 ## 7. Out of Scope
@@ -65,6 +65,7 @@ Cashiers and registrars wait on lists that do the same fee work once per student
 
 ## 8. Success Checks
 - [ ] Cashier searches a name → same students, same order, same amounts as before.
+- [ ] Cashier searches both names together in first-to-last order (for example "Amber Aguilar") → that student is found.
 - [ ] Registrar admissions search → same results as before.
 - [ ] Lists show 10 rows with only the columns the screen already showed.
 - [ ] Class with no grade level still shows zero with no new error.
@@ -88,4 +89,4 @@ Cashiers and registrars wait on lists that do the same fee work once per student
 - Roles/permissions involved: cashier, registrar (same lists as today); IT admin owner; no permission change.
 
 ## 11. Approval
-> Approved by user on 2026-10-07.
+> Approved by user on 2026-10-07. Re-approved 2026-10-07 after full-phrase rule added (first-to-last only).
