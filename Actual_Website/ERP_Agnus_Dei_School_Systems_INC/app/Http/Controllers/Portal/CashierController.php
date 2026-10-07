@@ -697,6 +697,7 @@ class CashierController extends Controller
             $query->whereHas('student', function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
                     ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"])
                     ->orWhereHas('user', function ($q2) use ($search) {
                         $q2->where('email', 'ilike', "%{$search}%");
                     });

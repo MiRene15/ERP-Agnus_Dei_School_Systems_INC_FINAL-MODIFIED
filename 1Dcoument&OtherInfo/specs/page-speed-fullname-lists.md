@@ -1,8 +1,9 @@
 # Spec: Page Speed Fullname Lists
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-07
 - **Approved by**: user on 2026-10-07
+- **Implemented**: 2026-10-07 — first-to-last full-phrase on six areas; all 7 success checks passed.
 
 ## 1. Why We Need This
 On several staff lists, typing both names together finds nothing, so staff must guess to type first or last name only. That slows a queue and risks opening the wrong book or the wrong child record. Extending the cashier proof to these lists keeps every result identical while letting the natural full phrase find the row.

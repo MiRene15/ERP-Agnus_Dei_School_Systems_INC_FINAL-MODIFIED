@@ -27,7 +27,8 @@ class DiscountRequestController extends Controller
                 $search = request('search');
                 $q->whereHas('ledger.student', function ($sq) use ($search) {
                     $sq->where('first_name', 'ilike', "%{$search}%")
-                        ->orWhere('last_name', 'ilike', "%{$search}%");
+                        ->orWhere('last_name', 'ilike', "%{$search}%")
+                        ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
                 });
             })
             ->when(request('status') && request('status') !== 'All', function ($q) {

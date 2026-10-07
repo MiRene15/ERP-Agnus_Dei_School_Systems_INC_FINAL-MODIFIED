@@ -40,9 +40,11 @@ class NurseController extends Controller
         $query = ClinicLog::with('student');
 
         if (request('search')) {
-            $query->whereHas('student', function ($q) {
-                $q->where('first_name', 'ilike', '%' . request('search') . '%')
-                    ->orWhere('last_name', 'ilike', '%' . request('search') . '%');
+            $search = request('search');
+            $query->whereHas('student', function ($q) use ($search) {
+                $q->where('first_name', 'ilike', "%{$search}%")
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
             });
         }
 

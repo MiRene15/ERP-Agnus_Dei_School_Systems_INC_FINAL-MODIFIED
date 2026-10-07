@@ -273,7 +273,8 @@ class LibrarianController extends Controller
                     })
                     ->orWhereHas('student', function ($sq) use ($search) {
                         $sq->where('first_name', 'ilike', "%{$search}%")
-                            ->orWhere('last_name', 'ilike', "%{$search}%");
+                            ->orWhere('last_name', 'ilike', "%{$search}%")
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
                     });
             });
         }
@@ -358,6 +359,7 @@ class LibrarianController extends Controller
             ->where(function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
                     ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"])
                     ->orWhere('student_number', 'ilike', "%{$search}%")
                     ->orWhere('legacy_lrn', 'ilike', "%{$search}%");
             })
@@ -455,7 +457,8 @@ class LibrarianController extends Controller
             $search = request('search');
             $query->whereHas('student', function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
-                    ->orWhere('last_name', 'ilike', "%{$search}%");
+                    ->orWhere('last_name', 'ilike', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
             });
         }
 
@@ -576,7 +579,11 @@ class LibrarianController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('book_title', 'ilike', "%{$search}%")
-                  ->orWhereHas('student', fn($sq) => $sq->where('first_name','ilike',"%{$search}%")->orWhere('last_name','ilike',"%{$search}%"));
+                  ->orWhereHas('student', function ($sq) use ($search) {
+                      $sq->where('first_name', 'ilike', "%{$search}%")
+                          ->orWhere('last_name', 'ilike', "%{$search}%")
+                          ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
+                  });
             });
         }
         if ($request->filled('status') && $request->status !== 'All') $query->where('status', $request->status);
@@ -646,7 +653,8 @@ class LibrarianController extends Controller
                     })
                     ->orWhereHas('student', function ($sq) use ($search) {
                         $sq->where('first_name', 'ilike', "%{$search}%")
-                            ->orWhere('last_name', 'ilike', "%{$search}%");
+                            ->orWhere('last_name', 'ilike', "%{$search}%")
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
                     });
             });
         }
