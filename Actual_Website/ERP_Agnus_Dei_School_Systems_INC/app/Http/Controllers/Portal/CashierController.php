@@ -217,8 +217,11 @@ class CashierController extends Controller
             ->all();
     }
 
-    public function showPayment(Student $student)
+    public function showPayment(Request $request, Student $student)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
+
         $student->load('user', 'enrollments.section', 'ledger', 'admissions');
         $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
         $feeSchedules = $enrollment ? FeeSchedule::where('grade_level', $enrollment->section->grade_level)
@@ -271,6 +274,12 @@ class CashierController extends Controller
 
         $nextArNumber = (new Payment())->generateArNumber();
 
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType'))->render(),
+            ]);
+        }
+
         return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType'));
     }
 
@@ -289,6 +298,10 @@ class CashierController extends Controller
 
         // Locked school years are frozen — no payments into them.
         if (school_year_locked($enrollment->school_year)) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Cannot collect — school year ' . $enrollment->school_year . ' is locked.'], 422);
+            }
+
             return back()->with('error', 'Cannot collect — school year ' . $enrollment->school_year . ' is locked.');
         }
         $feeSchedules = FeeSchedule::where('grade_level', $enrollment->section->grade_level)
@@ -410,6 +423,10 @@ class CashierController extends Controller
                 'student_id' => $student->id,
                 'amount' => $data['amount_paid'],
             ]);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Payment processing failed. Please try again.'], 422);
+            }
+
             return redirect()->route('cashier.payment', $student)
                 ->with('error', 'Payment processing failed. Please try again.');
         }
@@ -432,6 +449,18 @@ class CashierController extends Controller
                     'payment_id' => $lastPayment->id,
                 ]);
             }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => '₱' . number_format($data['amount_paid'], 2) . ' received from ' . $student->first_name . ' ' . $student->last_name . '.',
+                'amount' => $data['amount_paid'],
+                'student_name' => $student->first_name . ' ' . $student->last_name,
+                'receipt_number' => $lastPayment?->receipt_number ?? '',
+                'payment_id' => $lastPayment?->id ?? '',
+                'print_url' => $lastPayment ? route('cashier.receipt.print', $lastPayment) : null,
+            ]);
         }
 
         return redirect()->route('cashier.payment', $student)
@@ -789,6 +818,10 @@ class CashierController extends Controller
 
         log_activity($assignment, 'Graduation Fee Payment Toggled', auth()->user()->name . ' (Cashier) toggled paid status for student #' . $assignment->student_id . ' on "' . $assignment->graduationFee->name . '".');
 
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Payment status updated.']);
+        }
+
         return back()->with('success', 'Payment status updated.');
     }
 
@@ -861,6 +894,10 @@ class CashierController extends Controller
         $data = $request->validate(['reason' => 'required|string|min:5|max:500']);
 
         if ($payment->amount_paid <= 0 || !str_starts_with((string) $payment->receipt_number, 'RCP-')) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'Only collected payments (RCP- receipts) can be voided.'], 422);
+            }
+
             return back()->with('error', 'Only collected payments (RCP- receipts) can be voided.');
         }
 
@@ -868,6 +905,10 @@ class CashierController extends Controller
             ->where('receipt_number', 'like', 'VOID-' . $payment->receipt_number . '%')
             ->exists();
         if ($alreadyVoided) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => 'This payment has already been voided.'], 422);
+            }
+
             return back()->with('error', 'This payment has already been voided.');
         }
 
@@ -891,6 +932,10 @@ class CashierController extends Controller
             $name = $student ? $student->first_name . ' ' . $student->last_name : 'Student #' . $ledger->student_id;
             log_activity($student ?? $ledger, 'Payment Voided', auth()->user()->name . " (Cashier) voided payment {$payment->receipt_number} (₱" . number_format($payment->amount_paid, 2) . ") for {$name}. Reason: {$data['reason']}");
         });
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Payment ' . $payment->receipt_number . ' voided with an offsetting reversal.']);
+        }
 
         return back()->with('success', 'Payment ' . $payment->receipt_number . ' voided with an offsetting reversal.');
     }

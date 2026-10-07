@@ -121,7 +121,7 @@
                 <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Payment History</h3>
                 <div class="flex items-center gap-3">
                     @if(!empty($paymentYears) && count($paymentYears) > 1)
-                    <select onchange="window.location.href='{{ route('cashier.student-financial', $student) }}?payment_year='+this.value" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                    <select onchange="financialYearChanged(this, '{{ route('cashier.student-financial', $student) }}')" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
                         <option value="all" {{ ($selectedYear ?? 'all') === 'all' ? 'selected' : '' }}>All Years</option>
                         @foreach($paymentYears as $year)
                         <option value="{{ $year }}" {{ ($selectedYear ?? 'all') === $year ? 'selected' : '' }}>{{ $year }}</option>
@@ -129,7 +129,7 @@
                     </select>
                     @endif
                     @if(!(($student->ledger?->balance ?? 0) <= 0 && $student->ledger?->payment_plan === 'full' && $student->ledger?->total_paid > 0))
-                    <a href="{{ route('cashier.payment', $student) }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Process Payment</a>
+                    <button type="button" onclick="openPaymentModal({{ $student->id }}, @js($student->first_name . ' ' . $student->last_name))" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Process Payment</button>
                     @endif
                 </div>
             </div>
@@ -158,8 +158,8 @@
                         <tr class="hover:bg-gray-50 dark:hover:bg-[#161A33]">
                             <td class="px-4 py-2 text-gray-900 dark:text-[#E8EAF6]">{{ $p->payment_date instanceof \Carbon\Carbon ? $p->payment_date->format('M d, Y') : \Carbon\Carbon::parse($p->payment_date)->format('M d, Y') }}</td>
                             <td class="px-4 py-2 font-medium text-gray-900 dark:text-[#E8EAF6]">₱ {{ number_format($p->amount_paid, 2) }}</td>
-                            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->receipt_number }}</td>
-                            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->ar_number ?? '—' }}</td>
+                            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC]">{{ $p->receipt_number }}</td>
+                            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC]">{{ $p->ar_number ?? '—' }}</td>
                             <td class="px-4 py-2 text-gray-500 dark:text-[#8A90B0] text-xs">{{ $p->cashier?->name }}</td>
                             <td class="px-4 py-2">
                                 <div class="flex items-center gap-2">
@@ -249,7 +249,7 @@
             <thead><tr class="border-b border-gray-200 dark:border-[#2A2F58]"><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Date</th><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Receipt #</th><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">AR #</th><th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Amount</th></tr></thead>
             <tbody>
                 @forelse($payments as $p)
-                <tr class="border-b border-gray-50 dark:border-[#2A2F58]"><td class="py-2 px-2">{{ \Carbon\Carbon::parse($p->payment_date)->format('M d, Y') }}</td><td class="py-2 px-2 font-mono text-xs">{{ $p->receipt_number }}</td><td class="py-2 px-2 font-mono text-xs">{{ $p->ar_number ?? '-' }}</td><td class="py-2 px-2 text-right font-medium">₱{{ number_format($p->amount_paid, 2) }}</td></tr>
+                <tr class="border-b border-gray-50 dark:border-[#2A2F58]"><td class="py-2 px-2">{{ \Carbon\Carbon::parse($p->payment_date)->format('M d, Y') }}</td><td class="py-2 px-2">{{ $p->receipt_number }}</td><td class="py-2 px-2">{{ $p->ar_number ?? '-' }}</td><td class="py-2 px-2 text-right font-medium">₱{{ number_format($p->amount_paid, 2) }}</td></tr>
                 @empty
                 <tr><td colspan="4" class="py-4 text-center text-gray-400">No payments yet.</td></tr>
                 @endforelse

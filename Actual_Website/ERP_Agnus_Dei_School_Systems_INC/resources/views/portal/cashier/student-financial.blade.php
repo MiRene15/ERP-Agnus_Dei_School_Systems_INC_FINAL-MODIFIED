@@ -30,4 +30,7 @@
         <div x-show="!loading" x-cloak x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
+
+@include('portal.cashier.partials.financial-modal')
+@include('portal.cashier.partials.payment-modal')
 @endsection

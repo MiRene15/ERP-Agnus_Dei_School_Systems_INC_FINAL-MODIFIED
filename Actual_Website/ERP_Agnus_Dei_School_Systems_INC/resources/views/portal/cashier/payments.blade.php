@@ -81,12 +81,12 @@
                                     <span class="font-medium" :class="s.computed_balance > 0 ? 'text-red-600' : 'text-green-600'" x-text="'₱ ' + s.computed_balance.toFixed(2)"></span>
                                 </td>
                                 <td class="py-3 px-2 flex gap-2">
-                                    <a :href="'/cashier/payment/' + s.id" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                    <button type="button" @click="openPaymentModal(s.id, s.first_name + ' ' + s.last_name)" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                                         Process Payment
-                                    </a>
-                                    <a :href="'/cashier/financial/' + s.id" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+                                    </button>
+                                    <button type="button" @click="openFinancialModal(s.id, s.first_name + ' ' + s.last_name)" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
                                         Financial View
-                                    </a>
+                                    </button>
                                 </td>
                             </tr>
                         </template>
@@ -118,6 +118,9 @@ function searchPayments() {
         _controller: null,
         _seq: 0,
         _countdown: null,
+        init() {
+            window.addEventListener('payment-recorded', () => { this.searchNow(); });
+        },
         startCountdown() {
             if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
             this._countdown = setInterval(() => {
@@ -200,4 +203,7 @@ function searchPayments() {
     return component;
 }
 </script>
+
+@include('portal.cashier.partials.financial-modal')
+@include('portal.cashier.partials.payment-modal')
 @endsection
