@@ -478,7 +478,7 @@
                         <li><a href="/discounts-privileges" class="{{ request()->is('discounts-privileges') ? 'active-dropdown' : '' }}">Discounts and Privileges</a></li>
                     </ul>
                 </li>
-                <li><a href="/inquiry" class="{{ request()->is('inquiry') ? 'active' : '' }}">Inquiry</a></li>
+                <li><a href="/inquiry" class="{{ request()->is('inquiry') ? 'active' : '' }}">Begin Admission</a></li>
             </ul>
             <button onclick="document.getElementById('portal-modal').classList.remove('hidden')" class="btn-outline" id="portal-btn" style="border: none; cursor: pointer; font-family: var(--font-main);">Account Portal</button>
         </div>

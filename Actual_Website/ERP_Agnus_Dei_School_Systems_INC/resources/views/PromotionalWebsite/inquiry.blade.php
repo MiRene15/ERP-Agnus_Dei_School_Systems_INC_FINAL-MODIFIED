@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-header">
     <div class="container">
-        <h1 class="page-title">Admission Inquiry</h1>
+        <h1 class="page-title">Apply For Student Account</h1>
         <p class="page-subtitle">Submit your details to start the enrollment process and receive your Agnus Dei institutional email address.</p>
     </div>
 </div>
@@ -45,7 +45,7 @@
                 @enderror
             </div>
 
-            <button type="submit" class="btn-primary" style="width: 100%; text-align: center; border: none; cursor: pointer;">Generate Credentials & Inquire</button>
+            <button type="submit" class="btn-primary" style="width: 100%; text-align: center; border: none; cursor: pointer;">Apply for Student Account</button>
         </form>
     </div>
 
@@ -67,7 +67,7 @@
     <div class="modal-card">
         <button onclick="closeSuccessModal()" class="modal-close-btn">&times;</button>
         <div class="modal-icon">&#10003;</div>
-        <h2 class="modal-title">Inquiry Submitted!</h2>
+        <h2 class="modal-title">Check Email Inbox</h2>
         <p class="modal-text">Your institutional credentials have been generated.<br>Please check your email inbox to find your login details and confirm your email address.</p>
         <div class="modal-timer">
             <div class="timer-bar" id="timer-bar"></div>

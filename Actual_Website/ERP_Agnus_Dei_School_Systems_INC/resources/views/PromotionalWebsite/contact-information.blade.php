@@ -27,8 +27,8 @@
                 </p>
             </div>
             <div class="card" style="text-align: center;">
-                <h3>✉️ Inquiries</h3>
-                <p>For inquiries, please use our <a href="/inquiry" style="color: var(--primary-navy); font-weight: 600;">Inquiry Form</a> or call us directly during business hours.</p>
+                <h3>✉️ Admissions</h3>
+                <p>For admissions, please use our <a href="/inquiry" style="color: var(--primary-navy); font-weight: 600;">Begin Admission form</a> or call us directly during business hours.</p>
             </div>
         </div>
     </main>
