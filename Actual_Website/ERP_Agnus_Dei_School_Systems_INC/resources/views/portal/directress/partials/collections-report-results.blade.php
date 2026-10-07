@@ -60,8 +60,8 @@
             <td class="px-4 py-2 text-gray-900 dark:text-[#E8EAF6]">{{ $p->payment_date->format('M d, Y') }}</td>
             <td class="px-4 py-2 text-gray-900 dark:text-[#E8EAF6]">{{ $p->ledger?->student?->first_name }} {{ $p->ledger?->student?->last_name }}</td>
             <td class="px-4 py-2 font-medium text-gray-900 dark:text-[#E8EAF6]">₱ {{ number_format($p->amount_paid, 2) }}</td>
-            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->receipt_number }}</td>
-            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->ar_number ?? '—' }}</td>
+            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC]">{{ $p->receipt_number }}</td>
+            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC]">{{ $p->ar_number ?? '—' }}</td>
             <td class="px-4 py-2">
                 <span class="text-xs font-medium px-2 py-0.5 rounded-full {{ ($p->ledger?->payment_plan ?? '') === 'full' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' }}">
                     {{ ucfirst($p->ledger?->payment_plan ?? 'N/A') }}

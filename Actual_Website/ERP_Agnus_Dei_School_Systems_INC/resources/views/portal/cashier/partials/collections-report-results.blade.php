@@ -59,8 +59,8 @@
         <tr class="hover:bg-gray-50 dark:hover:bg-[#1E2447]">
             <td class="px-4 py-2 text-gray-900 dark:text-[#E8EAF6]">{{ $p->payment_date->format('M d, Y') }}</td>
             <td class="px-4 py-2 text-gray-900 dark:text-[#E8EAF6]">{{ $p->ledger?->student?->first_name }} {{ $p->ledger?->student?->last_name }}</td>
-            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->ledger?->student?->legacy_lrn ?? $p->ledger?->student?->student_number ?? '—' }}</td>
-            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC] font-mono text-xs">{{ $p->ar_number ?? '—' }}</td>
+            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC]">{{ $p->ledger?->student?->legacy_lrn ?? $p->ledger?->student?->student_number ?? '—' }}</td>
+            <td class="px-4 py-2 text-gray-600 dark:text-[#C1C4DC]">{{ $p->ar_number ?? '—' }}</td>
             <td class="px-4 py-2 text-gray-500 dark:text-[#8A90B0] text-xs">{{ $p->cashier?->name }}</td>
             <td class="px-4 py-2 text-right font-medium text-green-700 dark:text-green-400">₱ {{ number_format($p->amount_paid, 2) }}</td>
         </tr>

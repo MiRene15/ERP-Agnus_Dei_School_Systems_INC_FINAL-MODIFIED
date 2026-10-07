@@ -413,14 +413,19 @@ class DirectressController extends Controller
         $byPlan = $payments->groupBy(fn($p) => $p->ledger->payment_plan ?? 'Unknown')
             ->map(fn($g) => ['count' => $g->count(), 'total' => $g->sum('amount_paid')]);
 
-        $dailyBreakdown = $payments->groupBy(fn($p) => $p->payment_date->format('Y-m-d'))
-            ->map(fn($g, $date) => ['date' => $date, 'count' => $g->count(), 'total' => $g->sum('amount_paid')])
-            ->sortKeysDesc()
-            ->values();
+        $dailyBreakdown = $payments->groupBy(fn($p) => \Carbon\Carbon::parse($p->payment_date)->format('Y-m-d'))
+            ->map(fn($group) => [
+                'date' => $group->first()->payment_date,
+                'count' => $group->count(),
+                'total' => $group->sum('amount_paid'),
+            ])
+            ->sortBy('date')
+            ->values()
+            ->all();
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.directress.partials.collections-report-results', compact(
+                'html' => view('portal.cashier.partials.collections-report-results', compact(
                     'payments', 'totalCollected', 'receiptCount', 'byPlan', 'dailyBreakdown', 'dateFrom', 'dateTo'
                 ))->render(),
             ]);
@@ -434,18 +439,24 @@ class DirectressController extends Controller
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
-        $receivables = \App\Models\StudentLedger::with('student.enrollments.section')
-            ->where('balance', '>', 0)
-            ->orderByDesc('balance')
-            ->get()
-            ->groupBy(fn($l) => $l->student->enrollments->where('status', 'Active')->first()?->section?->grade_level ?? 'Unknown');
-
-        $totalReceivable = \App\Models\StudentLedger::where('balance', '>', 0)->sum('balance');
-        $countReceivable = \App\Models\StudentLedger::where('balance', '>', 0)->count();
+        // Same source logic as the cashier's receivables (parity by construction):
+        // identical ledger set, identical date filtering, identical breakdowns.
+        $receivables = \App\Models\StudentLedger::with(['student.enrollments.section', 'payments' => fn($q) => $q->orderByDesc('payment_date')->orderByDesc('id')])->where('balance', '>', 0)->orderByDesc('balance')->get();
+        $dateFrom = $request->date_from;
+        $dateTo = $request->date_to;
+        if ($dateFrom || $dateTo) {
+            $receivables = $receivables->filter(fn($l) => $l->payments->isEmpty() || (($d = $l->payments->first()?->payment_date?->format('Y-m-d')) && (!$dateFrom || $d >= $dateFrom) && (!$dateTo || $d <= $dateTo)))->values();
+        }
+        $dailyBreakdown = $receivables->filter(fn($l) => $l->payments->isNotEmpty())->groupBy(fn($l) => $l->payments->first()->payment_date->format('Y-m-d'))->map(fn($g, $date) => ['date' => $date, 'count' => $g->count(), 'total' => $g->sum('balance')])->sortKeys()->values();
+        $unpaidDues = $receivables->filter(fn($l) => $l->payments->isEmpty());
+        $unpaid = ['count' => $unpaidDues->count(), 'total' => $unpaidDues->sum('balance')];
+        $byPlan = $receivables->groupBy(fn($l) => $l->payment_plan ?? 'N/A')->map(fn($g) => ['count' => $g->count(), 'total' => $g->sum('balance')]);
+        $totalReceivable = $receivables->sum('balance');
+        $countReceivable = $receivables->count();
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.directress.partials.receivables-results', compact('receivables', 'totalReceivable', 'countReceivable'))->render(),
+                'html' => view('portal.cashier.partials.receivables-results', compact('receivables', 'byPlan', 'dailyBreakdown', 'unpaid', 'totalReceivable', 'countReceivable'))->render(),
             ]);
         }
 
@@ -548,50 +559,74 @@ class DirectressController extends Controller
     {
         $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
         $dateTo = $request->date_to ?? now()->format('Y-m-d');
-        $payments = \App\Models\Payment::with('ledger.student')->whereBetween('payment_date', [$dateFrom, $dateTo . ' 23:59:59'])->orderBy('payment_date')->get();
-        $filename = 'cashier_report_' . $dateFrom . '_to_' . $dateTo . '.csv';
-        log_activity(\App\Models\Payment::class, 'Exported', auth()->user()->name . ' exported the cashier report CSV (' . $payments->count() . ' payments, ' . $dateFrom . ' to ' . $dateTo . ').');
-        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
-        $callback = function() use ($payments) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, ['Date', 'Student', 'Amount', 'Receipt', 'AR Number']);
+
+        $payments = \App\Models\Payment::with('ledger.student', 'cashier')
+            ->whereBetween('payment_date', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->orderBy('payment_date')
+            ->get();
+
+        $filename = "collections-{$dateFrom}-to-{$dateTo}.csv";
+
+        log_activity(\App\Models\Payment::class, 'Exported', auth()->user()->name . ' exported the collections report CSV (' . $payments->count() . ' payments, ' . $dateFrom . ' to ' . $dateTo . ').');
+
+        return response()->stream(function () use ($payments) {
+            $fh = fopen('php://output', 'w');
+            fputcsv($fh, ['Date', 'Student', 'Number', 'LRN', 'AR No.', 'Cashier', 'Amount']);
             foreach ($payments as $p) {
-                fputcsv($file, [$p->payment_date, ($p->ledger->student->first_name ?? '') . ' ' . ($p->ledger->student->last_name ?? ''), $p->amount_paid, $p->receipt_number, $p->ar_number ?? '']);
+                fputcsv($fh, [
+                    $p->payment_date->format('Y-m-d'),
+                    ($p->ledger?->student?->first_name ?? '') . ' ' . ($p->ledger?->student?->last_name ?? ''),
+                    $p->ledger?->student?->student_number ?? '',
+                    $p->ledger?->student?->legacy_lrn ?? '',
+                    $p->ar_number ?? '',
+                    $p->cashier?->name ?? '',
+                    $p->amount_paid,
+                ]);
             }
-            fclose($file);
-        };
-        return response()->stream($callback, 200, $headers);
+            fclose($fh);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
-    public function exportReceivablesReport()
+    public function exportReceivablesReport(Request $request)
     {
-        $ledgers = \App\Models\StudentLedger::with('student.enrollments.section')
+        $ledgers = \App\Models\StudentLedger::with(['student', 'payments' => fn($q) => $q->orderByDesc('payment_date')->orderByDesc('id')])
             ->where('balance', '>', 0)
             ->orderByDesc('balance')
             ->get();
+        $dateFrom = $request->date_from;
+        $dateTo = $request->date_to;
+        if ($dateFrom || $dateTo) {
+            $ledgers = $ledgers->filter(fn($l) => $l->payments->isEmpty() || (($d = $l->payments->first()?->payment_date?->format('Y-m-d')) && (!$dateFrom || $d >= $dateFrom) && (!$dateTo || $d <= $dateTo)))->values();
+        }
 
         $total = $ledgers->sum('balance');
-        $filename = 'receivables_' . now()->format('Ymd_His') . '.csv';
+        $filename = 'receivables-' . now()->format('Y-m-d') . '.csv';
+
         log_activity(\App\Models\StudentLedger::class, 'Exported', auth()->user()->name . ' exported the receivables report CSV (' . $ledgers->count() . ' student(s), total ₱' . number_format($total, 2) . ').');
-        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
-        $callback = function () use ($ledgers, $total) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, ['Grade Level', 'Student', 'LRN', 'Section', 'Balance']);
+
+        return response()->stream(function () use ($ledgers, $total) {
+            $fh = fopen('php://output', 'w');
+            fputcsv($fh, ['Date', 'Student', 'Number', 'LRN', 'Balance']);
             foreach ($ledgers as $ledger) {
                 $student = $ledger->student;
-                $enrollment = $student?->enrollments->where('status', 'Active')->first();
-                fputcsv($file, [
-                    $enrollment?->section?->grade_level ?? 'Unknown',
+                $pay = $ledger->payments->first();
+                fputcsv($fh, [
+                    $pay?->payment_date?->format('Y-m-d') ?? '',
                     trim(($student?->first_name ?? '') . ' ' . ($student?->last_name ?? '')),
                     $student?->student_number ?? '',
-                    $enrollment?->section?->section_name ?? '—',
-                    number_format($ledger->balance, 2),
+                    $student?->legacy_lrn ?? '',
+                    $ledger->balance,
                 ]);
             }
-            fputcsv($file, ['', 'TOTAL', '', '', number_format($total, 2)]);
-            fclose($file);
-        };
-        return response()->stream($callback, 200, $headers);
+            fputcsv($fh, ['', 'TOTAL', '', '', $total]);
+            fclose($fh);
+        }, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     public function exportClinicReport(Request $request)
