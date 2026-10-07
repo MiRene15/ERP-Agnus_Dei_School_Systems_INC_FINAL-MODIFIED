@@ -12,6 +12,7 @@ use App\Models\Section;
 use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class PrincipalController extends Controller
@@ -392,8 +393,12 @@ class PrincipalController extends Controller
 
         $enrollments = $query->orderBy('id')->paginate(50)->withQueryString();
 
-        $sections = Section::where('grade_level', $selectedGrade)->get();
-        $subjects = Subject::where('grade_level', $selectedGrade)->get();
+        $sections = Cache::remember("section_list:{$selectedGrade}", 3600, function () use ($selectedGrade) {
+            return Section::where('grade_level', $selectedGrade)->get();
+        });
+        $subjects = Cache::remember("subject_list:{$selectedGrade}", 3600, function () use ($selectedGrade) {
+            return Subject::where('grade_level', $selectedGrade)->get();
+        });
 
         if ($isAjax) {
             return response()->json([

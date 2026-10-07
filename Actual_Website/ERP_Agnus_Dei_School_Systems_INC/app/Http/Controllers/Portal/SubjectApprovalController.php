@@ -35,6 +35,7 @@ class SubjectApprovalController extends Controller
             return back()->with('error', 'Only pending requests can be approved.');
         }
 
+        $oldGradeLevel = $changeRequest->subject?->grade_level;
         try {
             $label = $this->apply($changeRequest);
         } catch (\Exception $e) {
@@ -46,6 +47,11 @@ class SubjectApprovalController extends Controller
             'reviewed_by' => auth()->id(),
             'reviewed_at' => now(),
         ]);
+
+        $payloadGradeLevel = $changeRequest->payload['grade_level'] ?? null;
+        foreach (array_unique(array_filter([$oldGradeLevel, $payloadGradeLevel])) as $gradeLevel) {
+            \Illuminate\Support\Facades\Cache::forget("subject_list:{$gradeLevel}");
+        }
 
         log_activity($changeRequest, 'Subject Change Approved', auth()->user()->name . " (Principal) approved and applied {$changeRequest->action}: {$label}.");
 

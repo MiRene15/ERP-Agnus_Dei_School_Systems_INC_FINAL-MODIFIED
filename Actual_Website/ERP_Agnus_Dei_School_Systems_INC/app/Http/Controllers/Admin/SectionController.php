@@ -95,6 +95,8 @@ class SectionController extends Controller
             'adviser_id' => $data['adviser_id'] ?? null,
         ]);
 
+        \Illuminate\Support\Facades\Cache::forget("section_list:{$data['grade_level']}");
+
         log_activity(new \App\Models\Section, 'Created', "Created section: {$data['section_name']} ({$data['grade_level']})");
 
         return redirect()->route('registrar.sections.index')
@@ -132,12 +134,16 @@ class SectionController extends Controller
             return back()->withInput()->with('error', 'Adviser must be a teacher account.');
         }
 
+        $oldGradeLevel = $section->grade_level;
         $section->update([
             'grade_level' => $data['grade_level'],
             'section_name' => $data['section_name'],
             'is_active' => $request->boolean('is_active', true),
             'adviser_id' => $data['adviser_id'] ?? null,
         ]);
+
+        \Illuminate\Support\Facades\Cache::forget("section_list:{$oldGradeLevel}");
+        \Illuminate\Support\Facades\Cache::forget("section_list:{$data['grade_level']}");
 
         log_activity($section, 'Updated', "Updated section: {$section->section_name}");
 
@@ -159,6 +165,7 @@ class SectionController extends Controller
             return back()->with('error', 'Cannot delete — section still has classes. Deactivate it instead.');
         }
         $section->delete();
+        \Illuminate\Support\Facades\Cache::forget("section_list:{$section->grade_level}");
         log_activity($section, 'Deleted', "Deleted section: {$section->section_name} ({$section->grade_level})");
         return back()->with('success', 'Section deleted.');
     }

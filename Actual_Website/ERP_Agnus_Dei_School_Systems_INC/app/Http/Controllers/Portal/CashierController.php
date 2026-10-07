@@ -14,6 +14,7 @@ use App\Models\Withdrawal;
 use App\Services\CashierProjectionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -211,12 +212,21 @@ class CashierController extends Controller
             return [];
         }
 
-        return FeeSchedule::where('school_year', $schoolYear)
-            ->whereIn('grade_level', $gradeLevels)
-            ->get(['grade_level', 'tuition_fee', 'misc_fee'])
-            ->groupBy('grade_level')
-            ->map(fn ($schedules) => (float) $schedules->sum('tuition_fee') + (float) $schedules->sum('misc_fee'))
-            ->all();
+        $totals = [];
+        foreach (array_values(array_unique(array_filter($gradeLevels))) as $gradeLevel) {
+            $totals[$gradeLevel] = Cache::remember(
+                "fee_totals:{$schoolYear}:{$gradeLevel}",
+                3600,
+                function () use ($schoolYear, $gradeLevel) {
+                    return (float) FeeSchedule::where('school_year', $schoolYear)
+                        ->where('grade_level', $gradeLevel)
+                        ->get(['grade_level', 'tuition_fee', 'misc_fee'])
+                        ->sum(fn ($schedule) => (float) $schedule->tuition_fee + (float) $schedule->misc_fee);
+                }
+            );
+        }
+
+        return $totals;
     }
 
     public function showPayment(Request $request, Student $student)

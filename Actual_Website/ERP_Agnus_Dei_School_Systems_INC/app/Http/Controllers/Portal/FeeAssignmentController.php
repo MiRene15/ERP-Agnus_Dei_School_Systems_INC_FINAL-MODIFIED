@@ -9,6 +9,7 @@ use App\Models\GraduationFee;
 use App\Models\StudentGraduationFee;
 use App\Models\StudentLedger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Bulk fee assignment from enrollment (role reform Phase 4c).
@@ -64,10 +65,16 @@ class FeeAssignmentController extends Controller
             $grade = $enrollment->section?->grade_level;
             if (!$grade) continue;
 
-            $total = FeeSchedule::where('grade_level', $grade)
-                ->where('school_year', $enrollment->school_year)
-                ->get()
-                ->sum(fn($f) => $f->tuition_fee + $f->misc_fee);
+            $total = Cache::remember(
+                "fee_totals:{$enrollment->school_year}:{$grade}",
+                3600,
+                function () use ($grade, $enrollment) {
+                    return FeeSchedule::where('grade_level', $grade)
+                        ->where('school_year', $enrollment->school_year)
+                        ->get()
+                        ->sum(fn($f) => $f->tuition_fee + $f->misc_fee);
+                }
+            );
 
             StudentLedger::create([
                 'student_id' => $enrollment->student_id,

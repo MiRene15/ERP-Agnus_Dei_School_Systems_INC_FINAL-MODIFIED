@@ -132,6 +132,8 @@ class DirectressController extends Controller
 
         $feeSchedule = FeeSchedule::create($data);
 
+        \Illuminate\Support\Facades\Cache::forget("fee_totals:{$data['school_year']}:{$data['grade_level']}");
+
         log_activity($feeSchedule, 'Fee Schedule Created', auth()->user()->name . ' created fee schedule for ' . $data['grade_level'] . ' (SY: ' . $data['school_year'] . ').');
 
         return redirect()->route('directress.fees')
@@ -161,7 +163,12 @@ class DirectressController extends Controller
             return back()->with('error', 'School year ' . $fee->school_year . ' is locked — its settings can no longer be edited.');
         }
 
+        $oldSchoolYear = $fee->school_year;
+        $oldGradeLevel = $fee->grade_level;
         $fee->update($data);
+
+        \Illuminate\Support\Facades\Cache::forget("fee_totals:{$oldSchoolYear}:{$oldGradeLevel}");
+        \Illuminate\Support\Facades\Cache::forget("fee_totals:{$data['school_year']}:{$data['grade_level']}");
 
         log_activity($fee, 'Fee Schedule Updated', auth()->user()->name . ' updated fee schedule for ' . $fee->grade_level . '.');
 
@@ -176,7 +183,9 @@ class DirectressController extends Controller
             return back()->with('error', 'School year ' . $fee->school_year . ' is locked — its settings can no longer be edited.');
         }
         $gradeLevel = $fee->grade_level;
+        $feeSchoolYear = $fee->school_year;
         $fee->delete();
+        \Illuminate\Support\Facades\Cache::forget("fee_totals:{$feeSchoolYear}:{$gradeLevel}");
         log_activity('App\\Models\\FeeSchedule', 'Fee Schedule Deleted', auth()->user()->name . ' deleted fee schedule for ' . $gradeLevel . '.');
         return back()->with('success', 'Fee schedule deleted.');
     }

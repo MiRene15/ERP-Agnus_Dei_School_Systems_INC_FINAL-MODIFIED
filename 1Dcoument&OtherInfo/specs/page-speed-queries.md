@@ -1,8 +1,9 @@
 # Spec: Page Speed Queries
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-07
 - **Approved by**: user on 2026-10-07 (re-approved after full-phrase rule added)
+- **Implemented**: 2026-10-07 — 10-row lists with one-shot totals plus first-to-last full-phrase on cashier; registrar 10-row with cached years; user-verified faster with "Amber Aguilar" found.
 
 ## 1. Why We Need This
 Cashiers and registrars wait on lists that do the same fee work once per student shown. A 10-student list costs about a dozen database trips instead of a few, and it hurts worst with a line at the counter and rush at enrollment. Fixing the shape keeps every figure identical while removing the repeat.
