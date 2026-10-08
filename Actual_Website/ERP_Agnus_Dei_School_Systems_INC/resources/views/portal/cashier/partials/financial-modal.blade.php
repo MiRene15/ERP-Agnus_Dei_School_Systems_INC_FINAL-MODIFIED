@@ -1,6 +1,6 @@
 <div id="financial-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40" style="backdrop-filter: blur(4px);" onclick="closeFinancialModal()"></div>
-    <div class="relative bg-white dark:bg-[#1A1E3B] rounded-2xl shadow-2xl w-full max-w-[720px] max-h-[90vh] my-auto border border-gray-100 dark:border-[#2A2F58] flex flex-col overflow-hidden">
+    <div class="relative bg-white dark:bg-[#1A1E3B] rounded-2xl shadow-2xl w-full max-w-[880px] max-h-[90vh] my-auto border border-gray-100 dark:border-[#2A2F58] flex flex-col overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-[#2A2F58] flex-shrink-0">
             <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]" id="fm-title">Financial View</h3>
             <button onclick="closeFinancialModal()" class="text-2xl text-gray-400 hover:text-gray-700 leading-none">&times;</button>

@@ -59,7 +59,7 @@
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                             <span class="text-sm font-medium text-blue-800">
-                                {{ ucfirst($student->ledger->discount_type ?? 'Discount') }}: -₱ {{ number_format($student->ledger->discount_applied, 2) }} (locked)
+                                {{ \App\Models\DiscountRequest::TYPES[$student->ledger->discount_type] ?? ucfirst($student->ledger->discount_type ?? 'Discount') }} — {{ (int) round($student->ledger->discount_applied / max($totalAssessed, 1) * 100) }}%: -₱ {{ number_format($student->ledger->discount_applied, 2) }} (locked)
                             </span>
                         </div>
                         <input type="hidden" name="discount_type" value="{{ $student->ledger->discount_type }}">
@@ -86,33 +86,14 @@
                         <input type="hidden" name="discount_amount" value="{{ $totalTuition }}">
                     </div>
                     @else
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Discount</label>
-                        <div class="flex gap-2">
-                            <button type="button" @click="discountPercent = 0; discountAmount = 0; discountType = '';"
-                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
-                                    :class="discountPercent === 0 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
-                                None
-                            </button>
-                            <button type="button" @click="discountPercent = 30; discountAmount = Math.round(totalAssessed * 0.30 * 100) / 100; discountType = 'other';"
-                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
-                                    :class="discountPercent === 30 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
-                                30%
-                            </button>
-                            <button type="button" @click="discountPercent = 50; discountAmount = Math.round(totalAssessed * 0.50 * 100) / 100; discountType = 'other';"
-                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
-                                    :class="discountPercent === 50 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
-                                50%
-                            </button>
-                            <button type="button" @click="discountPercent = 100; discountAmount = totalAssessed; discountType = 'other';"
-                                    class="flex-1 px-3 py-2 rounded-lg text-sm font-semibold border transition"
-                                    :class="discountPercent === 100 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'">
-                                100%
-                            </button>
+                    {{-- Read-only: discounts arrive only via approved requests (spec: cashier-discount-auto-apply.md). No counter-side options. --}}
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <span class="text-sm font-medium text-gray-600">No discount{{ ($hasPendingDiscount ?? false) ? ' — approval pending' : '' }}</span>
                         </div>
-                        <input type="hidden" name="discount_type" :value="discountType">
-                        <input type="hidden" name="discount_amount" :value="discountAmount">
-                        <p class="text-xs text-blue-600 mt-1" x-show="discountPercent > 0" x-text="discountPercent + '% of ₱ ' + totalAssessed.toFixed(2) + ' = -₱ ' + discountAmount.toFixed(2)"></p>
+                        <input type="hidden" name="discount_type" value="">
+                        <input type="hidden" name="discount_amount" value="0">
                     </div>
                     @endif
                     <div class="text-sm bg-gray-50 rounded-lg p-3">
