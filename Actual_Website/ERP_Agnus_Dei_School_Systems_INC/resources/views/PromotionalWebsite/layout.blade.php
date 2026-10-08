@@ -526,7 +526,7 @@
                     </div>
                     <div class="portal-option-text">
                         <span class="portal-option-title">Request an Account</span>
-                        <span class="portal-option-desc">Submit an inquiry to receive your institutional credentials.</span>
+                        <span class="portal-option-desc">Submit an email to receive your institutional credentials.</span>
                     </div>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
                 </a>
