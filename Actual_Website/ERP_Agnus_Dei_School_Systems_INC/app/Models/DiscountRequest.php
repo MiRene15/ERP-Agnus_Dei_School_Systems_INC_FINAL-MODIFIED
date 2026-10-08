@@ -21,6 +21,13 @@ class DiscountRequest extends Model
         'other' => 'Other',
     ];
 
+    /**
+     * Single quick-pick percent list shared by the request form and the
+     * payment display (spec: cashier-discount-auto-apply.md). One source —
+     * the two screens can never drift apart again.
+     */
+    public const DISCOUNT_PERCENTS = [5, 10, 20, 25, 30, 40, 50, 75, 100];
+
     protected $fillable = [
         'student_ledger_id',
         'discount_type',

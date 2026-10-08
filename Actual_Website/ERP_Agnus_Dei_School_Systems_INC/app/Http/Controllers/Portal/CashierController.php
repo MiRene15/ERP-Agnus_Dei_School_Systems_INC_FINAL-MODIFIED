@@ -284,15 +284,23 @@ class CashierController extends Controller
 
         $discountApplied = $student->ledger?->discount_applied ?? 0;
 
+        // Pending-approval note (spec: cashier-discount-auto-apply.md): truthful
+        // read-only line when a request awaits decision — never a discount.
+        $hasPendingDiscount = $student->ledger
+            ? \App\Models\DiscountRequest::where('student_ledger_id', $student->ledger->id)
+                ->where('status', \App\Models\DiscountRequest::STATUS_PENDING)
+                ->exists()
+            : false;
+
         $nextArNumber = (new Payment())->generateArNumber();
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType'))->render(),
+                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType', 'hasPendingDiscount'))->render(),
             ]);
         }
 
-        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType'));
+        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType', 'hasPendingDiscount'));
     }
 
     public function processPayment(Request $request, Student $student)
@@ -793,6 +801,13 @@ class CashierController extends Controller
      */
     public function applyDiscount(\App\Models\DiscountRequest $discountRequest)
     {
+        // Backlog fallback (spec: cashier-discount-auto-apply.md): approvals now
+        // auto-apply, so this survives only for pre-change approved-but-unapplied
+        // requests. Already-applied reports info — never a second posting.
+        if ($discountRequest->status === \App\Models\DiscountRequest::STATUS_APPLIED) {
+            return back()->with('info', 'Discount already applied.');
+        }
+
         if ($discountRequest->status !== \App\Models\DiscountRequest::STATUS_APPROVED) {
             return back()->with('error', 'Only Directress-approved requests can be applied.');
         }

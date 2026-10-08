@@ -129,17 +129,32 @@ class DiscountRequestController extends Controller
             return back()->with('error', 'Only pending requests can be approved.');
         }
 
-        $discountRequest->update([
-            'status' => DiscountRequest::STATUS_APPROVED,
-            'reviewed_by' => auth()->id(),
-            'reviewed_at' => now(),
-        ]);
-
+        // Auto-apply on approval (spec: cashier-discount-auto-apply.md): the
+        // approval IS the posting — same ledger math the cashier Apply used,
+        // one transaction so decision and posting can never separate.
         $ledger = $discountRequest->ledger;
-        $name = $ledger->student ? $ledger->student->first_name . ' ' . $ledger->student->last_name : 'Student #' . $ledger->student_id;
-        log_activity($discountRequest, 'Discount Approved', auth()->user()->name . " (Directress) approved {$discountRequest->discount_type} discount (₱" . number_format($discountRequest->discount_amount, 2) . ") for {$name}. Awaiting Cashier application.");
+        $discountAmount = min((float) $discountRequest->discount_amount, (float) $ledger->total_assessed);
 
-        return back()->with('success', 'Discount approved — the Cashier can now apply it.');
+        \Illuminate\Support\Facades\DB::transaction(function () use ($discountRequest, $ledger, $discountAmount) {
+            $ledger->update([
+                'discount_type' => $discountRequest->discount_type,
+                'discount_applied' => $discountAmount,
+                'balance' => max(0, $ledger->total_assessed - $ledger->total_paid - $discountAmount),
+            ]);
+            \App\Services\LedgerService::refreshClearance($ledger->fresh());
+
+            $discountRequest->update([
+                'status' => DiscountRequest::STATUS_APPLIED,
+                'reviewed_by' => auth()->id(),
+                'reviewed_at' => now(),
+                'applied_at' => now(),
+            ]);
+        });
+
+        $name = $ledger->student ? $ledger->student->first_name . ' ' . $ledger->student->last_name : 'Student #' . $ledger->student_id;
+        log_activity($discountRequest, 'Discount Approved', auth()->user()->name . " (Directress) approved and auto-applied {$discountRequest->discount_type} discount (₱" . number_format($discountAmount, 2) . ") for {$name}.");
+
+        return back()->with('success', 'Discount approved and applied to the ledger.');
     }
 
     public function reject(DiscountRequest $discountRequest)
