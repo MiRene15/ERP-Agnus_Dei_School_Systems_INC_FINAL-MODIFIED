@@ -3,12 +3,12 @@
 @section('breadcrumbs')
     <a href="{{ route('teacher.dashboard') }}" class="no-underline" style="color: var(--muted);">Dashboard</a>
     <span class="opacity-40">/</span>
-    <span class="current">Grade Corrections</span>
+    <span class="current">Grade Edit Request</span>
 @endsection
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Grade Corrections</h2>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Grade Edit Request</h2>
     <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Submitted grades are locked. Request a reopen → Principal/Registrar approves → you correct → you re-submit. Unsubmitted grades can still be edited directly.</p>
 </div>
 

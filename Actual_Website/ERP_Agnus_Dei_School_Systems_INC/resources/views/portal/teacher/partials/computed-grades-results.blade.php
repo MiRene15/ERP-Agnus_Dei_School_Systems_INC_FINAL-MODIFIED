@@ -3,7 +3,11 @@
     <h3 class="font-semibold text-gray-900 mb-4">Select a Class</h3>
     @if($classes->isEmpty())
     <p class="text-sm text-gray-500">No classes assigned.</p>
-    @else
+    @endif
+    @if($classes->isEmpty() && (request('grade_level') || request('section')))
+    <p class="text-sm text-gray-500 text-center py-4">No classes match — clear the filters.</p>
+    @endif
+    @if($classes->isNotEmpty())
     <div class="space-y-2">
         @foreach($classes as $cls)
         <a href="{{ route('teacher.computed-grades') }}?class_id={{ $cls->id }}&grading_period={{ $selectedPeriod }}"
@@ -19,11 +23,15 @@
     @endif
 </div>
 @else
-<div class="mb-4 flex items-center gap-3">
+<div class="mb-4 flex items-center gap-3 flex-wrap">
     <a href="{{ route('teacher.computed-grades') }}" class="text-sm text-blue-600 hover:underline">&larr; Change Class</a>
     <span class="text-gray-300">|</span>
     <h3 class="font-semibold text-gray-900">{{ $class->subject->name ?? 'N/A' }} — {{ $class->grade_level }} {{ $class->section }}</h3>
 </div>
+
+@if(!empty($resolvedWeights['label']))
+<p class="text-xs text-gray-500 dark:text-[#8A90B0] mb-3">{{ $resolvedWeights['label'] }}</p>
+@endif
 
 <div class="mb-4 flex items-center gap-2">
     <label class="text-sm font-medium text-gray-700">Grading Period:</label>
@@ -50,11 +58,9 @@
                     <tr class="bg-gray-50">
                         <th class="text-left py-3 px-3 font-semibold text-gray-600 border-b">#</th>
                         <th class="text-left py-3 px-3 font-semibold text-gray-600 border-b">Student</th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Written Work<br><span class="text-[10px] font-normal text-gray-400">20%</span></th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Quiz<br><span class="text-[10px] font-normal text-gray-400">20%</span></th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Seatwork<br><span class="text-[10px] font-normal text-gray-400">20%</span></th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Exam<br><span class="text-[10px] font-normal text-gray-400">40%</span></th>
-                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Computed</th>
+                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Written Works<br><span class="text-[10px] font-normal text-gray-400">{{ $resolvedWeights['written_works'] ?? '' }}%</span></th>
+                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Performance Tasks<br><span class="text-[10px] font-normal text-gray-400">{{ $resolvedWeights['performance_tasks'] ?? '' }}%</span></th>
+                        <th class="text-center py-3 px-2 font-semibold text-gray-600 border-b">Quarterly Assessment<br><span class="text-[10px] font-normal text-gray-400">{{ $resolvedWeights['quarterly_assessment'] ?? '' }}%</span></th>
                         <th class="text-center py-3 px-3 font-semibold text-gray-600 border-b">Final Grade</th>
                     </tr>
                 </thead>
@@ -66,7 +72,7 @@
                             <p class="font-medium text-gray-900">{{ $cg['student']->first_name }} {{ $cg['student']->last_name }}</p>
                             <p class="text-[10px] text-gray-400">{{ $cg['student']->student_number }}</p>
                         </td>
-                        @foreach(['Written Work', 'Quiz', 'Seatwork', 'Exam'] as $type)
+                        @foreach(['Written Works', 'Performance Tasks', 'Quarterly Assessment'] as $type)
                         <td class="py-2 px-2 text-center">
                             @if($cg['categories'][$type]['max'] > 0)
                             <span class="text-xs text-gray-700">{{ $cg['categories'][$type]['raw'] }}/{{ $cg['categories'][$type]['max'] }}</span>
@@ -76,11 +82,6 @@
                             @endif
                         </td>
                         @endforeach
-                        <td class="py-2 px-2 text-center">
-                            <span class="text-sm font-semibold {{ $cg['computed_grade'] >= 75 ? 'text-green-600' : 'text-red-500' }}">
-                                {{ $cg['computed_grade'] }}%
-                            </span>
-                        </td>
                         <td class="py-2 px-3 text-center">
                             @if($cg['status'] === 'Submitted')
                                 <span class="text-sm font-bold {{ $cg['final_grade'] >= 75 ? 'text-green-600' : 'text-red-500' }}">
@@ -93,12 +94,13 @@
                                        value="{{ $cg['final_grade'] ?? $cg['computed_grade'] }}"
                                        step="0.01" min="0" max="100"
                                        class="w-20 px-2 py-1 rounded-lg border border-gray-300 text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <span class="block text-[10px] text-gray-400">computed {{ $cg['computed_grade'] }}%</span>
                             @endif
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="py-6 text-center text-gray-400">No students to display.</td>
+                        <td colspan="6" class="py-6 text-center text-gray-400">No students to display.</td>
                     </tr>
                     @endforelse
                 </tbody>

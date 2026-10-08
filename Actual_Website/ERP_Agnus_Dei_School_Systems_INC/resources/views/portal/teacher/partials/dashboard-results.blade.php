@@ -15,7 +15,7 @@
 
 @if(($unlockPending ?? 0) > 0 || ($unlockApproved ?? 0) > 0)
 <a href="{{ route('teacher.grade-unlocks.index') }}" class="block bg-amber-50 dark:bg-[rgba(251,191,36,0.08)] rounded-xl shadow-sm border border-amber-200 dark:border-[rgba(251,191,36,0.25)] p-5 mb-6 hover:shadow-md transition">
-    <p class="text-sm font-semibold text-amber-800 dark:text-[#FCD34D]">Grade Corrections</p>
+    <p class="text-sm font-semibold text-amber-800 dark:text-[#FCD34D]">Grade Edit Request</p>
     <p class="text-sm text-amber-700 dark:text-[#FCD34D] mt-1">
         @if(($unlockPending ?? 0) > 0){{ $unlockPending }} request(s) awaiting review. @endif
         @if(($unlockApproved ?? 0) > 0){{ $unlockApproved }} reopened — correct and re-submit. @endif

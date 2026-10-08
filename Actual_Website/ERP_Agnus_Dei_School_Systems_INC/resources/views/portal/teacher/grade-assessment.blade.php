@@ -22,7 +22,21 @@
     </div>
 </div>
 
-<div x-data="ajaxTable('{{ route('teacher.grade-assessment') }}', { school_year: '{{ $schoolYear }}', class_id: '{{ request('class_id') }}', grading_period: '{{ request('grading_period', '1st Term') }}' })">
+<div x-data="ajaxTable('{{ route('teacher.grade-assessment') }}', { school_year: '{{ $schoolYear }}', class_id: '{{ request('class_id') }}', grading_period: '{{ request('grading_period', '1st Term') }}', grade_level: '{{ request('grade_level') }}', section: '{{ request('section') }}' })">
+    <div class="flex gap-2 mb-4 flex-wrap">
+        <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="">All Grades</option>
+            @foreach(($pickerGrades ?? collect()) as $gl)
+                <option value="{{ $gl }}">{{ $gl }}</option>
+            @endforeach
+        </select>
+        <select x-model="filters.section" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+            <option value="">All Sections</option>
+            @foreach(($pickerSections ?? collect()) as $sec)
+                <option value="{{ $sec }}">{{ $sec }}</option>
+            @endforeach
+        </select>
+    </div>
     <div x-show="loading" class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-3">
         <div class="skelly sk-line-md w-48 mb-4"></div>
         <template x-for="i in 4" :key="i">

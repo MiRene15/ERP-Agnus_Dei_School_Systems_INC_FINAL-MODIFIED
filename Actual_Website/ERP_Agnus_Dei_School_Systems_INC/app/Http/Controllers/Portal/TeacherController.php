@@ -331,6 +331,7 @@ class TeacherController extends Controller
 
         $existingAssessments = Assessment::where('class_id', $class->id)
             ->where('grading_period', $selectedPeriod)
+            ->orderByDesc('id')
             ->get()
             ->groupBy('enrollment_id');
 
@@ -345,12 +346,16 @@ class TeacherController extends Controller
 
         $data = $request->validate([
             'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
-            'assessments' => 'required|array',
-            'assessments.*' => 'required|array',
-            'assessments.*.*.type' => 'required|string|in:Written Work,Quiz,Seatwork,Exam',
-            'assessments.*.*.title' => 'nullable|string|max:255',
-            'assessments.*.*.raw_score' => 'nullable|numeric|min:0',
-            'assessments.*.*.max_score' => 'nullable|numeric|min:0',
+            'rows' => 'required|array|min:1',
+            'rows.*.enrollment_id' => 'nullable|integer',
+            'rows.*.type' => ['nullable', 'string', 'in:' . implode(',', Assessment::ASSESSMENT_TYPES)],
+            'rows.*.title' => 'nullable|string|max:255',
+            'rows.*.assessment_date' => 'nullable|date|before_or_equal:today',
+            'rows.*.raw_score' => 'nullable|numeric|min:0',
+            'rows.*.max_score' => 'nullable|numeric|min:0',
+            'rows.*.remarks' => 'nullable|string|max:1000',
+        ], [
+            'rows.*.assessment_date.before_or_equal' => 'An assessment date is in the future — use today or earlier.',
         ]);
 
         // Locked school years are frozen — assessments can no longer be changed.
@@ -367,39 +372,72 @@ class TeacherController extends Controller
             ->flip()
             ->toArray();
 
-        Assessment::where('class_id', $class->id)
-            ->where('grading_period', $data['grading_period'])
-            ->when(!empty($lockedIds), fn($q) => $q->whereNotIn('enrollment_id', array_keys($lockedIds)))
-            ->delete();
+        $activeIds = $class->enrollments->filter(fn($e) => $e->status === 'Active')->pluck('id')->flip()->toArray();
+
+        // Row-level semantic checks with row numbers — failed saves re-render
+        // every entered row from the submitted input (never wiped).
+        $rowErrors = [];
+        $kept = [];
+        foreach ($data['rows'] as $idx => $row) {
+            $rowNo = $idx + 1;
+            $hasContent = !empty($row['enrollment_id']) || !empty($row['raw_score']) || !empty($row['max_score']) || !empty($row['remarks']) || !empty($row['title']);
+            if (!$hasContent) {
+                continue;
+            }
+            if (empty($row['enrollment_id']) || !isset($activeIds[$row['enrollment_id']])) {
+                $rowErrors[] = "Row {$rowNo}: pick a student from this class.";
+                continue;
+            }
+            if (($row['raw_score'] === null || $row['raw_score'] === '') && ($row['max_score'] === null || $row['max_score'] === '') && empty($row['remarks']) && empty($row['title'])) {
+                continue;
+            }
+            if ($row['raw_score'] !== null && $row['raw_score'] !== '' && ($row['max_score'] === null || $row['max_score'] === '' || (float) $row['raw_score'] > (float) $row['max_score'])) {
+                $rowErrors[] = "Row {$rowNo}: raw score exceeds its max score.";
+                continue;
+            }
+            $kept[] = $row;
+        }
+
+        if (!empty($rowErrors)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['rows' => $rowErrors]);
+        }
+
+        if (empty($kept)) {
+            return back()->with('error', 'Nothing to save — add a row with a student and scores first.');
+        }
 
         $inserts = [];
         $skipped = 0;
-        foreach ($data['assessments'] as $enrollmentId => $items) {
-            if (isset($lockedIds[$enrollmentId])) {
-                $skipped++;
-                continue;
-            }
-            foreach ($items as $item) {
-                if (empty($item['title']) && empty($item['raw_score'])) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($class, $data, $kept, $lockedIds, &$inserts, &$skipped) {
+            Assessment::where('class_id', $class->id)
+                ->where('grading_period', $data['grading_period'])
+                ->when(!empty($lockedIds), fn($q) => $q->whereNotIn('enrollment_id', array_keys($lockedIds)))
+                ->delete();
+
+            foreach ($kept as $row) {
+                if (isset($lockedIds[$row['enrollment_id']])) {
+                    $skipped++;
                     continue;
                 }
                 $inserts[] = [
-                    'enrollment_id' => $enrollmentId,
+                    'enrollment_id' => $row['enrollment_id'],
                     'class_id' => $class->id,
-                    'type' => $item['type'],
-                    'title' => $item['title'] ?? '',
-                    'raw_score' => $item['raw_score'] ?? 0,
-                    'max_score' => $item['max_score'] ?? 0,
+                    'type' => $row['type'] ?? Assessment::ASSESSMENT_TYPES[0],
+                    'title' => $row['title'] ?? '',
+                    'raw_score' => $row['raw_score'] ?? 0,
+                    'max_score' => $row['max_score'] ?? 0,
+                    'assessment_date' => $row['assessment_date'] ?? null,
+                    'remarks' => $row['remarks'] ?? null,
                     'grading_period' => $data['grading_period'],
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
             }
-        }
 
-        if (!empty($inserts)) {
-            Assessment::insert($inserts);
-        }
+            if (!empty($inserts)) {
+                Assessment::insert($inserts);
+            }
+        });
 
         log_activity($class, 'Assessments Saved', auth()->user()->name . ' saved assessments for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count($inserts) . ' assessment(s) recorded.' . ($skipped ? " {$skipped} submitted (locked) student(s) skipped." : ''));
 
@@ -524,7 +562,7 @@ class TeacherController extends Controller
         $teacherId = auth()->id();
         $selectedPeriod = request('grading_period', '1st Term');
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
-        $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+        $assessmentTypes = Assessment::ASSESSMENT_TYPES;
         $schoolYear = $request->input('school_year', active_school_year());
         $schoolYears = all_school_years();
 
@@ -533,7 +571,18 @@ class TeacherController extends Controller
             ->where('school_year', $schoolYear)
             ->where('status', 'active')
             ->where(function($q) use ($selectedPeriod) { $q->where('term', $selectedPeriod)->orWhereNull('term')->orWhere('term',''); })
+            ->when(request('grade_level'), fn($q) => $q->where('grade_level', request('grade_level')))
+            ->when(request('section'), fn($q) => $q->where('section', request('section')))
             ->get();
+
+        $pickerGrades = Classes::where('teacher_id', $teacherId)
+            ->where('school_year', $schoolYear)
+            ->where('status', 'active')
+            ->distinct()->orderBy('grade_level')->pluck('grade_level');
+        $pickerSections = Classes::where('teacher_id', $teacherId)
+            ->where('school_year', $schoolYear)
+            ->where('status', 'active')
+            ->distinct()->orderBy('section')->pluck('section');
 
         $selectedClassId = request('class_id');
 
@@ -559,14 +608,14 @@ class TeacherController extends Controller
             return response()->json([
                 'html' => view('portal.teacher.partials.grade-assessment-results', compact(
                     'classes', 'class', 'activeEnrollments', 'existingAssessments',
-                    'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes', 'schoolYear', 'schoolYears'
+                    'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes', 'schoolYear', 'schoolYears', 'pickerGrades', 'pickerSections'
                 ))->render(),
             ]);
         }
 
         return view('portal.teacher.grade-assessment', compact(
             'classes', 'class', 'activeEnrollments', 'existingAssessments',
-            'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes', 'schoolYear', 'schoolYears'
+            'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'assessmentTypes', 'schoolYear', 'schoolYears', 'pickerGrades', 'pickerSections'
         ));
     }
 
@@ -580,7 +629,7 @@ class TeacherController extends Controller
         $enrollment = Enrollment::with('student')->findOrFail($enrollmentId);
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $selectedPeriod = request('grading_period', '1st Term');
-        $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+        $assessmentTypes = Assessment::ASSESSMENT_TYPES;
 
         $existingAssessments = Assessment::where('class_id', $class->id)
             ->where('enrollment_id', $enrollmentId)
@@ -607,7 +656,7 @@ class TeacherController extends Controller
         $data = $request->validate([
             'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
             'assessments' => 'required|array',
-            'assessments.*.type' => 'required|string|in:Written Work,Quiz,Seatwork,Exam',
+            'assessments.*.type' => ['required', 'string', 'in:' . implode(',', Assessment::ASSESSMENT_TYPES)],
             'assessments.*.title' => 'nullable|string|max:255',
             'assessments.*.raw_score' => 'nullable|numeric|min:0',
             'assessments.*.max_score' => 'nullable|numeric|min:0',
@@ -673,12 +722,24 @@ class TeacherController extends Controller
             ->where('school_year', $schoolYear)
             ->where('status', 'active')
             ->where(function($q) use ($selectedPeriod) { $q->where('term', $selectedPeriod)->orWhereNull('term')->orWhere('term',''); })
+            ->when(request('grade_level'), fn($q) => $q->where('grade_level', request('grade_level')))
+            ->when(request('section'), fn($q) => $q->where('section', request('section')))
             ->get();
+
+        $pickerGrades = Classes::where('teacher_id', $teacherId)
+            ->where('school_year', $schoolYear)
+            ->where('status', 'active')
+            ->distinct()->orderBy('grade_level')->pluck('grade_level');
+        $pickerSections = Classes::where('teacher_id', $teacherId)
+            ->where('school_year', $schoolYear)
+            ->where('status', 'active')
+            ->distinct()->orderBy('section')->pluck('section');
 
         $selectedClassId = request('class_id');
 
         $class = null;
         $computedGrades = collect();
+        $resolvedWeights = null;
 
         if ($selectedClassId) {
             $class = Classes::with('subject')->find($selectedClassId);
@@ -686,12 +747,21 @@ class TeacherController extends Controller
                 $class->load('enrollments.student');
                 $activeEnrollments = $class->enrollments->filter(fn($e) => $e->status === 'Active');
 
-                $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+                $assessmentTypes = Assessment::ASSESSMENT_TYPES;
+                // One shared weights row per class (spec: computed-single-grade.md).
+                // Legacy rows fold in: Quiz, Seatwork and singular Written Work
+                // count as Written Works; Exam counts as Quarterly Assessment.
+                $resolvedWeights = app(\App\Services\GradeWeightService::class)->forClass($class->subject, $class->grade_level);
                 $weights = [
-                    'Written Work' => 0.20,
-                    'Quiz' => 0.20,
-                    'Seatwork' => 0.20,
-                    'Exam' => 0.40,
+                    'Written Works' => $resolvedWeights['written_works'] / 100,
+                    'Performance Tasks' => $resolvedWeights['performance_tasks'] / 100,
+                    'Quarterly Assessment' => $resolvedWeights['quarterly_assessment'] / 100,
+                ];
+                $legacyTypeMap = [
+                    'Written Work' => 'Written Works',
+                    'Quiz' => 'Written Works',
+                    'Seatwork' => 'Written Works',
+                    'Exam' => 'Quarterly Assessment',
                 ];
 
                 $allAssessments = Assessment::where('class_id', $class->id)
@@ -704,12 +774,12 @@ class TeacherController extends Controller
                     ->get()
                     ->keyBy('enrollment_id');
 
-                $computedGrades = $activeEnrollments->map(function ($enrollment) use ($class, $selectedPeriod, $assessmentTypes, $weights, $allAssessments, $allGrades) {
+                $computedGrades = $activeEnrollments->map(function ($enrollment) use ($class, $selectedPeriod, $assessmentTypes, $weights, $legacyTypeMap, $allAssessments, $allGrades) {
                     $assessments = $allAssessments->get($enrollment->id, collect());
 
                     $categoryScores = [];
                     foreach ($assessmentTypes as $type) {
-                        $typeAssessments = $assessments->where('type', $type);
+                        $typeAssessments = $assessments->filter(fn($a) => ($legacyTypeMap[$a->type] ?? $a->type) === $type);
                         $totalRaw = $typeAssessments->sum('raw_score');
                         $totalMax = $typeAssessments->sum('max_score');
                         $categoryScores[$type] = [
@@ -743,13 +813,13 @@ class TeacherController extends Controller
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.teacher.partials.computed-grades-results', compact(
-                    'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'schoolYear', 'schoolYears'
+                    'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'schoolYear', 'schoolYears', 'pickerGrades', 'pickerSections', 'resolvedWeights'
                 ))->render(),
             ]);
         }
 
         return view('portal.teacher.computed-grades', compact(
-            'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'schoolYear', 'schoolYears'
+            'classes', 'class', 'computedGrades', 'gradingPeriods', 'selectedPeriod', 'selectedClassId', 'schoolYear', 'schoolYears', 'pickerGrades', 'pickerSections', 'resolvedWeights'
         ));
     }
 

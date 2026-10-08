@@ -1,9 +1,13 @@
 @if(!$selectedClassId)
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
     <h3 class="font-semibold text-gray-900 mb-4">Select a Class</h3>
-    @if($classes->isEmpty())
+    @if($classes->isEmpty() && !request('grade_level') && !request('section'))
     <p class="text-sm text-gray-500">No classes assigned.</p>
-    @else
+    @endif
+    @if($classes->isEmpty() && (request('grade_level') || request('section')))
+    <p class="text-sm text-gray-500 text-center py-4">No classes match — clear the filters.</p>
+    @endif
+    @if($classes->isNotEmpty())
     <div class="space-y-2">
         @foreach($classes as $cls)
         <a href="{{ route('teacher.grade-assessment') }}?class_id={{ $cls->id }}&grading_period={{ $selectedPeriod }}"
@@ -19,10 +23,11 @@
     @endif
 </div>
 @else
-<div class="mb-4 flex items-center gap-3">
+<div class="mb-4 flex items-center gap-3 flex-wrap">
     <a href="{{ route('teacher.grade-assessment') }}" class="text-sm text-blue-600 hover:underline">&larr; Change Class</a>
     <span class="text-gray-300">|</span>
     <h3 class="font-semibold text-gray-900">{{ $class->subject->name ?? 'N/A' }} — {{ $class->grade_level }} {{ $class->section }}</h3>
+    <a href="{{ route('teacher.assessments', $class) }}?grading_period={{ $selectedPeriod }}" class="ml-auto px-4 py-2 rounded-lg text-sm font-semibold text-white transition hover:opacity-90" style="background: var(--navy);">Batch Entry</a>
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

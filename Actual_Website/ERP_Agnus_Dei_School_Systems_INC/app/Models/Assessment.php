@@ -17,6 +17,21 @@ class Assessment extends Model
         'raw_score',
         'max_score',
         'grading_period',
+        'assessment_date',
+        'remarks',
+    ];
+
+    /**
+     * Single assessment-type list shared by batch + per-student entry and the
+     * computed formula (specs: assessment-batch-entry.md, computed-single-grade.md).
+     * Complete words everywhere — no abbreviations. Old stored values
+     * ('Written Work', 'Quiz', 'Seatwork', 'Exam') are grandfathered by the
+     * formula grouping, never offered for new rows.
+     */
+    public const ASSESSMENT_TYPES = [
+        'Written Works',
+        'Performance Tasks',
+        'Quarterly Assessment',
     ];
 
     public function enrollment()
