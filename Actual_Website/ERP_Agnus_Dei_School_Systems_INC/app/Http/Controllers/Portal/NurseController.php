@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Models\ClinicLog;
 use App\Models\Student;
+use App\Services\ClinicReportService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class NurseController extends Controller
 {
@@ -148,5 +152,79 @@ class NurseController extends Controller
         log_activity($log, 'Clinic Case Closed', auth()->user()->name . ' closed the open clinic case for student #' . $log->student_id . ' — clearance hold lifted.');
 
         return back()->with('success', 'Case closed — the student’s clinic hold is lifted.');
+    }
+
+    /**
+     * Clinic reports — nurse single reusing the directress totals path (spec: nurse-clinic-reports.md).
+     * Hardcoded to clinic only; no tab switching. Rows limited to what logs already show.
+     */
+    public function reports(Request $request, ClinicReportService $service): View|JsonResponse
+    {
+        $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $dateTo = $request->date_to ?? now()->format('Y-m-d');
+
+        $data = $service->rangeData($dateFrom, $dateTo);
+
+        if ($request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('portal.nurse.partials.reports-results', $data)->render(),
+            ]);
+        }
+
+        return view('portal.nurse.reports', $data);
+    }
+
+    /**
+     * Export the shown range: same aggregates as the directress CSV plus the visit
+     * rows already visible on this page. Recorded per-role in the audit trail.
+     */
+    public function exportClinicReport(Request $request, ClinicReportService $service): StreamedResponse
+    {
+        $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
+        $dateTo = $request->date_to ?? now()->format('Y-m-d');
+
+        $data = $service->rangeData($dateFrom, $dateTo);
+        $logs = $data['logs'];
+        $byGrade = $data['byGrade'];
+        $topSymptoms = $logs->pluck('symptoms')->filter()->flatMap(fn($s) => array_map('trim', explode(',', $s)))
+            ->countBy()->sortDesc()->take(10);
+
+        $filename = 'clinic_report_' . $dateFrom . '_to_' . $dateTo . '.csv';
+        log_activity(\App\Models\ClinicLog::class, 'Exported', auth()->user()->name . ' exported the clinic report CSV (nurse single, ' . $logs->count() . ' visit(s), ' . $dateFrom . ' to ' . $dateTo . ').');
+
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
+        $callback = function () use ($logs, $byGrade, $topSymptoms, $dateFrom, $dateTo) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Clinic Report', $dateFrom . ' to ' . $dateTo]);
+            fputcsv($file, ['Metric', 'Value']);
+            fputcsv($file, ['Total Visits', $logs->count()]);
+            fputcsv($file, ['Unique Patients', $logs->pluck('student_id')->unique()->count()]);
+            fputcsv($file, ['Referred Out', $logs->whereNotNull('referred_to')->count()]);
+            fputcsv($file, ['Open Cases', $logs->where('is_open', true)->count()]);
+            fputcsv($file, []);
+            fputcsv($file, ['Visits by Grade', 'Count']);
+            foreach ($byGrade as $grade => $count) {
+                fputcsv($file, [$grade, $count]);
+            }
+            fputcsv($file, []);
+            fputcsv($file, ['Top Symptoms', 'Count']);
+            foreach ($topSymptoms as $symptom => $count) {
+                fputcsv($file, [$symptom, $count]);
+            }
+            fputcsv($file, []);
+            fputcsv($file, ['Student', 'Visit Date', 'Symptoms', 'Referred To', 'Open']);
+            foreach ($logs as $log) {
+                fputcsv($file, [
+                    trim(($log->student->first_name ?? '') . ' ' . ($log->student->last_name ?? '')),
+                    $log->visit_date,
+                    $log->symptoms,
+                    $log->referred_to,
+                    $log->is_open ? 'Yes' : 'No',
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

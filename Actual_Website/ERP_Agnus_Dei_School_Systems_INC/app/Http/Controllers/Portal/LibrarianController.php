@@ -680,4 +680,49 @@ class LibrarianController extends Controller
 
         return response()->json($transactions);
     }
+
+    /**
+     * Library reports — librarian single reusing the directress totals path (spec: librarian-library-reports.md).
+     * Hardcoded to library only; no tab switching.
+     */
+    public function reports(Request $request, \App\Services\LibraryReportService $service)
+    {
+        $data = $service->libraryData();
+
+        if ($request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('portal.librarian.partials.reports-results', $data)->render(),
+            ]);
+        }
+
+        return view('portal.librarian.reports', $data);
+    }
+
+    /**
+     * Export the full transaction list behind the totals. Recorded per-role in the audit trail.
+     */
+    public function exportLibraryReports(Request $request)
+    {
+        $transactions = \App\Models\LibraryTransaction::with('student', 'book')->latest('borrow_date')->get();
+        $filename = 'library_report_' . now()->format('Ymd_His') . '.csv';
+        log_activity(\App\Models\LibraryTransaction::class, 'Exported', auth()->user()->name . ' exported the library report CSV (librarian single, ' . $transactions->count() . ' transactions).');
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
+        $callback = function() use ($transactions) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Student', 'Book', 'Status', 'Borrow Date', 'Return Date', 'Fees']);
+            foreach ($transactions as $t) {
+                fputcsv($file, [
+                    ($t->student->first_name ?? '') . ' ' . ($t->student->last_name ?? ''),
+                    $t->book->title ?? $t->book_title,
+                    $t->status,
+                    $t->borrow_date,
+                    $t->return_date,
+                    $t->total_fees ?? 0,
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

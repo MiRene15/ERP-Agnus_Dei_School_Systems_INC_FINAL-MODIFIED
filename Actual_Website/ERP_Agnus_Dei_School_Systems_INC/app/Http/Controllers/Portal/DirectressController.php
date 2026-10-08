@@ -363,28 +363,17 @@ class DirectressController extends Controller
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
         
-        $totalBooks = \App\Models\Book::where('is_active', true)->count();
-        $totalCopies = \App\Models\Book::where('is_active', true)->sum('quantity');
-        $availableCopies = \App\Models\Book::where('is_active', true)->sum('available_quantity');
-        $borrowedCount = \App\Models\LibraryTransaction::where('status', 'Borrowed')->count();
-        $overdueCount = \App\Models\LibraryTransaction::where('status', 'Borrowed')
-            ->where('return_date', '<', now())
-            ->where('return_date', '>', '1970-01-02')
-            ->whereNotNull('return_date')
-            ->count();
-        $totalTransactions = \App\Models\LibraryTransaction::count();
-        $totalFines = \App\Models\LibraryTransaction::where('fees_assessed', true)->sum('total_fees');
-        
-        $recentTransactions = \App\Models\LibraryTransaction::with('student', 'book')
-            ->latest('borrow_date')
-            ->take(10)
-            ->get();
-        
-        $popularBooks = \App\Models\Book::withCount('borrowings')
-            ->where('is_active', true)
-            ->orderByDesc('borrowings_count')
-            ->take(5)
-            ->get();
+        // Single library path shared with the librarian single (spec: librarian-library-reports.md).
+        $data = app(\App\Services\LibraryReportService::class)->libraryData();
+        $totalBooks = $data['totalBooks'];
+        $totalCopies = $data['totalCopies'];
+        $availableCopies = $data['availableCopies'];
+        $borrowedCount = $data['borrowedCount'];
+        $overdueCount = $data['overdueCount'];
+        $totalTransactions = $data['totalTransactions'];
+        $totalFines = $data['totalFines'];
+        $recentTransactions = $data['recentTransactions'];
+        $popularBooks = $data['popularBooks'];
         
         if ($isAjax) {
             return response()->json([
@@ -480,26 +469,18 @@ class DirectressController extends Controller
         $dateFrom = $request->date_from ?? now()->startOfMonth()->format('Y-m-d');
         $dateTo = $request->date_to ?? now()->format('Y-m-d');
 
-        $logs = \App\Models\ClinicLog::with('student.enrollments.section')
-            ->whereBetween('visit_date', [$dateFrom, $dateTo . ' 23:59:59'])
-            ->orderByDesc('visit_date')
-            ->get();
-
-        $totalVisits = $logs->count();
-        $uniquePatients = $logs->pluck('student_id')->unique()->count();
-        $referralsOut = $logs->whereNotNull('referred_to')->count();
-        $activeDays = $logs->groupBy(fn($l) => \Carbon\Carbon::parse($l->visit_date)->format('Y-m-d'))->count();
-
-        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
-        $byGrade = $logs->groupBy(fn($l) => $l->student?->enrollments->where('status', 'Active')->first()?->section?->grade_level ?? 'Unknown')
-            ->map->count()
-            ->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
-
-        $topSymptoms = $logs->pluck('symptoms')->filter()->flatMap(fn($s) => array_map('trim', explode(',', $s)))
-            ->countBy()->sortDesc()->take(8);
+        // Single totals path shared with the nurse single (spec: nurse-clinic-reports.md).
+        $data = app(\App\Services\ClinicReportService::class)->rangeData($dateFrom, $dateTo);
+        $logs = $data['logs'];
+        $totalVisits = $data['totalVisits'];
+        $uniquePatients = $data['uniquePatients'];
+        $referralsOut = $data['referralsOut'];
+        $activeDays = $data['activeDays'];
+        $byGrade = $data['byGrade'];
+        $topSymptoms = $data['topSymptoms'];
         // Privacy: Directress sees totals and trends only — no per-student
         // diagnosis details, no recent-visit rows. Full details stay with the clinic.
-        $openCases = $logs->where('is_open', true)->count();
+        $openCases = $data['openCases'];
 
         if ($isAjax) {
             return response()->json([
@@ -517,17 +498,14 @@ class DirectressController extends Controller
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
-        $gradeRank = ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
-        $byGrade = Enrollment::with('section')->where('status', 'Active')->get()
-            ->groupBy(fn($e) => $e->section?->grade_level ?? 'Unknown')->map->count()
-            ->sortBy(fn($_, $k) => $gradeRank[$k] ?? 99);
-        $bySection = Enrollment::with('section')->where('status', 'Active')->get()
-            ->groupBy(fn($e) => $e->section?->section_name ?? 'Unknown')->map->count()->sortKeys();
-        $byYear = Enrollment::where('status', 'Active')->get()->groupBy('school_year')->map->count()->sortKeysDesc();
-        $byGender = Student::whereHas('enrollments', fn($q) => $q->where('status', 'Active'))->get()
-            ->groupBy(fn($s) => $s->gender ?? 'Unknown')->map->count();
-        $byStrand = Enrollment::where('status', 'Active')->whereNotNull('strand')->get()->groupBy('strand')->map->count();
-        $total = $byGrade->sum();
+        // Single students path shared with the registrar single (spec: registrar-student-stats-reports.md).
+        $data = app(\App\Services\StudentStatsService::class)->studentStatsData();
+        $byGrade = $data['byGrade'];
+        $bySection = $data['bySection'];
+        $byYear = $data['byYear'];
+        $byGender = $data['byGender'];
+        $byStrand = $data['byStrand'];
+        $total = $data['total'];
 
         if ($isAjax) {
             return response()->json([

@@ -168,4 +168,50 @@ class RegistrarController extends Controller
 
         return view('portal.registrar.grade-fee', compact('pending', 'history', 'missingLedgers', 'gradFees', 'schoolYear', 'badgeCounts'));
     }
+
+    /**
+     * Student statistics reports — registrar single reusing the directress counts path
+     * (spec: registrar-student-stats-reports.md). Hardcoded to students only; no tab switching.
+     */
+    public function reports(Request $request, \App\Services\StudentStatsService $service)
+    {
+        $data = $service->studentStatsData();
+
+        if ($request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('portal.registrar.partials.reports-results', $data)->render(),
+            ]);
+        }
+
+        return view('portal.registrar.reports', $data);
+    }
+
+    /**
+     * Export the breakdown behind the counts. Recorded per-role in the audit trail.
+     */
+    public function exportStudentStatsReport()
+    {
+        $data = app(\App\Services\StudentStatsService::class)->studentStatsData();
+        $byGrade = $data['byGrade'];
+        $bySection = $data['bySection'];
+        $byYear = $data['byYear'];
+        $byGender = $data['byGender'];
+        $byStrand = $data['byStrand'];
+
+        $filename = 'student_statistics_' . now()->format('Ymd_His') . '.csv';
+        log_activity(Enrollment::class, 'Exported', auth()->user()->name . ' exported the student statistics CSV (registrar single, ' . $data['total'] . ' enrolled).');
+        $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => "attachment; filename=\"$filename\""];
+        $callback = function () use ($byGrade, $bySection, $byYear, $byGender, $byStrand) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Category', 'Label', 'Count']);
+            foreach (['By Grade' => $byGrade, 'By Section' => $bySection, 'By School Year' => $byYear, 'By Gender' => $byGender, 'By Strand' => $byStrand] as $category => $rows) {
+                foreach ($rows as $label => $count) {
+                    fputcsv($file, [$category, $label, $count]);
+                }
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

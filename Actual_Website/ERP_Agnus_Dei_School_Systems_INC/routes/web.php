@@ -194,6 +194,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/registrar/requests', [RegistrarController::class, 'requests'])->name('registrar.requests');
         Route::get('/registrar/sections-subjects', [RegistrarController::class, 'sectionsSubjects'])->name('registrar.sections-subjects');
         Route::get('/registrar/grade-fee', [RegistrarController::class, 'gradeFee'])->name('registrar.grade-fee');
+        // Student statistics reports — registrar single reusing the directress counts path (spec: registrar-student-stats-reports.md).
+        Route::get('/registrar/reports', [RegistrarController::class, 'reports'])->name('registrar.reports');
+        Route::get('/registrar/reports/export', [RegistrarController::class, 'exportStudentStatsReport'])->name('registrar.reports.export');
     });
 
     Route::middleware(['role:3'])->group(function() {
@@ -279,6 +282,9 @@ Route::middleware('auth')->group(function () {
         Route::patch('/librarian/visits/{visit}/clock-out', [LibrarianController::class, 'clockOut'])->name('librarian.visits.clock-out');
         // History
         Route::get('/librarian/history', [LibrarianController::class, 'history'])->name('librarian.history')->middleware('throttle:search');
+        // Library reports — librarian single reusing the directress totals path (spec: librarian-library-reports.md).
+        Route::get('/librarian/reports', [LibrarianController::class, 'reports'])->name('librarian.reports');
+        Route::get('/librarian/reports/export', [LibrarianController::class, 'exportLibraryReports'])->name('librarian.reports.export');
     });
 
     Route::middleware(['role:6'])->group(function() {
@@ -288,6 +294,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/nurse/logs', [NurseController::class, 'storeLog'])->name('nurse.logs.store');
         // Open cases raise a clearance Hold — closing lifts it.
         Route::patch('/nurse/logs/{log}/close', [NurseController::class, 'closeCase'])->name('nurse.logs.close');
+        // Clinic reports — nurse single reusing the directress totals path (spec: nurse-clinic-reports.md).
+        Route::get('/nurse/reports', [NurseController::class, 'reports'])->name('nurse.reports');
+        Route::get('/nurse/reports/export', [NurseController::class, 'exportClinicReport'])->name('nurse.reports.export');
     });
 
     // Using role 7 for Students (and potentially Parents/Guardians under unified)
