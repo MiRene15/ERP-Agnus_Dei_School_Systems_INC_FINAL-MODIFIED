@@ -9,7 +9,7 @@
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">Discount Approvals</h2>
-    <p class="text-gray-600 mt-1">You approve or reject. Only the Cashier applies approved discounts — you never touch paid marking.</p>
+    <p class="text-gray-600 mt-1">You approve or reject. Approving posts the discount by itself — you never touch paid marking.</p>
 </div>
 
 @if(session('success'))

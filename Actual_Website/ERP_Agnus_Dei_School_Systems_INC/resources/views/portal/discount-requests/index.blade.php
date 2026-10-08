@@ -9,7 +9,7 @@
 @section('content')
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Discount Requests</h2>
-    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Request with proof (ESC, Honor, Sibling) → Directress approves → Cashier applies. Direct grants are disabled.</p>
+    <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Request with proof (ESC, Honor, Sibling, Other) → Directress approves → discount posts by itself. Direct grants are disabled.</p>
 </div>
 
 @if(session('success'))
@@ -52,7 +52,7 @@
             <input type="number" name="discount_amount" id="discount-amount" value="{{ old('discount_amount') }}" required min="0" step="0.01" class="w-full rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             <div class="flex gap-2 mt-2 flex-wrap">
                 <span class="text-xs text-gray-500 dark:text-[#8A90B0] self-center">Quick % of assessed:</span>
-                @foreach([5, 10, 15, 20, 30] as $pct)
+                @foreach(\App\Models\DiscountRequest::DISCOUNT_PERCENTS as $pct)
                 <button type="button" onclick="setDiscountPreset({{ $pct }})" class="px-3 py-1 rounded-lg text-xs font-semibold border border-gray-300 dark:border-[#3B4172] text-gray-700 dark:text-[#C1C4DC] hover:border-indigo-500 hover:text-indigo-600 transition">{{ $pct }}%</button>
                 @endforeach
                 <span id="preset-hint" class="text-xs text-indigo-600 dark:text-[#8A90B0] self-center"></span>

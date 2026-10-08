@@ -10,7 +10,7 @@
 <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
     <div>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Manage Discounts</h2>
-        <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Two-step process: request with proof → Directress approves → Cashier applies here. Nobody grants and collects alone.</p>
+        <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Approvals post by themselves now. The list below is pre-change backlog only — nobody grants and collects alone.</p>
     </div>
     <a href="{{ route('cashier.requests', ['view' => 'requests']) }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">+ Request Discount</a>
 </div>
