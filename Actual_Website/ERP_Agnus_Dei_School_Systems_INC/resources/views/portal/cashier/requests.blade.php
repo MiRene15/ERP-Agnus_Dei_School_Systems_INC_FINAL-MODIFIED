@@ -22,7 +22,7 @@
 <div x-data="{ tab: ((v) => ['discounts','requests','refunds'].includes(v) ? v : 'discounts')(new URLSearchParams(window.location.search).get('view')), setTab(v) { this.tab = v; const u = new URL(window.location.href); if (v === 'discounts') { u.searchParams.delete('view'); } else { u.searchParams.set('view', v); } window.history.replaceState({}, '', u); } }">
     <div class="inline-flex gap-1 mb-6 p-1 rounded-xl bg-gray-100 dark:bg-[#23274C]" role="tablist" aria-label="Request type">
         <button @click="setTab('discounts')" :class="tab==='discounts' ? 'text-white shadow font-semibold' : 'text-gray-500 dark:text-[#8A90B0]'" :style="tab==='discounts' ? 'background: var(--navy);' : ''" class="px-4 py-2 text-sm rounded-lg transition" role="tab" :aria-selected="tab==='discounts'">Discounts @if($badgeCounts['discounts'] > 0)<span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-green-600 text-white">{{ $badgeCounts['discounts'] }}</span>@endif</button>
-        <button @click="setTab('requests')" :class="tab==='requests' ? 'text-white shadow font-semibold' : 'text-gray-500 dark:text-[#8A90B0]'" :style="tab==='requests' ? 'background: var(--navy);' : ''" class="px-4 py-2 text-sm rounded-lg transition" role="tab" :aria-selected="tab==='requests'">Discount Requests @if($badgeCounts['requests'] > 0)<span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500 text-white">{{ $badgeCounts['requests'] }}</span>@endif</button>
+        <button data-hub-tab="requests" @click="setTab('requests')" :class="tab==='requests' ? 'text-white shadow font-semibold' : 'text-gray-500 dark:text-[#8A90B0]'" :style="tab==='requests' ? 'background: var(--navy);' : ''" class="px-4 py-2 text-sm rounded-lg transition" role="tab" :aria-selected="tab==='requests'">Discount Requests @if($badgeCounts['requests'] > 0)<span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500 text-white">{{ $badgeCounts['requests'] }}</span>@endif</button>
         <button @click="setTab('refunds')" :class="tab==='refunds' ? 'text-white shadow font-semibold' : 'text-gray-500 dark:text-[#8A90B0]'" :style="tab==='refunds' ? 'background: var(--navy);' : ''" class="px-4 py-2 text-sm rounded-lg transition" role="tab" :aria-selected="tab==='refunds'">Refunds @if($badgeCounts['refunds'] > 0)<span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-red-500 text-white">{{ $badgeCounts['refunds'] }}</span>@endif</button>
     </div>
 
@@ -153,6 +153,21 @@
         </div>
 
         <script>
+        // In-hub Request flip (spec: cashier-hub-tab-navigation.md): row buttons
+        // injected via ajax can't use Alpine directives, so this plain function
+        // flips the Discount Requests toggle and pre-picks the row's student.
+        // Outside the hub (standalone table) it falls back to opening the hub.
+        function cashierRequestForLedger(ledgerId) {
+            var tabBtn = document.querySelector('[data-hub-tab="requests"]');
+            var sel = document.getElementById('ledger-select');
+            if (tabBtn && sel) {
+                sel.value = String(ledgerId);
+                tabBtn.click();
+                sel.scrollIntoView({ block: 'nearest' });
+            } else {
+                window.location.href = '{{ route('cashier.requests', ['view' => 'requests']) }}';
+            }
+        }
         function setDiscountPreset(pct) {
             var sel = document.getElementById('ledger-select');
             var hint = document.getElementById('preset-hint');

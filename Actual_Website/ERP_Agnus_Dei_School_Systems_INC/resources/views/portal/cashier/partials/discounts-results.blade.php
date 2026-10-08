@@ -48,7 +48,7 @@
                     @elseif(isset($openIds[$ledger->id]))
                         <span class="text-xs font-medium text-amber-600">Awaiting Directress approval</span>
                     @else
-                        <a href="{{ route('discount-requests.index') }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Request</a>
+                        <button type="button" onclick="cashierRequestForLedger({{ $ledger->id }})" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Request</button>
                     @endif
                 </td>
             </tr>
