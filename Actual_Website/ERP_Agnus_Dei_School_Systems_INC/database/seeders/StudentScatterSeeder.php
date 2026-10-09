@@ -130,6 +130,7 @@ class StudentScatterSeeder extends Seeder
                             'first_name' => $firstName,
                             'middle_name' => $middleName,
                             'last_name' => $lastName,
+                            'gender' => (($scatterGender = rand(1, 100)) <= 47 ? 'Male' : ($scatterGender <= 94 ? 'Female' : ($scatterGender <= 97 ? 'Non-binary' : 'Prefer not to say'))),
                             'personal_email' => $email,
                             'date_of_birth' => now()->subYears(match ($grade) {
                                 'Kinder' => 5, 'Grade 1' => 6, 'Grade 2' => 7, 'Grade 3' => 8,
@@ -161,13 +162,19 @@ class StudentScatterSeeder extends Seeder
                         ]
                     );
 
+                    $statusRoll = rand(0, 99);
+                    $admissionStatus = match (true) {
+                        $statusRoll < 60 => 'Approved By Registrar',
+                        $statusRoll < 85 => 'Pending',
+                        default => 'Rejected',
+                    };
                     Admission::updateOrCreate(
                         ['student_id' => $student->id, 'school_year' => $schoolYear],
                         [
                             'application_type' => $admissionTypes[array_rand($admissionTypes)],
                             'grade_level' => $grade,
                             'strand' => $strand,
-                            'status' => 'Approved By Registrar',
+                            'status' => $admissionStatus,
                         ]
                     );
 

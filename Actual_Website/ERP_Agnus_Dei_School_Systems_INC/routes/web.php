@@ -163,8 +163,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/discount-requests', [DiscountRequestController::class, 'store'])->name('discount-requests.store');
     });
 
-    // Grade unlock reviews — Principal or Registrar re-opens submitted grades for correction.
-    Route::middleware(['role:2,9'])->group(function() {
+    // Grade unlock reviews — Registrar re-opens submitted grades for correction.
+    Route::middleware(['role:2'])->group(function() {
         Route::get('/registrar/grade-unlocks', [GradeUnlockController::class, 'reviewIndex'])->name('registrar.grade-unlocks.index');
         Route::post('/registrar/grade-unlocks/{unlockRequest}/approve', [GradeUnlockController::class, 'approve'])->name('registrar.grade-unlocks.approve');
         Route::post('/registrar/grade-unlocks/{unlockRequest}/reject', [GradeUnlockController::class, 'reject'])->name('registrar.grade-unlocks.reject');
@@ -172,11 +172,21 @@ Route::middleware('auth')->group(function () {
         Route::post('/registrar/grade-unlocks/batch-reject', [GradeUnlockController::class, 'batchReject'])->name('registrar.grade-unlocks.batch-reject');
     });
 
+    // Grade unlock reviews — Principal re-opens submitted grades for correction.
+    Route::middleware(['role:9'])->group(function() {
+        Route::get('/principal/grade-unlocks', [GradeUnlockController::class, 'reviewIndex'])->name('principal.grade-unlocks.index');
+        Route::post('/principal/grade-unlocks/{unlockRequest}/approve', [GradeUnlockController::class, 'approve'])->name('principal.grade-unlocks.approve');
+        Route::post('/principal/grade-unlocks/{unlockRequest}/reject', [GradeUnlockController::class, 'reject'])->name('principal.grade-unlocks.reject');
+        Route::post('/principal/grade-unlocks/batch-approve', [GradeUnlockController::class, 'batchApprove'])->name('principal.grade-unlocks.batch-approve');
+        Route::post('/principal/grade-unlocks/batch-reject', [GradeUnlockController::class, 'batchReject'])->name('principal.grade-unlocks.batch-reject');
+    });
+
     Route::middleware(['role:2'])->group(function() {
         Route::get('/registrar/dashboard', [RegistrarController::class, 'index'])->name('registrar.dashboard');
         Route::get('/registrar/admissions', [RegistrarAdmissionController::class, 'index'])->name('registrar.admissions.index')->middleware('throttle:search');
         Route::get('/registrar/admissions/{admission}', [RegistrarAdmissionController::class, 'show'])->name('registrar.admissions.show');
         Route::post('/registrar/admissions/{admission}/approve', [RegistrarAdmissionController::class, 'approve'])->name('registrar.admissions.approve');
+        Route::post('/registrar/admissions/{admission}/gender', [RegistrarAdmissionController::class, 'updateGender'])->name('registrar.admissions.gender');
         Route::post('/registrar/admissions/{admission}/reject', [RegistrarAdmissionController::class, 'reject'])->name('registrar.admissions.reject');
         Route::post('/registrar/admissions/{admission}/verify-all', [RegistrarAdmissionController::class, 'verifyAll'])->name('registrar.admissions.verify-all');
         // Approval-email resend (spec: applicant-email-reliability.md).

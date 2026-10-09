@@ -138,6 +138,12 @@ class RegistrarAdmissionController extends Controller
             return back()->with('error', 'This admission has already been processed.');
         }
 
+        // Gender gate (spec: admission-gender-required.md): approval is
+        // blocked while gender is empty — registrar corrects it first.
+        if (empty($admission->student?->gender)) {
+            return back()->with('error', 'Gender is still missing for this applicant. Please set it above before approving.');
+        }
+
         $unverifiedCount = $admission->requirements()->where('status', '!=', 'Verified')->count();
         if ($unverifiedCount > 0) {
             return back()->with('error', 'All requirements must be verified before approving. ' . $unverifiedCount . ' requirement(s) still pending.');
@@ -224,6 +230,27 @@ class RegistrarAdmissionController extends Controller
             ]);
             return back()->with('error', 'Failed to approve admission. Please try again.');
         }
+    }
+
+    public function updateGender(Request $request, Admission $admission)
+    {
+        $data = $request->validate([
+            'gender' => 'required|in:Male,Female,Non-binary,Prefer not to say',
+            'gender_detail' => 'nullable|string|max:100',
+        ]);
+
+        $detail = in_array($data['gender'], ['Non-binary', 'Prefer not to say'], true)
+            ? ($data['gender_detail'] ?? null)
+            : null;
+
+        $admission->student()->update([
+            'gender' => $data['gender'],
+            'gender_detail' => $detail,
+        ]);
+
+        log_activity($admission, 'Gender Corrected', auth()->user()->name . ' set gender to ' . $data['gender'] . ' for admission #' . $admission->id . '.');
+
+        return back()->with('success', 'Gender saved.');
     }
 
     public function reject(Admission $admission)

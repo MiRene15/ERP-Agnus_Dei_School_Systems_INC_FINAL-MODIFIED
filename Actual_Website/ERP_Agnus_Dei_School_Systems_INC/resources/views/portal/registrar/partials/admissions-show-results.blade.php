@@ -50,6 +50,25 @@
                     <dt class="text-gray-500">Student No.</dt>
                     <dd class="font-medium text-gray-900">{{ $admission->student->student_number ?? 'Not yet assigned' }}</dd>
                 </div>
+                <div class="col-span-2">
+                    <dt class="text-gray-500">Gender</dt>
+                    <dd class="font-medium text-gray-900">{{ $admission->student->gender ?? 'Missing — set before approving' }}</dd>
+                    @if($admission->status === 'Pending')
+                    <form method="POST" action="{{ route('registrar.admissions.gender', $admission) }}" class="mt-2 flex flex-wrap items-center gap-2">
+                        @csrf
+                        <select name="gender" required class="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="">Select…</option>
+                            @foreach(['Male','Female','Non-binary','Prefer not to say'] as $g)
+                                <option value="{{ $g }}" @selected(($admission->student->gender ?? '') === $g)>{{ $g }}</option>
+                            @endforeach
+                        </select>
+                        <input type="text" name="gender_detail" maxlength="100" placeholder="Describe (optional)" value="{{ $admission->student->gender_detail ?? '' }}"
+                               class="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <button type="submit" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition">Save Gender</button>
+                    </form>
+                    @error('gender') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    @endif
+                </div>
             </dl>
         </div>
 

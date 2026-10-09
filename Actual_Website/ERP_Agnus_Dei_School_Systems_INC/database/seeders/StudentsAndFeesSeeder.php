@@ -229,6 +229,7 @@ class StudentsAndFeesSeeder extends Seeder
                     'first_name' => $seed['first_name'],
                     'middle_name' => $middleName,
                     'last_name' => $seed['last_name'],
+                    'gender' => (($seedGender = rand(1, 100)) <= 47 ? 'Male' : ($seedGender <= 94 ? 'Female' : ($seedGender <= 97 ? 'Non-binary' : 'Prefer not to say'))),
                     'personal_email' => $email,
                     'date_of_birth' => now()->subYears(match ($grade) {
                         'Kinder' => 5, 'Grade 1' => 6, 'Grade 2' => 7, 'Grade 3' => 8,
@@ -270,13 +271,19 @@ class StudentsAndFeesSeeder extends Seeder
             }
 
             $admissionTypes = ['New', 'New', 'New', 'Honor', 'Sibling', 'Transferee'];
+            $statusRoll = rand(0, 99);
+            $admissionStatus = match (true) {
+                $statusRoll < 60 => 'Approved By Registrar',
+                $statusRoll < 85 => 'Pending',
+                default => 'Rejected',
+            };
             $admission = Admission::updateOrCreate(
                 ['student_id' => $student->id, 'school_year' => $schoolYear],
                 [
                     'application_type' => $admissionTypes[array_rand($admissionTypes)],
                     'grade_level' => $grade,
                     'strand' => $seed['strand'],
-                    'status' => $studentStatus === 'graduated' ? 'Approved By Registrar' : 'Approved By Registrar',
+                    'status' => $admissionStatus,
                 ]
             );
 

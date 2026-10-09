@@ -61,12 +61,19 @@
             </div>
             <div>
                 <p class="text-xs font-semibold text-gray-500 dark:text-[#8A90B0] uppercase mb-1">Gender</p>
-                @foreach($byGender as $gender => $count)
+                @foreach($byGender->except('Unknown') as $gender => $count)
                 <div class="flex justify-between text-sm py-1 border-b border-gray-100 dark:border-[#2A2F58] last:border-0">
                     <span class="text-gray-600 dark:text-[#C1C4DC]">{{ $gender }}</span>
                     <span class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $count }}</span>
                 </div>
                 @endforeach
+                @if(($byGender->get('Unknown', 0)) > 0)
+                <div class="flex justify-between text-sm py-1 border-b border-gray-100 dark:border-[#2A2F58] last:border-0">
+                    <span class="text-gray-600 dark:text-[#C1C4DC]">Unknown</span>
+                    <span class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $byGender->get('Unknown') }}</span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-[#8A90B0] mt-1">{{ $byGender->get('Unknown') }} active student(s) still missing gender — ask the registrar to correct them.</p>
+                @endif
             </div>
             @if($byStrand->isNotEmpty())
             <div>

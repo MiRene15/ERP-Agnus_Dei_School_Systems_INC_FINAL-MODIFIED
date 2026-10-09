@@ -201,6 +201,23 @@
                                class="w-full rounded-r-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                    <select name="gender" x-model="f.gender" required
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <option value="">Select…</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Non-binary">Non-binary</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                    @error('gender') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div x-show="f.gender === 'Non-binary' || f.gender === 'Prefer not to say'" x-cloak>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Describe in your own words (optional)</label>
+                    <input type="text" name="gender_detail" x-model="f.gender_detail" maxlength="100"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                </div>
             </div>
             <div class="flex items-center justify-between mt-6">
                 <button type="button" @click="prev()"
@@ -380,6 +397,8 @@
                 religion: @js($draftData['religion'] ?? $student->religion),
                 legacy_lrn: @js($draftData['legacy_lrn'] ?? $student->legacy_lrn),
                 contact_number: @js($draftData['contact_number'] ?? $student->contact_number),
+                gender: @js($draftData['gender'] ?? $student->gender ?? ''),
+                gender_detail: @js($draftData['gender_detail'] ?? $student->gender_detail ?? ''),
                 permanent_address: @js($draftData['permanent_address'] ?? $student->permanent_address),
                 same_as_permanent: {{ ($draftData['same_as_permanent'] ?? $student->same_as_permanent) ? 'true' : 'false' }},
                 current_address: @js($draftData['current_address'] ?? $student->current_address),
@@ -412,7 +431,7 @@
             isStepComplete(n) {
                 const requiredByStep = {
                     1: ['application_type', 'grade_level', 'school_year'],
-                    2: ['first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'citizenship', 'contact_number'],
+                    2: ['first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'citizenship', 'contact_number', 'gender'],
                     3: ['permanent_address'],
                     4: [],
                     5: ['emergency_contact_name', 'emergency_contact_number', 'emergency_contact_relationship'],

@@ -75,6 +75,8 @@ class StudentAdmissionController extends Controller
             'first_name' => 'nullable|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'nullable|string|max:100',
+            'gender' => 'nullable|in:Male,Female,Non-binary,Prefer not to say',
+            'gender_detail' => 'nullable|string|max:100',
             'date_of_birth' => 'nullable|date|after_or_equal:1950-01-01|before_or_equal:today',
             'place_of_birth' => 'nullable|string|max:255',
             'citizenship' => 'nullable|string|max:100',
@@ -149,6 +151,8 @@ class StudentAdmissionController extends Controller
             'first_name' => 'required|string|max:100',
             'middle_name' => 'nullable|string|max:100',
             'last_name' => 'required|string|max:100',
+            'gender' => 'required|in:Male,Female,Non-binary,Prefer not to say',
+            'gender_detail' => 'nullable|string|max:100',
             'date_of_birth' => 'required|date|after_or_equal:1950-01-01|before_or_equal:today',
             'place_of_birth' => 'nullable|string|max:255',
             'citizenship' => 'nullable|string|max:100',
@@ -174,6 +178,7 @@ class StudentAdmissionController extends Controller
             'previous_school' => 'nullable|string|max:255',
             'previous_school_address' => 'nullable|string|max:500',
         ], [
+            'gender.required' => 'Please choose the option that fits best — Prefer not to say is okay.',
             'date_of_birth.after_or_equal' => 'Birth date is too far back.',
             'date_of_birth.before_or_equal' => "Birth date can't be in the future.",
         ]);
@@ -182,10 +187,17 @@ class StudentAdmissionController extends Controller
         $data['guardian_contact'] = $this->normalizePhone($data['guardian_contact'] ?? null);
         $data['emergency_contact_number'] = $this->normalizePhone($data['emergency_contact_number'] ?? null);
 
+        // Free-text detail only applies to Non-binary / Prefer not to say.
+        $genderDetail = in_array($data['gender'] ?? null, ['Non-binary', 'Prefer not to say'], true)
+            ? ($data['gender_detail'] ?? null)
+            : null;
+
         $student->update([
             'first_name' => $data['first_name'],
             'middle_name' => $data['middle_name'] ?? null,
             'last_name' => $data['last_name'],
+            'gender' => $data['gender'],
+            'gender_detail' => $genderDetail,
             'date_of_birth' => $data['date_of_birth'],
             'place_of_birth' => $data['place_of_birth'],
             'citizenship' => $data['citizenship'],
