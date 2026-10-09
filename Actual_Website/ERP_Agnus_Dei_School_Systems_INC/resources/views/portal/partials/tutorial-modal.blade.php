@@ -1,7 +1,7 @@
 @if(auth()->user()->first_login_at && request()->routeIs('*.dashboard') && !session('tutorial_dismissed'))
 @php
 $tutorial = match(auth()->user()->role_id) {
-    1 => ['title' => 'Welcome to the Admin Dashboard!', 'desc' => 'Manage accounts, configure school settings, review audit logs, and export data. Use the sidebar to access all admin tools.', 'link' => route('admin.users.index'), 'linkText' => 'Manage Accounts →', 'color' => 'purple'],
+    1 => ['title' => 'Welcome to the Admin Dashboard!', 'desc' => 'Manage accounts, configure school settings, review audit trails, and export data. Use the sidebar to access all admin tools.', 'link' => route('admin.users.index'), 'linkText' => 'Manage Accounts →', 'color' => 'purple'],
     2 => ['title' => 'Welcome to the Registrar Dashboard!', 'desc' => 'Review student applications, verify requirements, manage enrollments, and process student records.', 'link' => route('registrar.admissions.index'), 'linkText' => 'Review Admissions →', 'color' => 'teal'],
     3 => ['title' => 'Welcome to the Cashier Dashboard!', 'desc' => 'Process payments, view collections, and manage student ledgers. Use the sidebar to search students and record payments.', 'link' => route('cashier.payments'), 'linkText' => 'Search Students →', 'color' => 'green'],
     4 => ['title' => 'Welcome to the Faculty Portal!', 'desc' => 'View your classes, manage student grades, and check your daily schedule. Click a class to open its grade sheet.', 'link' => route('teacher.schedule'), 'linkText' => 'View Schedule →', 'color' => 'orange'],

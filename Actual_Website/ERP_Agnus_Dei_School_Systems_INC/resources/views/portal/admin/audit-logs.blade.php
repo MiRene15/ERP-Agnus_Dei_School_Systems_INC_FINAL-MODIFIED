@@ -1,12 +1,12 @@
 @extends('portal.layouts.app')
 
 @section('breadcrumbs')
-    <span class="current">Audit Logs</span>
+    <span class="current">Audit Trails</span>
 @endsection
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Audit Logs</h2>
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-[#E8EAF6]">Audit Trails</h2>
     <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Track all user activity across the system.</p>
 </div>
 
