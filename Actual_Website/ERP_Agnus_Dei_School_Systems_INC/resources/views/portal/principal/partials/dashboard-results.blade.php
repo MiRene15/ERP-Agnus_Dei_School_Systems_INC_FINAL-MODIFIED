@@ -13,6 +13,14 @@
     </div>
 </div>
 
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <a href="{{ route('principal.approvals', ['view' => 'grade-edit']) }}" class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition block">
+        <p class="text-sm text-gray-500">Grade Unlock Reviews</p>
+        <p class="text-2xl font-bold {{ ($pendingUnlocks ?? 0) > 0 ? 'text-amber-600' : 'text-gray-900' }} mt-1">{{ $pendingUnlocks ?? 0 }}</p>
+        <p class="text-sm text-gray-500 mt-1">Teacher correction requests</p>
+    </a>
+</div>
+
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
     <h3 class="text-lg font-bold text-gray-900 mb-4">Recent Announcements</h3>
     @if($recentAnnouncements->isEmpty())

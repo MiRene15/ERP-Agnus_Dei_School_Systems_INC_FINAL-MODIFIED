@@ -216,6 +216,13 @@ class TeacherController extends Controller
             ->where('status', 'Pending')
             ->update(['status' => 'Submitted']);
 
+        // Auto-cancel any pending unlock requests for this class/term — grades are re-submitted,
+        // so the unlock is no longer needed (spec: grade-edit-hub-consistency.md).
+        $cancelled = \App\Models\GradeUnlockRequest::where('class_id', $class->id)
+            ->where('grading_period', $data['grading_period'])
+            ->where('status', \App\Models\GradeUnlockRequest::STATUS_PENDING)
+            ->update(['status' => 'cancelled', 'reviewed_at' => now()]);
+
         // Principal + Registrar are notified (IT is out of the academic loop).
         $recipients = User::whereIn('role_id', [2, 9])->pluck('email')->filter();
         try {

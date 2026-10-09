@@ -81,10 +81,12 @@
                     <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $req->grading_period }}</td>
                     <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC] text-xs max-w-xs">{{ $req->reason }}</td>
                     <td class="py-2 px-2">
-                        @php $badge = ['pending' => 'bg-amber-100 text-amber-700', 'approved' => 'bg-green-100 text-green-700', 'rejected' => 'bg-red-100 text-red-700'][$req->status] ?? 'bg-gray-100 text-gray-600'; @endphp
+                        @php $badge = ['pending' => 'bg-amber-100 text-amber-700', 'approved' => 'bg-green-100 text-green-700', 'rejected' => 'bg-red-100 text-red-700', 'cancelled' => 'bg-gray-100 text-gray-600'][$req->status] ?? 'bg-gray-100 text-gray-600'; @endphp
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $badge }}">{{ ucfirst($req->status) }}</span>
                         @if($req->status === 'approved')
                             <span class="block text-xs text-gray-500 mt-1">Reopened — correct then re-submit.</span>
+                        @elseif($req->status === 'cancelled')
+                            <span class="block text-xs text-gray-500 mt-1">Grades were re-submitted — no longer needed.</span>
                         @endif
                     </td>
                 </tr>

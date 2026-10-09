@@ -56,6 +56,10 @@ class GradeUnlockController extends Controller
             abort(403);
         }
 
+        if (school_year_locked($class->school_year)) {
+            return back()->with('error', 'School year ' . $class->school_year . ' is locked — grade unlocks are not permitted.');
+        }
+
         $submittedCount = Grade::where('class_id', $class->id)
             ->where('grading_period', $data['grading_period'])
             ->where('status', 'Submitted')
@@ -166,6 +170,10 @@ class GradeUnlockController extends Controller
     {
         if ($unlockRequest->status !== GradeUnlockRequest::STATUS_PENDING) {
             return back()->with('error', 'Only pending requests can be rejected.');
+        }
+
+        if ($unlockRequest->schoolClass && school_year_locked($unlockRequest->schoolClass->school_year)) {
+            return back()->with('error', 'School year ' . $unlockRequest->schoolClass->school_year . ' is locked — unlocks can no longer be rejected for it.');
         }
 
         $unlockRequest->update([

@@ -166,7 +166,13 @@ class RegistrarController extends Controller
 
         $badgeCounts = ['grade-edit' => $pending->count()];
 
-        return view('portal.registrar.grade-fee', compact('pending', 'history', 'missingLedgers', 'gradFees', 'schoolYear', 'badgeCounts'));
+        $schoolYears = \App\Models\Enrollment::distinct()
+            ->where('status', 'Active')
+            ->pluck('school_year')
+            ->sort()
+            ->values();
+
+        return view('portal.registrar.grade-fee', compact('pending', 'history', 'missingLedgers', 'gradFees', 'schoolYear', 'badgeCounts', 'schoolYears'));
     }
 
     /**

@@ -26,17 +26,18 @@ class PrincipalController extends Controller
         $totalSections = Section::count();
         $totalStudents = Enrollment::where('status', 'Active')->count();
         $recentAnnouncements = Announcement::latest()->take(5)->get();
+        $pendingUnlocks = \App\Models\GradeUnlockRequest::where('status', \App\Models\GradeUnlockRequest::STATUS_PENDING)->count();
 
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.principal.partials.dashboard-results', compact(
-                    'totalAnnouncements', 'totalSections', 'totalStudents', 'recentAnnouncements'
+                    'totalAnnouncements', 'totalSections', 'totalStudents', 'recentAnnouncements', 'pendingUnlocks'
                 ))->render(),
             ]);
         }
 
         return view('portal.principal.dashboard', compact(
-            'totalAnnouncements', 'totalSections', 'totalStudents', 'recentAnnouncements'
+            'totalAnnouncements', 'totalSections', 'totalStudents', 'recentAnnouncements', 'pendingUnlocks'
         ));
     }
 
@@ -604,6 +605,12 @@ class PrincipalController extends Controller
             'grade-edit' => $pending->count(),
         ];
 
-        return view('portal.principal.approvals', compact('proposals', 'passingGrade', 'subjectPending', 'subjectHistory', 'pending', 'history', 'badgeCounts'));
+        $schoolYears = \App\Models\Enrollment::distinct()
+            ->where('status', 'Active')
+            ->pluck('school_year')
+            ->sort()
+            ->values();
+
+        return view('portal.principal.approvals', compact('proposals', 'passingGrade', 'subjectPending', 'subjectHistory', 'pending', 'history', 'badgeCounts', 'schoolYears'));
     }
 }
