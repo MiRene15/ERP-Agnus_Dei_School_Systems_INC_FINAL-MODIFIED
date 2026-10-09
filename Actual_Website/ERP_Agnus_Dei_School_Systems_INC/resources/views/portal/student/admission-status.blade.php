@@ -31,4 +31,26 @@
         <div x-show="!loading" x-cloak x-ref="results" x-html="html" class="fade-in"></div>
     </div>
 </div>
+
+{{-- After a successful submit we arrive with #upload-requirements. The list
+     itself loads via ajaxTable, so wait for the block to exist, then bring
+     it into view and highlight it briefly. --}}
+<script>
+(function () {
+    if (window.location.hash !== '#upload-requirements') return;
+    var tries = 0;
+    var timer = setInterval(function () {
+        tries++;
+        var block = document.getElementById('upload-requirements');
+        if (block) {
+            clearInterval(timer);
+            try { block.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { block.scrollIntoView(); }
+            block.classList.add('ring-2', 'ring-blue-500', 'border-blue-400');
+            setTimeout(function () { block.classList.remove('ring-2', 'ring-blue-500', 'border-blue-400'); }, 4000);
+        } else if (tries >= 40) {
+            clearInterval(timer);
+        }
+    }, 250);
+})();
+</script>
 @endsection

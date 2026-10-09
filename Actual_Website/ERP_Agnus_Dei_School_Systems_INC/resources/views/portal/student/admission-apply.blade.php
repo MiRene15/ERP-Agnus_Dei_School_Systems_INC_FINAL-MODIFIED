@@ -150,21 +150,25 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
                     <input type="text" name="first_name" x-model="f.first_name" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('first_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
                     <input type="text" name="middle_name" x-model="f.middle_name" maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('middle_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
                     <input type="text" name="last_name" x-model="f.last_name" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('last_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
                     <input type="date" name="date_of_birth" x-model="f.date_of_birth" required min="1950-01-01" max="{{ date('Y-m-d') }}"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('date_of_birth') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
@@ -175,22 +179,26 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Place of Birth *</label>
                     <input type="text" name="place_of_birth" x-model="f.place_of_birth" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('place_of_birth') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Citizenship *</label>
                     <input type="text" name="citizenship" x-model="f.citizenship" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('citizenship') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Religion</label>
                     <input type="text" name="religion" x-model="f.religion" maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('religion') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">LRN (Learner Reference Number)</label>
                     <input type="tel" name="legacy_lrn" x-model="f.legacy_lrn" maxlength="12" pattern="[0-9]{12}" inputmode="numeric" placeholder="123456789012"
                            oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 12)"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('legacy_lrn') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
@@ -200,6 +208,7 @@
                                oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 11)"
                                class="w-full rounded-r-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
+                    @error('contact_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
@@ -217,6 +226,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Describe in your own words (optional)</label>
                     <input type="text" name="gender_detail" x-model="f.gender_detail" maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('gender_detail') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
             <div class="flex items-center justify-between mt-6">
@@ -239,6 +249,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Permanent Address *</label>
                     <textarea name="permanent_address" rows="2" required maxlength="500" x-model="f.permanent_address"
                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                    @error('permanent_address') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                     <input type="checkbox" name="same_as_permanent" x-model="f.same_as_permanent" value="1">
@@ -248,6 +259,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Current Address</label>
                     <textarea name="current_address" rows="2" maxlength="500" x-model="f.current_address" x-bind:disabled="f.same_as_permanent"
                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                    @error('current_address') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
             <div class="flex items-center justify-between mt-6">
@@ -321,6 +333,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                     <input type="text" name="emergency_contact_name" x-model="f.emergency_contact_name" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('emergency_contact_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Contact Number *</label>
@@ -330,11 +343,13 @@
                                oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 11)"
                                class="w-full rounded-r-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
+                    @error('emergency_contact_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Relationship *</label>
                     <input type="text" name="emergency_contact_relationship" x-model="f.emergency_contact_relationship" required maxlength="100"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('emergency_contact_relationship') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
             <div class="flex items-center justify-between mt-6">
@@ -358,11 +373,13 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">School Name *</label>
                     <input type="text" name="previous_school" x-model="f.previous_school" required maxlength="255"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('previous_school') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">School Address</label>
                     <input type="text" name="previous_school_address" x-model="f.previous_school_address" maxlength="500"
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    @error('previous_school_address') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
             <div class="flex items-center justify-between mt-6">
@@ -476,18 +493,50 @@
                 }).catch(() => { this.saving = false; });
             },
 
+            owningForm() {
+                if (this.$el && this.$el.tagName === 'FORM') return this.$el;
+                if (this.$refs && this.$refs.form) return this.$refs.form;
+                if (this.$el && this.$el.closest) return this.$el.closest('form');
+                return null;
+            },
+
+            clientHintFor(field) {
+                const name = field.getAttribute('name') || '';
+                if (name === 'strand') return 'Pick an elective for Grade 11/12.';
+                if (name === 'gender') return 'Please choose the option that fits best — Prefer not to say is okay.';
+                if (name === 'date_of_birth') return 'Please enter the date of birth.';
+                return 'This field is needed to submit — please fill it in.';
+            },
+
+            showClientHint(field, text) {
+                let anchor = field;
+                if (field.parentElement && field.parentElement.classList.contains('flex')) {
+                    anchor = field.parentElement;
+                }
+                const hint = document.createElement('p');
+                hint.setAttribute('data-client-hint', '1');
+                hint.className = 'text-red-500 text-xs mt-1';
+                hint.textContent = text;
+                anchor.insertAdjacentElement('afterend', hint);
+            },
+
             submitAll() {
                 if (this.submitting) return;
+                const form = this.owningForm();
+                if (!form) return;
+                form.querySelectorAll('[data-client-hint]').forEach(n => n.remove());
                 let firstErrorStep = null;
                 for (let s = 1; s <= 6; s++) {
-                    const box = this.$el.querySelector('[data-step="' + s + '"]');
+                    const box = form.querySelector('[data-step="' + s + '"]');
                     if (!box) continue;
                     const reqs = box.querySelectorAll('[required]');
                     let stepOk = true;
                     reqs.forEach(f => {
+                        if (f.disabled) return;
                         f.classList.remove('border-red-500', 'bg-red-50');
-                        if (!f.value.trim()) {
+                        if (!(f.value || '').trim()) {
                             f.classList.add('border-red-500', 'bg-red-50');
+                            this.showClientHint(f, this.clientHintFor(f));
                             stepOk = false;
                         }
                     });
@@ -496,10 +545,10 @@
                     }
                 }
                 if (firstErrorStep !== null) {
-                    this.goTo(firstErrorStep);
+                    this.step = firstErrorStep;
                     return;
                 }
-                // First press holds: $refs.form.submit() bypasses the submit
+                // First press holds: native submit() bypasses the submit
                 // event (and the global guard), so lock here. Validation
                 // failures return above with nothing locked.
                 this.submitting = true;
@@ -507,19 +556,19 @@
                 // global guard, so mint the single-use reference here
                 // (spec: safe-actions-one-submission.md).
                 try {
-                    let keyInput = this.$refs.form.querySelector('input[name="_idempotency_key"]');
+                    let keyInput = form.querySelector('input[name="_idempotency_key"]');
                     if (!keyInput) {
                         keyInput = document.createElement('input');
                         keyInput.type = 'hidden';
                         keyInput.name = '_idempotency_key';
-                        this.$refs.form.appendChild(keyInput);
+                        form.appendChild(keyInput);
                     }
                     keyInput.value = (window.crypto && typeof window.crypto.randomUUID === 'function')
                         ? window.crypto.randomUUID()
                         : 'key-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
                 } catch (e) { /* noop: minting must never block a submit */ }
                 try {
-                    this.$refs.form.submit();
+                    form.submit();
                 } catch (e) {
                     this.submitting = false;
                     throw e;
@@ -531,6 +580,16 @@
                 if (this.step > 1) {
                     this.autoSave();
                 }
+                @if($errors->any())
+                this.$nextTick(() => {
+                    const form = this.owningForm();
+                    if (!form) return;
+                    const firstError = form.querySelector('.text-red-500');
+                    if (firstError && firstError.scrollIntoView) {
+                        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+                @endif
             }
         }));
     });

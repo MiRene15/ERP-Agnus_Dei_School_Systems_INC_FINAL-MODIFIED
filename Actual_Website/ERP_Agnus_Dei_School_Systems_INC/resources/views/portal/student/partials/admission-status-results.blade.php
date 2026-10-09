@@ -56,7 +56,8 @@
             </div>
 
             @if($admission->status === 'Pending')
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+            <div id="upload-requirements" data-upload-block
+                 class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 scroll-mt-6 transition-shadow"
                  x-data="{ docs: @js($requirements->pluck('document_type')) }">
                 <h3 class="font-semibold text-gray-900 mb-4">Upload Requirements</h3>
 
