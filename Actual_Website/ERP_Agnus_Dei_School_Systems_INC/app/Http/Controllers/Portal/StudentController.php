@@ -23,16 +23,54 @@ class StudentController extends Controller
             return view('portal.student.dashboard', ['student' => null, 'activeEnrollment' => null, 'pendingAdmission' => null, 'schoolYear' => null, 'schoolYears' => collect()])->with('error', $msg);
         }
 
-        $schoolYear = $request->input('school_year', active_school_year());
-        $schoolYears = $student->enrollments()->distinct()->pluck('school_year')->merge(all_school_years())->unique()->sortDesc()->values();
+        $pendingAdmission = $student->admissions()->where('status', 'Pending')->latest()->first();
 
+        // Spec: future-year-enrolled-dashboard — the student sees only years they were
+        // ever part of (own enrollments + pending admission year). Never merge every
+        // system year, so a first-time 2027-2028 student never sees an empty 2026-2027 row.
+        $ownYears = $student->enrollments()->distinct()->pluck('school_year');
+        if ($pendingAdmission?->school_year) {
+            $ownYears = $ownYears->merge([$pendingAdmission->school_year]);
+        }
+        $schoolYears = $ownYears->filter()->unique()->sortDesc()->values();
+
+        // Default to the student's latest Active enrollment year (so a 2027-2028-only
+        // student lands on 2027-2028, and a both-years student lands on 2027-2028),
+        // instead of always defaulting to the active (2026-2027) year.
+        $latestActiveYear = $student->enrollments()->where('status', 'Active')->max('school_year');
+        $defaultYear = ($latestActiveYear && $schoolYears->contains($latestActiveYear))
+            ? $latestActiveYear
+            : ($schoolYears->first() ?? active_school_year());
+        $requestedYear = $request->input('school_year');
+        $schoolYear = ($requestedYear && $schoolYears->contains($requestedYear))
+            ? $requestedYear
+            : $defaultYear;
+
+        // Only an Active (registrar-approved) enrollment counts as Enrolled.
+        // Cancelled / Withdrawn / Transferred / Refunded / Dropped never show as Enrolled.
         $activeEnrollment = $student->enrollments()
             ->with('section', 'subjects')
             ->where('school_year', $schoolYear)
+            ->where('status', 'Active')
             ->latest()
             ->first();
 
-        $pendingAdmission = $student->admissions()->where('status', 'Pending')->latest()->first();
+        // Years with an Active enrollment, newest first — for the "also enrolled" line
+        // when a student holds both 2026-2027 and 2027-2028.
+        $enrolledSchoolYears = $student->enrollments()
+            ->where('status', 'Active')
+            ->distinct()
+            ->pluck('school_year')
+            ->sortDesc()
+            ->values();
+
+        // Balance line: fees really posted for this grade + year? Never copy/invent
+        // a balance from another year — when none exist we say "No fees posted yet".
+        $hasFeesPosted = $activeEnrollment
+            ? \App\Models\FeeSchedule::where('grade_level', $activeEnrollment->section->grade_level)
+                ->where('school_year', $activeEnrollment->school_year)
+                ->exists()
+            : false;
 
         $student->load('ledger');
 
@@ -41,11 +79,11 @@ class StudentController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds'))->render(),
+                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'hasFeesPosted', 'enrolledSchoolYears'))->render(),
             ]);
         }
 
-        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds'));
+        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'hasFeesPosted', 'enrolledSchoolYears'));
     }
 
     public function cor(Request $request)

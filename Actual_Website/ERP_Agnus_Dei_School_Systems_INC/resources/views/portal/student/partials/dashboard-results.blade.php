@@ -53,6 +53,20 @@
         </div>
     </div>
 
+@elseif(!$activeEnrollment && ($pendingAdmission ?? null) && ($student->student_number ?? null))
+    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center">
+                <svg class="w-7 h-7 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Pending approval for {{ $pendingAdmission->school_year }}</h3>
+                <p class="text-sm text-gray-600 dark:text-[#C1C4DC] mt-1">Your enrollment request is waiting for registrar approval. You are not enrolled yet.</p>
+            </div>
+            <a href="{{ route('student.admission.status') }}" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition flex-shrink-0" style="background: var(--navy);">View Status</a>
+        </div>
+    </div>
+
 @elseif(!$activeEnrollment && $student->student_number)
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
         <div class="flex items-center gap-4">
@@ -60,7 +74,7 @@
                 <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </div>
             <div class="flex-1">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Enroll for {{ date('Y') }}-{{ date('Y') + 1 }}</h3>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Enroll for {{ $schoolYear ?? (date('Y').'-'.(date('Y') + 1)) }}</h3>
                 <p class="text-sm text-gray-600 dark:text-[#C1C4DC] mt-1">Submit an enrollment request for the upcoming school year.</p>
             </div>
             <a href="{{ route('student.enrollment.create') }}" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition flex-shrink-0" style="background: var(--navy);">Enroll Now</a>
@@ -82,13 +96,18 @@
 
         <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-5">
             <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-lg {{ ($student->ledger->balance ?? 0) > 0 ? 'bg-red-100' : 'bg-green-100' }} flex items-center justify-center">
-                    <svg class="w-5 h-5 {{ ($student->ledger->balance ?? 0) > 0 ? 'text-red-600' : 'text-green-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="w-10 h-10 rounded-lg {{ ($student->ledger->balance ?? 0) > 0 && ($hasFeesPosted ?? true) ? 'bg-red-100' : 'bg-green-100' }} flex items-center justify-center">
+                    <svg class="w-5 h-5 {{ ($student->ledger->balance ?? 0) > 0 && ($hasFeesPosted ?? true) ? 'text-red-600' : 'text-green-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
                 <span class="text-sm font-medium text-gray-500 dark:text-[#8A90B0]">Balance</span>
             </div>
-            <p class="text-xl font-bold {{ ($student->ledger->balance ?? 0) > 0 ? 'text-red-600' : 'text-green-600' }}">₱{{ number_format($student->ledger->balance ?? 0, 2) }}</p>
-            <p class="text-sm text-gray-600 dark:text-[#C1C4DC]">{{ ucfirst($student->ledger->payment_plan ?? 'N/A') }} plan</p>
+            @if(!($hasFeesPosted ?? true))
+                <p class="text-xl font-bold text-gray-900 dark:text-[#E8EAF6]">No fees posted yet</p>
+                <p class="text-sm text-gray-600 dark:text-[#C1C4DC]">Fees for {{ $activeEnrollment->school_year }} aren&apos;t available yet</p>
+            @else
+                <p class="text-xl font-bold {{ ($student->ledger->balance ?? 0) > 0 ? 'text-red-600' : 'text-green-600' }}">₱{{ number_format($student->ledger->balance ?? 0, 2) }}</p>
+                <p class="text-sm text-gray-600 dark:text-[#C1C4DC]">{{ ucfirst($student->ledger->payment_plan ?? 'N/A') }} plan</p>
+            @endif
         </div>
 
         <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-5">

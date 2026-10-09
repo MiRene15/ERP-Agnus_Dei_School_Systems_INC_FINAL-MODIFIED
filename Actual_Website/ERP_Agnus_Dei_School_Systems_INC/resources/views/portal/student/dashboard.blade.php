@@ -14,6 +14,11 @@
                 Your admission application is being reviewed. Check the status and upload requirements.
             @elseif($activeEnrollment)
                 You are enrolled in {{ $activeEnrollment->section->grade_level }} - {{ $activeEnrollment->section->section_name }} for {{ $activeEnrollment->school_year }}.
+                @if(!empty($enrolledSchoolYears ?? collect()) && collect($enrolledSchoolYears)->reject(fn($y) => $y === $activeEnrollment->school_year)->isNotEmpty())
+                    Also enrolled for {{ collect($enrolledSchoolYears)->reject(fn($y) => $y === $activeEnrollment->school_year)->implode(', ') }}.
+                @endif
+            @elseif($student->student_number && $pendingAdmission)
+                Your enrollment for {{ $pendingAdmission->school_year }} is pending approval.
             @else
                 Welcome back! Please enroll for the upcoming school year.
             @endif
