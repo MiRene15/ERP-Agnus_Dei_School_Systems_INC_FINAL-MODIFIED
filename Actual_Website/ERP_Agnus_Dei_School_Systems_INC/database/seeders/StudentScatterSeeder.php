@@ -126,6 +126,9 @@ class StudentScatterSeeder extends Seeder
                     $barangay = $barangays[array_rand($barangays)];
                     $city = $cities[array_rand($cities)];
 
+                    // Spec: student-gender-data-quality.md §6 — re-runs keep a registrar-corrected gender; only blank rows get a fresh 47/47/3/3 value.
+                    $resolvedGender = $existingStudent?->gender ?: (($scatterGender = rand(1, 100)) <= 47 ? 'Male' : ($scatterGender <= 94 ? 'Female' : ($scatterGender <= 97 ? 'Non-binary' : 'Prefer not to say')));
+
                     $student = Student::updateOrCreate(
                         ['user_id' => $user->id],
                         [
@@ -133,7 +136,7 @@ class StudentScatterSeeder extends Seeder
                             'first_name' => $firstName,
                             'middle_name' => $middleName,
                             'last_name' => $lastName,
-                            'gender' => (($scatterGender = rand(1, 100)) <= 47 ? 'Male' : ($scatterGender <= 94 ? 'Female' : ($scatterGender <= 97 ? 'Non-binary' : 'Prefer not to say'))),
+                            'gender' => $resolvedGender,
                             'personal_email' => $email,
                             'date_of_birth' => now()->subYears(match ($grade) {
                                 'Kinder' => 5, 'Grade 1' => 6, 'Grade 2' => 7, 'Grade 3' => 8,

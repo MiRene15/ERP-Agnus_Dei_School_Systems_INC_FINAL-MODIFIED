@@ -227,6 +227,9 @@ class StudentsAndFeesSeeder extends Seeder
             $barangay = $barangays[array_rand($barangays)];
             $city = $cities[array_rand($cities)];
 
+            // Spec: student-gender-data-quality.md §6 — re-runs keep a registrar-corrected gender; only blank rows get a fresh 47/47/3/3 value.
+            $resolvedGender = $existingStudent?->gender ?: (($seedGender = rand(1, 100)) <= 47 ? 'Male' : ($seedGender <= 94 ? 'Female' : ($seedGender <= 97 ? 'Non-binary' : 'Prefer not to say')));
+
             $student = Student::updateOrCreate(
                 ['user_id' => $user->id],
                 [
@@ -234,7 +237,7 @@ class StudentsAndFeesSeeder extends Seeder
                     'first_name' => $seed['first_name'],
                     'middle_name' => $middleName,
                     'last_name' => $seed['last_name'],
-                    'gender' => (($seedGender = rand(1, 100)) <= 47 ? 'Male' : ($seedGender <= 94 ? 'Female' : ($seedGender <= 97 ? 'Non-binary' : 'Prefer not to say'))),
+                    'gender' => $resolvedGender,
                     'personal_email' => $email,
                     'date_of_birth' => now()->subYears(match ($grade) {
                         'Kinder' => 5, 'Grade 1' => 6, 'Grade 2' => 7, 'Grade 3' => 8,
