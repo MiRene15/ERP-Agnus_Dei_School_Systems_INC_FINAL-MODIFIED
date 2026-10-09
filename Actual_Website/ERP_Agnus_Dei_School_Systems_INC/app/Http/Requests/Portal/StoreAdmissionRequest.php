@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Portal;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreAdmissionRequest extends FormRequest
 {
@@ -24,7 +25,9 @@ class StoreAdmissionRequest extends FormRequest
             '_idempotency_key' => ['nullable', 'string', 'max:255'],
             'application_type' => ['required', 'in:New,Transferee'],
             'grade_level' => ['required', 'string', 'max:20'],
-            'strand' => ['nullable', 'required_if:grade_level,Grade 11,Grade 12', 'in:Arts, Social Sciences, and Humanities,Business and Entrepreneurship'],
+            // Rule::in (array form) — the string "in:..." form splits on
+            // commas, which would shred "Arts, Social Sciences, and Humanities".
+            'strand' => ['nullable', 'required_if:grade_level,Grade 11,Grade 12', Rule::in(['Arts, Social Sciences, and Humanities', 'Business and Entrepreneurship'])],
             'school_year' => ['required', 'string', 'max:20'],
 
             'first_name' => ['required', 'string', 'max:100'],

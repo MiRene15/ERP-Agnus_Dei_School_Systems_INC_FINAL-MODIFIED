@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class StudentAdmissionController extends Controller
@@ -131,7 +132,7 @@ class StudentAdmissionController extends Controller
             '_step' => 'required|integer|min:1|max:6',
             'application_type' => 'nullable|in:New,Transferee',
             'grade_level' => 'nullable|string|max:20',
-            'strand' => 'nullable|in:Arts, Social Sciences, and Humanities,Business and Entrepreneurship',
+            'strand' => ['nullable', Rule::in(['Arts, Social Sciences, and Humanities', 'Business and Entrepreneurship'])],
             'school_year' => 'nullable|string|max:20',
             'first_name' => 'nullable|string|max:100',
             'middle_name' => 'nullable|string|max:100',
