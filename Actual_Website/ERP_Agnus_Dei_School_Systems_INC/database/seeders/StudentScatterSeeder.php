@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\Admission;
@@ -86,7 +88,8 @@ class StudentScatterSeeder extends Seeder
             $grade = $section->grade_level;
             $strand = null;
             if (in_array($grade, ['Grade 11', 'Grade 12'], true)) {
-                $strand = explode('-', $section->section_name)[0] ?: null;
+                // Trim the prefix so "STEM - ..." never saves as "STEM ".
+                $strand = trim(explode('-', $section->section_name)[0]) ?: null;
             }
 
             $made = 0;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -80,8 +82,11 @@ class TeachersClassesSchedulesSeeder extends Seeder
         ];
 
         // Map legacy generic section names to new saint/strand names for existing DB migration.
-        // Only rename when the sections table actually holds the NEW names — on DBs that still
-        // use generic names (A/B/STEM-A), renaming classes would orphan them from their sections.
+        // Unconditional: every class carrying an old name is renamed in place,
+        // so grades, schedules, and student links (all keyed by class_id)
+        // follow it automatically. The old guard (only rename when the
+        // sections table already held the NEW names) left A/B classes
+        // orphaned on DBs that still used generic sections.
         $legacySectionMap = [
             'Kinder' => ['A' => 'St. Agnes', 'B' => 'St. Clare'],
             'Grade 1' => ['A' => 'St. Francis', 'B' => 'St. Dominic'],
@@ -98,11 +103,39 @@ class TeachersClassesSchedulesSeeder extends Seeder
             'Grade 12' => ['STEM-A' => 'STEM - St. Albert', 'ABM-A' => 'ABM - St. Luke', 'HUMSS-A' => 'HUMSS - St. Jerome', 'GAS-A' => 'GAS - St. Benedict'],
         ];
         foreach ($legacySectionMap as $gl => $map) {
-            $sectionNames = ($sectionsByGrade[$gl] ?? collect())->pluck('section_name');
-            if ($sectionNames->isEmpty()) continue;
             foreach ($map as $old => $new) {
-                if ($sectionNames->contains($new) && !$sectionNames->contains($old)) {
-                    Classes::where('grade_level', $gl)->where('section', $old)->update(['section' => $new]);
+                $oldClasses = Classes::where('grade_level', $gl)->where('section', $old)->get();
+                foreach ($oldClasses as $oldClass) {
+                    $twinQuery = Classes::where('grade_level', $gl)
+                        ->where('section', $new)
+                        ->where('subject_id', $oldClass->subject_id)
+                        ->where('school_year', $oldClass->school_year);
+                    if ($oldClass->term === null || $oldClass->term === '') {
+                        $twinQuery->where(function ($q) {
+                            $q->whereNull('term')->orWhere('term', '');
+                        });
+                    } else {
+                        $twinQuery->where('term', $oldClass->term);
+                    }
+                    $twin = $twinQuery->where('id', '!=', $oldClass->id)->first();
+                    if ($twin === null) {
+                        $oldClass->update(['section' => $new]);
+                    } else {
+                        // Both old and new rows exist for the same class key
+                        // (half-finished earlier run). Fold links into the
+                        // surviving twin, then remove the duplicate so the
+                        // next updateOrCreate pass converges on one row.
+                        $links = DB::table('enrollment_subject')->where('class_id', $oldClass->id)->get();
+                        foreach ($links as $link) {
+                            DB::table('enrollment_subject')->updateOrInsert(
+                                ['enrollment_id' => $link->enrollment_id, 'class_id' => $twin->id],
+                                []
+                            );
+                        }
+                        DB::table('enrollment_subject')->where('class_id', $oldClass->id)->delete();
+                        Schedule::where('class_id', $oldClass->id)->delete();
+                        $oldClass->delete();
+                    }
                 }
             }
         }

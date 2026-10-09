@@ -119,6 +119,7 @@ class LibraryAndClinicSeeder extends Seeder
                 LibraryTransaction::create([
                     'student_id' => $student->id,
                     'book_id' => $book->id,
+                    'book_title' => $book->title,
                     'librarian_id' => $librarianId,
                     'borrow_date' => $borrowDate,
                     'return_date' => $returnDate,

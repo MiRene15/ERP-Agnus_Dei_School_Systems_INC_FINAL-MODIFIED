@@ -1,8 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use App\Models\Admission;
+use App\Models\Assessment;
+use App\Models\Attendance;
+use App\Models\Classes;
+use App\Models\Enrollment;
+use App\Models\Grade;
+use App\Models\GradeUnlockRequest;
 use App\Models\Subject;
 use App\Models\Section;
 
@@ -168,26 +178,156 @@ class SubjectsAndSectionsSeeder extends Seeder
             'Grade 12' => ['STEM - St. Albert', 'ABM - St. Luke', 'HUMSS - St. Jerome', 'GAS - St. Benedict'],
         ];
 
-        // Migrate old generic names (A/B/STEM-A etc) to new saint names by index, then create missing
+        // Canonical saint-name list is the single source of truth. All matching
+        // below is name-keyed (never positional) so re-runs cannot scramble
+        // e.g. Justice <-> Temperance or St. Francis <-> St. Dominic.
+        $legacyNamesByGrade = [
+            'Kinder' => ['A' => 'St. Agnes', 'B' => 'St. Clare'],
+            'Grade 1' => ['A' => 'St. Francis', 'B' => 'St. Dominic'],
+            'Grade 2' => ['A' => 'St. Catherine', 'B' => 'St. Therese'],
+            'Grade 3' => ['A' => 'St. Augustine', 'B' => 'St. Benedict'],
+            'Grade 4' => ['A' => 'St. Joseph', 'B' => 'St. Michael'],
+            'Grade 5' => ['A' => 'St. John', 'B' => 'St. Paul'],
+            'Grade 6' => ['A' => 'St. Peter', 'B' => 'St. Andrew'],
+            'Grade 7' => ['A' => 'Charity', 'B' => 'Hope'],
+            'Grade 8' => ['A' => 'Faith', 'B' => 'Love'],
+            'Grade 9' => ['A' => 'Wisdom', 'B' => 'Courage'],
+            'Grade 10' => ['A' => 'Justice', 'B' => 'Temperance'],
+            'Grade 11' => ['STEM-A' => 'STEM - St. Thomas Aquinas', 'ABM-A' => 'ABM - St. Matthew', 'HUMSS-A' => 'HUMSS - St. Augustine', 'GAS-A' => 'GAS - St. Scholastica'],
+            'Grade 12' => ['STEM-A' => 'STEM - St. Albert', 'ABM-A' => 'ABM - St. Luke', 'HUMSS-A' => 'HUMSS - St. Jerome', 'GAS-A' => 'GAS - St. Benedict'],
+        ];
+
         foreach ($sectionData as $gradeLevel => $sections) {
-            $existing = Section::where('grade_level', $gradeLevel)->orderBy('section_name')->get();
-            foreach ($sections as $idx => $sectionName) {
-                if (isset($existing[$idx])) {
-                    $existing[$idx]->update(['section_name' => $sectionName, 'is_active' => true]);
-                } else {
-                    Section::updateOrCreate(
-                        ['grade_level' => $gradeLevel, 'section_name' => $sectionName],
-                        ['is_active' => true]
-                    );
+            // 1) Migrate legacy generic names to saint names by explicit map.
+            // Only renames when the saint name does not already exist, so a
+            // re-run never duplicates or swaps two existing saint names.
+            foreach (($legacyNamesByGrade[$gradeLevel] ?? []) as $oldName => $newName) {
+                $old = Section::where('grade_level', $gradeLevel)->where('section_name', $oldName)->first();
+                if ($old === null) continue;
+                $newExists = Section::where('grade_level', $gradeLevel)->where('section_name', $newName)->exists();
+                if (!$newExists) {
+                    $old->update(['section_name' => $newName, 'is_active' => true]);
                 }
             }
-            // Deactivate any extra old sections beyond new count
-            if ($existing->count() > count($sections)) {
-                foreach ($existing->slice(count($sections)) as $extra) {
+
+            // 2) Ensure every canonical saint name exists (idempotent, name-keyed).
+            foreach ($sections as $sectionName) {
+                Section::updateOrCreate(
+                    ['grade_level' => $gradeLevel, 'section_name' => $sectionName],
+                    ['is_active' => true]
+                );
+            }
+
+            // 3) Retire anything not on the canonical list. Delete only when
+            // nothing links to it (no enrollments, no classes carrying its
+            // grade+section text); otherwise switch off from new picks so no
+            // student, grade, or class history is orphaned.
+            $extras = Section::where('grade_level', $gradeLevel)->whereNotIn('section_name', $sections)->get();
+            foreach ($extras as $extra) {
+                $hasEnrollments = Enrollment::where('section_id', $extra->id)->exists();
+                $hasClasses = Classes::where('grade_level', $gradeLevel)->where('section', $extra->section_name)->exists();
+                if (!$hasEnrollments && !$hasClasses) {
+                    $extra->delete();
+                } else {
                     $extra->update(['is_active' => false]);
                 }
             }
         }
+
+        // SHS unscramble-heal: the old positional rename scrambled section names
+        // underneath existing enrollments (ABM students reading under STEM sections,
+        // etc.). Move each mismatched enrollment to the least-loaded active section
+        // matching its strand, carrying history to same-subject twin classes.
+        // Already-correct rows are untouched so this is a no-op on healthy data.
+        DB::transaction(function () use ($sectionData) {
+            $shsGrades = ['Grade 11', 'Grade 12'];
+            $sectionLoad = [];
+            foreach (Section::where('is_active', true)->whereIn('grade_level', $shsGrades)->get() as $sec) {
+                $sectionLoad[$sec->id] = Enrollment::where('section_id', $sec->id)->count();
+            }
+
+            $mismatched = Enrollment::with('section')
+                ->whereHas('section', fn($q) => $q->whereIn('grade_level', $shsGrades))
+                ->get()
+                ->filter(function ($e) {
+                    if (!$e->section) return false;
+                    $strand = trim((string) $e->strand);
+                    if ($strand === '') return false;
+                    $prefix = trim(explode('-', $e->section->section_name)[0]);
+                    return $strand !== $prefix;
+                });
+
+            $moved = 0;
+            foreach ($mismatched as $enrollment) {
+                $oldSection = $enrollment->section;
+                $grade = $oldSection->grade_level;
+                $strand = trim((string) $enrollment->strand);
+
+                $candidates = Section::where('grade_level', $grade)
+                    ->where('is_active', true)
+                    ->where('section_name', 'LIKE', "{$strand}%")
+                    ->get();
+
+                if ($candidates->isEmpty()) continue;
+
+                $target = $candidates
+                    ->map(fn($s) => ['section' => $s, 'load' => $sectionLoad[$s->id] ?? 0])
+                    ->sortBy('load')
+                    ->first()['section'];
+
+                $oldSectionId = $oldSection->id;
+                $enrollment->update(['section_id' => $target->id]);
+                $sectionLoad[$oldSectionId]--;
+                $sectionLoad[$target->id]++;
+                $moved++;
+
+                // Carry class links to twin classes in the new section
+                $oldClasses = Classes::where('grade_level', $grade)
+                    ->where('section', $oldSection->section_name)
+                    ->get();
+                $newClasses = Classes::where('grade_level', $grade)
+                    ->where('section', $target->section_name)
+                    ->get();
+
+                foreach ($oldClasses as $oldClass) {
+                    $twin = $newClasses->firstWhere('subject_id', $oldClass->subject_id);
+                    if (!$twin) continue;
+
+                    DB::table('enrollment_subject')
+                        ->where('enrollment_id', $enrollment->id)
+                        ->where('class_id', $oldClass->id)
+                        ->update(['class_id' => $twin->id]);
+
+                    Grade::where('enrollment_id', $enrollment->id)
+                        ->where('class_id', $oldClass->id)
+                        ->update(['class_id' => $twin->id]);
+
+                    Assessment::where('enrollment_id', $enrollment->id)
+                        ->where('class_id', $oldClass->id)
+                        ->update(['class_id' => $twin->id]);
+
+                    Attendance::where('enrollment_id', $enrollment->id)
+                        ->where('class_id', $oldClass->id)
+                        ->update(['class_id' => $twin->id]);
+
+                    GradeUnlockRequest::where('class_id', $oldClass->id)
+                        ->update(['class_id' => $twin->id]);
+                }
+            }
+
+            if ($moved > 0) {
+                $this->info("SHS unscramble-heal: moved {$moved} enrollment(s) to strand-matching sections.");
+            }
+
+            // Trim trailing-space strands where they sit
+            $trimmedEnrollments = Enrollment::where('strand', 'like', '% ')->count();
+            Enrollment::where('strand', 'like', '% ')->update(['strand' => DB::raw('TRIM(strand)')]);
+            $trimmedAdmissions = Admission::where('strand', 'like', '% ')->count();
+            Admission::where('strand', 'like', '% ')->update(['strand' => DB::raw('TRIM(strand)')]);
+            if ($trimmedEnrollments > 0 || $trimmedAdmissions > 0) {
+                $this->info("Trimmed trailing-space strands: {$trimmedEnrollments} enrollment(s), {$trimmedAdmissions} admission(s).");
+            }
+        });
 
         // Ensure no leftover generic-named active sections (A,B,STEM-A etc) remain after rename
         $allNewNames = collect($sectionData)->flatten()->toArray();
@@ -209,5 +349,15 @@ class SubjectsAndSectionsSeeder extends Seeder
                 }
             }
         }
+    }
+
+    private function warn(string $message): void
+    {
+        if ($this->command) $this->command->warn($message);
+    }
+
+    private function info(string $message): void
+    {
+        if ($this->command) $this->command->info($message);
     }
 }

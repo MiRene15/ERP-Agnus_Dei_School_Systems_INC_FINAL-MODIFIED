@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\Admission;
@@ -205,6 +207,9 @@ class StudentsAndFeesSeeder extends Seeder
 
         foreach ($seeds as $index => $seed) {
             $grade = $seed['grade'];
+            // Trim strand at the boundary so "STEM " can never be saved.
+            $strand = isset($seed['strand']) && $seed['strand'] !== null ? trim((string) $seed['strand']) : null;
+            if ($strand === '') $strand = null;
             $email = $this->resolveEmail($seed['first_name'], $seed['last_name']);
             $middleName = $seed['middle_name'] ?? $middleNames[array_rand($middleNames)];
             $studentStatus = $seed['status'] ?? 'enrolled';
@@ -282,22 +287,55 @@ class StudentsAndFeesSeeder extends Seeder
                 [
                     'application_type' => $admissionTypes[array_rand($admissionTypes)],
                     'grade_level' => $grade,
-                    'strand' => $seed['strand'],
+                    'strand' => $strand,
                     'status' => $admissionStatus,
                 ]
             );
 
-            $section = Section::where('grade_level', $grade)
-                ->when($seed['strand'], fn($q, $strand) => $q->where('section_name', 'LIKE', "$strand%"))
-                ->first() ?? Section::where('grade_level', $grade)->first();
+            // Strand-aware placement with balanced spread: SHS students go to
+            // the section matching their strand prefix; every grade spreads
+            // across its sections by least-loaded count instead of piling
+            // into ->first(). Already-correct enrollments are left untouched
+            // so re-runs change nothing.
+            $candidates = Section::where('grade_level', $grade)
+                ->where('is_active', true)
+                ->when($strand, fn($q) => $q->where('section_name', 'LIKE', "{$strand}%"))
+                ->orderBy('section_name')
+                ->get();
+            if ($candidates->isEmpty()) {
+                $candidates = Section::where('grade_level', $grade)
+                    ->where('is_active', true)
+                    ->orderBy('section_name')
+                    ->get();
+            }
 
-            if (!$section) continue;
+            if ($candidates->isEmpty()) continue;
+
+            $existingEnrollment = Enrollment::where('student_id', $student->id)
+                ->where('school_year', $schoolYear)
+                ->first();
+            $section = null;
+            if ($existingEnrollment !== null
+                && $candidates->contains('id', $existingEnrollment->section_id)
+                && ($existingEnrollment->strand === $strand)
+            ) {
+                $section = $candidates->firstWhere('id', $existingEnrollment->section_id);
+            }
+            if ($section === null) {
+                $section = $candidates
+                    ->map(fn($c) => [
+                        'section' => $c,
+                        'load' => Enrollment::where('section_id', $c->id)->where('school_year', $schoolYear)->count(),
+                    ])
+                    ->sortBy('load')
+                    ->first()['section'];
+            }
 
             $enrollment = Enrollment::updateOrCreate(
                 ['student_id' => $student->id, 'school_year' => $schoolYear],
                 [
                     'section_id' => $section->id,
-                    'strand' => $seed['strand'],
+                    'strand' => $strand,
                     'status' => $studentStatus === 'withdrawn' ? 'Withdrawn' : ($studentStatus === 'transferred' ? 'Transferred' : ($studentStatus === 'graduated' ? 'Graduated' : 'Active')),
                 ]
             );
