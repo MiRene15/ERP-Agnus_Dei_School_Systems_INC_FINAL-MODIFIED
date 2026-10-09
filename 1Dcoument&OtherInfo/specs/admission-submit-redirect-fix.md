@@ -1,8 +1,9 @@
 # Spec: Admission Submit Redirect Fix
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-09
 - **Approved by**: user on 2026-10-09
+- **Implemented**: 2026-10-09 (per user direction; see §12)
 
 ## 1. Why We Need This
 
@@ -116,3 +117,16 @@ Nice-to-haves parked: auto-scroll + highlight the Upload block on landing, uploa
 ## 11. Approval
 
 > Approved by user on 2026-10-09.
+
+## 12. Implementation Note (2026-10-09)
+
+**Delivered** via `/exec-spec` in 4 slices + 1 correctness fix, marked Implemented per explicit user direction on 2026-10-09:
+- Slice 1: `StoreAdmissionRequest` FormRequest (plain messages incl. "Pick an elective…"), `store()` wrapped in `DB::transaction()`, fresh-reference double-tap reuses existing Pending, failure gates `withInput()`, success redirects to `status#upload-requirements`.
+- Slice 2: `create()` prefers flashed `old()` over saved draft (incl. unchecked-box handling), reopens on first-error step.
+- Slice 3: per-field `@error` on all submit-relevant fields, robust owning-form submit, client-side plain hints + first-error jump, scroll-to-error on reload.
+- Slice 4: `id="upload-requirements"` + fragment-aware scroll/highlight after `ajaxTable` load.
+- Strand fix: `in:` string rule split `Arts, Social Sciences, and Humanities` on its inner commas and always failed — both `store` and `saveDraft` strand rules converted to array-form `Rule::in([...])`.
+
+**Footnote (truthful):** formal Phase-5 per-check pass reporting (§8, 7 checks) was waived by the user at marking time — lint outputs and manual check results were never pasted back. If any §8 check misbehaves live, open it as a fix slice against this spec.
+
+**Not committed by the agent** — the user runs git themselves (`AGENTS.md` §1.4).
