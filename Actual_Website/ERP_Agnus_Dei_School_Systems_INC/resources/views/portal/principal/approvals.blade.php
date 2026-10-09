@@ -191,44 +191,71 @@
             <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">Teachers ask to reopen submitted grades for correction. Approving returns those grades to Pending — the teacher corrects and re-submits.</p>
         </div>
 
-        <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
-            <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">Pending ({{ $pending->count() }})</h3>
-            @if($pending->isEmpty())
-                <p class="text-sm text-gray-500 py-4 text-center">No pending requests.</p>
-            @else
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-gray-200 dark:border-[#2A2F58]">
-                            <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Class</th>
-                            <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Term</th>
-                            <th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Teacher / Reason</th>
-                            <th class="text-center py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Decision</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($pending as $req)
-                        <tr class="border-b border-gray-50 dark:border-[#2A2F58]">
-                            <td class="py-2 px-2 font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $req->schoolClass->subject->name ?? '—' }}<span class="block text-xs text-gray-500 font-normal">{{ $req->schoolClass->grade_level ?? '' }} {{ $req->schoolClass->section ?? '' }}</span></td>
-                            <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $req->grading_period }}</td>
-                            <td class="py-2 px-2 text-xs text-gray-600 dark:text-[#C1C4DC] max-w-sm">{{ $req->requester?->name ?? '—' }}: {{ $req->reason }}<span class="block text-gray-400 mt-1">{{ $req->created_at->format('M d, Y h:i A') }}</span></td>
-                            <td class="py-2 px-2 text-center whitespace-nowrap">
-                                <form method="POST" action="{{ route('registrar.grade-unlocks.approve', $req) }}" class="inline">
-                                    @csrf
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg">Unlock</button>
-                                </form>
-                                <form method="POST" action="{{ route('registrar.grade-unlocks.reject', $req) }}" onsubmit="return confirm('Reject this unlock request? Grades stay submitted.')" class="inline">
-                                    @csrf
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg">Reject</button>
-                                </form>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+        <div x-data="ajaxTable('{{ route('principal.grade-unlocks.index', ['ajax' => 1]) }}', { search: '', school_year: '{{ active_school_year() }}' })">
+            <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Search Requests</h3>
+                </div>
+                <div class="flex gap-2 flex-wrap items-center">
+                    <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
+                        <select name="school_year" x-model="filters.school_year" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            @foreach($schoolYears as $sy)
+                                <option value="{{ $sy }}" {{ $sy === active_school_year() ? 'selected' : '' }}>{{ $sy }}</option>
+                            @endforeach
+                        </select>
+                        <input type="text" x-model="filters.search" @input="scheduleReload()"
+                               placeholder="Search by class, teacher, or reason..."
+                               class="flex-1 min-w-[200px] rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
+                        <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
+                    </form>
+                </div>
             </div>
-            @endif
+
+            <form method="POST" action="{{ route('principal.grade-unlocks.batch-approve') }}" onsubmit="return confirmBatchUnlocks(this);">
+                @csrf
+                <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Pending</h3>
+                        <div class="flex gap-2">
+                            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition">Approve Selected</button>
+                            <button type="submit" formaction="{{ route('principal.grade-unlocks.batch-reject') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition">Reject Selected</button>
+                        </div>
+                    </div>
+                    <div x-show="loading && !html" class="space-y-3">
+                        <template x-for="i in 3" :key="i">
+                            <div class="skelly sk-card">
+                                <div class="grid grid-cols-4 gap-4 px-2">
+                                    <div class="skelly sk-line-md col-span-2"></div>
+                                    <div class="skelly sk-line-md"></div>
+                                    <div class="skelly sk-line-sm"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div x-show="(loading || isRateLimited) && html" x-cloak class="mb-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-[rgba(245,158,11,0.12)] border border-amber-200 dark:border-[rgba(245,158,11,0.3)] text-xs text-amber-800 dark:text-[#FCD34D]">Showing results for &quot;<span class="font-semibold" x-text="displayedSearch"></span>&quot; &mdash; searching for &quot;<span class="font-semibold" x-text="filters.search"></span>&quot;&hellip;</div>
+                    <div x-show="html || !loading" x-cloak x-html="html" :class="((loading || isRateLimited) && html) ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'"></div>
+                </div>
+            </form>
         </div>
+
+        <script>
+        function toggleAllUnlocks(source) {
+            document.querySelectorAll('.unlock-select').forEach(function (box) { box.checked = source.checked; });
+        }
+        function confirmBatchUnlocks(form) {
+            var count = form.querySelectorAll('.unlock-select:checked').length;
+            if (count === 0) {
+                alert('Select at least one request first.');
+                return false;
+            }
+            var action = (document.activeElement && document.activeElement.getAttribute('formaction')) || form.getAttribute('action');
+            if (action && action.indexOf('reject') !== -1) {
+                return confirm('Reject ' + count + ' selected request(s)? Grades stay submitted.');
+            }
+            return confirm('Approve ' + count + ' selected request(s)? Their grades return to Pending for correction.');
+        }
+        </script>
 
         <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
             <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">Recent Decisions</h3>
