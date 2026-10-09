@@ -9,21 +9,22 @@ use App\Models\Subject;
 class GradeWeightService
 {
     /**
-     * Final school weights (spec: computed-single-grade.md §9). Every row
-     * totals 100. Keys are Written Works / Performance Tasks /
-     * Quarterly Assessment — complete words everywhere, no abbreviations.
+     * MATATAG weights (spec: teacher-encode-grades-deped-layout.md §6, DO 15 s. 2026).
+     * Every row totals 100, except the two QA-None rows which total 100 across
+     * WW + PT (quarterly_assessment = 0 means skip QA math, show `–`).
+     * Keys are Written Works / Performance Tasks / Quarterly Assessment.
      *
      * @var array<string, array{written_works: int, performance_tasks: int, quarterly_assessment: int}>
      */
     public const WEIGHTS = [
-        'lang' => ['written_works' => 30, 'performance_tasks' => 50, 'quarterly_assessment' => 20],
-        'scimath' => ['written_works' => 40, 'performance_tasks' => 40, 'quarterly_assessment' => 20],
-        'mapeh' => ['written_works' => 40, 'performance_tasks' => 40, 'quarterly_assessment' => 20],
-        'core' => ['written_works' => 25, 'performance_tasks' => 50, 'quarterly_assessment' => 25],
-        'shs_other' => ['written_works' => 25, 'performance_tasks' => 45, 'quarterly_assessment' => 30],
-        'shs_applied' => ['written_works' => 35, 'performance_tasks' => 40, 'quarterly_assessment' => 25],
-        'tvl_other' => ['written_works' => 20, 'performance_tasks' => 60, 'quarterly_assessment' => 20],
-        'tvl_applied' => ['written_works' => 20, 'performance_tasks' => 60, 'quarterly_assessment' => 20],
+        'g410_core' => ['written_works' => 20, 'performance_tasks' => 50, 'quarterly_assessment' => 30],
+        'g410_tle' => ['written_works' => 20, 'performance_tasks' => 60, 'quarterly_assessment' => 20],
+        'shs_core' => ['written_works' => 20, 'performance_tasks' => 50, 'quarterly_assessment' => 30],
+        'shs_field' => ['written_works' => 15, 'performance_tasks' => 70, 'quarterly_assessment' => 15],
+        'shs_arts' => ['written_works' => 20, 'performance_tasks' => 60, 'quarterly_assessment' => 20],
+        'shs_research' => ['written_works' => 40, 'performance_tasks' => 60, 'quarterly_assessment' => 0],
+        'shs_techpro' => ['written_works' => 15, 'performance_tasks' => 65, 'quarterly_assessment' => 20],
+        'shs_immersion' => ['written_works' => 20, 'performance_tasks' => 80, 'quarterly_assessment' => 0],
     ];
 
     /**
@@ -43,72 +44,78 @@ class GradeWeightService
         $isShs = str_contains($grade, 'grade 11') || str_contains($grade, 'grade 12') || str_contains($grade, 'shs');
 
         if ($isShs && $category === 'tvl') {
-            $group = $this->isAppliedSubject($name) ? 'tvl_applied' : 'tvl_other';
-            $band = 'TVL';
+            $group = $this->shsGroup($name, $category);
+            $band = 'SHS';
         } elseif ($isShs) {
-            if ($category === 'core') {
-                $group = 'core';
-            } elseif ($this->isAppliedSubject($name)) {
-                $group = 'shs_applied';
-            } else {
-                $group = 'shs_other';
-            }
+            $group = $this->shsGroup($name, $category);
             $band = 'SHS';
         } else {
             $group = $this->basicEdGroup($name);
-            $band = 'Grades 1-10';
+            $band = 'Grades 4–10';
         }
 
         $weights = self::WEIGHTS[$group];
 
+        $qaLabel = $weights['quarterly_assessment'] > 0
+            ? 'Quarterly Assessment ' . $weights['quarterly_assessment'] . '%'
+            : 'Quarterly Assessment — skipped';
+
         return [
             'group' => $group,
-            'label' => $band . ' · ' . $this->groupLabel($group) . ' — Written Works ' . $weights['written_works'] . '%, Performance Tasks ' . $weights['performance_tasks'] . '%, Quarterly Assessment ' . $weights['quarterly_assessment'] . '%',
+            'label' => $band . ' · ' . $this->groupLabel($group) . ' — Written Works ' . $weights['written_works'] . '%, Performance Tasks ' . $weights['performance_tasks'] . '%, ' . $qaLabel,
             'written_works' => $weights['written_works'],
             'performance_tasks' => $weights['performance_tasks'],
             'quarterly_assessment' => $weights['quarterly_assessment'],
         ];
     }
 
-    private function isAppliedSubject(string $name): bool
+    private function shsGroup(string $name, string $category): string
     {
-        foreach (['work immersion', 'research', 'business enterprise', 'exhibit', 'performance'] as $keyword) {
-            if ($keyword !== '' && str_contains($name, $keyword)) {
-                return true;
-            }
+        if (str_contains($name, 'work immersion')) {
+            return 'shs_immersion';
         }
 
-        return false;
+        if (str_contains($name, 'research') || str_contains($name, 'design and innovation') || str_contains($name, 'design innovation')) {
+            return 'shs_research';
+        }
+
+        if (str_contains($name, 'field exposure') || str_contains($name, 'arts apprenticeship') || str_contains($name, 'creative production')) {
+            return 'shs_field';
+        }
+
+        if (str_contains($name, 'techpro') || str_contains($name, 'tech-pro') || str_contains($name, 'technical professional')) {
+            return 'shs_techpro';
+        }
+
+        if (str_contains($name, 'arts') || str_contains($name, 'sports') || str_contains($name, 'health') || str_contains($name, 'wellness')) {
+            return 'shs_arts';
+        }
+
+        return 'shs_core';
     }
 
     private function basicEdGroup(string $name): string
     {
-        foreach (['science', 'math'] as $keyword) {
-            if (str_contains($name, $keyword)) {
-                return 'scimath';
+        foreach (['mapeh', 'music', 'arts', 'physical education', 'pe ', 'health', 'epp', 'tle', 'technology', 'livelihood', 'pangkabuhayan'] as $keyword) {
+            if ($keyword !== '' && str_contains($name, $keyword)) {
+                return 'g410_tle';
             }
         }
 
-        foreach (['mapeh', 'music', 'arts', 'physical education', 'pe ', 'health', 'epp', 'tle', 'technology', 'livelihood'] as $keyword) {
-            if (str_contains($name, $keyword)) {
-                return 'mapeh';
-            }
-        }
-
-        return 'lang';
+        return 'g410_core';
     }
 
     private function groupLabel(string $group): string
     {
         return match ($group) {
-            'lang' => 'Languages / AP / ESP',
-            'scimath' => 'Science / Math',
-            'mapeh' => 'MAPEH / EPP / TLE',
-            'core' => 'Core subjects',
-            'shs_other' => 'All other subjects',
-            'shs_applied' => 'Work Immersion / Research / Business Enterprise Simulation / Exhibit Performance',
-            'tvl_other' => 'All other subjects',
-            'tvl_applied' => 'Work Immersion / Research / Exhibit Performance',
+            'g410_core' => 'English/Filipino/Math/Science/AP/GMRC-Values (20/50/30)',
+            'g410_tle' => 'EPP / TLE / MAPEH (20/60/20)',
+            'shs_core' => 'Core + Other Academic Electives',
+            'shs_field' => 'Field Exposure / Arts Apprenticeship / Creative Production & Innovation',
+            'shs_arts' => 'Arts, Sports, Health & Wellness Electives',
+            'shs_research' => 'Research Electives / Design and Innovation (no QA)',
+            'shs_techpro' => 'TechPro Electives',
+            'shs_immersion' => 'Work Immersion (no QA)',
             default => $group,
         };
     }

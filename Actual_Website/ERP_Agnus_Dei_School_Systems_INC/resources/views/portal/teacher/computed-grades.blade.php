@@ -9,8 +9,8 @@
 @section('content')
 <div class="mb-6 flex items-center justify-between">
     <div>
-        <h2 class="text-2xl font-bold text-gray-900">Computed Grades</h2>
-        <p class="text-gray-600 mt-1">View computed grades per category and batch save final grades.</p>
+        <h2 class="text-2xl font-bold" style="color: var(--navy);">Computed Grades – DepEd MATATAG K-12</h2>
+        <p class="text-gray-600 mt-1">We use MATATAG (DO 15, s. 2026). Review the computed breakdown, then Post to lock.</p>
     </div>
     <div class="flex items-center gap-2">
         <label class="text-sm text-gray-600 font-medium">School Year:</label>

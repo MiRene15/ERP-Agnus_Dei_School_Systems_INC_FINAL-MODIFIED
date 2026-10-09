@@ -10,7 +10,7 @@
 <div class="mb-6 flex items-center justify-between">
     <div>
         <h2 class="text-2xl font-bold text-gray-900">Grade Assessment</h2>
-        <p class="text-gray-600 mt-1">Enter scores for Written Work, Quiz, Seatwork, and Exam per student.</p>
+        <p class="text-gray-600 mt-1">Enter scores for Written Works, Performance Tasks, and Quarterly Assessment per student.</p>
     </div>
     <div class="flex items-center gap-2">
         <label class="text-sm text-gray-600 font-medium">School Year:</label>

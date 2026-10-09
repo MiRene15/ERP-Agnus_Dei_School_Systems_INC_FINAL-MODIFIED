@@ -334,7 +334,7 @@ class TeacherController extends Controller
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $selectedPeriod = request('grading_period', $gradingPeriods[0]);
 
-        $assessmentTypes = ['Written Work', 'Quiz', 'Seatwork', 'Exam'];
+        $assessmentTypes = Assessment::ASSESSMENT_TYPES;
 
         $existingAssessments = Assessment::where('class_id', $class->id)
             ->where('grading_period', $selectedPeriod)
@@ -342,7 +342,9 @@ class TeacherController extends Controller
             ->get()
             ->groupBy('enrollment_id');
 
-        return view('portal.teacher.assessments', compact('class', 'activeEnrollments', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments'));
+        $resolvedWeights = app(\App\Services\GradeWeightService::class)->forClass($class->subject, $class->grade_level);
+
+        return view('portal.teacher.assessments', compact('class', 'activeEnrollments', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments', 'resolvedWeights'));
     }
 
     public function storeAssessments(Request $request, Classes $class)
@@ -448,7 +450,10 @@ class TeacherController extends Controller
 
         log_activity($class, 'Assessments Saved', auth()->user()->name . ' saved assessments for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count($inserts) . ' assessment(s) recorded.' . ($skipped ? " {$skipped} submitted (locked) student(s) skipped." : ''));
 
-        $message = 'Assessments saved for ' . $data['grading_period'] . '.';
+        $saveAction = $request->input('save_action', 'save');
+        $message = $saveAction === 'draft'
+            ? 'Draft saved for ' . $data['grading_period'] . ' — still editable.'
+            : 'Assessments saved for ' . $data['grading_period'] . '. Review Computed & Post to lock.';
         if ($skipped) {
             $message .= " {$skipped} submitted student(s) were skipped (locked) — request a correction unlock to change them.";
         }
@@ -755,15 +760,18 @@ class TeacherController extends Controller
                 $activeEnrollments = $class->enrollments->filter(fn($e) => $e->status === 'Active');
 
                 $assessmentTypes = Assessment::ASSESSMENT_TYPES;
-                // One shared weights row per class (spec: computed-single-grade.md).
+                // One shared MATATAG weights row per class (spec: teacher-encode-grades-deped-layout.md §6).
                 // Legacy rows fold in: Quiz, Seatwork and singular Written Work
                 // count as Written Works; Exam counts as Quarterly Assessment.
+                // Empty bucket (no max) shows `–` and adds nothing; QA-None rows
+                // (QA weight 0) skip QA math; no QA inner split per teacher call.
                 $resolvedWeights = app(\App\Services\GradeWeightService::class)->forClass($class->subject, $class->grade_level);
                 $weights = [
                     'Written Works' => $resolvedWeights['written_works'] / 100,
                     'Performance Tasks' => $resolvedWeights['performance_tasks'] / 100,
                     'Quarterly Assessment' => $resolvedWeights['quarterly_assessment'] / 100,
                 ];
+                $transmutation = app(\App\Services\TransmutationService::class);
                 $legacyTypeMap = [
                     'Written Work' => 'Written Works',
                     'Quiz' => 'Written Works',
@@ -781,25 +789,32 @@ class TeacherController extends Controller
                     ->get()
                     ->keyBy('enrollment_id');
 
-                $computedGrades = $activeEnrollments->map(function ($enrollment) use ($class, $selectedPeriod, $assessmentTypes, $weights, $legacyTypeMap, $allAssessments, $allGrades) {
+                $computedGrades = $activeEnrollments->map(function ($enrollment) use ($class, $selectedPeriod, $assessmentTypes, $weights, $resolvedWeights, $transmutation, $legacyTypeMap, $allAssessments, $allGrades) {
                     $assessments = $allAssessments->get($enrollment->id, collect());
 
                     $categoryScores = [];
                     foreach ($assessmentTypes as $type) {
                         $typeAssessments = $assessments->filter(fn($a) => ($legacyTypeMap[$a->type] ?? $a->type) === $type);
-                        $totalRaw = $typeAssessments->sum('raw_score');
-                        $totalMax = $typeAssessments->sum('max_score');
+                        $totalRaw = (float) $typeAssessments->sum('raw_score');
+                        $totalMax = (float) $typeAssessments->sum('max_score');
+                        $worksCount = $typeAssessments->count();
+                        $isQaSkipped = $type === 'Quarterly Assessment' && ($resolvedWeights['quarterly_assessment'] ?? 0) <= 0;
+                        // Raw normalizes against its own total (e.g. 10/10 = 100%, 8/10 = 80%).
+                        // Empty (no max) or skipped QA stays null → renders `–`, adds nothing.
+                        $percentage = ($totalMax > 0 && !$isQaSkipped) ? round(($totalRaw / $totalMax) * 100, 2) : null;
+                        $weighted = $percentage !== null ? round($percentage * ($weights[$type] ?? 0), 2) : 0.0;
                         $categoryScores[$type] = [
+                            'count' => $worksCount,
                             'raw' => $totalRaw,
                             'max' => $totalMax,
-                            'percentage' => $totalMax > 0 ? round(($totalRaw / $totalMax) * 100, 2) : 0,
+                            'percentage' => $percentage,
+                            'weighted' => $weighted,
                         ];
                     }
 
-                    $weightedSum = 0;
-                    foreach ($categoryScores as $type => $scores) {
-                        $weightedSum += $scores['percentage'] * ($weights[$type] ?? 0.25);
-                    }
+                    $hasAnyScore = collect($categoryScores)->contains(fn($scores) => $scores['percentage'] !== null);
+                    $initialGrade = $hasAnyScore ? round(collect($categoryScores)->sum('weighted'), 2) : null;
+                    $quarterlyGrade = $initialGrade !== null ? $transmutation->transmute((float) $initialGrade) : null;
 
                     $existingGrade = $allGrades->get($enrollment->id);
 
@@ -807,7 +822,9 @@ class TeacherController extends Controller
                         'enrollment_id' => $enrollment->id,
                         'student' => $enrollment->student,
                         'categories' => $categoryScores,
-                        'computed_grade' => round($weightedSum, 2),
+                        'initial_grade' => $initialGrade,
+                        'quarterly_grade' => $quarterlyGrade,
+                        'computed_grade' => $initialGrade,
                         'final_grade' => $existingGrade?->final_grade,
                         'status' => $existingGrade?->status,
                     ];
@@ -830,15 +847,13 @@ class TeacherController extends Controller
         ));
     }
 
-    public function batchSubmitGrades(Request $request)
+    public function batchSubmitGrades(\App\Http\Requests\Portal\BatchGradeRequest $request)
     {
-        $data = $request->validate([
-            'class_id' => 'required|exists:classes,id',
-            'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
-            'grades' => 'required|array',
-            'grades.*.enrollment_id' => 'required|exists:enrollments,id',
-            'grades.*.final_grade' => 'required|numeric|min:0|max:100',
-        ]);
+        $data = $request->validated();
+        // Option A split: Encode builds (draft/save), Computed locks (post).
+        // Draft keeps everything editable, Save stores, Post locks like Submitted.
+        $action = $data['action'] ?? 'save';
+        $targetStatus = $action === 'draft' ? 'Draft' : ($action === 'post' ? 'Submitted' : 'Pending');
 
         $class = Classes::findOrFail($data['class_id']);
         if ($class->teacher_id !== auth()->id()) {
@@ -850,7 +865,7 @@ class TeacherController extends Controller
             return back()->with('error', 'School year ' . $class->school_year . ' is locked — grades can no longer be changed.');
         }
 
-        // Submitted grades are locked — this saves as Pending (correct via unlock flow).
+        // Submitted grades are locked — changes need the unlock-request approval.
         $lockedIds = Grade::where('class_id', $class->id)
             ->where('grading_period', $data['grading_period'])
             ->where('status', 'Submitted')
@@ -858,27 +873,35 @@ class TeacherController extends Controller
             ->flip();
 
         $skipped = 0;
-        foreach ($data['grades'] as $gradeData) {
-            if (isset($lockedIds[$gradeData['enrollment_id']])) {
-                $skipped++;
-                continue;
+        $saved = 0;
+        // Whole class or nothing — never a half-saved class. updateOrCreate is
+        // idempotent so double-tapping Draft/Save/Post never duplicates rows.
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $class, $targetStatus, $lockedIds, &$skipped, &$saved) {
+            foreach ($data['grades'] as $gradeData) {
+                if (isset($lockedIds[$gradeData['enrollment_id']])) {
+                    $skipped++;
+                    continue;
+                }
+                Grade::updateOrCreate(
+                    [
+                        'enrollment_id' => $gradeData['enrollment_id'],
+                        'class_id' => $class->id,
+                        'grading_period' => $data['grading_period'],
+                    ],
+                    [
+                        'final_grade' => $gradeData['final_grade'],
+                        'status' => $targetStatus,
+                    ]
+                );
+                $saved++;
             }
-            Grade::updateOrCreate(
-                [
-                    'enrollment_id' => $gradeData['enrollment_id'],
-                    'class_id' => $class->id,
-                    'grading_period' => $data['grading_period'],
-                ],
-                [
-                    'final_grade' => $gradeData['final_grade'],
-                    'status' => 'Pending',
-                ]
-            );
-        }
+        });
 
-        log_activity($class, 'Batch Grades Saved', auth()->user()->name . ' batch-saved grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count($data['grades']) . ' grade(s) saved.' . ($skipped ? " {$skipped} submitted (locked) grade(s) skipped." : ''));
+        $pastTense = $action === 'draft' ? 'draft-saved' : ($action === 'post' ? 'posted' : 'saved');
+        log_activity($class, 'Batch Grades ' . $pastTense, auth()->user()->name . ' batch-' . $pastTense . ' grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . $saved . ' grade(s) ' . $pastTense . '.' . ($skipped ? " {$skipped} submitted (locked) grade(s) skipped." : ''));
 
-        $message = count($data['grades']) . ' grade(s) saved for ' . $data['grading_period'] . ' (Pending — submit to lock).';
+        $message = $saved . ' grade(s) ' . $pastTense . ' for ' . $data['grading_period'];
+        $message .= $action === 'draft' ? ' (Draft — still editable).' : ($action === 'post' ? ' (Posted — locked; request a correction unlock to change).' : ' (Saved).');
         if ($skipped) {
             $message .= " {$skipped} submitted grade(s) were skipped (locked) — request a correction unlock to change them.";
         }
