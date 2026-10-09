@@ -78,12 +78,13 @@
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-gray-900">Requirements Checklist</h3>
                 <div class="flex items-center gap-3">
-                    <span class="text-xs text-gray-500" x-text="verifiedCount + ' / ' + totalCount + ' verified'"></span>
+                    <span class="text-xs text-gray-500" x-text="verifiedCount + ' / ' + totalCount + ' verified'">{{ $admission->requirements->where('status', 'Verified')->count() }} / {{ $admission->requirements->count() }} verified</span>
                     @if($admission->status === 'Pending')
                     <form id="verify-all-form" method="POST" action="{{ route('registrar.admissions.verify-all', $admission) }}">
                         @csrf
                         <button type="button" @click="verifyAll()"
-                                class="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition">
+                                :disabled="verifyAllBusy"
+                                class="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
                             Verify All
                         </button>
                     </form>
@@ -96,17 +97,19 @@
                 <li class="py-3 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                             style="background: {{ $req->status === 'Verified' ? '#22c55e' : '#e5e7eb' }};"
                              :style="'background: ' + (requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? '#22c55e' : '#e5e7eb')">
                             <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                 style="{{ $req->status === 'Verified' ? '' : 'display: none;' }}"
                                  x-show="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified'">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                             </svg>
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-900">{{ $req->document_type }}</p>
-                            <p class="text-xs"
+                            <p class="text-xs {{ $req->status === 'Verified' ? 'text-green-600' : 'text-gray-500' }}"
                                :class="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'text-green-600' : 'text-gray-500'"
-                               x-text="requirements.find(r => r.id === {{ $req->id }}).status"></p>
+                               x-text="requirements.find(r => r.id === {{ $req->id }}).status">{{ $req->status }}</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -118,9 +121,11 @@
                             @csrf
                             <input type="hidden" name="verify" value="{{ $req->status === 'Verified' ? '0' : '1' }}">
                             <button type="button" @click="toggleVerify({{ $req->id }})"
-                                    class="text-sm font-medium px-3 py-1 rounded-lg transition"
+                                    class="text-sm font-medium px-3 py-1 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :disabled="busy[{{ $req->id }}]"
+                                    style="{{ $req->status === 'Verified' ? 'background: #fee2e2; color: #dc2626;' : 'background: #dcfce7; color: #16a34a;' }}"
                                     :style="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'background: #fee2e2; color: #dc2626;' : 'background: #dcfce7; color: #16a34a;'"
-                                    x-text="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'Unverify' : 'Verify'">
+                                    x-text="requirements.find(r => r.id === {{ $req->id }}).status === 'Verified' ? 'Unverify' : 'Verify'">{{ $req->status === 'Verified' ? 'Unverify' : 'Verify' }}
                             </button>
                         </form>
                         @endif
@@ -244,64 +249,3 @@
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('alpine:init', () => {
-    const reqData = JSON.parse(document.getElementById('requirements-data').textContent);
-    const clsData = JSON.parse(document.getElementById('classes-data').textContent);
-    const secMap = JSON.parse(document.getElementById('section-map').textContent);
-
-    Alpine.data('requirementsChecklist', () => ({
-        requirements: reqData,
-        get verifiedCount() { return this.requirements.filter(r => r.status === 'Verified').length },
-        get totalCount() { return this.requirements.length },
-        toggleVerify(reqId) {
-            const form = document.getElementById('verify-form-' + reqId);
-            const hiddenInput = form.querySelector('input[name=verify]');
-            const req = this.requirements.find(r => r.id === reqId);
-            const newVal = req.status === 'Verified' ? '0' : '1';
-            hiddenInput.value = newVal;
-            const formData = new FormData(form);
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-            fetch(form.action, {
-                method: 'POST', body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken }
-            })
-            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-            .then(data => { if (data.success) req.status = data.status; })
-            .catch(err => { console.error('Verify failed:', err); alert('Verify failed: ' + err.message); });
-        },
-        verifyAll() {
-            const form = document.getElementById('verify-all-form');
-            const formData = new FormData(form);
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-            fetch(form.action, {
-                method: 'POST', body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken }
-            })
-            .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-            .then(data => { if (data.success) this.requirements.forEach(r => r.status = 'Verified'); })
-            .catch(err => { console.error('Verify All failed:', err); alert('Verify All failed: ' + err.message); });
-        }
-    }));
-
-    Alpine.data('approveForm', () => ({
-        selectedSection: '',
-        sectionMap: secMap,
-        allClasses: clsData,
-        selectedIds: [],
-        get selectedSectionName() { return this.sectionMap[this.selectedSection] || ''; },
-        get filteredClasses() { return this.allClasses.filter(c => c.section === this.selectedSectionName); },
-        get allSelected() { return this.filteredClasses.length > 0 && this.selectedIds.length === this.filteredClasses.length; },
-        toggleAll() {
-            if (this.allSelected) { this.selectedIds = []; }
-            else { this.selectedIds = this.filteredClasses.map(c => c.id); }
-        },
-        isSelected(id) { return this.selectedIds.includes(id); },
-        toggleId(id) {
-            if (this.isSelected(id)) { this.selectedIds = this.selectedIds.filter(x => x !== id); }
-            else { this.selectedIds.push(id); }
-        }
-    }));
-});
-</script>

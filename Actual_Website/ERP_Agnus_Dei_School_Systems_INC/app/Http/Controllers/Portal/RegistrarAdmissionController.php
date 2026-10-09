@@ -95,14 +95,28 @@ class RegistrarAdmissionController extends Controller
 
     public function verifyRequirement(Request $request, Requirement $requirement)
     {
-        $requirement->status = $request->input('verify') ? 'Verified' : 'Under Review';
+        $newStatus = $request->input('verify') ? 'Verified' : 'Under Review';
+
+        if ($requirement->status === $newStatus) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'status' => $requirement->status,
+                    'message' => 'Already ' . ($newStatus === 'Verified' ? 'verified' : 'under review') . '.',
+                ]);
+            }
+
+            return back()->with('success', 'Already ' . ($newStatus === 'Verified' ? 'verified' : 'under review') . '.');
+        }
+
+        $requirement->status = $newStatus;
         $requirement->save();
 
         $admission = $requirement->admission;
 
         log_activity($requirement, 'Requirement Verified', auth()->user()->name . ' ' . ($request->input('verify') ? 'verified' : 'unverified') . ' requirement: ' . ($requirement->document_type ?? $requirement->requirement_type ?? $requirement->name ?? $requirement->original_filename ?? 'Requirement') . ' for admission #' . $admission->id . '.');
 
-        if ($request->wantsJson()) {
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'status' => $requirement->status,
@@ -119,9 +133,21 @@ class RegistrarAdmissionController extends Controller
             ->where('status', 'Under Review')
             ->update(['status' => 'Verified']);
 
+        if ($updated === 0) {
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'updated' => 0,
+                    'message' => 'Already verified.',
+                ]);
+            }
+
+            return back()->with('success', 'Already verified.');
+        }
+
         log_activity($admission, 'All Requirements Verified', auth()->user()->name . ' verified all requirements for admission #' . $admission->id . '.');
 
-        if (request()->wantsJson()) {
+        if (request()->wantsJson() || request()->ajax()) {
             return response()->json([
                 'success' => true,
                 'updated' => $updated,
@@ -144,9 +170,12 @@ class RegistrarAdmissionController extends Controller
             return back()->with('error', 'Gender is still missing for this applicant. Please set it above before approving.');
         }
 
-        $unverifiedCount = $admission->requirements()->where('status', '!=', 'Verified')->count();
-        if ($unverifiedCount > 0) {
-            return back()->with('error', 'All requirements must be verified before approving. ' . $unverifiedCount . ' requirement(s) still pending.');
+        $pendingDocs = $admission->requirements()->where('status', '!=', 'Verified')->pluck('document_type');
+        if ($pendingDocs->isNotEmpty()) {
+            $totalDocs = $admission->requirements()->count();
+            $verifiedDocs = $totalDocs - $pendingDocs->count();
+            $names = $pendingDocs->implode(', ');
+            return back()->with('error', $names . ($pendingDocs->count() === 1 ? ' is' : ' are') . ' still Under Review — ' . $verifiedDocs . '/' . $totalDocs . ' verified.');
         }
 
         // Holds block (re-)enrollment until cleared (library / clinic / finance).
