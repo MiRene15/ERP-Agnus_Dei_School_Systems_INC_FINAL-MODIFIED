@@ -123,6 +123,7 @@
     <div class="rounded-xl border p-6 text-center text-sm bg-white" style="color: var(--muted);">No active students enrolled in this class.</div>
 @else
 <div x-data="{
+    viewMode: true,
     students: @js($studentsList),
     works: @js($worksList),
     scores: @js($scoresMap),
@@ -196,6 +197,12 @@
         return Math.round(Math.max(60, Math.min(100, r)));
     }
 }">
+    <div class="rounded-xl border bg-white p-3 mb-4 flex items-center gap-2 flex-wrap" style="border-color: var(--lilac);">
+        <span class="text-sm font-bold" style="color: var(--navy);" x-text="viewMode ? 'View mode' : 'Edit mode'"></span>
+        <span class="text-xs" style="color: var(--muted);" x-text="viewMode ? 'Scores are read-only — tap Edit to change.' : 'Type scores, then Save as Draft or Save Grades.'"></span>
+        <button type="button" @click="viewMode = !viewMode" class="btn-navy ml-auto px-4 py-2 text-sm font-bold" style="border-radius: 10px;" x-text="viewMode ? 'Edit' : 'View'"></button>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <template x-for="b in ['Written Works','Performance Tasks','Quarterly Assessment']" :key="b">
             <div class="bg-white p-5" style="border: 1px solid #E3E1FA; border-radius: 14px; box-shadow: 0 8px 30px -8px rgba(36,34,92,.12);">
@@ -213,8 +220,8 @@
                     </template>
                     <span x-show="worksFor(b).length === 0" class="text-xs" style="color: var(--muted);">No assessments yet — add your first below.</span>
                 </div>
-                <button type="button" @click="showForm[b] = !showForm[b]" class="btn-navy w-full px-4 py-2.5 text-sm font-bold" style="border-radius: 10px;">+ Add Assessment</button>
-                <div x-show="showForm[b]" x-cloak class="mt-3 p-3" style="background: #fff; border: 1.5px solid var(--lilac); border-radius: 12px; box-shadow: 0 8px 30px -8px rgba(36,34,92,.12); max-width: 100%; overflow: hidden;">
+                <button type="button" @click="showForm[b] = !showForm[b]" :disabled="viewMode" :class="viewMode ? 'opacity-50' : ''" class="btn-navy w-full px-4 py-2.5 text-sm font-bold" style="border-radius: 10px;">+ Add Assessment</button>
+                <div x-show="showForm[b] && !viewMode" x-cloak class="mt-3 p-3" style="background: #fff; border: 1.5px solid var(--lilac); border-radius: 12px; box-shadow: 0 8px 30px -8px rgba(36,34,92,.12); max-width: 100%; overflow: hidden;">
                     <input type="text" x-model="draft[b].title" placeholder="Work name — e.g. Quiz 1" maxlength="255" class="w-full px-3 py-2 text-sm mb-2 outline-none bg-white" style="border: 1.5px solid var(--lilac); border-radius: 10px; color: var(--navy); max-width: 100%; box-sizing: border-box;">
                     <div class="flex gap-2" style="flex-wrap: wrap;">
                         <input type="number" x-model="draft[b].max" step="0.01" min="0" placeholder="Total" class="px-3 py-2 text-sm outline-none bg-white" style="border: 1.5px solid var(--lilac); border-radius: 10px; color: var(--navy); flex: 1 1 100px; min-width: 0; max-width: 100%; box-sizing: border-box;">
@@ -279,24 +286,24 @@
                             <template x-for="w in worksFor('Written Works')" :key="'h-' + w.key">
                                 <th class="text-center py-2 px-2 font-semibold" style="min-width: 130px;">
                                     <div class="truncate" x-text="w.title"></div>
-                                    <div class="text-[11px] font-normal opacity-80" x-text="'/ ' + w.max + ' · ' + w.date"></div>
-                                    <button type="button" @click="removeWork(w.key, w.title)" class="text-[11px] underline opacity-70 hover:opacity-100">remove</button>
+                                    <div class="text-[11px] font-normal opacity-80 text-center" style="text-align: center;" x-text="'/ ' + w.max + ' · ' + w.date"></div>
+                                    <button type="button" x-show="!viewMode" @click="removeWork(w.key, w.title)" class="text-[11px] underline opacity-70 hover:opacity-100">remove</button>
                                 </th>
                             </template>
                             <th x-show="worksFor('Written Works').length === 0" class="text-center py-2 px-2 font-normal text-[11px] opacity-70" style="min-width: 150px;">No WW yet —<br>+ Add Assessment above</th>
                             <template x-for="w in worksFor('Performance Tasks')" :key="'h-' + w.key">
                                 <th class="text-center py-2 px-2 font-semibold" style="min-width: 130px; border-left: 1px solid rgba(255,255,255,.25);">
                                     <div class="truncate" x-text="w.title"></div>
-                                    <div class="text-[11px] font-normal opacity-80" x-text="'/ ' + w.max + ' · ' + w.date"></div>
-                                    <button type="button" @click="removeWork(w.key, w.title)" class="text-[11px] underline opacity-70 hover:opacity-100">remove</button>
+                                    <div class="text-[11px] font-normal opacity-80 text-center" style="text-align: center;" x-text="'/ ' + w.max + ' · ' + w.date"></div>
+                                    <button type="button" x-show="!viewMode" @click="removeWork(w.key, w.title)" class="text-[11px] underline opacity-70 hover:opacity-100">remove</button>
                                 </th>
                             </template>
                             <th x-show="worksFor('Performance Tasks').length === 0" class="text-center py-2 px-2 font-normal text-[11px] opacity-70" style="min-width: 150px; border-left: 1px solid rgba(255,255,255,.25);">No PT yet —<br>+ Add Assessment above</th>
                             <template x-for="w in worksFor('Quarterly Assessment')" :key="'h-' + w.key">
                                 <th class="text-center py-2 px-2 font-semibold" style="min-width: 130px; border-left: 1px solid rgba(255,255,255,.25);">
                                     <div class="truncate" x-text="w.title"></div>
-                                    <div class="text-[11px] font-normal opacity-80" x-text="'/ ' + w.max + ' · ' + w.date"></div>
-                                    <button type="button" @click="removeWork(w.key, w.title)" class="text-[11px] underline opacity-70 hover:opacity-100">remove</button>
+                                    <div class="text-[11px] font-normal opacity-80 text-center" style="text-align: center;" x-text="'/ ' + w.max + ' · ' + w.date"></div>
+                                    <button type="button" x-show="!viewMode" @click="removeWork(w.key, w.title)" class="text-[11px] underline opacity-70 hover:opacity-100">remove</button>
                                 </th>
                             </template>
                             <th x-show="worksFor('Quarterly Assessment').length === 0" class="text-center py-2 px-2 font-normal text-[11px] opacity-70" style="min-width: 150px; border-left: 1px solid rgba(255,255,255,.25);">No QA yet —<br>+ Add Assessment above</th>
@@ -315,6 +322,7 @@
                                             :value="cell(s.id, w.key)"
                                             @input="if (!scores[s.id]) scores[s.id] = {}; scores[s.id][w.key] = $event.target.value"
                                             :class="overMax(s.id, w.key, w.max) ? 'border-red-500 bg-red-50' : ''"
+                                            :disabled="viewMode"
                                             class="w-24 text-center rounded-lg border px-2 py-1.5 text-sm outline-none" style="border-color: var(--lilac);">
                                     </td>
                                 </template>
@@ -325,6 +333,7 @@
                                             :value="cell(s.id, w.key)"
                                             @input="if (!scores[s.id]) scores[s.id] = {}; scores[s.id][w.key] = $event.target.value"
                                             :class="overMax(s.id, w.key, w.max) ? 'border-red-500 bg-red-50' : ''"
+                                            :disabled="viewMode"
                                             class="w-24 text-center rounded-lg border px-2 py-1.5 text-sm outline-none" style="border-color: var(--lilac);">
                                     </td>
                                 </template>
@@ -335,6 +344,7 @@
                                             :value="cell(s.id, w.key)"
                                             @input="if (!scores[s.id]) scores[s.id] = {}; scores[s.id][w.key] = $event.target.value"
                                             :class="overMax(s.id, w.key, w.max) ? 'border-red-500 bg-red-50' : ''"
+                                            :disabled="viewMode"
                                             class="w-24 text-center rounded-lg border px-2 py-1.5 text-sm outline-none" style="border-color: var(--lilac);">
                                     </td>
                                 </template>
@@ -392,11 +402,14 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2 justify-end flex-wrap">
+        <div class="flex items-center gap-2 justify-end flex-wrap" x-show="!viewMode">
             <button type="submit" @click="saveAction = 'draft'" class="px-5 py-2.5 text-sm font-bold transition hover:opacity-90" style="border: 1.5px solid var(--navy); color: var(--navy); border-radius: 10px; background: #fff;">Save as Draft</button>
             <button type="submit" @click="saveAction = 'save'" class="btn-navy px-5 py-2.5 text-sm font-bold text-white" style="border-radius: 10px;">Save Grades</button>
         </div>
-        <p class="text-xs mt-2 text-right" style="color: var(--muted);">Draft keeps everything editable. Save stores this quarter. Locking happens on Computed Grades → Post Grades.</p>
+        <div class="flex items-center gap-2 justify-end flex-wrap" x-show="viewMode" x-cloak>
+            <button type="button" @click="viewMode = false" class="btn-navy px-5 py-2.5 text-sm font-bold text-white" style="border-radius: 10px;">Edit Scores</button>
+        </div>
+        <p x-show="!viewMode" class="text-xs mt-2 text-right" style="color: var(--muted);">Draft keeps everything editable. Save stores this quarter. Locking happens on Computed Grades → Post Grades.</p>
     </form>
 </div>
 @endif

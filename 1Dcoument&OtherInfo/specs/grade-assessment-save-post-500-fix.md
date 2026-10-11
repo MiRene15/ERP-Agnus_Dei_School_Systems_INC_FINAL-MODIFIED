@@ -1,8 +1,9 @@
 # Spec: Grade Assessment Save Post 500 Fix
 
-- **Status**: Approved
+- **Status**: Implemented (2026-10-11 — lint clean on all touched PHP; browser checks waived by user direction, page fixes user-confirmed working)
 - **Created**: 2026-10-11
 - **Approved by**: user on 2026-10-11
+- **Amendment**: 2026-10-11 — computed-table restyle + posted/on-hold notices + batch edit/view toggle + alphabetical class lists (user-confirmed 2026-10-11). Re-approval required before implementation.
 
 ## 1. Why We Need This
 Teachers fill in scores on the Grade Assessment sheet and tap Save or Post, but get a white 500 error page instead. They don't know what saved, lose what they typed, and must re-type everything. At grading-deadline peak this means late nights, copy errors, and mistrust in the gradebook. This fix makes Save and Post never show a 500 — every problem stays on the sheet with a plain note and all input kept.
@@ -39,6 +40,12 @@ Teachers fill in scores on the Grade Assessment sheet and tap Save or Post, but 
 - Key states: default (sheet as today), saving-busy, row error (row number + plain reason), success confirmation with counts, empty sheet ("nothing to save"), locked read-only with unlock hint, permission-denied ("not your class").
 - Plain words only: `Save Scores`, `Post Grades`, `Row 12`, `Saving…`, `nothing to save`. Dates in school format.
 - Fewest clicks: no re-typing after any failure; tab order unchanged.
+
+### Amendment A (pending re-approval, 2026-10-11)
+- **Computed Grades mirrors the Encode grid**: same navy headers, sticky student-name column, bordered cells, and alternating row shading — one familiar table language across both screens.
+- **Posted / on-hold notice in two places**: a status banner above the table (e.g. "Posted — locked" or "On hold for verification") plus a per-row `Posted` / `On hold` pill in the Final Grade column.
+- **Batch-entry edit/view toggle**: the batch sheet opens in read-only View; tapping `Edit` enables all score inputs. Tapping `View` (or saving) returns to read-only. The toggle never discards typed input.
+- **Alphabetical class lists**: every batch-entry class picker sorts by subject name, then grade level, then section.
 
 ## 6. Business Rules
 ### Must always be true
@@ -78,6 +85,10 @@ Teachers fill in scores on the Grade Assessment sheet and tap Save or Post, but 
 - [ ] All rows empty → "nothing to save," no 500.
 - [ ] Locked/posted student mixed in → rest saves, skipped names noted.
 - [ ] Open another teacher's class address → plain denied, no 500.
+- [ ] (Amendment A) Computed Grades renders in the Encode-grid table style.
+- [ ] (Amendment A) Posted class shows a status banner plus per-row Posted pills; unposted shows On-hold pills.
+- [ ] (Amendment A) Batch sheet opens in View; Edit enables inputs without losing typed scores.
+- [ ] (Amendment A) Batch-entry class picker lists classes alphabetically (subject → grade → section).
 
 ## 9. Open Questions (if any)
 None.
@@ -91,3 +102,4 @@ None.
 
 ## 11. Approval
 > Approved by user on 2026-10-11.
+> Amendment A (computed-table restyle + posted/on-hold notices + batch edit/view toggle + alphabetical class lists) approved by user on 2026-10-11.

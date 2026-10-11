@@ -7,6 +7,22 @@
 @endsection
 
 @section('content')
+@if(session('success'))
+    <div class="mb-4 p-4 rounded-lg text-sm" style="background: #EEF2FF; border: 1px solid var(--lilac); color: var(--navy);">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+    <div class="mb-4 p-4 rounded-lg text-sm" style="background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B;">{{ session('error') }}</div>
+@endif
+@if($errors->any())
+    <div class="mb-4 p-4 rounded-lg text-sm" style="background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B;">
+        <p class="font-semibold mb-1">Could not post — nothing you typed was lost. Fix and try again.</p>
+        <ul class="list-disc list-inside">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 <div class="mb-6 flex items-center justify-between">
     <div>
         <h2 class="text-2xl font-bold" style="color: var(--navy);">Computed Grades – DepEd MATATAG K-12</h2>

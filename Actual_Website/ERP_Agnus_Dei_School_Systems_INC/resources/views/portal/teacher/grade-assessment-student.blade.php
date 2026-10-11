@@ -18,9 +18,26 @@
     <p class="text-gray-600 mt-1">{{ $class->subject->name ?? 'N/A' }} &middot; {{ $selectedPeriod }}</p>
 </div>
 
-<form method="POST" action="{{ route('teacher.grade-assessment.student.store', [$class, $enrollment->id]) }}">
+<form method="POST" action="{{ route('teacher.grade-assessment.student.store', [$class, $enrollment->id]) }}" onsubmit="if (this.dataset.submitted === '1') { return false; } this.dataset.submitted = '1'; const _btn = this.querySelector('[data-save-btn]'); if (_btn) { _btn.disabled = true; _btn.textContent = 'Saving…'; } return true;">
     @csrf
     <input type="hidden" name="grading_period" value="{{ $selectedPeriod }}">
+
+    @if(session('success'))
+        <div class="mb-4 p-4 rounded-lg text-sm" style="background: #EEF2FF; border: 1px solid var(--lilac); color: var(--navy);">{{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+        <div class="mb-4 p-4 rounded-lg text-sm" style="background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B;">{{ session('error') }}</div>
+    @endif
+    @if($errors->any())
+        <div class="mb-4 p-4 rounded-lg text-sm" style="background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B;">
+            <p class="font-semibold mb-1">Fix the flagged rows, then save again — nothing you typed was lost.</p>
+            <ul class="list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     <div class="flex items-center gap-2 mb-4">
         <label class="text-sm font-medium text-gray-700">Grading Period:</label>
@@ -38,8 +55,9 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         @foreach($assessmentTypes as $type)
         @php
+            $oldByType = collect(old('assessments', []))->where('type', $type)->sortKeys()->map(fn($a) => ['title' => $a['title'] ?? '', 'raw_score' => $a['raw_score'] ?? '', 'max_score' => $a['max_score'] ?? ''])->values()->toArray();
             $typeAssessments = $existingAssessments[$type] ?? collect();
-            $initial = $typeAssessments->map(fn($a) => ['title' => $a->title, 'raw_score' => $a->raw_score, 'max_score' => $a->max_score])->values()->toArray();
+            $initial = !empty($oldByType) ? $oldByType : $typeAssessments->map(fn($a) => ['title' => $a->title, 'raw_score' => $a->raw_score, 'max_score' => $a->max_score])->values()->toArray();
             if (empty($initial)) $initial = [['title' => '', 'raw_score' => '', 'max_score' => '']];
             $typeIndex = array_search($type, $assessmentTypes);
             $base = $typeIndex * 100;
@@ -71,7 +89,7 @@
     </div>
 
     <div class="mt-6 flex justify-end">
-        <button type="submit" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90" style="background: var(--navy);">
+        <button type="submit" data-save-btn class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90" style="background: var(--navy);">
             Save Scores
         </button>
     </div>

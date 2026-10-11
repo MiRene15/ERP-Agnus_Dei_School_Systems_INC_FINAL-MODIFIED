@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 
+use App\Http\Requests\Portal\StoreGradeAssessmentStudentRequest;
 use App\Models\Assessment;
 
 use App\Models\Attendance;
@@ -417,38 +418,47 @@ class TeacherController extends Controller
 
         $inserts = [];
         $skipped = 0;
-        \Illuminate\Support\Facades\DB::transaction(function () use ($class, $data, $kept, $lockedIds, &$inserts, &$skipped) {
-            Assessment::where('class_id', $class->id)
-                ->where('grading_period', $data['grading_period'])
-                ->when(!empty($lockedIds), fn($q) => $q->whereNotIn('enrollment_id', array_keys($lockedIds)))
-                ->delete();
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($class, $data, $kept, $lockedIds, &$inserts, &$skipped) {
+                Assessment::where('class_id', $class->id)
+                    ->where('grading_period', $data['grading_period'])
+                    ->when(!empty($lockedIds), fn($q) => $q->whereNotIn('enrollment_id', array_keys($lockedIds)))
+                    ->delete();
 
-            foreach ($kept as $row) {
-                if (isset($lockedIds[$row['enrollment_id']])) {
-                    $skipped++;
-                    continue;
+                foreach ($kept as $row) {
+                    if (isset($lockedIds[$row['enrollment_id']])) {
+                        $skipped++;
+                        continue;
+                    }
+                    $inserts[] = [
+                        'enrollment_id' => $row['enrollment_id'],
+                        'class_id' => $class->id,
+                        'type' => $row['type'] ?? Assessment::ASSESSMENT_TYPES[0],
+                        'title' => $row['title'] ?? '',
+                        'raw_score' => $row['raw_score'] ?? 0,
+                        'max_score' => $row['max_score'] ?? 0,
+                        'assessment_date' => $row['assessment_date'] ?? null,
+                        'remarks' => $row['remarks'] ?? null,
+                        'grading_period' => $data['grading_period'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 }
-                $inserts[] = [
-                    'enrollment_id' => $row['enrollment_id'],
-                    'class_id' => $class->id,
-                    'type' => $row['type'] ?? Assessment::ASSESSMENT_TYPES[0],
-                    'title' => $row['title'] ?? '',
-                    'raw_score' => $row['raw_score'] ?? 0,
-                    'max_score' => $row['max_score'] ?? 0,
-                    'assessment_date' => $row['assessment_date'] ?? null,
-                    'remarks' => $row['remarks'] ?? null,
-                    'grading_period' => $data['grading_period'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
 
-            if (!empty($inserts)) {
-                Assessment::insert($inserts);
-            }
-        });
+                if (!empty($inserts)) {
+                    Assessment::insert($inserts);
+                }
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Assessments save failed: ' . $e->getMessage(), ['class_id' => $class->id]);
+            return back()->withInput()->with('error', 'Could not save — please refresh and try again.');
+        }
 
-        log_activity($class, 'Assessments Saved', auth()->user()->name . ' saved assessments for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . count($inserts) . ' assessment(s) recorded.' . ($skipped ? " {$skipped} submitted (locked) student(s) skipped." : ''));
+        try {
+            log_activity($class, 'Assessments Saved', auth()->user()->name . ' saved assessments for ' . $data['grading_period'] . ' (' . ($class->subject?->name ?? 'class') . ' - ' . ($class->grade_level ?? '') . ' ' . ($class->section ?? '') . '). ' . count($inserts) . ' assessment(s) recorded.' . ($skipped ? " {$skipped} submitted (locked) student(s) skipped." : ''));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Assessments activity log failed: ' . $e->getMessage(), ['class_id' => $class->id]);
+        }
 
         $saveAction = $request->input('save_action', 'save');
         $message = $saveAction === 'draft'
@@ -587,6 +597,14 @@ class TeacherController extends Controller
             ->when(request('section'), fn($q) => $q->where('section', request('section')))
             ->get();
 
+        // Alphabetical picker (spec Amendment A): subject → grade → section.
+        $classes = $classes->sortBy(fn($c) => sprintf(
+            '%s|%s|%s',
+            mb_strtolower((string) ($c->subject->name ?? '')),
+            mb_strtolower((string) $c->grade_level),
+            mb_strtolower((string) $c->section)
+        ))->values();
+
         $pickerGrades = Classes::where('teacher_id', $teacherId)
             ->where('school_year', $schoolYear)
             ->where('status', 'active')
@@ -634,11 +652,17 @@ class TeacherController extends Controller
     public function gradeAssessmentStudent(Classes $class, $enrollmentId)
     {
         if ($class->teacher_id !== auth()->id()) {
-            abort(403);
+            return redirect()->route('teacher.grade-assessment')->with('error', 'Not your class — you can only open your own classes.');
         }
 
         $class->load('subject');
-        $enrollment = Enrollment::with('student')->findOrFail($enrollmentId);
+        $enrollment = Enrollment::with('student')->find($enrollmentId);
+        if ($enrollment === null || $enrollment->student === null) {
+            return redirect()->route('teacher.grade-assessment', ['class_id' => $class->id])->with('error', 'Could not open — please refresh and try again.');
+        }
+        if (!$class->enrollments()->where('enrollments.id', $enrollmentId)->exists()) {
+            return redirect()->route('teacher.grade-assessment', ['class_id' => $class->id])->with('error', 'Could not open — this student is no longer in this class. Please refresh.');
+        }
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $selectedPeriod = request('grading_period', '1st Term');
         $assessmentTypes = Assessment::ASSESSMENT_TYPES;
@@ -654,25 +678,28 @@ class TeacherController extends Controller
         ));
     }
 
-    public function storeGradeAssessmentStudent(Request $request, Classes $class, $enrollmentId)
+    public function storeGradeAssessmentStudent(StoreGradeAssessmentStudentRequest $request, Classes $class, $enrollmentId): \Illuminate\Http\RedirectResponse
     {
         if ($class->teacher_id !== auth()->id()) {
-            abort(403);
+            return redirect()->route('teacher.grade-assessment')->with('error', 'Not your class — you can only save your own classes.');
         }
 
         // Locked school years are frozen — assessments can no longer be changed.
         if (school_year_locked($class->school_year)) {
-            return back()->with('error', 'School year ' . $class->school_year . ' is locked — assessments can no longer be changed.');
+            return back()->withInput()->with('error', 'School year ' . $class->school_year . ' is locked — assessments can no longer be changed.');
         }
 
-        $data = $request->validate([
-            'grading_period' => 'required|string|in:1st Term,2nd Term,3rd Term',
-            'assessments' => 'required|array',
-            'assessments.*.type' => ['required', 'string', 'in:' . implode(',', Assessment::ASSESSMENT_TYPES)],
-            'assessments.*.title' => 'nullable|string|max:255',
-            'assessments.*.raw_score' => 'nullable|numeric|min:0',
-            'assessments.*.max_score' => 'nullable|numeric|min:0',
-        ]);
+        $data = $request->validated();
+
+        // Missing class/student records stay on the sheet — never a 500 page.
+        $enrollment = Enrollment::find($enrollmentId);
+        if ($enrollment === null) {
+            return back()->withInput()->with('error', 'Could not save — please refresh and try again.');
+        }
+        $belongsToClass = $class->enrollments()->where('enrollments.id', $enrollmentId)->exists();
+        if (!$belongsToClass) {
+            return back()->withInput()->with('error', 'Could not save — this student is no longer in this class. Please refresh and try again.');
+        }
 
         // A submitted final grade locks this student's assessments too.
         $locked = Grade::where('class_id', $class->id)
@@ -681,17 +708,22 @@ class TeacherController extends Controller
             ->where('status', 'Submitted')
             ->exists();
         if ($locked) {
-            return back()->with('error', 'These assessments are locked (final grade already submitted) — request a correction unlock to change them.');
+            return back()->withInput()->with('error', 'These assessments are locked (final grade already submitted) — request a correction unlock to change them.');
         }
 
-        Assessment::where('class_id', $class->id)
-            ->where('enrollment_id', $enrollmentId)
-            ->where('grading_period', $data['grading_period'])
-            ->delete();
-
+        // Row-level semantic checks with row numbers — failed saves re-render
+        // every entered row from the submitted input (never wiped).
+        $rowErrors = [];
         $inserts = [];
-        foreach ($data['assessments'] as $item) {
-            if (empty($item['title']) && empty($item['raw_score'])) {
+        foreach (array_values($data['assessments']) as $idx => $item) {
+            $rowNo = $idx + 1;
+            if (empty($item['title']) && ($item['raw_score'] === null || $item['raw_score'] === '')) {
+                continue;
+            }
+            $raw = $item['raw_score'] ?? null;
+            $max = $item['max_score'] ?? null;
+            if ($raw !== null && $raw !== '' && $max !== null && $max !== '' && (float) $raw > (float) $max) {
+                $rowErrors[] = "Row {$rowNo}: score above max ({$raw}/{$max}).";
                 continue;
             }
             $inserts[] = [
@@ -699,21 +731,41 @@ class TeacherController extends Controller
                 'class_id' => $class->id,
                 'type' => $item['type'],
                 'title' => $item['title'] ?? '',
-                'raw_score' => $item['raw_score'] ?? 0,
-                'max_score' => $item['max_score'] ?? 0,
+                'raw_score' => ($raw === null || $raw === '') ? 0 : $raw,
+                'max_score' => ($max === null || $max === '') ? 0 : $max,
                 'grading_period' => $data['grading_period'],
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
         }
 
-        if (!empty($inserts)) {
-            Assessment::insert($inserts);
+        if (!empty($rowErrors)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['assessments' => $rowErrors]);
         }
 
-        log_activity($class, 'Student Assessments Saved', auth()->user()->name . ' saved assessments for student #' . $enrollmentId . ' in ' . $data['grading_period'] . ' (' . $class->subject->name . '). ' . count($inserts) . ' assessment(s) recorded.');
+        if (empty($inserts)) {
+            return back()->withInput()->with('error', 'Nothing to save — add a score first.');
+        }
 
-        return back()->with('success', 'Assessment scores saved for this student.');
+        // Whole student or nothing — delete + insert stay in one transaction
+        // so a failure never leaves a half-saved student.
+        \Illuminate\Support\Facades\DB::transaction(function () use ($class, $enrollmentId, $data, $inserts) {
+            Assessment::where('class_id', $class->id)
+                ->where('enrollment_id', $enrollmentId)
+                ->where('grading_period', $data['grading_period'])
+                ->delete();
+
+            Assessment::insert($inserts);
+        });
+
+        $subjectName = $class->subject?->name ?? 'class';
+        try {
+            log_activity($class, 'Student Assessments Saved', auth()->user()->name . ' saved assessments for student #' . $enrollmentId . ' in ' . $data['grading_period'] . ' (' . $subjectName . '). ' . count($inserts) . ' assessment(s) recorded.');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Student-assessments activity log failed: ' . $e->getMessage(), ['class_id' => $class->id]);
+        }
+
+        return back()->with('success', 'Saved ' . count($inserts) . ' row(s) for this student.');
     }
 
     // ─── NEW SUB-TAB: Computed Grades ───────────────────────────────────
@@ -737,6 +789,14 @@ class TeacherController extends Controller
             ->when(request('grade_level'), fn($q) => $q->where('grade_level', request('grade_level')))
             ->when(request('section'), fn($q) => $q->where('section', request('section')))
             ->get();
+
+        // Alphabetical picker (spec Amendment A): subject → grade → section.
+        $classes = $classes->sortBy(fn($c) => sprintf(
+            '%s|%s|%s',
+            mb_strtolower((string) ($c->subject->name ?? '')),
+            mb_strtolower((string) $c->grade_level),
+            mb_strtolower((string) $c->section)
+        ))->values();
 
         $pickerGrades = Classes::where('teacher_id', $teacherId)
             ->where('school_year', $schoolYear)
@@ -855,14 +915,34 @@ class TeacherController extends Controller
         $action = $data['action'] ?? 'save';
         $targetStatus = $action === 'draft' ? 'Draft' : ($action === 'post' ? 'Submitted' : 'Pending');
 
-        $class = Classes::findOrFail($data['class_id']);
+        $class = Classes::find($data['class_id']);
+        if ($class === null) {
+            return back()->withInput()->with('error', 'Could not save — please refresh and try again.');
+        }
         if ($class->teacher_id !== auth()->id()) {
-            abort(403);
+            return back()->with('error', 'Not your class — you can only post your own classes.');
         }
 
         // Locked school years are frozen — grades can no longer be changed.
         if (school_year_locked($class->school_year)) {
             return back()->with('error', 'School year ' . $class->school_year . ' is locked — grades can no longer be changed.');
+        }
+
+        // Only students still in this class may save — stale rows stay on the
+        // sheet with a plain note instead of a 500 page.
+        $validIds = $class->enrollments()->pluck('enrollments.id')->flip()->toArray();
+        $validGrades = [];
+        $stale = 0;
+        foreach ($data['grades'] as $gradeData) {
+            if (!isset($validIds[$gradeData['enrollment_id']])) {
+                $stale++;
+                continue;
+            }
+            $validGrades[] = $gradeData;
+        }
+
+        if (empty($validGrades)) {
+            return back()->withInput()->with('error', 'Nothing to save — please refresh and try again.' . ($stale ? " {$stale} row(s) no longer belong to this class." : ''));
         }
 
         // Submitted grades are locked — changes need the unlock-request approval.
@@ -874,36 +954,61 @@ class TeacherController extends Controller
 
         $skipped = 0;
         $saved = 0;
+        $skippedNames = [];
         // Whole class or nothing — never a half-saved class. updateOrCreate is
         // idempotent so double-tapping Draft/Save/Post never duplicates rows.
-        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $class, $targetStatus, $lockedIds, &$skipped, &$saved) {
-            foreach ($data['grades'] as $gradeData) {
-                if (isset($lockedIds[$gradeData['enrollment_id']])) {
-                    $skipped++;
-                    continue;
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($validGrades, $class, $data, $targetStatus, $lockedIds, &$skipped, &$saved) {
+                foreach ($validGrades as $gradeData) {
+                    if (isset($lockedIds[$gradeData['enrollment_id']])) {
+                        $skipped++;
+                        continue;
+                    }
+                    Grade::updateOrCreate(
+                        [
+                            'enrollment_id' => $gradeData['enrollment_id'],
+                            'class_id' => $class->id,
+                            'grading_period' => $data['grading_period'],
+                        ],
+                        [
+                            'final_grade' => $gradeData['final_grade'],
+                            'status' => $targetStatus,
+                        ]
+                    );
+                    $saved++;
                 }
-                Grade::updateOrCreate(
-                    [
-                        'enrollment_id' => $gradeData['enrollment_id'],
-                        'class_id' => $class->id,
-                        'grading_period' => $data['grading_period'],
-                    ],
-                    [
-                        'final_grade' => $gradeData['final_grade'],
-                        'status' => $targetStatus,
-                    ]
-                );
-                $saved++;
-            }
-        });
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Batch grades save failed: ' . $e->getMessage(), ['class_id' => $class->id]);
+            return back()->withInput()->with('error', 'Could not save — please refresh and try again.');
+        }
+
+        if ($skipped > 0) {
+            $lockedInPayload = collect($validGrades)->pluck('enrollment_id')->filter(fn($id) => isset($lockedIds[$id]))->unique()->values()->all();
+            $skippedNames = Enrollment::with('student')->whereIn('id', $lockedInPayload)->get()->map(fn($e) => trim(($e->student->first_name ?? '') . ' ' . ($e->student->last_name ?? '')) ?: ('#' . $e->id))->values()->all();
+        }
 
         $pastTense = $action === 'draft' ? 'draft-saved' : ($action === 'post' ? 'posted' : 'saved');
-        log_activity($class, 'Batch Grades ' . $pastTense, auth()->user()->name . ' batch-' . $pastTense . ' grades for ' . $data['grading_period'] . ' (' . $class->subject->name . ' - ' . $class->grade_level . ' ' . $class->section . '). ' . $saved . ' grade(s) ' . $pastTense . '.' . ($skipped ? " {$skipped} submitted (locked) grade(s) skipped." : ''));
+        $subjectName = $class->subject?->name ?? 'class';
+        $classLabel = $subjectName . ' - ' . ($class->grade_level ?? '') . ' ' . ($class->section ?? '');
+        try {
+            log_activity($class, 'Batch Grades ' . $pastTense, auth()->user()->name . ' batch-' . $pastTense . ' grades for ' . $data['grading_period'] . ' (' . $classLabel . '). ' . $saved . ' grade(s) ' . $pastTense . '.' . ($skipped ? " {$skipped} submitted (locked) grade(s) skipped." : ''));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Batch-grades activity log failed: ' . $e->getMessage(), ['class_id' => $class->id]);
+        }
 
         $message = $saved . ' grade(s) ' . $pastTense . ' for ' . $data['grading_period'];
         $message .= $action === 'draft' ? ' (Draft — still editable).' : ($action === 'post' ? ' (Posted — locked; request a correction unlock to change).' : ' (Saved).');
         if ($skipped) {
+            $shown = array_slice($skippedNames, 0, 5);
+            $extra = count($skippedNames) - count($shown);
             $message .= " {$skipped} submitted grade(s) were skipped (locked) — request a correction unlock to change them.";
+            if (!empty($shown)) {
+                $message .= ' Skipped: ' . implode(', ', $shown) . ($extra > 0 ? " and {$extra} more." : '.');
+            }
+        }
+        if ($stale) {
+            $message .= " {$stale} row(s) no longer belong to this class — refreshed list shown.";
         }
 
         return back()->with('success', $message);
