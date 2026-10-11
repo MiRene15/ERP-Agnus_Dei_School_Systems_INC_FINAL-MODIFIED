@@ -1,10 +1,10 @@
 # Spec: Assessment Batch Entry
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-08
 - **Approved by**: user on 2026-10-08
-- **Revision**: 2026-10-08 — Examination → Quarterly Assessment; complete-words pass; dynamic Add-Row sheet remodel with entry buttons (Implemented 2026-10-08). Follow-up 2026-10-08: double-confirm row removal + prepend-new-rows-at-top (§6). Re-approved by user on 2026-10-08.
-- **Implemented**: 2026-10-08 — additive date/remarks columns, shared 3-type list, dynamic batch sheet (picker + LRN auto + per-row types + top actions + readable scores) with row-indexed transactional store and input-preserving validation; verified visually by user.
+- **Revision**: 2026-10-08 — Examination → Quarterly Assessment; complete-words pass; dynamic Add-Row sheet remodel with entry buttons (Implemented 2026-10-08). Follow-up 2026-10-08: double-confirm row removal + prepend-new-rows-at-top (§6). Re-approved by user on 2026-10-08. Follow-up 2026-10-12: solo per-student entry aligned with batch (date + remarks inputs, validation, storage, old-input preservation) so both write/read the same assessment rows.
+- **Implemented**: 2026-10-08 — additive date/remarks columns, shared 3-type list, dynamic batch sheet (picker + LRN auto + per-row types + top actions + readable scores) with row-indexed transactional store and input-preserving validation; verified visually by user. Follow-up 2026-10-12 — solo/individual grade assessment made consistent with batch entry (same Date + Remarks inputs, same 3-type list, same row guards, same locks); automated tests: none found (`php artisan test --filter=GradeAssessment` → No tests found); manual 8-check walkthrough delegated to user.
 - **Parent**: `teacher-gradebook-overhaul.md` (child 1 of 4 — no dependencies beyond parent)
 
 ## 1. Why We Need This

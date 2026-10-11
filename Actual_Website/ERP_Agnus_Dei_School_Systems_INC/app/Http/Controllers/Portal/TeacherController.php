@@ -742,13 +742,17 @@ class TeacherController extends Controller
         $inserts = [];
         foreach (array_values($data['assessments']) as $idx => $item) {
             $rowNo = $idx + 1;
-            if (empty($item['title']) && ($item['raw_score'] === null || $item['raw_score'] === '')) {
+            if (empty($item['title']) && ($item['raw_score'] === null || $item['raw_score'] === '') && empty($item['remarks']) && empty($item['assessment_date'])) {
                 continue;
             }
             $raw = $item['raw_score'] ?? null;
             $max = $item['max_score'] ?? null;
             if ($raw !== null && $raw !== '' && $max !== null && $max !== '' && (float) $raw > (float) $max) {
                 $rowErrors[] = "Row {$rowNo}: score above max ({$raw}/{$max}).";
+                continue;
+            }
+            if (!empty($item['assessment_date']) && $item['assessment_date'] > date('Y-m-d')) {
+                $rowErrors[] = "Row {$rowNo}: date is in the future — use today or earlier.";
                 continue;
             }
             $inserts[] = [
@@ -758,6 +762,8 @@ class TeacherController extends Controller
                 'title' => $item['title'] ?? '',
                 'raw_score' => ($raw === null || $raw === '') ? 0 : $raw,
                 'max_score' => ($max === null || $max === '') ? 0 : $max,
+                'assessment_date' => $item['assessment_date'] ?? null,
+                'remarks' => $item['remarks'] ?? null,
                 'grading_period' => $data['grading_period'],
                 'created_at' => now(),
                 'updated_at' => now(),
