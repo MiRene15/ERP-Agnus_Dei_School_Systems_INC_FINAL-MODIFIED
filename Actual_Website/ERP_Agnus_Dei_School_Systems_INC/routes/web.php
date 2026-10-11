@@ -149,6 +149,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/registrar/promotion', [PromotionWorkflowController::class, 'registrarIndex'])->name('registrar.promotion.index');
         Route::post('/registrar/promotion/propose', [PromotionWorkflowController::class, 'registrarPropose'])->name('registrar.promotion.propose');
         Route::post('/registrar/promotion/batch-qualified', [PromotionWorkflowController::class, 'registrarBatchQualified'])->name('registrar.promotion.batch-qualified');
+        Route::post('/registrar/promotion/merge-duplicate', [PromotionWorkflowController::class, 'registrarMergeDuplicate'])->name('registrar.promotion.merge-duplicate');
         // Fee assignment — bulk from enrollment (replaces one-by-one assignment)
         Route::get('/registrar/fee-assignment', [FeeAssignmentController::class, 'index'])->name('registrar.fee-assignment.index');
         Route::post('/registrar/fee-assignment/ledgers', [FeeAssignmentController::class, 'assignLedgers'])->name('registrar.fee-assignment.ledgers');
@@ -374,6 +375,7 @@ Route::middleware('auth')->group(function () {
         // Promotion sign-off — executes Principal-approved proposals.
         Route::get('/directress/promotion', [PromotionWorkflowController::class, 'directressIndex'])->name('directress.promotion.index');
         Route::post('/directress/promotion/{proposal}/signoff', [PromotionWorkflowController::class, 'directressSignoff'])->name('directress.promotion.signoff');
+        Route::post('/directress/promotion/bulk-signoff', [PromotionWorkflowController::class, 'directressBulkSignoff'])->name('directress.promotion.bulk-signoff');
         // School announcements awareness — Directress acknowledges Principal's posts.
         Route::get('/directress/announcements', [DirectressController::class, 'announcements'])->name('directress.announcements.index');
         Route::post('/directress/announcements/{announcement}/acknowledge', [DirectressController::class, 'acknowledgeAnnouncement'])->name('directress.announcements.acknowledge');
@@ -416,6 +418,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/principal/promotion', [PromotionWorkflowController::class, 'principalIndex'])->name('principal.promotion.index');
         Route::post('/principal/promotion/{proposal}/approve', [PromotionWorkflowController::class, 'principalApprove'])->name('principal.promotion.approve');
         Route::post('/principal/promotion/{proposal}/reject', [PromotionWorkflowController::class, 'principalReject'])->name('principal.promotion.reject');
+        Route::post('/principal/promotion/bulk-approve', [PromotionWorkflowController::class, 'principalBulkApprove'])->name('principal.promotion.bulk-approve');
+        Route::post('/principal/promotion/bulk-reject', [PromotionWorkflowController::class, 'principalBulkReject'])->name('principal.promotion.bulk-reject');
         // Subjects oversight (read-only) — Registrar owns, Principal reviews.
         Route::get('/principal/subjects', [\App\Http\Controllers\Admin\SubjectController::class, 'index'])->name('principal.subjects.index');
         // Subject-change approvals — Registrar stages, Principal applies.

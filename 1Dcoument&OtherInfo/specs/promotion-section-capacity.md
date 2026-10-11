@@ -1,8 +1,9 @@
 # Spec: Promotion Section Capacity
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-11
-- **Approved by**: user on 2026-10-11
+- **Approved by**: user on 2026-10-11 (original) + re-approved amendment (graduate account continuity) by user on 2026-10-11
+- **Implemented**: 2026-10-11 — slices 1–5 built (counts-first list, safe selection, capacity-30 spill/Locked, bulk approvals + YoY, duplicates + continuity); Slice 6 verification deferred by user — re-open on any bug.
 
 ## 1. Why We Need This
 
@@ -57,6 +58,9 @@ End-of-year promotion is slow and scary today. Filtering by grade is unreliable,
 - Sections cap at 30 for all levels; the 31st student spills to an auto-created section; full sections lock from new picks.
 - Duplicate handling: staff picks the survivor using LRN/photo/birthdate; all grades, attendance, and payment history follow the survivor; the loser is archived, never hard-deleted when it holds history.
 - GWA + Qualified badge (GWA at or above passing grade, default 75, no failing subject) shows on every promotion row.
+- Graduating never disables login — `users.status` is untouched; a graduate keeps read-only access (report card, COR, ledger history) plus the Completion banner.
+- Kinder → Grade 1, Grade 6 → Grade 7, Grade 10 → Grade 11 continuers are treated as returnees (even with no Active enrollment) — the re-enroll form pre-suggests the next grade and normal holds-gating applies.
+- Terminal Grade 12 shows Completed with no Enroll Now prompt; any return after that files a fresh admission (alumni path, out of scope here).
 
 ### Must never happen
 
@@ -67,6 +71,7 @@ End-of-year promotion is slow and scary today. Filtering by grade is unreliable,
 - Two records for the same child both staying active after a duplicate decision.
 - History (grades, payments) orphaned or wiped by a duplicate merge or a re-run.
 - Transfer and Dropout merged into one bucket.
+- A Graduate, Transfer, or Dropout outcome disabling login or requiring a disabled account to re-activate in order to re-enroll.
 
 ### Edge cases and what happens then
 
@@ -77,6 +82,7 @@ End-of-year promotion is slow and scary today. Filtering by grade is unreliable,
 - Duplicate loser has zero history → archived (kept for audit, hidden from lists); loser with history → archived with history linked to survivor; never hard-deleted in v1.
 - Interruption mid-execution (connection lost) → re-run resumes, moved students skipped, counts reconcile before finishing.
 - Leftover virtue section name spotted → shown as a data flag for IT; no rename happens in this spec.
+- Continuer with dues → normal hold banner and clear-to-reenroll flow; terminal graduate with dues → dues still collectible via cashier but never shown as a re-enrollment hold.
 
 ## 7. Out of Scope
 
@@ -98,10 +104,14 @@ End-of-year promotion is slow and scary today. Filtering by grade is unreliable,
 - [ ] Transfer and Dropout appear as separate outcomes in the list and summary.
 - [ ] Year-over-year summary shows counts by action per school year with current year pre-selected.
 - [ ] Promotion list still shows GWA + Qualified badges and the Batch Qualified button works as before.
+- [ ] Continuer (e.g. ex-Grade 6) opens re-enroll → Grade 7 pre-suggested as returnee.
+- [ ] Terminal Grade 12 sees Completed with no Enroll prompt; both continuer and terminal graduate can still log in.
 
 ## 9. Open Questions (if any)
 
 None — uniform 30 cap confirmed; approve-then-execute confirmed; badges verify-only confirmed; year-over-year summary in v1 confirmed.
+
+**Re-approved 2026-10-11 (Option A):** graduate account continuity amendment (§6 + §8) — login stays enabled read-only, continuers treated as returnees with pre-suggested next grade, terminal G12 Completed with no Enroll prompt. Covered by the re-approval above.
 
 ## 10. Technical Notes (for developers)
 

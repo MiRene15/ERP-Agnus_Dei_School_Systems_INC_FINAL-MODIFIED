@@ -35,6 +35,25 @@ class StudentEnrollmentController extends Controller
             ->first();
 
         $nextGradeLevel = $activeEnrollment ? $this->nextGradeLevel($activeEnrollment->section->grade_level) : null;
+        if ($nextGradeLevel === null) {
+            // Continuer path (spec promotion-section-capacity §6 amendment):
+            // a Kinder/Grade 6/Grade 10 graduate re-enrolls to the next level
+            // even with no Active enrollment — pre-suggest it as a returnee.
+            $lastGraduated = $student->enrollments()
+                ->where('status', 'Graduated')
+                ->latest()
+                ->with('section')
+                ->first();
+            if ($lastGraduated && $lastGraduated->section) {
+                $nextGradeLevel = $this->nextGradeLevel($lastGraduated->section->grade_level);
+            }
+        }
+        if ($nextGradeLevel === null && \App\Services\HoldService::isFinalGraduate($student)) {
+            // Terminal Grade 12: Completed, no Enroll prompt — login stays
+            // read-only; any return files a fresh admission (out of scope).
+            return redirect()->route('student.dashboard')
+                ->with('info', 'Completed — congratulations, graduate! Your records stay available below.');
+        }
 
         // Holds block re-enrollment until cleared — gated: only when a new
         // school year is announced (spec: calendar-holds §6).

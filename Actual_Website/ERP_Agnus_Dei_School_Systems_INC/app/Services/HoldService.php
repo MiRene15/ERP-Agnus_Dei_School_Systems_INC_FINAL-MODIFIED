@@ -131,8 +131,12 @@ class HoldService
     }
 
     /**
-     * A returnee has a student number plus at least one Active enrollment.
-     * First-time applicants have neither.
+     * A returnee has a student number plus at least one Active enrollment,
+     * or a Graduated enrollment as a continuer (Kinder/Grade 6/Grade 10
+     * graduates re-enrolling to the next level — spec
+     * promotion-section-capacity §6 amendment). Terminal Grade 12 graduates
+     * are returnees here too, but visibleForStudent still excludes them via
+     * isFinalGraduate. First-time applicants have neither.
      */
     public static function isReturnee(Student $student): bool
     {
@@ -140,16 +144,25 @@ class HoldService
             return false;
         }
 
-        return $student->enrollments()->where('status', 'Active')->exists();
+        return $student->enrollments()->whereIn('status', ['Active', 'Graduated'])->exists();
     }
 
     /**
-     * Grade 12 completers / Graduated enrollments show completion instead.
+     * Terminal completers show completion instead. Only Grade 12 counts as
+     * final — Kinder/Grade 6/Grade 10 graduates are continuers, not finals.
      */
     public static function isFinalGraduate(Student $student): bool
     {
-        if ($student->enrollments()->where('status', 'Graduated')->exists()) {
+        $graduatedGrades = $student->enrollments()
+            ->where('status', 'Graduated')
+            ->with('section')
+            ->get()
+            ->map(fn ($e) => $e->section->grade_level ?? null);
+        if ($graduatedGrades->contains('Grade 12')) {
             return true;
+        }
+        if ($graduatedGrades->isNotEmpty()) {
+            return false;
         }
 
         $latestGrade = $student->enrollments()

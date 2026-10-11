@@ -21,14 +21,77 @@
     </div>
 @endif
 
+<form method="GET" action="{{ route('registrar.promotion.index') }}" class="mb-4 flex items-center gap-3 flex-wrap bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4">
+    <label class="text-sm font-medium text-gray-700 dark:text-[#C1C4DC] whitespace-nowrap">School Year:</label>
+    <select name="source_year" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        @foreach($schoolYears as $sy)
+        <option value="{{ $sy }}" {{ ($sourceYear ?? '') === $sy ? 'selected' : '' }}>{{ $sy }}</option>
+        @endforeach
+    </select>
+    <label class="text-sm font-medium text-gray-700 dark:text-[#C1C4DC] whitespace-nowrap">Grade:</label>
+    <select name="grade_level" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        <option value="All" {{ ($gradeFilter ?? 'All') === 'All' ? 'selected' : '' }}>All grades</option>
+        @foreach(($gradeCounts ?? collect()) as $g => $c)
+        <option value="{{ $g }}" {{ ($gradeFilter ?? '') === $g ? 'selected' : '' }}>{{ $g }} ({{ $c }})</option>
+        @endforeach
+    </select>
+    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search name or student no." class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none w-56" maxlength="100">
+    <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Filter</button>
+</form>
+
+<div class="mb-4 flex items-center gap-2 flex-wrap text-sm text-gray-600 dark:text-[#C1C4DC]">
+    @forelse(($gradeCounts ?? collect()) as $g => $c)
+    <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100 dark:bg-[#23274C] font-medium">{{ $g }}: {{ $c }} student(s)</span>
+    @empty
+    <span class="text-gray-400">No counts — no active enrollments for {{ $sourceYear ?? '' }}.</span>
+    @endforelse
+</div>
+
+@if(!empty($duplicatePairs))
+<div class="mb-4 bg-amber-50 dark:bg-[rgba(251,191,36,0.08)] border border-amber-200 dark:border-[rgba(251,191,36,0.25)] rounded-xl p-4">
+    <h3 class="font-semibold text-amber-900 dark:text-[#FCD34D] text-sm mb-1">Possible duplicates ({{ count($duplicatePairs) }}) — pick the survivor</h3>
+    <p class="text-xs text-amber-800 dark:text-[#FCD34D] mb-3">Same name, side by side with LRN, birthdate and section. Grades, attendance and history follow the survivor; the loser is archived, never deleted.</p>
+    @foreach($duplicatePairs as $pair)
+    <form method="POST" action="{{ route('registrar.promotion.merge-duplicate') }}" onsubmit="return confirm('Merge into the selected survivor? Grades, attendance and history follow the survivor; the loser is archived, never deleted.')" class="mb-3 bg-white dark:bg-[#1A1E3B] rounded-lg border border-amber-100 dark:border-[#2A2F58] p-3">
+        @csrf
+        <div class="flex items-stretch gap-3 flex-wrap">
+            @foreach($pair['students'] as $enr)
+            <label class="flex-1 min-w-[220px] flex items-start gap-2 p-2 rounded-lg border border-gray-100 dark:border-[#2A2F58]">
+                <input type="radio" name="survivor_id" value="{{ $enr->student->id }}" required class="mt-1 text-blue-600 focus:ring-blue-500">
+                <span>
+                    <span class="block font-medium text-gray-900 dark:text-[#E8EAF6] text-sm">{{ $enr->student->first_name }} {{ $enr->student->last_name }}</span>
+                    <span class="block text-xs text-gray-500">No: {{ $enr->student->student_number }} · LRN: {{ $enr->student->legacy_lrn ?? '—' }} · Born: {{ $enr->student->date_of_birth ?? '—' }}</span>
+                    <span class="block text-xs text-gray-400">{{ $enr->section->grade_level ?? '' }} {{ $enr->section->section_name ?? '' }}</span>
+                </span>
+            </label>
+            @endforeach
+        </div>
+        <div class="mt-2 flex items-center gap-2">
+            <select name="loser_id" required class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-2 py-1.5 text-xs">
+                <option value="">Archive as duplicate…</option>
+                @foreach($pair['students'] as $enr)
+                <option value="{{ $enr->student->id }}">{{ $enr->student->first_name }} {{ $enr->student->last_name }} ({{ $enr->student->student_number }})</option>
+                @endforeach
+            </select>
+            <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-white" style="background: var(--navy);">Merge into survivor</button>
+        </div>
+    </form>
+    @endforeach
+</div>
+@endif
+
 @if($enrollments->isEmpty())
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 text-center">
-    <p class="text-sm text-gray-500 dark:text-[#8A90B0] py-4">No active enrollments found.</p>
+    <p class="text-sm text-gray-500 dark:text-[#8A90B0] py-4">No students in this grade.</p>
 </div>
 @else
-<form method="POST" action="{{ route('registrar.promotion.propose') }}">
+<form method="POST" action="{{ route('registrar.promotion.propose') }}" id="promoForm">
     @csrf
     <div class="mb-5 flex items-center gap-3 flex-wrap bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-[#C1C4DC] whitespace-nowrap">
+            <input type="checkbox" id="selectAllGrades" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            All grades — all students (<span id="allGradesCount">{{ ($page ?? null) ? $page->total() : $enrollments->flatten()->count() }}</span>)
+        </label>
         <label class="text-sm font-medium text-gray-700 dark:text-[#C1C4DC] whitespace-nowrap">New School Year:</label>
         <select name="school_year" required class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             <option value="">Select school year</option>
@@ -40,15 +103,36 @@
         <button type="submit" onclick="return confirm('Send the selected proposals to the Principal for approval?')" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Send Proposals to Principal</button>
         <button type="submit" formaction="{{ route('registrar.promotion.batch-qualified') }}" onclick="return confirm('Propose promotion for all qualified students? Unqualified students and open proposals will be skipped.')" class="px-6 py-2.5 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Batch Qualified — Level Up Only</button>
     </div>
+    <div id="promoPreview" class="mb-5 hidden p-4 bg-blue-50 dark:bg-[#1A1E3B] border border-blue-200 dark:border-[#2A2F58] rounded-xl text-sm text-blue-900 dark:text-[#C1C4DC]"></div>
 
     @foreach($enrollments as $gradeLevel => $gradeEnrollments)
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-5">
-        <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-1">{{ $gradeLevel }} <span class="text-sm font-normal text-gray-500 dark:text-[#8A90B0]">({{ $gradeEnrollments->count() }} student(s))</span></h3>
+        <div class="flex items-center gap-3 mb-1 flex-wrap">
+            <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">{{ $gradeLevel }} <span class="text-sm font-normal text-gray-500 dark:text-[#8A90B0]">({{ $gradeEnrollments->count() }} student(s))</span></h3>
+            <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-[#C1C4DC]">
+                <input type="checkbox" class="grade-select-all rounded border-gray-300 text-blue-600 focus:ring-blue-500" data-grade="{{ $gradeLevel }}">
+                Select all in {{ $gradeLevel }}
+            </label>
+        </div>
         <p class="text-xs text-gray-400 dark:text-[#8A90B0] mb-4">GWA ≥ {{ $passingGrade ?? 75 }} and no failing subject (&lt;{{ $passingGrade ?? 75 }}) = qualified. Leave the action blank to skip a student.</p>
+        @php
+            $secGroups = $gradeEnrollments->groupBy(fn($e) => $e->section->section_name ?? 'N/A');
+        @endphp
+        <div class="flex items-center gap-2 flex-wrap text-xs mb-4">
+            @foreach($secGroups as $secName => $secRows)
+            @php
+                $secId = $secRows->first()->section_id;
+                $occ = ($sectionOccupancy ?? [])[$secId] ?? $secRows->count();
+                $locked = $occ >= \App\Services\PromotionService::SECTION_CAP;
+            @endphp
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full font-medium {{ $locked ? 'bg-gray-200 text-gray-600 dark:bg-[#23274C] dark:text-[#8A90B0]' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' }}">{{ $secName }} {{ $occ }}/{{ \App\Services\PromotionService::SECTION_CAP }}{{ $locked ? ' Locked' : '' }}</span>
+            @endforeach
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full min-w-[900px] text-sm">
                 <thead>
                     <tr class="border-y border-gray-200 dark:border-[#2A2F58] bg-gray-50 dark:bg-[#161A33]">
+                        <th class="py-3 px-4 w-10"><span class="sr-only">Select</span></th>
                         <th class="text-left py-3 px-4 font-medium text-gray-600 dark:text-[#C1C4DC]">Student</th>
                         <th class="text-left py-3 px-4 font-medium text-gray-600 dark:text-[#C1C4DC]">Section</th>
                         <th class="text-left py-3 px-4 font-medium text-gray-600 dark:text-[#C1C4DC]">GWA</th>
@@ -70,7 +154,12 @@
                         $qualified = $avg !== null && $avg >= $passing && $failCount === 0;
                         $open = $openProposals[$enrollment->id] ?? null;
                     @endphp
-                    <tr class="border-b border-gray-100 dark:border-[#2A2F58] hover:bg-gray-50 dark:hover:bg-[#1E2447]">
+                    <tr class="border-b border-gray-100 dark:border-[#2A2F58] hover:bg-gray-50 dark:hover:bg-[#1E2447]" data-grade="{{ $gradeLevel }}">
+                        <td class="py-3 px-4">
+                            @if(!$open)
+                            <input type="checkbox" class="promo-row rounded border-gray-300 text-blue-600 focus:ring-blue-500" data-grade="{{ $gradeLevel }}" value="{{ $enrollment->id }}">
+                            @endif
+                        </td>
                         <td class="py-3 px-4">
                             <span class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</span>
                             <span class="block text-xs text-gray-400 dark:text-[#8A90B0]">{{ $enrollment->student->student_number }}</span>
@@ -130,5 +219,65 @@
     </div>
     @endforeach
 </form>
+<div class="mt-4">{{ ($page ?? null)?->links() }}</div>
+<p class="mt-2 text-xs text-gray-400 dark:text-[#8A90B0]">Counts show first; rows stream 100 per page — still loading rows never blanks the counts.</p>
 @endif
+<script>
+(function () {
+    var form = document.getElementById('promoForm');
+    if (!form) return;
+    var preview = document.getElementById('promoPreview');
+    var globalBox = document.getElementById('selectAllGrades');
+
+    function rows() { return Array.prototype.slice.call(form.querySelectorAll('.promo-row')); }
+    function actionFor(row) {
+        var tr = row.closest('tr');
+        var sel = tr ? tr.querySelector('select[name^="actions["]') : null;
+        return sel ? sel.value : '';
+    }
+    function updatePreview() {
+        var counts = {};
+        rows().forEach(function (r) { if (r.checked) { var a = actionFor(r); if (a) counts[a] = (counts[a] || 0) + 1; } });
+        var parts = Object.keys(counts).map(function (k) { return counts[k] + ' ' + k; });
+        if (!parts.length) { preview.classList.add('hidden'); preview.textContent = ''; return; }
+        preview.classList.remove('hidden');
+        preview.textContent = parts.join(' · ') + ' → Send Proposals to Principal (execution locked until Principal approval). Section split preview arrives with Slice 3.';
+    }
+    document.querySelectorAll('.grade-select-all').forEach(function (box) {
+        box.addEventListener('change', function () {
+            rows().forEach(function (r) { if (r.getAttribute('data-grade') === box.getAttribute('data-grade')) r.checked = box.checked; });
+            updatePreview();
+        });
+    });
+    if (globalBox) {
+        globalBox.addEventListener('change', function () {
+            if (globalBox.checked) {
+                var total = document.getElementById('allGradesCount');
+                var n = total ? total.textContent : String(rows().length);
+                if (!confirm('Select all ' + n + ' student(s) across all grades?')) { globalBox.checked = false; return; }
+            }
+            rows().forEach(function (r) { r.checked = globalBox.checked; });
+            document.querySelectorAll('.grade-select-all').forEach(function (b) { b.checked = globalBox.checked; });
+            updatePreview();
+        });
+    }
+    form.addEventListener('change', function (e) {
+        if (e.target && (e.target.classList.contains('promo-row') || (e.target.name && e.target.name.indexOf('actions[') === 0))) updatePreview();
+    });
+    form.addEventListener('submit', function (e) {
+        if (e.submitter && e.submitter.getAttribute('formaction')) return; // batch-qualified path untouched
+        rows().forEach(function (r) {
+            if (!r.checked) {
+                var tr = r.closest('tr');
+                if (tr) tr.querySelectorAll('select[name^="actions["], input[name^="reasons["]').forEach(function (el) { el.disabled = true; });
+            }
+        });
+        var anyAction = rows().some(function (r) { return r.checked && actionFor(r); });
+        if (!anyAction) { e.preventDefault(); alert('Nothing proposed — tick at least one student and pick an action.'); rows().forEach(function (r) {
+            var tr = r.closest('tr');
+            if (tr) tr.querySelectorAll('select[name^="actions["], input[name^="reasons["]').forEach(function (el) { el.disabled = false; });
+        }); }
+    });
+})();
+</script>
 @endsection

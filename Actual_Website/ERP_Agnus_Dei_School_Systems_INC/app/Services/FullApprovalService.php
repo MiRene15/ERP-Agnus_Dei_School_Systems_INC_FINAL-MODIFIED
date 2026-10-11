@@ -80,6 +80,28 @@ class FullApprovalService
             return ['approved' => false, 'error' => 'Section not found. Pick a section and try again.'];
         }
 
+        // Uniform-30 section cap (spec promotion-section-capacity §6): a Locked
+        // section refuses new picks with guidance naming the open section.
+        $sectionCount = Enrollment::where('section_id', $sectionId)
+            ->where('school_year', $admission->school_year)
+            ->where('status', 'Active')
+            ->count();
+        if ($sectionCount >= PromotionService::SECTION_CAP) {
+            $open = Section::where('grade_level', $section->grade_level)
+                ->where('is_active', true)
+                ->where('id', '!=', $sectionId)
+                ->orderBy('section_name')
+                ->get()
+                ->first(function ($s) use ($admission) {
+                    return Enrollment::where('section_id', $s->id)
+                        ->where('school_year', $admission->school_year)
+                        ->where('status', 'Active')
+                        ->count() < PromotionService::SECTION_CAP;
+                });
+            $guide = $open ? " Place in {$open->section_name} instead." : ' All sections for this grade are full — promotion will auto-create the next section.';
+            return ['approved' => false, 'error' => "Section {$section->section_name} is full (Locked at " . PromotionService::SECTION_CAP . ")." . $guide];
+        }
+
         foreach ($subjectIds as $classId) {
             $class = Classes::find($classId);
             if ($class && $class->capacity) {

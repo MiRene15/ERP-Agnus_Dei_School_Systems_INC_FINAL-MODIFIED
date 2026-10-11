@@ -18,6 +18,62 @@ use Illuminate\Support\Facades\DB;
  */
 class PromotionService
 {
+    /** Uniform section cap (spec promotion-section-capacity §6, v1). */
+    public const SECTION_CAP = 30;
+
+    /**
+     * Active enrollment count per section for a school year.
+     * @return array<int, int> [section_id => active count]
+     */
+    public static function sectionOccupancy(string $schoolYear): array
+    {
+        return Enrollment::where('status', 'Active')
+            ->where('school_year', $schoolYear)
+            ->selectRaw('section_id, COUNT(*) as total')
+            ->groupBy('section_id')
+            ->pluck('total', 'section_id')
+            ->map(fn($v) => (int) $v)
+            ->all();
+    }
+
+    public static function isSectionLocked(int $sectionId, string $schoolYear): bool
+    {
+        $occ = self::sectionOccupancy($schoolYear);
+        return ($occ[$sectionId] ?? 0) >= self::SECTION_CAP;
+    }
+
+    /**
+     * First active section for the grade with space in the target year,
+     * else auto-create an overflow section (flagged for a saint rename —
+     * renames are verify-only in this spec).
+     * @return array{section: \App\Models\Section, created: bool}
+     */
+    public static function resolveSectionForGrade(string $grade, string $schoolYear): array
+    {
+        $sections = Section::where('grade_level', $grade)
+            ->where('is_active', true)
+            ->orderBy('section_name')
+            ->get();
+        if ($sections->isEmpty()) {
+            throw new \Exception("No active section found for {$grade}.");
+        }
+        $occupancy = self::sectionOccupancy($schoolYear);
+        foreach ($sections as $section) {
+            if (($occupancy[$section->id] ?? 0) < self::SECTION_CAP) {
+                return ['section' => $section, 'created' => false];
+            }
+        }
+        $n = $sections->count() + 1;
+        $section = Section::create([
+            'grade_level' => $grade,
+            'section_name' => "St. New Section {$n} ({$grade})",
+            'is_active' => true,
+            'adviser_id' => null,
+        ]);
+        log_activity($section, 'Section Auto-Created', "Promotion overflow created {$section->section_name} for {$grade} (SY {$schoolYear}) — please rename to a saint name.");
+        return ['section' => $section, 'created' => true];
+    }
+
     public static function gradeRank(): array
     {
         return ['Kinder'=>0,'Grade 1'=>1,'Grade 2'=>2,'Grade 3'=>3,'Grade 4'=>4,'Grade 5'=>5,'Grade 6'=>6,'Grade 7'=>7,'Grade 8'=>8,'Grade 9'=>9,'Grade 10'=>10,'Grade 11'=>11,'Grade 12'=>12];
@@ -89,10 +145,7 @@ class PromotionService
             throw new \Exception("{$currentGrade} cannot be promoted (set to Graduate instead).");
         }
 
-        $section = Section::where('grade_level', $nextGrade)->where('is_active', true)->first();
-        if (!$section) {
-            throw new \Exception("No active section found for {$nextGrade}.");
-        }
+        ['section' => $section] = self::resolveSectionForGrade($nextGrade, $newSchoolYear);
 
         $student = $enrollment->student;
 
@@ -130,6 +183,9 @@ class PromotionService
         $section = Section::find($enrollment->section_id);
         if (!$section) {
             throw new \Exception("No active section found for {$currentGrade}.");
+        }
+        if (self::isSectionLocked($section->id, $newSchoolYear)) {
+            ['section' => $section] = self::resolveSectionForGrade($currentGrade ?? '', $newSchoolYear);
         }
 
         $student = $enrollment->student;
