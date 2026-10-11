@@ -37,7 +37,7 @@
         </div>
         <div x-show="tab==='import'" x-cloak>
             <h3 class="font-semibold mb-3 text-gray-900 dark:text-[#E8EAF6]">Import CSV</h3>
-            <p class="text-xs text-gray-500 dark:text-[#8A90B0] mb-2">Columns: <code>grade_level, section, subject_code, day_of_week, start_time, end_time, room</code> — e.g., <code>Grade 7, Charity, G7-ENG, Monday, 08:00, 09:00, J-101</code></p>
+            <p class="text-xs text-gray-500 dark:text-[#8A90B0] mb-2">Columns: <code>grade_level, section, subject_code, day_of_week, start_time, end_time, room</code> — e.g., <code>Grade 7, St. Lorenzo Ruiz, G7-ENG, Monday, 08:00, 09:00, J-101</code></p>
             <div class="flex gap-2 mb-3">
                 <a href="{{ route('principal.schedules.template') }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-[#23274C] hover:bg-gray-200 dark:hover:bg-[#2A2F58] text-gray-700 dark:text-[#C1C4DC]">Download template</a>
             </div>

@@ -259,8 +259,8 @@ class PrincipalController extends Controller
         $headers = ['Content-Type' => 'text/csv', 'Content-Disposition' => 'attachment; filename="schedules_template.csv"'];
         $columns = ['grade_level', 'section', 'subject_code', 'day_of_week', 'start_time', 'end_time', 'room'];
         $examples = [
-            ['Grade 7', 'Charity', 'G7-ENG', 'Monday', '08:00', '09:00', 'J-101'],
-            ['Grade 7', 'Hope', 'G7-MAT', 'Tuesday', '09:00', '10:00', 'J-102'],
+            ['Grade 7', 'St. Lorenzo Ruiz', 'G7-ENG', 'Monday', '08:00', '09:00', 'J-101'],
+            ['Grade 7', 'St. Pedro Calungsod', 'G7-MAT', 'Tuesday', '09:00', '10:00', 'J-102'],
         ];
         return response()->stream(function () use ($columns, $examples) {
             $out = fopen('php://output', 'w');
