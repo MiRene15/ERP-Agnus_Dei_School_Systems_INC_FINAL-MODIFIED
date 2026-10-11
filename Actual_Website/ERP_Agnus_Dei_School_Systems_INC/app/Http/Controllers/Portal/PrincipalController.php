@@ -68,9 +68,24 @@ class PrincipalController extends Controller
             });
         }
 
+        // List-search-filters spec §4.1 schedule facets: teacher + room narrow
+        // the same query; day/level/year/search above are untouched.
+        if (request('teacher_id')) {
+            $query->where('teacher_id', request('teacher_id'));
+        }
+
+        if (request('room')) {
+            $query->whereHas('schedules', fn($q) => $q->where('room', request('room')));
+        }
+
         $classes = $query->orderBy('section')->get();
 
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+        $facetTeachers = \App\Models\User::where('role_id', 4)->where('status', 'active')->orderBy('name')->get();
+        $facetRooms = \App\Models\Schedule::whereHas('schoolClass', fn($q) => $q->where('school_year', $selectedYear))
+            ->whereNotNull('room')->where('room', '!=', '')
+            ->distinct()->orderBy('room')->pluck('room');
 
         if ($isAjax) {
             return response()->json([
@@ -78,7 +93,7 @@ class PrincipalController extends Controller
             ]);
         }
 
-        return view('portal.principal.schedules', compact('gradeLevels', 'selectedGrade', 'classes', 'days', 'schoolYears', 'selectedYear'));
+        return view('portal.principal.schedules', compact('gradeLevels', 'selectedGrade', 'classes', 'days', 'schoolYears', 'selectedYear', 'facetTeachers', 'facetRooms'));
     }
 
     public function schedulesStore(Request $request)
@@ -511,9 +526,17 @@ class PrincipalController extends Controller
     }
 
     // ─── Teacher assignments (Principal owns who teaches what) ──
+    // List-search-filters spec §4.1-4.2: shared filter row (search + grade)
+    // with kept-list + counts via the ajaxTable JSON branch below.
     public function teacherAssignments(Request $request)
     {
+        $isAjax = $request->boolean('ajax');
+        $request->query->remove('ajax');
         $selectedGrade = $request->input('grade_level', 'All');
+        if ($selectedGrade === '' || $selectedGrade === null) {
+            $selectedGrade = 'All';
+        }
+        $search = trim((string) $request->input('search', ''));
 
         $query = Classes::with('subject', 'teacher')
             ->where('school_year', active_school_year())
@@ -521,6 +544,19 @@ class PrincipalController extends Controller
 
         if ($selectedGrade !== 'All') {
             $query->where('grade_level', $selectedGrade);
+        }
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('section', 'ilike', "%{$search}%")
+                    ->orWhereHas('subject', function ($sq) use ($search) {
+                        $sq->where('name', 'ilike', "%{$search}%")
+                            ->orWhere('subject_code', 'ilike', "%{$search}%");
+                    })
+                    ->orWhereHas('teacher', function ($sq) use ($search) {
+                        $sq->where('name', 'ilike', "%{$search}%");
+                    });
+            });
         }
 
         $classes = $query->orderBy('grade_level')->orderBy('section')->orderBy('subject_id')->get()
@@ -532,7 +568,16 @@ class PrincipalController extends Controller
 
         $teachers = \App\Models\User::where('role_id', 4)->where('status', 'active')->orderBy('name')->get();
 
-        return view('portal.principal.teacher-assignments.index', compact('classes', 'gradeLevels', 'teachers', 'selectedGrade'));
+        $totalCount = $classes->flatten()->count();
+        $unassignedCount = $classes->flatten()->whereNull('teacher_id')->count();
+
+        if ($isAjax) {
+            return response()->json([
+                'html' => view('portal.principal.teacher-assignments.results', compact('classes', 'teachers', 'totalCount', 'unassignedCount'))->render(),
+            ]);
+        }
+
+        return view('portal.principal.teacher-assignments.index', compact('classes', 'gradeLevels', 'teachers', 'selectedGrade', 'search', 'totalCount', 'unassignedCount'));
     }
 
     public function assignTeacher(Request $request, Classes $class)

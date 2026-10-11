@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /* List-search-filters spec §4.4: long cells show … with the full text one
+     tap/hover away. Hover uses the native title tooltip; tap/keyboard focus
+     expands the cell in place. Apply only to free-text cells — never to
+     status badges, row actions, or amounts. */
+  .lsf-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+  .lsf-truncate:focus {
+    white-space: normal;
+  }
+}

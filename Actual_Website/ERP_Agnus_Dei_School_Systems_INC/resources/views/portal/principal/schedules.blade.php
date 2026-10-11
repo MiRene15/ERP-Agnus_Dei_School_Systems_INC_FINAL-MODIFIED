@@ -24,7 +24,7 @@
 
 <p class="text-sm text-gray-500 dark:text-[#8A90B0] mb-4">Schedules are managed via <a href="{{ route('principal.schedules.manage') }}" class="text-blue-600 dark:text-[#60A5FA] underline">Manage Schedules</a> — add, import, or edit there. This page shows the weekly timetable per section.</p>
 
-<div x-data="ajaxTable('{{ route('principal.schedules') }}', { search: '{{ request('search') }}', school_year: '{{ request('school_year') }}', day: '{{ request('day') }}', grade_level: '{{ request('grade_level', 'Grade 7') }}' })">
+<div x-data="ajaxTable('{{ route('principal.schedules') }}', { search: '{{ request('search') }}', school_year: '{{ request('school_year') }}', day: '{{ request('day') }}', teacher_id: '{{ request('teacher_id') }}', room: '{{ request('room') }}', grade_level: '{{ request('grade_level', 'Grade 7') }}' })">
     <div class="mb-4 flex gap-2 flex-wrap">
         @foreach($gradeLevels as $gl)
         <a href="{{ route('principal.schedules') }}" @click.prevent="filters.grade_level = '{{ $gl }}'; reload()"
@@ -51,6 +51,20 @@
                 <option value="">All Days</option>
                 @foreach($days as $d)
                     <option value="{{ $d }}">{{ $d }}</option>
+                @endforeach
+            </select>
+            <select x-model="filters.teacher_id" @change="reload()" aria-label="Teacher"
+                     class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="">All Teachers</option>
+                @foreach($facetTeachers as $t)
+                    <option value="{{ $t->id }}">{{ $t->name }}</option>
+                @endforeach
+            </select>
+            <select x-model="filters.room" @change="reload()" aria-label="Room"
+                     class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <option value="">All Rooms</option>
+                @foreach($facetRooms as $r)
+                    <option value="{{ $r }}">{{ $r }}</option>
                 @endforeach
             </select>
             <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Filter</button>

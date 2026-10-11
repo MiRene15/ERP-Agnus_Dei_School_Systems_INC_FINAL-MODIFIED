@@ -128,6 +128,12 @@
     works: @js($worksList),
     scores: @js($scoresMap),
     remarksMap: @js($remarksMap),
+    snapshot: null,
+    takeSnapshot() { return JSON.stringify({w: this.works, s: this.scores, r: this.remarksMap, d: this.draft}); },
+    isDirty() { return this.snapshot !== null && this.takeSnapshot() !== this.snapshot; },
+    flipToEdit() { this.snapshot = this.takeSnapshot(); this.viewMode = false; },
+    flipToView() { if (this.isDirty() && !confirm('Discard changes?')) return; try { const s = JSON.parse(this.snapshot); this.works = s.w; this.scores = s.s; this.remarksMap = s.r; this.draft = s.d; } catch (e) {} this.viewMode = true; },
+    flipMode() { if (this.viewMode) { this.flipToEdit(); } else { this.flipToView(); } },
     weights: { ww: {{ (int)$ww }}, pt: {{ (int)$pt }}, qa: {{ (int)$qa }} },
     today: '{{ date('Y-m-d') }}',
     showForm: { 'Written Works': false, 'Performance Tasks': false, 'Quarterly Assessment': false },
@@ -196,11 +202,11 @@
         let r = x >= 70 ? 75 + (x - 70) * (25 / 30) : 60 + (x / 70) * 15;
         return Math.round(Math.max(60, Math.min(100, r)));
     }
-}">
+}" x-init="snapshot = takeSnapshot()">
     <div class="rounded-xl border bg-white p-3 mb-4 flex items-center gap-2 flex-wrap" style="border-color: var(--lilac);">
         <span class="text-sm font-bold" style="color: var(--navy);" x-text="viewMode ? 'View mode' : 'Edit mode'"></span>
         <span class="text-xs" style="color: var(--muted);" x-text="viewMode ? 'Scores are read-only — tap Edit to change.' : 'Type scores, then Save as Draft or Save Grades.'"></span>
-        <button type="button" @click="viewMode = !viewMode" class="btn-navy ml-auto px-4 py-2 text-sm font-bold" style="border-radius: 10px;" x-text="viewMode ? 'Edit' : 'View'"></button>
+        <button type="button" @click="flipMode()" class="btn-navy ml-auto px-4 py-2 text-sm font-bold" style="border-radius: 10px;" x-text="viewMode ? 'Edit' : 'View'"></button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
@@ -407,7 +413,7 @@
             <button type="submit" @click="saveAction = 'save'" class="btn-navy px-5 py-2.5 text-sm font-bold text-white" style="border-radius: 10px;">Save Grades</button>
         </div>
         <div class="flex items-center gap-2 justify-end flex-wrap" x-show="viewMode" x-cloak>
-            <button type="button" @click="viewMode = false" class="btn-navy px-5 py-2.5 text-sm font-bold text-white" style="border-radius: 10px;">Edit Scores</button>
+            <button type="button" @click="flipToEdit()" class="btn-navy px-5 py-2.5 text-sm font-bold text-white" style="border-radius: 10px;">Edit Scores</button>
         </div>
         <p x-show="!viewMode" class="text-xs mt-2 text-right" style="color: var(--muted);">Draft keeps everything editable. Save stores this quarter. Locking happens on Computed Grades → Post Grades.</p>
     </form>

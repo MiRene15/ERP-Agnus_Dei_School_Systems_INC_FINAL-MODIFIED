@@ -16,9 +16,14 @@
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</h2>
     <p class="text-gray-600 mt-1">{{ $class->subject->name ?? 'N/A' }} &middot; {{ $selectedPeriod }}</p>
+    <div class="mt-3 rounded-xl border bg-white p-3 flex items-center gap-2 flex-wrap" style="border-color: var(--lilac);">
+        <span class="text-sm font-bold" style="color: var(--navy);" data-ea-label>View mode</span>
+        <span class="text-xs text-gray-500" data-ea-hint>Scores are read-only — tap Edit to change.</span>
+        <button type="button" data-ea-toggle class="ml-auto px-4 py-2 text-sm font-bold text-white transition hover:opacity-90" style="background: var(--navy); border-radius: 10px;">Edit</button>
+    </div>
 </div>
 
-<form method="POST" action="{{ route('teacher.grade-assessment.student.store', [$class, $enrollment->id]) }}" onsubmit="if (this.dataset.submitted === '1') { return false; } this.dataset.submitted = '1'; const _btn = this.querySelector('[data-save-btn]'); if (_btn) { _btn.disabled = true; _btn.textContent = 'Saving…'; } return true;">
+<form id="ea-score-form" method="POST" action="{{ route('teacher.grade-assessment.student.store', [$class, $enrollment->id]) }}" onsubmit="if (this.dataset.submitted === '1') { return false; } this.dataset.submitted = '1'; const _btn = this.querySelector('[data-save-btn]'); if (_btn) { _btn.disabled = true; _btn.textContent = 'Saving…'; } return true;">
     @csrf
     <input type="hidden" name="grading_period" value="{{ $selectedPeriod }}">
 
@@ -65,7 +70,7 @@
         <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-5" x-data="{ items: @js($initial), base: {{ $base }} }">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="font-bold text-gray-900 dark:text-[#E8EAF6]">{{ $type }}</h3>
-                <button type="button" @click="items.push({title:'', raw_score:'', max_score:'', assessment_date:'', remarks:''})" class="text-xs font-semibold text-blue-600 dark:text-[#60A5FA] hover:underline">+ Add {{ $type }}</button>
+                <button type="button" data-edit-only @click="items.push({title:'', raw_score:'', max_score:'', assessment_date:'', remarks:''})" class="text-xs font-semibold text-blue-600 dark:text-[#60A5FA] hover:underline">+ Add {{ $type }}</button>
             </div>
             <template x-for="(item, idx) in items" :key="idx">
                 <div class="mb-3 pb-3 border-b border-gray-100 dark:border-[#2A2F58]">
@@ -79,7 +84,7 @@
                     <span class="text-gray-400 dark:text-[#6A7094]">/</span>
                     <input type="number" :name="`assessments[${base + idx}][max_score]`" x-model="item.max_score" placeholder="0" step="0.01" min="0"
                            class="w-20 px-2 py-1.5 rounded-lg border border-gray-300 dark:border-[#3B4172] bg-white dark:bg-[#23274C] text-gray-900 dark:text-[#E8EAF6] text-sm text-center focus:ring-2 focus:ring-blue-500 outline-none">
-                    <button type="button" @click="items.splice(idx,1)" x-show="items.length > 1" class="text-red-400 hover:text-red-600 dark:text-[#F87171] p-1">
+                    <button type="button" data-edit-disable @click="items.splice(idx,1)" x-show="items.length > 1" class="text-red-400 hover:text-red-600 dark:text-[#F87171] p-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
@@ -96,10 +101,60 @@
         @endforeach
     </div>
 
-    <div class="mt-6 flex justify-end">
+    <div class="mt-6 flex justify-end" data-edit-only>
         <button type="submit" data-save-btn class="px-6 py-2.5 rounded-lg text-sm font-semibold text-white transition hover:opacity-90" style="background: var(--navy);">
             Save Scores
         </button>
     </div>
 </form>
+<script>
+// List-search-filters spec §4.7: View/Edit toggle with a dirty-check. View is
+// the default (matches the batch grid); Edit enables every field. Flipping
+// to View with unsaved changes asks "Discard changes?" — confirming reloads
+// last-saved from the server (the only true discard here, since the rows
+// below are Alpine-owned); cancel keeps the draft in place.
+(function () {
+    var form = document.getElementById('ea-score-form');
+    if (!form) return;
+    var toggle = document.querySelector('[data-ea-toggle]');
+    var label = document.querySelector('[data-ea-label]');
+    var hint = document.querySelector('[data-ea-hint]');
+    var startEdit = @json($errors->any() || !empty(old('assessments')));
+    var mode = 'view';
+    var dirty = false;
+
+    function fields() {
+        return form.querySelectorAll('input:not([type="hidden"]), select, textarea');
+    }
+    function setMode(next) {
+        mode = next;
+        var viewing = next === 'view';
+        fields().forEach(function (el) { el.disabled = viewing; });
+        // +Add buttons carry no Alpine visibility binding, so hiding is safe.
+        // Remove buttons are Alpine x-show-bound, so they are disabled rather
+        // than hidden — hiding would fight Alpine's own display control.
+        document.querySelectorAll('[data-edit-only]').forEach(function (el) {
+            el.style.display = viewing ? 'none' : '';
+        });
+        document.querySelectorAll('[data-edit-disable]').forEach(function (el) {
+            el.disabled = viewing;
+        });
+        if (toggle) toggle.textContent = viewing ? 'Edit' : 'View';
+        if (label) label.textContent = viewing ? 'View mode' : 'Edit mode';
+        if (hint) hint.textContent = viewing
+            ? 'Scores are read-only — tap Edit to change.'
+            : 'Type scores, then Save Scores.';
+        if (viewing) dirty = false;
+    }
+    form.addEventListener('input', function () { if (mode === 'edit') dirty = true; });
+    form.addEventListener('change', function () { if (mode === 'edit') dirty = true; });
+    if (toggle) toggle.addEventListener('click', function () {
+        if (mode === 'view') { setMode('edit'); return; }
+        if (dirty && !confirm('Discard changes?')) return;
+        if (dirty) { window.location.reload(); return; }
+        setMode('view');
+    });
+    setMode(startEdit ? 'edit' : 'view');
+})();
+</script>
 @endsection

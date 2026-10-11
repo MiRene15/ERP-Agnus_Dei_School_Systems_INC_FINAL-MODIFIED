@@ -75,9 +75,22 @@ window.AgnusSearch = { debounce: debounceSearch, pauseMs: SEARCH_PAUSE_MS };
  * The controller must return JSON { html: '<rendered partial>' } when the
  * `ajax` query param is present.
  */
-Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
+Alpine.data('ajaxTable', (url, initialFilters = {}, opts = {}) => ({
     url,
     filters: { ...initialFilters },
+    // List-search-filters spec §4.3: Clear restores the list's defaults
+    // (current term/year pre-filled by the view), never a blank scope.
+    // Stored once so every list shares one clear behavior (§6 must-never #4).
+    defaults: { ...initialFilters },
+    // Slice 4 (scoped): opt-in session paint-cache + freshness gating.
+    // Views pass { cache: true } to paint a labeled saved list across visits
+    // and to lock POST-backed write buttons while stale. Read-only lists get
+    // the banner; lists with in-table writes (teacher-assign Save) also get
+    // the gate. Cache never decides a write (§6) — failures stay locked.
+    cacheLabel: '',
+    actionsLocked: false,
+    _cacheOn: !!(opts && opts.cache),
+    _cacheTTL: (opts && opts.ttlMs) || 5 * 60 * 1000,
     loading: true,
     html: '',
     error: '',
@@ -95,7 +108,26 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
         // so a screen author cannot forget it. Typing calls scheduleReload();
         // explicit actions call reload() directly and stay instant.
         this._debouncedReload = debounceSearch(function () { return this.reload(); });
+        // Slice 4: paint a labeled saved list first when one exists and is
+        // still within TTL; the reload below then revalidates in place.
+        if (this._cacheOn) {
+            try {
+                const raw = sessionStorage.getItem(this.cacheStorageKey());
+                if (raw) {
+                    const hit = JSON.parse(raw);
+                    if (hit && hit.html && (Date.now() - hit.at) < this._cacheTTL) {
+                        this.html = hit.html;
+                        this.displayedSearch = hit.displayedSearch || '';
+                        this.cacheLabel = 'Showing saved list from ' + hit.when + '.';
+                        this.actionsLocked = true;
+                    }
+                }
+            } catch (e) { /* private mode etc: fall through to plain load */ }
+        }
         this.reload();
+        if (this.actionsLocked && this.$nextTick) {
+            this.$nextTick(() => this.applyFreshnessGate());
+        }
     },
     // Typing path (safe-actions-calm-search): waits for a pause automatically,
     // so a screen author cannot forget it. Explicit actions (submit, select,
@@ -156,6 +188,13 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
         const mySeq = ++this._seq;
 
         this.loading = true;
+        // Slice 4: while a stale list stays visible, its write buttons stay
+        // locked ("Updating — actions unlock when fresh"). Fresh paint below
+        // unlocks; failures stay locked so cache never decides a write.
+        if (this.html) {
+            this.actionsLocked = true;
+            if (this.$nextTick) this.$nextTick(() => this.applyFreshnessGate());
+        }
         // Keep last good list on screen; surface status via error hint only.
         try {
             const params = new URLSearchParams();
@@ -189,6 +228,10 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
             this.error = '';
             this.isRateLimited = false;
             this.retryAfter = 0;
+            this.cacheLabel = '';
+            this.actionsLocked = false;
+            if (this._cacheOn) this.writeCache();
+            if (this.$nextTick) this.$nextTick(() => this.applyFreshnessGate());
         } catch (e) {
             if (e && e.name === 'AbortError') return;
             if (signal.aborted || mySeq !== this._seq) return;
@@ -213,8 +256,54 @@ Alpine.data('ajaxTable', (url, initialFilters = {}) => ({
         this.error = '';
         this.isRateLimited = false;
         this.retryAfter = 0;
-        Object.keys(this.filters).forEach((key) => (this.filters[key] = ''));
+        Object.keys(this.filters).forEach((key) => {
+            this.filters[key] = (key in this.defaults) ? this.defaults[key] : '';
+        });
+        Object.keys(this.defaults).forEach((key) => {
+            if (!(key in this.filters)) this.filters[key] = this.defaults[key];
+        });
         this.reload();
+    },
+    // Slice 4 helpers: session paint-cache keyed by list + filter set, and
+    // the freshness gate. Only POST-backed buttons inside the results are
+    // ever touched (GET Search/Clear/Refresh stay live); buttons are marked
+    // with data-lsf-locked so unlocking can never release a button some
+    // other guard (e.g. safe-actions one-tap) disabled.
+    baseFilterEntries() {
+        return Object.entries(this.filters).filter(([key]) => key !== 'page');
+    },
+    cacheStorageKey() {
+        return 'lsf-list:' + this.url + '#' + JSON.stringify(this.baseFilterEntries());
+    },
+    writeCache() {
+        try {
+            sessionStorage.setItem(this.cacheStorageKey(), JSON.stringify({
+                html: this.html,
+                displayedSearch: this.displayedSearch,
+                at: Date.now(),
+                when: new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+            }));
+        } catch (e) { /* storage full/blocked: caching stays best-effort */ }
+    },
+    applyFreshnessGate() {
+        try {
+            const root = (this.$refs && this.$refs.results) || this.$el;
+            if (!root || !root.querySelectorAll) return;
+            const lock = this.actionsLocked;
+            root.querySelectorAll('form[method="POST"] button[type="submit"], form[method="POST"] input[type="submit"]').forEach((btn) => {
+                if (lock) {
+                    if (!btn.disabled) {
+                        btn.disabled = true;
+                        btn.dataset.lsfLocked = '1';
+                        btn.title = 'Updating — actions unlock when fresh.';
+                    }
+                } else if (btn.dataset.lsfLocked === '1') {
+                    btn.disabled = false;
+                    delete btn.dataset.lsfLocked;
+                    btn.removeAttribute('title');
+                }
+            });
+        } catch (e) { /* gating must never break the list itself */ }
     },
     // Delegated handler for pagination links inside the injected HTML.
     // Usage: <div @click="handlePaginationClick($event)" x-html="html"></div>

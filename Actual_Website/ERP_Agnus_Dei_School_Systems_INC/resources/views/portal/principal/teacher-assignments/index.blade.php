@@ -19,66 +19,32 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
+<div x-data="ajaxTable('{{ route('principal.teacher-assignments.index') }}', { search: '{{ request('search') }}', grade_level: '{{ $selectedGrade === 'All' ? '' : $selectedGrade }}' }, { cache: true })">
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-    <form method="GET" class="flex items-center gap-3 flex-wrap">
+    <form method="GET" class="flex items-center gap-2 flex-wrap flex-1" @submit.prevent="reload()">
+        <input type="text" x-model="filters.search" @input="scheduleReload()"
+               placeholder="Search subject, teacher, or section..."
+               class="flex-1 min-w-[200px] rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
         <label class="text-sm font-medium text-gray-700">Grade Level:</label>
-        <select name="grade_level" onchange="this.form.submit()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-            <option value="All" {{ $selectedGrade === 'All' ? 'selected' : '' }}>All Grades</option>
+        <select x-model="filters.grade_level" @change="reload()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">All Grades</option>
             @foreach($gradeLevels as $gl)
-            <option value="{{ $gl }}" {{ $selectedGrade === $gl ? 'selected' : '' }}>{{ $gl }}</option>
+            <option value="{{ $gl }}">{{ $gl }}</option>
             @endforeach
         </select>
+        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Search</button>
+        <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
     </form>
+    <p class="text-xs text-gray-500 mt-2">{{ $totalCount }} class(es){{ $unassignedCount > 0 ? ' — ' . $unassignedCount . ' unassigned' : '' }}</p>
 </div>
 
-@if($classes->isEmpty())
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
-    <p class="text-sm text-gray-500 py-4">No active classes found.</p>
+<div x-show="loading && !html" class="space-y-3">
+    <template x-for="i in 3" :key="i"><div class="skelly sk-card"><div class="px-2 py-4"><div class="skelly sk-line-md"></div></div></div></template>
 </div>
-@else
-@foreach($classes as $gradeLevel => $gradeClasses)
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-5">
-    <h3 class="font-semibold text-gray-900 mb-4">{{ $gradeLevel }} <span class="text-sm font-normal text-gray-500">({{ $gradeClasses->count() }} class(es))</span></h3>
-    <div class="overflow-x-auto">
-        <table class="w-full min-w-[720px] text-sm">
-            <thead>
-                <tr class="border-b border-gray-200">
-                    <th class="text-left py-2 px-2 font-medium text-gray-600">Section</th>
-                    <th class="text-left py-2 px-2 font-medium text-gray-600">Subject</th>
-                    <th class="text-left py-2 px-2 font-medium text-gray-600">Current Teacher</th>
-                    <th class="text-left py-2 px-2 font-medium text-gray-600 w-64">Assign</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($gradeClasses as $class)
-                <tr class="border-b border-gray-50 hover:bg-gray-50">
-                    <td class="py-2 px-2 text-gray-700">{{ $class->section }}</td>
-                    <td class="py-2 px-2 font-medium text-gray-900">{{ $class->subject->name ?? $class->subject_code ?? '—' }}</td>
-                    <td class="py-2 px-2">
-                        @if($class->teacher)
-                            <span class="text-gray-900">{{ $class->teacher->name }}</span>
-                        @else
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Unassigned</span>
-                        @endif
-                    </td>
-                    <td class="py-2 px-2">
-                        <form method="POST" action="{{ route('principal.teacher-assignments.assign', $class) }}" class="flex gap-2">
-                            @csrf @method('PATCH')
-                            <select name="teacher_id" class="flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                                <option value="">— Unassigned —</option>
-                                @foreach($teachers as $teacher)
-                                <option value="{{ $teacher->id }}" {{ (int) $class->teacher_id === (int) $teacher->id ? 'selected' : '' }}>{{ $teacher->name }}</option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white transition rounded-lg" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Save</button>
-                        </form>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+<div x-show="error" x-cloak class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
+<div x-show="(loading || isRateLimited) && html" x-cloak class="mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">Showing last list &mdash; updating&hellip;</div>
+<div x-show="cacheLabel" x-cloak class="mb-4 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center justify-between gap-3"><span x-text="cacheLabel"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-blue-200 hover:bg-blue-100">Refresh</button></div>
+<div x-show="actionsLocked && html" x-cloak class="mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">Updating — actions unlock when fresh.</div>
+<div x-show="html || !loading" x-cloak x-ref="results" x-html="html" class="fade-in"></div>
 </div>
-@endforeach
-@endif
 @endsection

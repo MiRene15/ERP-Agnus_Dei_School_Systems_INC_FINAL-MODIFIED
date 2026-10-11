@@ -1,8 +1,10 @@
 # Spec: List Search Filters
 
-- **Status**: Approved
+- **Status**: Implemented (2026-10-11 — slices 1–5 built; acceptance walkthrough still open, may reopen on user report)
 - **Created**: 2026-10-11
 - **Revision**: 2026-10-11 — Term picker corrected to Term 1–3 per user (school runs 3 terms).
+- **Revision**: 2026-10-11 — Per-subject class lists keep the instant local filter + live counts (no server trip); server-side search applies only to paginated lists. Re-approved 2026-10-11.
+- **Revision**: 2026-10-11 — Cashier student lookup stays term-free (a lookup must never hide an owing student); existing school-year picker unchanged (fee math only). Re-approved 2026-10-11.
 - **Approved by**: user on 2026-10-11 (re-approved with 3-term correction)
 
 ## 1. Why We Need This
@@ -52,6 +54,8 @@ Several lists are missing the basics. There is no term filter, no per-subject st
 - Money and grade writes always act on fresh server state; cache never decides a payment, receipt, or grade save.
 - Truncation keeps badges and actions visible; full text reachable in one tap/hover.
 - Toggle-buttons preserve each tab's permission, audit, and badge behavior.
+- Per-subject class lists with fully-loaded rows keep the instant local filter (no server trip); the count line reads "N of M shown" live. Server-side search with counts applies only to paginated lists.
+- Cashier student lookup stays term-free — a lookup must never hide an owing student. The existing school-year picker is unchanged (fee math only).
 
 ### Must never happen
 
@@ -80,7 +84,7 @@ Several lists are missing the basics. There is no term filter, no per-subject st
 
 ## 8. Success Checks
 
-- [ ] New bars (registrar requests, teacher-assign, per-subject, schedule facets) search once per pause/Enter with kept-list and counts.
+- [ ] New bars (registrar requests, teacher-assign, schedule facets) search once per pause/Enter with kept-list and counts. Per-subject class lists keep the instant local filter with live "N of M shown" counts (no server trip).
 - [ ] Term + SY combine with search; any change returns to page 1; Clear restores current term/year.
 - [ ] Long text shows `...` with full on tap; badges and actions intact; amounts never cut.
 - [ ] Toggle-buttons switch locally with the same badges and order; rapid taps resolve once.

@@ -52,11 +52,10 @@ class RegistrarController extends Controller
      */
     public function requests(): View
     {
-        // Discount Requests tab — same data as DiscountRequestController@index.
-        $requests = \App\Models\DiscountRequest::with(['ledger.student.user', 'ledger.student.enrollments.section', 'requester', 'reviewer'])
-            ->latest()
-            ->paginate(20)
-            ->withQueryString();
+        // Discount Requests tab — the list itself reads live from
+        // DiscountRequestController@index via ajaxTable (same source of truth,
+        // so the tab can never drift from the standalone page). Only the New
+        // Request form data is composed here.
         $ledgers = \App\Models\StudentLedger::with('student.user')
             ->whereHas('student.enrollments', function ($q) {
                 $q->where('status', 'Active')->where('school_year', active_school_year());
@@ -98,7 +97,7 @@ class RegistrarController extends Controller
             'promotion' => $openProposals->count(),
         ];
 
-        return view('portal.registrar.requests', compact('requests', 'ledgers', 'discountTypes', 'withdrawals', 'enrollments', 'actions', 'schoolYears', 'passingGrade', 'openProposals', 'holdMap', 'badgeCounts'));
+        return view('portal.registrar.requests', compact('ledgers', 'discountTypes', 'withdrawals', 'enrollments', 'actions', 'schoolYears', 'passingGrade', 'openProposals', 'holdMap', 'badgeCounts'));
     }
 
     /**

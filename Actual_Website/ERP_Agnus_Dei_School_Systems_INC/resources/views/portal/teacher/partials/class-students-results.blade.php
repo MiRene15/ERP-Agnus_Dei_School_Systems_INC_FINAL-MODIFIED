@@ -13,7 +13,7 @@
     <div class="p-5 border-b border-gray-100">
         <div class="flex items-center justify-between mb-3">
             <h3 class="font-semibold text-gray-900">Master List of Students</h3>
-            <span class="text-sm text-gray-500">{{ $activeEnrollments->count() }} student(s)</span>
+            <span class="text-sm text-gray-500" data-master-list-count>{{ $activeEnrollments->count() }} of {{ $activeEnrollments->count() }} shown</span>
         </div>
         <input type="text" oninput="filterMasterList(this)" placeholder="Search name or LRN..." class="rounded-lg border border-gray-300 px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
     </div>
@@ -60,13 +60,16 @@ if (typeof filterMasterList !== 'function') {
         var q = (input.value || '').toLowerCase();
         var scope = input.closest('div.bg-white');
         var shown = 0;
-        scope.querySelectorAll('[data-master-list] [data-filter-text]').forEach(function (row) {
+        var rows = scope.querySelectorAll('[data-master-list] [data-filter-text]');
+        rows.forEach(function (row) {
             var hit = row.getAttribute('data-filter-text').includes(q);
             row.style.display = hit ? '' : 'none';
             if (hit) shown++;
         });
         var note = scope.querySelector('[data-master-list-no-match]');
         if (note) note.classList.toggle('hidden', shown > 0);
+        var count = scope.querySelector('[data-master-list-count]');
+        if (count) count.textContent = shown + ' of ' + rows.length + ' shown';
     }
 }
 </script>

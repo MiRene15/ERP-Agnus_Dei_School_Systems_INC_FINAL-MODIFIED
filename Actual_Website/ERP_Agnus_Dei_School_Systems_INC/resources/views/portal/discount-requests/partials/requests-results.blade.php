@@ -14,7 +14,7 @@
             <tr class="border-b border-gray-50 dark:border-[#2A2F58]">
                 <td class="py-2 px-2 font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $req->ledger->student->first_name }} {{ $req->ledger->student->last_name }}</td>
                 <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $discountTypes[$req->discount_type] ?? $req->discount_type }} — ₱{{ number_format($req->discount_amount, 2) }}</td>
-                <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC] text-xs max-w-xs">{{ $req->proof_details }}</td>
+                <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC] text-xs max-w-xs lsf-truncate" tabindex="0" title="{{ $req->proof_details }}">{{ $req->proof_details }}</td>
                 <td class="py-2 px-2 text-xs text-gray-500">{{ $req->requester?->name ?? '—' }}</td>
                 <td class="py-2 px-2">
                     @php $badge = ['pending' => 'bg-amber-100 text-amber-700', 'approved' => 'bg-blue-100 text-blue-700', 'rejected' => 'bg-red-100 text-red-700', 'applied' => 'bg-green-100 text-green-700'][$req->status] ?? 'bg-gray-100 text-gray-600'; @endphp
@@ -27,3 +27,4 @@
         </tbody>
     </table>
 </div>
+<div class="mt-4">{{ $requests->links() }}</div>

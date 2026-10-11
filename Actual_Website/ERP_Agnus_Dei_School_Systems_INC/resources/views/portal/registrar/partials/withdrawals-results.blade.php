@@ -17,7 +17,7 @@
                     <span class="font-medium text-gray-900">{{ $w->student->first_name }} {{ $w->student->last_name }}</span>
                 </td>
                 <td class="py-3 px-2 text-gray-700">{{ $w->enrollment->section->grade_level }} - {{ $w->enrollment->section->section_name }}</td>
-                <td class="py-3 px-2 text-gray-700 max-w-xs truncate">{{ $w->reason }}</td>
+                <td class="py-3 px-2 text-gray-700 max-w-xs truncate" title="{{ $w->reason }}">{{ $w->reason }}</td>
                 <td class="py-3 px-2">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
                         {{ $w->status === 'Pending' ? 'bg-yellow-100 text-yellow-700' : ($w->status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700') }}">
