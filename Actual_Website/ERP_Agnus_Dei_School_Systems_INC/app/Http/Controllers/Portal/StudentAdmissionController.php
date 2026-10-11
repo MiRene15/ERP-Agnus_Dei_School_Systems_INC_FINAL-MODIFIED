@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\Admission;
 use App\Models\Requirement;
 use App\Models\Setting;
+use App\Services\AdmissionSubmissionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -71,7 +72,7 @@ class StudentAdmissionController extends Controller
                 'application_type', 'grade_level', 'strand', 'school_year',
                 'first_name', 'middle_name', 'last_name', 'gender', 'gender_detail',
                 'date_of_birth', 'place_of_birth', 'citizenship', 'religion',
-                'legacy_lrn', 'contact_number',
+                'legacy_lrn', 'contact_number', 'student_email',
                 'permanent_address', 'same_as_permanent', 'current_address',
                 'father_name', 'father_occupation', 'mother_name', 'mother_occupation',
                 'guardian_name', 'guardian_contact',
@@ -97,7 +98,7 @@ class StudentAdmissionController extends Controller
             $stepForField = [
                 'application_type' => 1, 'grade_level' => 1, 'strand' => 1, 'school_year' => 1,
                 'first_name' => 2, 'middle_name' => 2, 'last_name' => 2, 'gender' => 2,
-                'gender_detail' => 2, 'date_of_birth' => 2, 'place_of_birth' => 2,
+                'gender_detail' => 2, 'student_email' => 2, 'date_of_birth' => 2, 'place_of_birth' => 2,
                 'citizenship' => 2, 'religion' => 2, 'legacy_lrn' => 2, 'contact_number' => 2,
                 'permanent_address' => 3, 'same_as_permanent' => 3, 'current_address' => 3,
                 'father_name' => 4, 'father_occupation' => 4, 'mother_name' => 4,
@@ -115,7 +116,7 @@ class StudentAdmissionController extends Controller
             }
         }
 
-        $draftStep = min(6, max(1, $draftStep));
+        $draftStep = min(7, max(1, $draftStep));
 
         return view('portal.student.admission-apply', compact('student', 'pendingAdmission', 'draftAdmission', 'draftData', 'draftStep'));
     }
@@ -129,7 +130,7 @@ class StudentAdmissionController extends Controller
         }
 
         $data = $request->validate([
-            '_step' => 'required|integer|min:1|max:6',
+            '_step' => 'required|integer|min:1|max:7',
             'application_type' => 'nullable|in:New,Transferee',
             'grade_level' => 'nullable|string|max:20',
             'strand' => ['nullable', Rule::in(['Arts, Social Sciences, and Humanities', 'Business and Entrepreneurship'])],
@@ -145,6 +146,7 @@ class StudentAdmissionController extends Controller
             'religion' => 'nullable|string|max:100',
             'legacy_lrn' => 'nullable|digits:12',
             'contact_number' => 'nullable|string|max:15',
+            'student_email' => 'nullable|email|max:255',
             'permanent_address' => 'nullable|string|max:500',
             'same_as_permanent' => 'nullable|boolean',
             'current_address' => 'nullable|string|max:500',
@@ -204,78 +206,18 @@ class StudentAdmissionController extends Controller
             return back()->withInput()->with('error', 'You already have a student number.');
         }
 
-        $data = $request->validated();
+        // Submit-side rules (required uploads, duplicate consolidation) live
+        // in the service — the controller only translates the result.
+        $result = AdmissionSubmissionService::submit($student, $request->validated());
 
-        $data['contact_number'] = $this->normalizePhone($data['contact_number'] ?? null);
-        $data['guardian_contact'] = $this->normalizePhone($data['guardian_contact'] ?? null);
-        $data['emergency_contact_number'] = $this->normalizePhone($data['emergency_contact_number'] ?? null);
+        if (! $result['submitted']) {
+            return back()->withInput()->with('error', $result['error']);
+        }
 
-        // Free-text detail only applies to Non-binary / Prefer not to say.
-        $genderDetail = in_array($data['gender'] ?? null, ['Non-binary', 'Prefer not to say'], true)
-            ? ($data['gender_detail'] ?? null)
-            : null;
-
-        $admission = DB::transaction(function () use ($student, $data, $genderDetail) {
-            $student->update([
-                'first_name' => $data['first_name'],
-                'middle_name' => $data['middle_name'] ?? null,
-                'last_name' => $data['last_name'],
-                'gender' => $data['gender'],
-                'gender_detail' => $genderDetail,
-                'date_of_birth' => $data['date_of_birth'],
-                'place_of_birth' => $data['place_of_birth'] ?? null,
-                'citizenship' => $data['citizenship'] ?? null,
-                'religion' => $data['religion'] ?? null,
-                'legacy_lrn' => $data['legacy_lrn'] ?? null,
-                'contact_number' => $data['contact_number'] ?? null,
-                'permanent_address' => $data['permanent_address'] ?? null,
-                'current_address' => ($data['same_as_permanent'] ?? false) ? ($data['permanent_address'] ?? null) : ($data['current_address'] ?? null),
-                'father_name' => $data['father_name'] ?? null,
-                'father_occupation' => $data['father_occupation'] ?? null,
-                'mother_name' => $data['mother_name'] ?? null,
-                'mother_occupation' => $data['mother_occupation'] ?? null,
-                'guardian_name' => $data['guardian_name'] ?? null,
-                'guardian_contact' => $data['guardian_contact'] ?? null,
-                'emergency_contact_name' => $data['emergency_contact_name'] ?? null,
-                'emergency_contact_number' => $data['emergency_contact_number'] ?? null,
-                'emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
-                'previous_school' => $data['previous_school'] ?? null,
-                'previous_school_address' => $data['previous_school_address'] ?? null,
-            ]);
-
-            $draft = $student->admissions()->where('status', 'Draft')->latest()->first();
-
-            if ($draft) {
-                $draft->update([
-                    'application_type' => $data['application_type'],
-                    'grade_level' => $data['grade_level'],
-                    'strand' => $data['strand'] ?? null,
-                    'school_year' => $data['school_year'],
-                    'status' => 'Pending',
-                    'draft_data' => null,
-                ]);
-                $record = $draft;
-            } else {
-                // Second tap with a fresh reference but no draft left (already
-                // Pending) must not mint a second Pending row.
-                $existing = $student->admissions()->where('status', 'Pending')->latest()->first();
-                $record = $existing ?? Admission::create([
-                    'student_id' => $student->id,
-                    'application_type' => $data['application_type'],
-                    'grade_level' => $data['grade_level'],
-                    'strand' => $data['strand'] ?? null,
-                    'school_year' => $data['school_year'],
-                    'status' => 'Pending',
-                ]);
-            }
-
-            log_activity($record, 'Admission Submitted', $student->first_name . ' ' . $student->last_name . ' submitted admission application ' . ($record->application_number ?? '#' . $record->id) . ' (' . $data['application_type'] . ', ' . $data['grade_level'] . ', SY ' . $data['school_year'] . ').');
-
-            return $record;
-        });
+        $admission = $result['admission'];
 
         return redirect()->to(route('student.admission.status') . '#upload-requirements')
-            ->with('success', 'Application submitted! Your application number is ' . $admission->application_number . '. Upload your requirements next.');
+            ->with('success', 'Application submitted! Your application number is ' . $admission->application_number . '. The registrar will review your uploaded requirements.');
     }
 
     public function discardDraft(Request $request)
@@ -302,26 +244,26 @@ class StudentAdmissionController extends Controller
         $admission = $student->admissions()->latest()->first();
         $requirements = $admission ? $admission->requirements()->select('id', 'document_type', 'original_filename', 'mime_type', 'file_size', 'status', 'admission_id')->get() : collect();
 
-        $requiredDocs = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
-        $uploadedTypes = $requirements->pluck('document_type')->toArray();
-        $allRequiredUploaded = empty(array_diff($requiredDocs, $uploadedTypes));
-
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.admission-status-results', compact('student', 'admission', 'requirements', 'allRequiredUploaded'))->render(),
+                'html' => view('portal.student.partials.admission-status-results', compact('student', 'admission', 'requirements'))->render(),
             ]);
         }
 
-        return view('portal.student.admission-status', compact('student', 'admission', 'requirements', 'allRequiredUploaded'));
+        return view('portal.student.admission-status', compact('student', 'admission', 'requirements'));
     }
 
     public function uploadRequirements(Request $request)
     {
         $student = auth()->user()->student;
-        $admission = $student->admissions()->where('status', 'Pending')->latest()->firstOrFail();
 
         if ($request->isMethod('post') && empty($request->all()) && $request->headers->get('content-length', 0) > 0) {
-            return back()->with('error', 'The total upload size is too large. Please upload files one at a time, or compress your images to under 5MB each. Max total POST size is 12MB.');
+            $tooLarge = 'The total upload size is too large. Please upload files one at a time, or compress your images to under 5MB each. Max total POST size is 12MB.';
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $tooLarge], 413);
+            }
+
+            return back()->with('error', $tooLarge);
         }
 
         $data = $request->validate([
@@ -329,34 +271,71 @@ class StudentAdmissionController extends Controller
             'documents.*' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
-        $count = 0;
+        // Uploads happen before submit now (spec §4.1), so they attach to the
+        // draft. In-flight (Pending) and returned (Returned) files keep their
+        // upload path too — nothing already received is ever lost.
+        $admission = $student->admissions()
+            ->whereIn('status', ['Draft', 'Pending', 'Returned'])
+            ->latest()
+            ->first();
 
-        foreach ($request->file('documents') as $documentType => $file) {
-            $existing = Requirement::where('admission_id', $admission->id)
-                ->where('document_type', $documentType)
-                ->first();
-
-            $fileData = [
-                'file_content' => DB::raw("'\\x" . bin2hex($file->getContent()) . "'::bytea"),
-                'original_filename' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
-                'status' => 'Under Review',
-            ];
-
-            if ($existing) {
-                $existing->update($fileData);
-            } else {
-                Requirement::create(array_merge($fileData, [
-                    'admission_id' => $admission->id,
-                    'document_type' => $documentType,
-                ]));
-            }
-
-            $count++;
+        if (! $admission) {
+            // First upload before any draft save: give it a home so the
+            // family can upload first and fill the form after.
+            $admission = Admission::create([
+                'student_id' => $student->id,
+                'application_type' => 'New',
+                'grade_level' => '',
+                'strand' => null,
+                'school_year' => active_school_year(),
+                'status' => 'Draft',
+            ]);
         }
 
+        $count = 0;
+
+        DB::transaction(function () use ($request, $admission, &$count) {
+            foreach ($request->file('documents') as $documentType => $file) {
+                $existing = Requirement::where('admission_id', $admission->id)
+                    ->where('document_type', $documentType)
+                    ->first();
+
+                $fileData = [
+                    'file_content' => DB::raw("'\\x" . bin2hex($file->getContent()) . "'::bytea"),
+                    'original_filename' => $file->getClientOriginalName(),
+                    'mime_type' => $file->getMimeType(),
+                    'file_size' => $file->getSize(),
+                    'status' => 'Under Review',
+                ];
+
+                if ($existing) {
+                    $existing->update($fileData);
+                } else {
+                    Requirement::create(array_merge($fileData, [
+                        'admission_id' => $admission->id,
+                        'document_type' => $documentType,
+                    ]));
+                }
+
+                $count++;
+            }
+
+            // A returned file with every missing document now supplied is
+            // back under review.
+            AdmissionSubmissionService::resumeIfComplete($admission);
+        });
+
         log_activity($admission, 'Requirements Uploaded', auth()->user()->name . ' uploaded ' . $count . ' admission document(s) for admission #' . $admission->id . '.');
+
+        // Step 7 uploads via fetch (no page reload) — same endpoint, same
+        // rules; only the response shape differs.
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $count . ' document(s) uploaded successfully.',
+                'uploaded' => $admission->requirements()->pluck('document_type')->all(),
+            ]);
+        }
 
         return back()->with('success', $count . ' document(s) uploaded successfully.');
     }

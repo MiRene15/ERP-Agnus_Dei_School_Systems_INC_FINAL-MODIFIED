@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Portal\BulkDownpaymentRequest;
 use App\Http\Requests\Portal\ProcessCashierPaymentRequest;
 use App\Http\Requests\Portal\ProjectionFilterRequest;
 use App\Mail\PaymentConfirmationMail;
+use App\Models\Admission;
 use App\Models\Enrollment;
 use App\Models\FeeSchedule;
 use App\Models\LibraryTransaction;
@@ -14,6 +16,7 @@ use App\Models\Student;
 use App\Models\StudentLedger;
 use App\Models\Withdrawal;
 use App\Services\CashierProjectionService;
+use App\Services\DownpaymentService;
 use App\Services\FeeAssessmentService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -125,7 +128,7 @@ class CashierController extends Controller
         $schoolYears = all_school_years();
 
         if ($search && strlen($search) >= 2) {
-            $students = Student::where('status', 'enrolled')
+$students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                 ->where(function ($q) use ($search) {
                     $q->where('first_name', 'ilike', "%{$search}%")
                         ->orWhere('last_name', 'ilike', "%{$search}%")
@@ -133,7 +136,7 @@ class CashierController extends Controller
                         ->orWhere('legacy_lrn', 'ilike', "%{$search}%")
                         ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
                 })
-            ->with(['user', 'enrollments.section', 'ledger'])
+            ->with(['user', 'enrollments.section', 'ledger', 'admissions'])
             ->limit(10)
             ->get();
 
@@ -142,6 +145,10 @@ class CashierController extends Controller
         foreach ($students as $student) {
             $active = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
             $gradeLevelByStudent[$student->getKey()] = $active?->section?->grade_level;
+            // Forwarded files have no enrollment yet: show the grade picked
+            // on the admission so the row never reads N/A.
+            $student->display_grade = $active?->section?->grade_level
+                ?? $student->admissions->sortByDesc('id')->first()?->grade_level;
         }
 
         $assessedByGradeLevel = $this->assessedTotalsByGradeLevel(
@@ -173,7 +180,15 @@ class CashierController extends Controller
             return response()->json([]);
         }
 
-        $students = Student::where('status', 'enrolled')
+        // Forwarded files must be findable here (spec: review-forward §8 check 3 —
+        // the file "reaches the Cashier queue" before child 2 ships its own
+        // downpayment queue). Match the student flag OR the admission state,
+        // so older forwards whose student flag predates the atomic update
+        // still show up.
+        $students = Student::where(function ($q) {
+                $q->whereIn('status', ['enrolled', 'Awaiting Downpayment'])
+                    ->orWhereHas('admissions', fn ($qa) => $qa->where('status', 'Awaiting Downpayment'));
+            })
             ->where(function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
                     ->orWhere('last_name', 'ilike', "%{$search}%")
@@ -264,15 +279,22 @@ class CashierController extends Controller
 
         $student->load('user', 'enrollments.section', 'ledger.ledgerLines', 'ledger.payments', 'admissions');
         $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
-        $feeSchedules = $enrollment ? FeeSchedule::where('grade_level', $enrollment->section->grade_level)
-            ->where('school_year', $enrollment->school_year)
+        // Forwarded files have no enrollment yet (review-forward): read the
+        // grade and year from the latest admission so Cashier sees the real
+        // fee basis instead of N/A. Section stays N/A until the Registrar
+        // assigns it at full approval (child 2).
+        $latestAdmission = $student->admissions->sortByDesc('id')->first();
+        $displayGrade = $enrollment?->section?->grade_level ?? $latestAdmission?->grade_level;
+        $displayYear = $enrollment?->school_year ?? $latestAdmission?->school_year ?? active_school_year();
+        $feeSchedules = $displayGrade ? FeeSchedule::where('grade_level', $displayGrade)
+            ->where('school_year', $displayYear)
             ->orderBy('term')
             ->get() : collect();
 
         $hasScholarship = $student->scholarship ?? false;
-        $isSHS = $enrollment && in_array($enrollment->section->grade_level, ['Grade 11', 'Grade 12']);
+        $isSHS = in_array((string) $displayGrade, ['Grade 11', 'Grade 12'], true);
 
-        $admission = $student->admissions()->where('school_year', $enrollment?->school_year)->latest()->first();
+        $admission = $student->admissions->where('school_year', $displayYear)->sortByDesc('id')->first() ?? $latestAdmission;
         $admissionType = $admission?->application_type ?? 'New';
 
         $autoDiscountType = null;
@@ -346,11 +368,11 @@ class CashierController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines'))->render(),
+                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admission', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines', 'displayGrade', 'displayYear'))->render(),
             ]);
         }
 
-        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines'));
+        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admission', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines', 'displayGrade', 'displayYear'));
     }
 
     public function processPayment(ProcessCashierPaymentRequest $request, Student $student, FeeAssessmentService $fees)
@@ -625,6 +647,124 @@ class CashierController extends Controller
                 'receipt_number' => $lastPayment?->receipt_number ?? '',
                 'payment_id' => $lastPayment?->id ?? '',
             ]);
+    }
+
+    /**
+     * Confirm downpayment for a forwarded (not yet enrolled) file
+     * (spec: enrollment-payment-gating-payment-access.md §4.1).
+     * Thin HTTP wrapper — money rules live in DownpaymentService.
+     */
+    public function confirmDownpayment(ProcessCashierPaymentRequest $request, Student $student)
+    {
+        $data = $request->validated();
+
+        if ($request->hasFile('receipt_file')) {
+            $data['receipt_file_path'] = $request->file('receipt_file')->store('receipts/' . $student->id, 'public');
+        }
+
+        $result = DownpaymentService::confirm($student, $data, (int) auth()->id(), (string) auth()->user()->name);
+
+        if (! $result['confirmed']) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $result['error']], 422);
+            }
+
+            return back()->with('error', $result['error'])->withInput();
+        }
+
+        // Confirmation email goes after the commit (same guarantee as the
+        // enrolled path): a mail failure never un-confirms money.
+        $payment = $result['payment'] ?? null;
+        if ($payment) {
+            try {
+                $email = $student->personal_email ?: $student->user?->email;
+                if ($email) {
+                    $confirmationMail = new PaymentConfirmationMail($payment);
+                    $confirmationMail->idempotencyMarker = $request->input('_idempotency_key');
+                    Mail::to($email)->send($confirmationMail);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to send downpayment confirmation email: ' . $e->getMessage(), [
+                    'student_id' => $student->id,
+                    'payment_id' => $payment->id,
+                ]);
+            }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'already' => $result['already'],
+                'message' => $result['message'],
+                'receipt_number' => $result['receipt'] ?? '',
+                'payment_id' => $payment?->id ?? '',
+                'print_url' => $payment ? route('cashier.receipt.print', $payment) : null,
+            ]);
+        }
+
+        return redirect()->route('cashier.payment', $student)
+            ->with('success', $result['message']);
+    }
+
+    /**
+     * Bulk confirm downpayments with one plan + amount (spec:
+     * payment-access.md §4.1). Each file goes through the single-file
+     * gates; incomplete files stay behind and are reported per file.
+     * No confirmation emails in bulk — receipts print from the payment
+     * screen, and the approval notice (the required email) follows at
+     * full approval.
+     */
+    public function bulkConfirmDownpayments(BulkDownpaymentRequest $request)
+    {
+        $ids = array_filter($request->input('admission_ids', []));
+        $confirmed = 0;
+        $already = 0;
+        $blocked = [];
+
+        $admissions = Admission::whereIn('id', $ids)->with('student')->get();
+
+        foreach ($admissions as $admission) {
+            $student = $admission->student;
+            if ($student === null) {
+                $blocked[$admission->id] = 'No student linked to this application.';
+                continue;
+            }
+
+            $result = DownpaymentService::confirm($student, [
+                'payment_plan' => $request->input('payment_plan'),
+                'amount_paid' => $request->input('amount_each'),
+                'discount_type' => null,
+                'discount_amount' => 0,
+                'ar_number' => null,
+            ], (int) auth()->id(), (string) auth()->user()->name);
+
+            if ($result['confirmed']) {
+                if ($result['already']) {
+                    $already++;
+                } else {
+                    $confirmed++;
+                }
+            } else {
+                $blocked[$admission->id] = $result['error'];
+            }
+        }
+
+        if ($confirmed === 0 && $already === 0) {
+            $firstBlocker = $blocked !== [] ? ' First blocker: ' . reset($blocked) : '';
+
+            return redirect()->route('cashier.payments')
+                ->with('error', 'Nothing was confirmed.' . $firstBlocker);
+        }
+
+        $message = $confirmed . ' downpayment(s) confirmed.';
+        if ($already > 0) {
+            $message .= ' ' . $already . ' already had receipts (no new charge).';
+        }
+        if ($blocked !== []) {
+            $message .= ' ' . count($blocked) . ' stayed behind (not forwarded or below floor).';
+        }
+
+        return redirect()->route('cashier.payments')->with('success', $message);
     }
 
     public function printReceipt(Payment $payment)
@@ -1103,6 +1243,10 @@ class CashierController extends Controller
             $student = $ledger->student;
             $name = $student ? $student->first_name . ' ' . $student->last_name : 'Student #' . $ledger->student_id;
             log_activity($student ?? $ledger, 'Payment Voided', auth()->user()->name . " (Cashier) voided payment {$payment->receipt_number} (₱" . number_format($payment->amount_paid, 2) . ") for {$name}. Reason: {$data['reason']}");
+
+            // Voiding the downpayment receipt before approval returns the
+            // file to Awaiting Downpayment (spec: payment-access.md §6 edge).
+            DownpaymentService::dropBackOnVoid($payment, auth()->user()->name . ' (Cashier)');
         });
 
         if ($request->expectsJson()) {

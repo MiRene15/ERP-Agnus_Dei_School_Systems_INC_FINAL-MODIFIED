@@ -34,20 +34,16 @@
 </div>
 
 <script>
-{{-- Checklist + approve components live here (not in the AJAX partial):
-     scripts injected via x-html never execute, so definitions inside the
-     partial never registered and count/status stayed blank. --}}
+{{-- Checklist component lives here (not in the AJAX partial):
+     scripts injected via x-html never execute, so definitions
+     inside the partial never registered. The requirement data
+     is passed straight into the component via @js — no DOM
+     lookup, so there is no init() that can fail silently. --}}
 document.addEventListener('alpine:init', () => {
-    Alpine.data('requirementsChecklist', () => ({
-        requirements: [],
+    Alpine.data('requirementsChecklist', (initialRequirements = []) => ({
+        requirements: initialRequirements,
         busy: {},
         verifyAllBusy: false,
-        init() {
-            try {
-                const el = document.getElementById('requirements-data');
-                this.requirements = el ? JSON.parse(el.textContent) : [];
-            } catch (e) { this.requirements = []; }
-        },
         get verifiedCount() { return this.requirements.filter(r => r.status === 'Verified').length },
         get totalCount() { return this.requirements.length },
         toggleVerify(reqId) {
@@ -85,33 +81,6 @@ document.addEventListener('alpine:init', () => {
             .then(data => { if (data.success) this.requirements.forEach(r => r.status = 'Verified'); })
             .catch(err => { console.error('Verify All failed:', err); alert('Verify All failed: ' + err.message); })
             .finally(() => { this.verifyAllBusy = false; });
-        }
-    }));
-
-    Alpine.data('approveForm', () => ({
-        selectedSection: '',
-        sectionMap: {},
-        allClasses: [],
-        selectedIds: [],
-        init() {
-            try {
-                const clsEl = document.getElementById('classes-data');
-                const secEl = document.getElementById('section-map');
-                this.allClasses = clsEl ? JSON.parse(clsEl.textContent) : [];
-                this.sectionMap = secEl ? JSON.parse(secEl.textContent) : {};
-            } catch (e) { this.allClasses = []; this.sectionMap = {}; }
-        },
-        get selectedSectionName() { return this.sectionMap[this.selectedSection] || ''; },
-        get filteredClasses() { return this.allClasses.filter(c => c.section === this.selectedSectionName); },
-        get allSelected() { return this.filteredClasses.length > 0 && this.selectedIds.length === this.filteredClasses.length; },
-        toggleAll() {
-            if (this.allSelected) { this.selectedIds = []; }
-            else { this.selectedIds = this.filteredClasses.map(c => c.id); }
-        },
-        isSelected(id) { return this.selectedIds.includes(id); },
-        toggleId(id) {
-            if (this.isSelected(id)) { this.selectedIds = this.selectedIds.filter(x => x !== id); }
-            else { this.selectedIds.push(id); }
         }
     }));
 });

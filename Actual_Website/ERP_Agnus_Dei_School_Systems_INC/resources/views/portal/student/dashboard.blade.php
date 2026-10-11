@@ -17,8 +17,14 @@
                 @if(!empty($enrolledSchoolYears ?? collect()) && collect($enrolledSchoolYears)->reject(fn($y) => $y === $activeEnrollment->school_year)->isNotEmpty())
                     Also enrolled for {{ collect($enrolledSchoolYears)->reject(fn($y) => $y === $activeEnrollment->school_year)->implode(', ') }}.
                 @endif
-            @elseif($student->student_number && $pendingAdmission)
-                Your enrollment for {{ $pendingAdmission->school_year }} is pending approval.
+@elseif($student->student_number && $pendingAdmission)
+                @if($pendingAdmission->status === 'Awaiting Downpayment')
+                    Your admission is awaiting downpayment — the family will make a downpayment and the account will be enrolled.
+                @elseif($pendingAdmission->status === 'Pending')
+                    Your enrollment for {{ $pendingAdmission->school_year }} is pending approval.
+                @else
+                    Your enrollment for {{ $pendingAdmission->school_year }} is pending approval.
+                @endif
             @else
                 Welcome back! Please enroll for the upcoming school year.
             @endif

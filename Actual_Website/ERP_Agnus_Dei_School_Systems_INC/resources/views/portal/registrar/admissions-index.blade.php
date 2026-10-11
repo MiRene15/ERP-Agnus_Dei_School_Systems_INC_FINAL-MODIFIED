@@ -17,6 +17,14 @@
             <span class="font-bold text-yellow-800">{{ $pendingCount }}</span>
             <span class="text-yellow-700">Pending</span>
         </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+            <span class="font-bold text-blue-800">{{ $awaitingDownpaymentCount }}</span>
+            <span class="text-blue-700">Awaiting Downpayment</span>
+        </div>
+        <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+            <span class="font-bold text-green-800">{{ $paidCount ?? 0 }}</span>
+            <span class="text-green-700">Paid — ready</span>
+        </div>
         <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
             <span class="font-bold text-green-800">{{ $approvedCount }}</span>
             <span class="text-green-700">Approved</span>
@@ -49,6 +57,9 @@
             <select name="status" x-model="filters.status" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                 <option value="All">All Status</option>
                 <option value="Pending">Pending</option>
+                <option value="Paid">Paid — ready for approval</option>
+                <option value="Awaiting Downpayment">Awaiting Downpayment</option>
+                <option value="Returned">Returned</option>
                 <option value="Approved By Registrar">Approved</option>
                 <option value="Rejected">Rejected</option>
             </select>
@@ -64,28 +75,49 @@
     </div>
     </div>
 
-    <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
-        <div x-show="loading && !html" class="p-4 space-y-3">
-            <template x-for="i in 5" :key="i">
-                <div class="skelly sk-card">
-                    <div class="grid grid-cols-9 gap-4 px-2">
-                        <div class="skelly sk-line-md"></div>
-                        <div class="skelly sk-line-md col-span-2"></div>
-                        <div class="skelly sk-line-md"></div>
-                        <div class="skelly sk-line-md"></div>
-                        <div class="skelly sk-line-md"></div>
-                        <div class="skelly sk-line-md"></div>
-                        <div class="skelly sk-line-md"></div>
-                        <div class="skelly sk-line-md"></div>
-                        <div class="skelly sk-line-sm"></div>
+    <form method="POST" action="{{ route('registrar.admissions.bulk-forward') }}" onsubmit="return guardBulkForward(this);">
+        @csrf
+        <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-[#2A2F58]">
+                <p class="text-xs text-gray-500 dark:text-[#8A90B0]">Tick complete files, then forward them to the Cashier in one step.</p>
+                <button type="submit"
+                        class="px-4 py-2 rounded-lg text-xs font-semibold text-white transition"
+                        style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    Forward Selected to Cashier
+                </button>
+            </div>
+            <div x-show="loading && !html" class="p-4 space-y-3">
+                <template x-for="i in 5" :key="i">
+                    <div class="skelly sk-card">
+                        <div class="grid grid-cols-10 gap-4 px-2">
+                            <div class="skelly sk-line-md"></div>
+                            <div class="skelly sk-line-md col-span-2"></div>
+                            <div class="skelly sk-line-md"></div>
+                            <div class="skelly sk-line-md"></div>
+                            <div class="skelly sk-line-md"></div>
+                            <div class="skelly sk-line-md"></div>
+                            <div class="skelly sk-line-md"></div>
+                            <div class="skelly sk-line-md"></div>
+                            <div class="skelly sk-line-sm"></div>
+                        </div>
                     </div>
-                </div>
-            </template>
-        </div>
+                </template>
+            </div>
 
-        <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
-        <div x-show="(loading || isRateLimited) && html" x-cloak class="m-4 px-3 py-2 rounded-lg bg-amber-50 dark:bg-[rgba(245,158,11,0.12)] border border-amber-200 dark:border-[rgba(245,158,11,0.3)] text-xs text-amber-800 dark:text-[#FCD34D]">Showing results for &quot;<span class="font-semibold" x-text="displayedSearch"></span>&quot; &mdash; searching for &quot;<span class="font-semibold" x-text="filters.search"></span>&quot;&hellip;</div>
-        <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in" :class="((loading || isRateLimited) && html) ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'"></div>
-    </div>
+            <div x-show="error" x-cloak class="m-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-3"><span x-text="error"></span><button type="button" @click="reload()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-red-200 hover:bg-red-100">Refresh</button></div>
+            <div x-show="(loading || isRateLimited) && html" x-cloak class="m-4 px-3 py-2 rounded-lg bg-amber-50 dark:bg-[rgba(245,158,11,0.12)] border border-amber-200 dark:border-[rgba(245,158,11,0.3)] text-xs text-amber-800 dark:text-[#FCD34D]">Showing results for &quot;<span class="font-semibold" x-text="displayedSearch"></span>&quot; &mdash; searching for &quot;<span class="font-semibold" x-text="filters.search"></span>&quot;&hellip;</div>
+            <div x-show="html || !loading" x-cloak @click="handlePaginationClick($event)" x-ref="results" x-html="html" class="fade-in" :class="((loading || isRateLimited) && html) ? 'opacity-50 transition-opacity' : 'opacity-100 transition-opacity'"></div>
+        </div>
+    </form>
 </div>
+<script>
+function guardBulkForward(form) {
+    var n = form.querySelectorAll('input.admission-check:checked').length;
+    if (n === 0) {
+        alert('Select at least one application to forward.');
+        return false;
+    }
+    return confirm('Forward ' + n + ' selected application(s) to the Cashier? Files that are not fully verified will stay behind.');
+}
+</script>
 @endsection

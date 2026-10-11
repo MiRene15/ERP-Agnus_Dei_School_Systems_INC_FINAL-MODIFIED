@@ -1,9 +1,13 @@
 # Spec: Enrollment Payment Gating — Review Forward
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-11
-- **Approved by**: user on 2026-10-11
+- **Approved by**: user on 2026-10-12 (Step 7 amendment: uploads as Step 7 inside the stepper)
+- **Implemented**: 2026-10-12 — Steps 1–7 apply flow with AJAX uploads; forward/return/bulk review actions; queue-count fix; forward transaction fix; dashboard Returned fix; stray-div fix (steps 3+ blank); application-number race fix (23505 on parallel draft creates).
+- **Parked follow-up (2026-10-12, user: skip for now)**: auto draft save appears not to persist — uploads work, but form fields are lost on reload (no resumed values, no "saved draft" banner). Suspects: silent fetch failure in `autoSave()` (non-JSON error swallowed by `.catch`), draft-route 419/422, or the model save path. Repro: fill Steps 1–2 → Next (autosaves) → reload → expect resumed values + banner. Fix slice: surface autosave errors inline + verify resume. Does not block child 1's acceptance (submit/forward/return verified).
+- **Post-implementation fix (2026-10-12)**: Cashier live search (`/cashier/search`) filtered `enrolled` only, so forwarded accounts never appeared — widened to `Awaiting Downpayment` + admission-state match (§8 check 3).
 - **Parent**: `enrollment-payment-gating.md` (child 1 of 3 — builds first, usable alone)
+- **Revision**: 2026-10-12 — Step 7 amendment (user): uploads move inside the application stepper as Step 7 (no page reload); status-page uploads block unchanged for Returned re-uploads. Pending re-approval.
 
 ## 1. Why We Need This
 
@@ -25,7 +29,7 @@ Applications stall between "submitted" and "reviewed" today. Families upload req
 
 ## 4. How It Should Work
 
-1. Family opens the admissions page → fills details → enters the student's own email (helper text: "Use the student's email, not the parent's — the school account notice goes here") → uploads requirements → submits (blocked until required uploads present).
+1. Family opens the admissions page → fills details Steps 1–6 → enters the student's own email (helper text: "Use the student's email, not the parent's — the school account notice goes here") → completes Step 7 Requirements Uploads inside the same stepper (uploads attach to the draft without a page reload) → submits on Step 7 (blocked until required uploads present).
 2. Family sees status: Received → Under Review → (Forwarded to Cashier / Returned: <missing files>).
 3. Registrar opens the review queue (current school year pre-filled, counts visible) → opens a file → verifies each requirement or Verify All → fixes gender if empty.
 4. Complete file → Forward to Cashier (single or bulk with one note). Incomplete → Return with note naming each missing file; uploads already received are kept.
@@ -34,7 +38,7 @@ Applications stall between "submitted" and "reviewed" today. Families upload req
 ## 5. Look & Feel (UX)
 
 - Where it lives: existing admissions page + existing Registrar review screens — no new menu. One primary action per screen: family `Submit Application`, Registrar `Forward to Cashier` / `Return with Note`.
-- What the user sees first: application with upload checklist and email field; Registrar queue with counts then file detail (requirements with per-file status, gender, history).
+- What the user sees first: application stepper Steps 1–7 (Step 7 is the upload checklist) with email field on Step 2; Registrar queue with counts then file detail (requirements with per-file status, gender, history).
 - Key states: default (queue with counts); empty ("No pending reviews — you're caught up"); typing (submit blocked until uploads + student email valid); returned ("Missing: birth certificate, report card — upload and resubmit; your other files are kept"); success ("Sent to Cashier" / "Returned with note"); denied (forward with unverified docs is blocked, gender-missing is blocked).
 - Plain labels: Submit Application, Forward to Cashier, Return with Note, Awaiting Downpayment. Fewest clicks: Verify All + bulk forward need one confirmation.
 

@@ -33,6 +33,12 @@ class StoreAdmissionRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:100'],
             'middle_name' => ['nullable', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
+            // The student's own email — the school account notice goes here
+            // (spec: enrollment-payment-gating-review-forward.md §4.1).
+            'student_email' => ['required', 'email', 'max:255'],
+            // Warn-don't-block: identical to the parent account email is
+            // accepted only when the family explicitly confirms it.
+            'student_email_confirmed' => ['nullable', 'boolean'],
             'gender' => ['required', 'in:Male,Female,Non-binary,Prefer not to say'],
             'gender_detail' => ['nullable', 'string', 'max:100'],
             'date_of_birth' => ['required', 'date', 'after_or_equal:1950-01-01', 'before_or_equal:today'],
@@ -74,10 +80,38 @@ class StoreAdmissionRequest extends FormRequest
             'school_year.required' => 'Please choose a school year.',
             'first_name.required' => 'Please enter the first name.',
             'last_name.required' => 'Please enter the last name.',
+            'student_email.required' => "Enter the student's own email — the school account notice goes here.",
+            'student_email.email' => "That doesn't look like an email address.",
             'gender.required' => 'Please choose the option that fits best — Prefer not to say is okay.',
             'date_of_birth.required' => 'Please enter the date of birth.',
             'date_of_birth.after_or_equal' => 'Birth date is too far back.',
             'date_of_birth.before_or_equal' => "Birth date can't be in the future.",
         ];
+    }
+
+    /**
+     * Warn-don't-block (spec §6): the student email may equal the parent
+     * account email, but only with the family's explicit confirmation —
+     * an unnoticed shared address would silently misdirect the school
+     * account notice in child 2.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            $user = $this->user();
+            $studentEmail = strtolower(trim((string) $this->input('student_email', '')));
+            $accountEmail = strtolower(trim((string) ($user?->email ?? '')));
+
+            if ($studentEmail === '' || $studentEmail !== $accountEmail) {
+                return;
+            }
+
+            if (! $this->boolean('student_email_confirmed')) {
+                $validator->errors()->add(
+                    'student_email',
+                    'This is the same as your account email — tick the confirmation if the student really uses this same address.'
+                );
+            }
+        });
     }
 }

@@ -10,15 +10,25 @@
     }
     $formFullyPaid = ($feeStatus['status'] ?? '') === 'Fully Paid' && ($libraryDues ?? collect())->isEmpty();
 @endphp
+@php
+    // Forwarded files pay here without an enrollment (spec: payment-access.md).
+    $isDownpayment = !$enrollment && ($admission?->status ?? null) === 'Awaiting Downpayment' && empty($admission?->downpayment_receipt);
+    $isPaidPending = !$enrollment && !empty($admission?->downpayment_receipt);
+@endphp
 @if($formFullyPaid)
 <div class="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
     <p class="text-sm font-semibold text-green-800">Fully Paid</p>
     <p class="text-xs text-green-600 mt-1">No further payments required for this account.</p>
 </div>
+@elseif($isPaidPending)
+<div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+    <p class="text-sm font-semibold text-blue-800">Downpayment received — {{ $admission->downpayment_receipt }}</p>
+    <p class="text-xs text-blue-600 mt-1">File returned to Registrar as Pending for section assignment and full approval. Further payments open after enrollment.</p>
+</div>
 @else
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-semibold text-gray-900 mb-4">Process Payment</h3>
-            <form method="POST" action="{{ route('cashier.payment.process', $student) }}" enctype="multipart/form-data"
+            <h3 class="font-semibold text-gray-900 mb-4">{{ $isDownpayment ? 'Confirm Downpayment' : 'Process Payment' }}</h3>
+            <form method="POST" action="{{ $isDownpayment ? route('cashier.payment.downpayment', $student) : route('cashier.payment.process', $student) }}" enctype="multipart/form-data"
                   x-data="{ discountType: '{{ $discountAlreadyApplied ? ($student->ledger->discount_type ?? 'other') : ($autoDiscountType ?? '') }}', totalAssessed: {{ $totalAssessed }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountAlreadyApplied ? $student->ledger->discount_applied : $autoDiscountAmount }}, discountPercent: {{ $discountAlreadyApplied ? round($student->ledger->discount_applied / max($totalAssessed, 1) * 100) : (($autoDiscountType === 'honor') ? 10 : (($autoDiscountType === 'sibling') ? 5 : 0)) }}, isAutoDiscount: {{ ($autoDiscountType && !$discountAlreadyApplied) ? 'true' : 'false' }}, autoDiscountLabel: '{{ $autoDiscountType === 'esc' ? 'ESC Grant (Tuition Waived)' : ($autoDiscountType === 'honor' ? 'Honor Discount (10%)' : ($autoDiscountType === 'sibling' ? 'Sibling Discount (5%)' : '')) }}' }">
                 @csrf
                 <div class="space-y-4">
@@ -49,7 +59,8 @@
                         @endif
                         @error('amount_paid') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
-                    @if(!empty($libraryDues) && $libraryDues->isNotEmpty())
+                    {{-- Library dues ride on enrolled receipts only — the downpayment receipt is tuition-only, so the tick boxes stay hidden here rather than silently dropping them. --}}
+                    @if(!empty($libraryDues) && $libraryDues->isNotEmpty() && !$isDownpayment)
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Library Dues</label>
                         <div class="space-y-2 rounded-lg border border-gray-200 p-3">
@@ -141,7 +152,7 @@
                     <button type="submit"
                             class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition"
                             style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                        Take Payment
+                        {{ $isDownpayment ? 'Confirm Downpayment' : 'Take Payment' }}
                     </button>
                 </div>
             </form>

@@ -41,9 +41,8 @@
 @endif
 
 @if(!$pendingAdmission)
-    <form method="POST" action="{{ route('student.admission.store') }}" x-ref="form"
-          x-data="admissionForm()"
-          x-init="initForm()">
+    <div x-data="admissionForm()" x-init="initForm()">
+    <form method="POST" action="{{ route('student.admission.store') }}" x-ref="form">
         @csrf
 
         {{-- Step Indicator --}}
@@ -228,6 +227,23 @@
                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     @error('gender_detail') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Student's Email *</label>
+                    <input type="email" name="student_email" x-model="f.student_email" required maxlength="255"
+                           placeholder="student.name@example.com"
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <p class="text-xs text-gray-500 mt-1">Use the student's email, not the parent's — the school account notice goes here.</p>
+                    @error('student_email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+
+                    <div x-show="f.student_email && f.student_email.toLowerCase().trim() === @js(strtolower(auth()->user()->email))" x-cloak
+                         class="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <p class="text-xs text-amber-800 mb-2">This is the same as your account email. If the student really uses this same address, confirm below — otherwise use a different email.</p>
+                        <label class="flex items-center gap-2 text-xs text-amber-900 cursor-pointer">
+                            <input type="checkbox" name="student_email_confirmed" x-model="f.student_email_confirmed" value="1">
+                            Yes, the student uses this same email address
+                        </label>
+                    </div>
+                </div>
             </div>
             <div class="flex items-center justify-between mt-6">
                 <button type="button" @click="prev()"
@@ -385,14 +401,39 @@
             <div class="flex items-center justify-between mt-6">
                 <button type="button" @click="prev()"
                         class="px-5 py-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">&larr; Previous</button>
-                <button type="button" @click="submitAll()" :disabled="submitting"
-                        class="px-6 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60 disabled:cursor-wait"
+                <button type="button" @click="next()"
+                        class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition"
                         style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                    <span x-text="submitting ? 'Submitting…' : 'Submit Application'">Submit Application</span>
+                    Next &rarr;
                 </button>
             </div>
         </div>
     </form>
+
+    {{-- Step 7: Requirements Uploads (spec: review-forward Step 7) — the
+         uploads form sits here in the stepper as a sibling form (never
+         nested) and posts via AJAX, so no page reload ever wipes the
+         draft state. --}}
+    <div data-step="7" x-show="step === 7" x-cloak>
+        @include('portal.student.partials.admission-uploads', ['admission' => $draftAdmission])
+        <div class="flex items-center justify-between mt-2 mb-4">
+            <button type="button" @click="prev()"
+                    class="px-5 py-2 rounded-lg text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">&larr; Previous</button>
+            <p class="text-xs text-gray-400">Upload all 3 required documents above, then submit below.</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-4" x-show="step === 7" x-cloak>
+        <div class="flex items-center justify-between">
+            <p class="text-xs text-gray-400">Review everything, then submit your application.</p>
+            <button type="button" @click="submitAll()" :disabled="submitting"
+                    class="px-6 py-2 rounded-lg text-sm font-semibold text-white transition disabled:opacity-60 disabled:cursor-wait"
+                    style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                <span x-text="submitting ? 'Submitting…' : 'Submit Application'">Submit Application</span>
+            </button>
+        </div>
+    </div>
+    </div>
 
     <script>
     document.addEventListener('alpine:init', () => {
@@ -400,6 +441,12 @@
             step: {{ $draftStep ?? 1 }},
             saving: false,
             submitting: false,
+            // Step 7 upload state lives here in the single page scope (the
+            // uploads block binds to it directly — no nested component).
+            docs: @js($draftAdmission?->requirements?->pluck('document_type')?->all() ?? []),
+            uploadMsg: '',
+            uploadErr: '',
+            uploading: false,
             f: {
                 application_type: @js($draftData['application_type'] ?? ''),
                 grade_level: @js($draftData['grade_level'] ?? ''),
@@ -416,6 +463,8 @@
                 contact_number: @js($draftData['contact_number'] ?? $student->contact_number),
                 gender: @js($draftData['gender'] ?? $student->gender ?? ''),
                 gender_detail: @js($draftData['gender_detail'] ?? $student->gender_detail ?? ''),
+                student_email: @js($draftData['student_email'] ?? $student->personal_email ?? ''),
+                student_email_confirmed: false,
                 permanent_address: @js($draftData['permanent_address'] ?? $student->permanent_address),
                 same_as_permanent: {{ ($draftData['same_as_permanent'] ?? $student->same_as_permanent) ? 'true' : 'false' }},
                 current_address: @js($draftData['current_address'] ?? $student->current_address),
@@ -433,7 +482,8 @@
             },
             steps: [
                 'Application Details', 'Personal Information', 'Address',
-                'Family Background', 'Emergency Contact', 'Previous School'
+                'Family Background', 'Emergency Contact', 'Previous School',
+                'Requirements'
             ],
 
             get computedAge() {
@@ -445,7 +495,22 @@
                 return a;
             },
 
+            uploadedDocs() {
+                try {
+                    const block = document.querySelector('[data-upload-block]');
+                    if (!block || !block.dataset.uploaded) return [];
+                    const parsed = JSON.parse(block.dataset.uploaded);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) { return []; }
+            },
+
             isStepComplete(n) {
+                // Step 7 is complete when all 3 required documents are uploaded.
+                if (n === 7) {
+                    const need = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
+                    const have = this.uploadedDocs();
+                    return need.every(t => have.includes(t));
+                }
                 const requiredByStep = {
                     1: ['application_type', 'grade_level', 'school_year'],
                     2: ['first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'citizenship', 'contact_number', 'gender'],
@@ -526,8 +591,11 @@
                 if (!form) return;
                 form.querySelectorAll('[data-client-hint]').forEach(n => n.remove());
                 let firstErrorStep = null;
-                for (let s = 1; s <= 6; s++) {
-                    const box = form.querySelector('[data-step="' + s + '"]');
+                // Scan the whole component (this.$el), not just the main
+                // form — Step 7 lives outside it as a sibling form.
+                const scope = this.$el || form;
+                for (let s = 1; s <= 7; s++) {
+                    const box = scope.querySelector('[data-step="' + s + '"]');
                     if (!box) continue;
                     const reqs = box.querySelectorAll('[required]');
                     let stepOk = true;
@@ -546,6 +614,24 @@
                 }
                 if (firstErrorStep !== null) {
                     this.step = firstErrorStep;
+                    return;
+                }
+                // Step 7 client gate (mirrors the server submit gate): name
+                // the missing required document(s) instead of posting.
+                const need = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
+                const missing = need.filter(t => !this.uploadedDocs().includes(t));
+                if (missing.length > 0) {
+                    this.step = 7;
+                    const block = document.querySelector('[data-upload-block]');
+                    if (block && window.Alpine) {
+                        try {
+                            const data = window.Alpine.$data(block);
+                            data.uploadMsg = '';
+                            data.uploadErr = 'Missing required document(s): ' + missing.join(', ') + '. Upload them, then submit.';
+                        } catch (e) { /* noop: server gate names them next */ }
+                    }
+                    const target = document.getElementById('upload-requirements');
+                    if (target && target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     return;
                 }
                 // First press holds: native submit() bypasses the submit

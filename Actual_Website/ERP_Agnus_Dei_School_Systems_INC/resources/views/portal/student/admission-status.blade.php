@@ -15,6 +15,10 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
+@if(session('info'))
+    <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">{{ session('info') }}</div>
+@endif
+
 <div x-data="ajaxTable('{{ route('student.admission.status') }}')">
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div x-show="loading" class="p-4 space-y-3">

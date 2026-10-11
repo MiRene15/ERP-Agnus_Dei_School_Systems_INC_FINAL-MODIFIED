@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Registrar\BulkForwardAdmissionRequest;
+use App\Http\Requests\Registrar\ForwardAdmissionRequest;
+use App\Http\Requests\Registrar\ReturnAdmissionRequest;
 use App\Models\Admission;
 use App\Models\Classes;
-use App\Models\Enrollment;
 use App\Models\Requirement;
 use App\Models\Section;
-use App\Models\Student;
-use App\Models\User;
+use App\Services\AdmissionReviewService;
+use App\Services\FullApprovalService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class RegistrarAdmissionController extends Controller
 {
@@ -40,20 +40,30 @@ class RegistrarAdmissionController extends Controller
         }
 
         if (request('status') && request('status') !== 'All') {
-            $query->where('status', request('status'));
+            // "Paid" is not a stored status — it is Pending carrying a
+            // downpayment receipt (spec: payment-access.md Option A).
+            if (request('status') === 'Paid') {
+                $query->where('status', 'Pending')->whereNotNull('downpayment_receipt');
+            } else {
+                $query->where('status', request('status'));
+            }
         }
 
         if (request('grade_level') && request('grade_level') !== 'All') {
             $query->where('grade_level', request('grade_level'));
         }
 
+        // Counts read the full filtered query — never the paginated page —
+        // so the queue badges stay honest at enrollment-season volume.
+        $pendingCount = (clone $query)->where('status', 'Pending')->count();
+        $approvedCount = (clone $query)->where('status', 'Approved By Registrar')->count();
+        $awaitingDownpaymentCount = (clone $query)->where('status', 'Awaiting Downpayment')->count();
+        $paidCount = (clone $query)->where('status', 'Pending')->whereNotNull('downpayment_receipt')->count();
+
         $admissions = $query->orderByRaw("CASE WHEN status = 'Pending' THEN 0 ELSE 1 END")
             ->latest()
             ->paginate(10)
             ->withQueryString();
-
-        $pendingCount = $admissions->where('status', 'Pending')->count();
-        $approvedCount = $admissions->where('status', 'Approved By Registrar')->count();
 
         $schoolYears = all_school_years();
 
@@ -63,7 +73,7 @@ class RegistrarAdmissionController extends Controller
             ]);
         }
 
-        return view('portal.registrar.admissions-index', compact('admissions', 'pendingCount', 'approvedCount', 'schoolYears'));
+        return view('portal.registrar.admissions-index', compact('admissions', 'pendingCount', 'approvedCount', 'awaitingDownpaymentCount', 'paidCount', 'schoolYears'));
     }
 
     public function show(Request $request, Admission $admission)
@@ -75,22 +85,30 @@ class RegistrarAdmissionController extends Controller
         $admission->load(['requirements' => function ($q) {
             $q->select('id', 'document_type', 'original_filename', 'mime_type', 'file_size', 'status', 'admission_id');
         }]);
-        $sections = Section::where('is_active', true)
-            ->where('grade_level', $admission->grade_level)
-            ->get();
 
-        $classes = Classes::with('subject', 'teacher')
+        // Section + subject picker for Grant Full Approval (paid files):
+        // active sections of the applied grade, active classes of the
+        // applied grade + year with live remaining seats.
+        $sections = Section::where('grade_level', $admission->grade_level)
+            ->where('is_active', true)
+            ->orderBy('section_name')
+            ->get();
+        $subjectClasses = Classes::with('subject')
             ->where('grade_level', $admission->grade_level)
+            ->where('school_year', $admission->school_year)
             ->where('status', 'active')
+            ->withCount(['enrollments as active_enrollments_count' => fn ($q) => $q->where('status', 'Active')])
+            ->orderBy('section')
+            ->orderBy('id')
             ->get();
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.registrar.partials.admissions-show-results', compact('admission', 'sections', 'classes'))->render(),
+                'html' => view('portal.registrar.partials.admissions-show-results', compact('admission', 'sections', 'subjectClasses'))->render(),
             ]);
         }
 
-        return view('portal.registrar.admissions-show', compact('admission', 'sections', 'classes'));
+        return view('portal.registrar.admissions-show', compact('admission', 'sections', 'subjectClasses'));
     }
 
     public function verifyRequirement(Request $request, Requirement $requirement)
@@ -158,107 +176,83 @@ class RegistrarAdmissionController extends Controller
         return back()->with('success', $updated . ' requirement(s) verified successfully.');
     }
 
+public function forwardToCashier(ForwardAdmissionRequest $request, Admission $admission)
+{
+    $result = AdmissionReviewService::forward($admission, auth()->user()->name, $request->input('note'));
+
+    if (! $result['forwarded']) {
+        return back()->with('error', $result['error']);
+    }
+
+    // The student flag is set atomically inside AdmissionReviewService::forward,
+    // so the Cashier payments page and student dashboard see this file.
+    return redirect()->route('registrar.admissions.index')
+        ->with('success', $result['message']);
+}
+
+    public function returnWithNote(ReturnAdmissionRequest $request, Admission $admission)
+    {
+        $result = AdmissionReviewService::returnWithNote($admission, auth()->user()->name, $request->input('comment'));
+
+        if (! $result['returned']) {
+            return back()->with('error', $result['error']);
+        }
+
+        return redirect()->route('registrar.admissions.index')
+            ->with('success', $result['message']);
+    }
+
+    public function bulkForward(BulkForwardAdmissionRequest $request)
+    {
+        $result = AdmissionReviewService::bulkForward($request->input('admission_ids', []), auth()->user()->name, $request->input('note'));
+
+        if ($result['forwarded_count'] === 0) {
+            $firstBlocker = $result['blocked'] !== [] ? ' First blocker: ' . reset($result['blocked']) : '';
+
+            return redirect()->route('registrar.admissions.index')
+                ->with('error', 'Nothing was forwarded.' . $firstBlocker);
+        }
+
+        $message = $result['forwarded_count'] . ' application(s) forwarded to Cashier.';
+        if ($result['blocked_count'] > 0) {
+            $message .= ' ' . $result['blocked_count'] . ' stayed behind (incomplete or already processed).';
+        }
+
+        return redirect()->route('registrar.admissions.index')->with('success', $message);
+    }
+
     public function approve(Request $request, Admission $admission)
     {
-        if ($admission->status !== 'Pending') {
-            return back()->with('error', 'This admission has already been processed.');
-        }
-
-        // Gender gate (spec: admission-gender-required.md): approval is
-        // blocked while gender is empty — registrar corrects it first.
-        if (empty($admission->student?->gender)) {
-            return back()->with('error', 'Gender is still missing for this applicant. Please set it above before approving.');
-        }
-
-        $pendingDocs = $admission->requirements()->where('status', '!=', 'Verified')->pluck('document_type');
-        if ($pendingDocs->isNotEmpty()) {
-            $totalDocs = $admission->requirements()->count();
-            $verifiedDocs = $totalDocs - $pendingDocs->count();
-            $names = $pendingDocs->implode(', ');
-            return back()->with('error', $names . ($pendingDocs->count() === 1 ? ' is' : ' are') . ' still Under Review — ' . $verifiedDocs . '/' . $totalDocs . ' verified.');
-        }
-
-        // Holds block (re-)enrollment until cleared (library / clinic / finance).
-        $studentForHolds = $admission->student;
-        if ($studentForHolds) {
-            $holds = \App\Services\HoldService::forStudent($studentForHolds);
-            if (!empty($holds)) {
-                return back()->with('error', 'Cannot enroll — holds must be cleared first. ' . \App\Services\HoldService::blockingMessage($holds));
-            }
-        }
-
-        // Locked school years are frozen — no new enrollments into them.
-        if (school_year_locked($admission->school_year)) {
-            return back()->with('error', 'Cannot enroll — school year ' . $admission->school_year . ' is locked.');
-        }
-
+        // Full approval (spec: enrollment-payment-gating-payment-access.md):
+        // paid Pending file + section assignment → enrollment + institution
+        // address. Domain rules live in FullApprovalService — including the
+        // downpayment-receipt gate that closes the approve-without-paying
+        // bypass. Same route, same response shapes as before.
         $data = $request->validate([
             'section_id' => 'required|exists:sections,id',
             'subject_ids' => 'required|array',
             'subject_ids.*' => 'exists:classes,id',
         ]);
 
-        foreach ($data['subject_ids'] as $classId) {
-            $class = Classes::find($classId);
-            if ($class && $class->capacity) {
-                $enrolledCount = $class->enrollments()
-                    ->where('status', 'Active')
-                    ->count();
-                if ($enrolledCount >= $class->capacity) {
-                    return back()->with('error', 'Subject "' . ($class->subject->name ?? 'N/A') . '" has reached its capacity of ' . $class->capacity . ' students.');
-                }
-            }
+        $result = FullApprovalService::approve(
+            $admission,
+            (int) $data['section_id'],
+            array_map('intval', $data['subject_ids']),
+            auth()->user()->name,
+            $request->input('_idempotency_key')
+        );
+
+        if (! $result['approved']) {
+            return back()->with('error', $result['error']);
         }
 
-        $student = $admission->student;
-
-        try {
-            DB::transaction(function () use ($admission, $student, $data) {
-                if ($admission->application_type !== 'Old') {
-                    $student->student_number = Student::generateStudentNumber();
-                }
-
-                $student->status = 'enrolled';
-                $student->save();
-
-                $enrollment = Enrollment::create([
-                    'student_id' => $student->id,
-                    'section_id' => $data['section_id'],
-                    'school_year' => $admission->school_year,
-                    'strand' => $admission->strand,
-                    'status' => 'Active',
-                ]);
-
-                $enrollment->subjects()->attach($data['subject_ids']);
-
-                $admission->status = 'Approved By Registrar';
-                $admission->save();
-            });
-
-            log_activity($admission, 'Approved', 'Approved admission for ' . $student->first_name . ' ' . $student->last_name);
-
-            // Approval email goes in its own guarded step AFTER the commit
-            // (spec: applicant-email-reliability.md): a mail-provider outage
-            // must never report an enrolled student as "failed to approve".
-            $mailSent = app(\App\Services\FamilyEmailService::class)
-                ->sendAdmissionApproval($student, $request->input('_idempotency_key'));
-
-            $enrolledMsg = 'Admission approved for ' . $student->first_name . ' ' . $student->last_name . '. Student has been enrolled with ' . count($data['subject_ids']) . ' subject(s).';
-
-            if ($mailSent) {
-                return redirect()->route('registrar.admissions.index')
-                    ->with('success', $enrolledMsg . ' Confirmation email sent.');
-            }
-
+        if (! ($result['mailSent'] ?? false)) {
             return redirect()->route('registrar.admissions.index')
-                ->with('error', $enrolledMsg . ' BUT the confirmation email could not be sent. Open the admission record and use Resend.');
-        } catch (\Exception $e) {
-            Log::error('Admission approval failed: ' . $e->getMessage(), [
-                'admission_id' => $admission->id,
-                'student_id' => $student->id,
-            ]);
-            return back()->with('error', 'Failed to approve admission. Please try again.');
+                ->with('error', $result['message']);
         }
+
+        return redirect()->route('registrar.admissions.index')
+            ->with('success', $result['message']);
     }
 
     public function updateGender(Request $request, Admission $admission)

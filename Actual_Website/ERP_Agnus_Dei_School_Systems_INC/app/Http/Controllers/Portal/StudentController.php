@@ -23,7 +23,9 @@ class StudentController extends Controller
             return view('portal.student.dashboard', ['student' => null, 'activeEnrollment' => null, 'pendingAdmission' => null, 'schoolYear' => null, 'schoolYears' => collect()])->with('error', $msg);
         }
 
-        $pendingAdmission = $student->admissions()->where('status', 'Pending')->latest()->first();
+        // Returned files stay visible here so the dashboard names the action
+        // needed instead of asking the family to start over (child 1 review).
+        $pendingAdmission = $student->admissions()->whereIn('status', ['Pending', 'Awaiting Downpayment', 'Returned'])->latest()->first();
 
         // Spec: future-year-enrolled-dashboard — the student sees only years they were
         // ever part of (own enrollments + pending admission year). Never merge every
@@ -54,6 +56,21 @@ class StudentController extends Controller
             ->where('status', 'Active')
             ->latest()
             ->first();
+
+        // Gate (spec: payment-access.md): before full approval, a full-
+        // dashboard visit redirects to the checklist naming the next step.
+        // Ajax partials keep rendering (never redirect inside a refresh).
+        if (! $isAjax && ! $activeEnrollment && $pendingAdmission && in_array($pendingAdmission->status, ['Pending', 'Awaiting Downpayment', 'Returned'], true)) {
+            $nextStep = match (true) {
+                $pendingAdmission->status === 'Awaiting Downpayment' => 'Pay the downpayment at the Cashier to continue.',
+                $pendingAdmission->status === 'Returned' => 'Upload the missing documents named on your checklist.',
+                ! empty($pendingAdmission->downpayment_receipt) => 'Downpayment received — awaiting full approval and section assignment.',
+                default => 'Your application is under review.',
+            };
+
+            return redirect()->route('student.admission.status')
+                ->with('info', 'Finish your application first — ' . $nextStep);
+        }
 
         // Years with an Active enrollment, newest first — for the "also enrolled" line
         // when a student holds both 2026-2027 and 2027-2028.

@@ -3,16 +3,6 @@
     <p class="text-gray-600 mt-1">{{ $admission->application_number }} &middot; {{ $admission->application_type }} Student &middot; {{ $admission->school_year }}</p>
 </div>
 
-<script type="application/json" id="requirements-data">
-{!! json_encode($admission->requirements->map(fn($r) => ['id' => $r->id, 'document_type' => $r->document_type, 'status' => $r->status])) !!}
-</script>
-<script type="application/json" id="classes-data">
-{!! json_encode($classes->map(fn($c) => ['id' => $c->id, 'subject' => $c->subject->name ?? 'N/A', 'teacher' => $c->teacher->name ?? 'No teacher', 'section' => $c->section])) !!}
-</script>
-<script type="application/json" id="section-map">
-{!! json_encode($sections->pluck('section_name', 'id')->toArray()) !!}
-</script>
-
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 space-y-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -33,14 +23,8 @@
                 </div>
                 @endif
                 <div>
-                    <dt class="text-gray-500">Personal Email</dt>
-                    <dd class="font-medium text-gray-900">{{ $admission->student->personal_email ?? 'N/A' }}
-                        @if($admission->student?->user?->hasVerifiedEmail())
-                            <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Verified</span>
-                        @else
-                            <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Unverified</span>
-                        @endif
-                    </dd>
+                    <dt class="text-gray-500">Student's Email</dt>
+                    <dd class="font-medium text-gray-900">{{ $admission->student->personal_email ?? 'N/A' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Institutional Email</dt>
@@ -52,7 +36,7 @@
                 </div>
                 <div class="col-span-2">
                     <dt class="text-gray-500">Gender</dt>
-                    <dd class="font-medium text-gray-900">{{ $admission->student->gender ?? 'Missing — set before approving' }}</dd>
+                    <dd class="font-medium text-gray-900">{{ $admission->student->gender ?? 'Missing — set before forwarding' }}</dd>
                     @if($admission->status === 'Pending')
                     <form method="POST" action="{{ route('registrar.admissions.gender', $admission) }}" class="mt-2 flex flex-wrap items-center gap-2">
                         @csrf
@@ -74,7 +58,7 @@
 
         {{-- Requirements Checklist --}}
         @if($admission->requirements->isNotEmpty())
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" x-data="requirementsChecklist()">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6" x-data="requirementsChecklist(@js($admission->requirements->map(fn($r) => ['id' => $r->id, 'document_type' => $r->document_type, 'status' => $r->status])))">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-gray-900">Requirements Checklist</h3>
                 <div class="flex items-center gap-3">
@@ -149,6 +133,12 @@
                     @case('Pending')
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Pending</span>
                         @break
+                    @case('Awaiting Downpayment')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">Awaiting Downpayment</span>
+                        @break
+                    @case('Returned')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">Returned</span>
+                        @break
                     @case('Approved By Registrar')
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Approved</span>
                         @break
@@ -158,63 +148,125 @@
                 @endswitch
             </div>
 
-            @if($admission->status === 'Pending')
-            <form method="POST" action="{{ route('registrar.admissions.approve', $admission) }}" class="space-y-3" x-data="approveForm()">
+            @if($admission->status === 'Pending' && empty($admission->downpayment_receipt))
+            <form method="POST" action="{{ route('registrar.admissions.forward', $admission) }}" class="space-y-3">
                 @csrf
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Assign Section</label>
-                    @if($sections->isEmpty())
-                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">No sections available for {{ $admission->grade_level }}. Please create one first.</div>
-                    @else
-                    <select name="section_id" required x-model="selectedSection"
-                            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        <option value="">Select section...</option>
-                        @foreach($sections as $section)
-                            <option value="{{ $section->id }}">{{ $section->section_name }}</option>
-                        @endforeach
-                    </select>
-                    @endif
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Note for the record (optional)</label>
+                    <textarea name="note" rows="2" maxlength="1000" placeholder="e.g. Complete file — ready for downpayment."
+                              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">{{ old('note') }}</textarea>
+                    @error('note') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
-
-                {{-- Subject Assignment --}}
-                <div x-show="selectedSection !== ''" x-cloak>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Assign Subjects</label>
-                    <template x-if="filteredClasses.length === 0">
-                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">No classes found for this section.</div>
-                    </template>
-                    <div class="space-y-1 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                        <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm font-semibold text-gray-700 border-b border-gray-100 mb-1">
-                            <input type="checkbox" :checked="allSelected" @click="toggleAll()"
-                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                            <span>Select All</span>
-                            <span class="text-xs text-gray-400 ml-auto" x-text="selectedIds.length + ' / ' + filteredClasses.length + ' selected'"></span>
-                        </label>
-                        <template x-for="cls in filteredClasses" :key="cls.id">
-                            <label class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm">
-                                <input type="checkbox" name="subject_ids[]" :value="cls.id" :checked="isSelected(cls.id)" @change="toggleId(cls.id)"
-                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                <span class="font-medium text-gray-700" x-text="cls.subject"></span>
-                                <span class="text-xs text-gray-400 ml-auto" x-text="cls.teacher"></span>
-                            </label>
-                        </template>
-                    </div>
-                </div>
-
+                <p class="text-xs text-gray-500">Forward unlocks once every document above is verified and gender is set.</p>
                 <button type="submit"
-                        class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition">
-                    Approve & Enroll
+                        class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition">
+                    Forward to Cashier
+                </button>
+            </form>
+
+            <div class="relative py-2 my-2">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+                <div class="relative flex justify-center"><span class="bg-white px-2 text-xs text-gray-400">or</span></div>
+            </div>
+
+            <form method="POST" action="{{ route('registrar.admissions.return', $admission) }}" class="space-y-3">
+                @csrf
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Note for the family (optional)</label>
+                    <p class="text-xs text-gray-500 mb-1">The family is told which documents are missing automatically — add anything else they should know (e.g. "student email needs fix").</p>
+                    <textarea name="comment" rows="2" maxlength="1000" placeholder="Optional comment"
+                              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">{{ old('comment') }}</textarea>
+                    @error('comment') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit"
+                        class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 transition">
+                    Return with Note
                 </button>
             </form>
 
             <form method="POST" action="{{ route('registrar.admissions.reject', $admission) }}"
-                  onsubmit="return confirm('Reject this application? This cannot be undone.')">
+                   onsubmit="return confirm('Reject this application? This cannot be undone.')">
                 @csrf
                 <button type="submit"
-                        class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-red-700 bg-red-50 hover:bg-red-100 transition mt-2">
+                        class="w-full px-4 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition mt-2">
                     Reject Application
                 </button>
             </form>
             @endif
+
+            @if($admission->status === 'Pending' && !empty($admission->downpayment_receipt))
+            <div class="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                <strong>Downpayment confirmed — {{ $admission->downpayment_receipt }}</strong>
+                @if($admission->downpayment_paid_at)
+                <span class="text-xs"> on {{ \Carbon\Carbon::parse($admission->downpayment_paid_at)->format('M d, Y h:i A') }}</span>
+                @endif
+                <p class="text-xs mt-1">Assign a section and subjects below, then grant full approval. The enrollment and school account email are created in that step.</p>
+            </div>
+
+            <form method="POST" action="{{ route('registrar.admissions.approve', $admission) }}"
+                  onsubmit="return confirm('Grant full approval? This creates the enrollment and the school account email.')">
+                @csrf
+                <div class="space-y-3 mt-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Section *</label>
+                        <select name="section_id" required
+                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="">Select section…</option>
+                            @foreach(($sections ?? collect()) as $section)
+                                <option value="{{ $section->id }}">{{ $section->section_name }} ({{ $section->grade_level }})</option>
+                            @endforeach
+                        </select>
+                        @error('section_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Subjects *</label>
+                        <p class="text-xs text-gray-500 mb-2">Tick every subject for the chosen section above.</p>
+                        <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                            @forelse(($subjectClasses ?? collect())->groupBy('section') as $classSection => $classes)
+                                <p class="text-xs font-semibold text-gray-500">Section {{ $classSection ?: 'Unassigned' }}</p>
+                                @foreach($classes as $class)
+                                <label class="flex items-start gap-2 text-sm cursor-pointer">
+                                    <input type="checkbox" name="subject_ids[]" value="{{ $class->id }}" class="mt-1"
+                                        @disabled($class->capacity && ($class->active_enrollments_count ?? 0) >= $class->capacity)>
+                                    <span class="text-gray-700">{{ $class->subject->name ?? 'Subject #' . $class->id }}
+                                        @if($class->capacity)
+                                            <span class="text-xs {{ ($class->active_enrollments_count ?? 0) >= $class->capacity ? 'text-red-600 font-medium' : 'text-gray-400' }}">
+                                                ({{ max(0, $class->capacity - ($class->active_enrollments_count ?? 0)) }} seats left)
+                                            </span>
+                                        @endif
+                                    </span>
+                                </label>
+                                @endforeach
+                            @empty
+                                <p class="text-xs text-gray-500">No active classes found for {{ $admission->grade_level }} ({{ $admission->school_year }}). Ask the Principal to set up classes first.</p>
+                            @endforelse
+                        </div>
+                        @error('subject_ids') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <button type="submit"
+                            class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition">
+                        Grant Full Approval
+                    </button>
+                </div>
+            </form>
+            @endif
+
+            @if($admission->status === 'Awaiting Downpayment')
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                Forwarded to Cashier — the family sees Awaiting Downpayment. Downpayment confirmation and full approval happen next.
+            </div>
+            @if($admission->review_note)
+            <p class="text-xs text-gray-500 mt-2">Note: {{ $admission->review_note }}</p>
+            @endif
+            @endif
+
+            @if($admission->status === 'Returned')
+            <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                <strong>Returned to family:</strong> {{ $admission->review_note }}
+                <p class="text-xs mt-1">When the family uploads the missing document(s), the file returns to review automatically. Already-uploaded files are kept.</p>
+            </div>
+            @endif
+
             @if($admission->status === 'Approved By Registrar')
             <form method="POST" action="{{ route('registrar.admissions.resend-approval-email', $admission) }}" class="mt-2">
                 @csrf
@@ -236,7 +288,25 @@
                         <p class="text-gray-500 text-xs">{{ $admission->created_at->format('M d, Y h:i A') }}</p>
                     </div>
                 </li>
-                @if($admission->status !== 'Pending')
+                @if($admission->status === 'Awaiting Downpayment' && $admission->updated_at)
+                <li class="flex items-start gap-2">
+                    <div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                    <div>
+                        <p class="font-medium text-gray-900">Forwarded to Cashier</p>
+                        <p class="text-gray-500 text-xs">{{ $admission->updated_at->format('M d, Y h:i A') }}</p>
+                    </div>
+                </li>
+                @endif
+                @if($admission->status === 'Returned' && $admission->updated_at)
+                <li class="flex items-start gap-2">
+                    <div class="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0"></div>
+                    <div>
+                        <p class="font-medium text-red-700">Returned to family</p>
+                        <p class="text-gray-500 text-xs">{{ $admission->updated_at->format('M d, Y h:i A') }}</p>
+                    </div>
+                </li>
+                @endif
+                @if($admission->status !== 'Pending' && !in_array($admission->status, ['Awaiting Downpayment', 'Returned']) && $admission->updated_at)
                 <li class="flex items-start gap-2">
                     <div class="w-2 h-2 rounded-full {{ $admission->status === 'Approved By Registrar' ? 'bg-green-500' : 'bg-red-500' }} mt-1.5 flex-shrink-0"></div>
                     <div>

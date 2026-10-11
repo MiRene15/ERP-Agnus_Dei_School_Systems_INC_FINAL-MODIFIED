@@ -1,6 +1,11 @@
 <table class="w-full text-sm">
     <thead>
         <tr class="border-b border-gray-100 dark:border-[#2A2F58] bg-gray-50 dark:bg-[#161A33]/50">
+            <th class="px-4 py-3">
+                <input type="checkbox" title="Select all on this page"
+                       onclick="this.closest('table').querySelectorAll('input.admission-check').forEach(function(c) { c.checked = this.checked; }.bind(this))"
+                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            </th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">Admission No.</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">Applicant</th>
             <th class="text-left px-4 py-3 font-medium text-gray-600">Type</th>
@@ -15,6 +20,9 @@
     <tbody class="divide-y divide-gray-50">
         @forelse($admissions as $admission)
         <tr class="hover:bg-gray-50 dark:hover:bg-[#161A33]/50 transition">
+            <td class="px-4 py-3">
+                <input type="checkbox" name="admission_ids[]" value="{{ $admission->id }}" class="admission-check rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            </td>
             <td class="px-4 py-3 text-gray-700 dark:text-[#C1C4DC]">{{ $admission->application_number }}</td>
             <td class="px-4 py-3 font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $admission->student->first_name }} {{ $admission->student->last_name }}
                 @if($admission->student?->user?->hasVerifiedEmail())
@@ -42,10 +50,16 @@
                 @endphp
                 @if($isApproved)
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Approved</span>
+                @elseif($isPending && !empty($admission->downpayment_receipt))
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Paid — ready</span>
                 @elseif($isPending)
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
                 @elseif($isRejected)
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Rejected</span>
+                @elseif($admission->status === 'Awaiting Downpayment')
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Awaiting Downpayment</span>
+                @elseif($admission->status === 'Returned')
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Returned</span>
                 @else
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{{ $admission->status }}</span>
                 @endif
@@ -59,7 +73,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="9" class="px-4 py-12 text-center">
+            <td colspan="10" class="px-4 py-12 text-center">
                 <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                 <p class="text-sm font-medium text-gray-500 dark:text-[#8A90B0]">No admissions found.</p>
                 <p class="text-xs text-gray-400 mt-1">Try adjusting your filters or check back later.</p>

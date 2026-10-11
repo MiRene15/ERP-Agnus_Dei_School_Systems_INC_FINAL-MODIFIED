@@ -39,7 +39,17 @@
                         <dd class="font-medium">
                             @switch($admission->status)
                                 @case('Pending')
-                                    <span class="text-yellow-700">Pending Review</span>
+                                    @if(!empty($admission->downpayment_receipt))
+                                        <span class="text-green-700">Downpayment received — awaiting full approval</span>
+                                    @else
+                                        <span class="text-yellow-700">Under Review</span>
+                                    @endif
+                                    @break
+                                @case('Awaiting Downpayment')
+                                    <span class="text-blue-700">Awaiting Downpayment — pay ₱1.5k at Cashier to continue</span>
+                                    @break
+                                @case('Returned')
+                                    <span class="text-red-700">Returned — action needed</span>
                                     @break
                                 @case('Approved By Registrar')
                                     <span class="text-green-700">Approved</span>
@@ -55,138 +65,31 @@
                 </dl>
             </div>
 
-            @if($admission->status === 'Pending')
-            <div id="upload-requirements" data-upload-block
-                 class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 scroll-mt-6 transition-shadow"
-                 x-data="{ docs: @js($requirements->pluck('document_type')) }">
-                <h3 class="font-semibold text-gray-900 mb-4">Upload Requirements</h3>
-
-                <form method="POST" action="{{ route('student.admission.requirements') }}" enctype="multipart/form-data" id="upload-form">
-                    @csrf
-                    @php
-                        $requiredTypes = ['PSA Birth Certificate', 'Form 138 (Report Card)', 'Good Moral Certificate'];
-                        $optionalTypes = ['ESC Grant Certificate', 'Other'];
-                    @endphp
-                    <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-start gap-2">
-                        <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <span><strong>Max file size: 5MB per file.</strong> Accepted formats: PDF, JPG, JPEG, PNG. Large photos should be compressed before uploading.</span>
-                    </div>
-                    <div class="space-y-3">
-                        @foreach($requiredTypes as $dt)
-                        <div class="flex items-center gap-3 p-3 rounded-lg border transition"
-                             :class="docs.includes('{{ $dt }}') ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'">
-                            <div class="w-5 h-5 rounded-full flex items-center justify-center transition"
-                                 :class="docs.includes('{{ $dt }}') ? 'bg-green-500' : 'bg-gray-200'">
-                                <svg x-show="docs.includes('{{ $dt }}')" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <label class="text-sm font-medium text-gray-700 min-w-[180px]">{{ $dt }}</label>
-                            <input type="file" name="documents[{{ $dt }}]" accept=".pdf,.jpg,.jpeg,.png"
-                                   class="flex-1 text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                   @change="if($event.target.files.length) { if(!docs.includes('{{ $dt }}')) docs.push('{{ $dt }}') } else { docs = docs.filter(d => d !== '{{ $dt }}') }">
-                            @error('documents.' . $dt) <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
-                        </div>
-                        @endforeach
-
-                        <hr class="border-gray-200 my-2">
-
-                        <p class="text-xs text-gray-400 font-medium">Optional Documents</p>
-                        @foreach($optionalTypes as $dt)
-                        <div class="flex items-center gap-3 p-3 rounded-lg border transition"
-                             :class="docs.includes('{{ $dt }}') ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-white'">
-                            <div class="w-5 h-5 rounded-full flex items-center justify-center transition"
-                                 :class="docs.includes('{{ $dt }}') ? 'bg-green-500' : 'bg-gray-200'">
-                                <svg x-show="docs.includes('{{ $dt }}')" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                            </div>
-                            <label class="text-sm font-medium text-gray-700 min-w-[180px]">{{ $dt }} <span class="text-gray-400 font-normal">(optional)</span></label>
-                            <input type="file" name="documents[{{ $dt }}]" accept=".pdf,.jpg,.jpeg,.png"
-                                   class="flex-1 text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                   @change="if($event.target.files.length) { if(!docs.includes('{{ $dt }}')) docs.push('{{ $dt }}') } else { docs = docs.filter(d => d !== '{{ $dt }}') }">
-                            @error('documents.' . $dt) <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
-                        </div>
-                        @endforeach
-                    </div>
-                    <div class="mt-6 flex items-center justify-between">
-                        <p class="text-xs text-gray-400">Accepted: PDF, JPG, PNG — max 5MB each</p>
-                        <div class="flex gap-2">
-                            <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Upload Selected</button>
-                            <button type="button"
-                                    onclick="{{ $allRequiredUploaded ? "document.getElementById('proceed-timer-modal').classList.remove('hidden'); startProceedTimer();" : '' }}"
-                                    class="px-5 py-2 rounded-lg text-sm font-semibold transition"
-                                    style="background: {{ $allRequiredUploaded ? 'var(--navy)' : '#e5e7eb' }}; color: {{ $allRequiredUploaded ? 'white' : '#9ca3af' }}; cursor: {{ $allRequiredUploaded ? 'pointer' : 'default' }};"
-                                    onmouseover="this.style.opacity='{{ $allRequiredUploaded ? '0.9' : '1' }}'"
-                                    onmouseout="this.style.opacity='1'">Proceed</button>
-                        </div>
-                    </div>
-                </form>
-                <script>
-                document.getElementById('upload-form').addEventListener('submit', function(e) {
-                    var files = this.querySelectorAll('input[type="file"]');
-                    var maxSize = 5 * 1024 * 1024;
-                    for (var i = 0; i < files.length; i++) {
-                        var input = files[i];
-                        if (input.files.length > 0) {
-                            var file = input.files[0];
-                            if (file.size > maxSize) {
-                                e.preventDefault();
-                                var mb = (file.size / 1024 / 1024).toFixed(1);
-                                alert('File too large: ' + file.name + ' (' + mb + 'MB). Maximum allowed is 5MB. Please compress or resize the image and try again.');
-                                return;
-                            }
-                        }
-                    }
-                });
-                document.querySelectorAll('#upload-form input[type="file"]').forEach(function(input) {
-                    input.addEventListener('change', function() {
-                        if (this.files.length > 0) {
-                            var file = this.files[0];
-                            var maxSize = 5 * 1024 * 1024;
-                            if (file.size > maxSize) {
-                                var mb = (file.size / 1024 / 1024).toFixed(1);
-                                alert('Warning: ' + file.name + ' is ' + mb + 'MB. Maximum allowed is 5MB. Please choose a smaller file.');
-                                this.value = '';
-                            }
-                        }
-                    });
-                });
-                </script>
-
-                {{-- Timer Proceed Modal --}}
-                <div id="proceed-timer-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40" style="transition: opacity 0.3s ease;">
-                    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-4 w-full text-center relative overflow-hidden">
-                        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style="background: #ede9fe;">
-                            <svg class="w-8 h-8" style="color: #7c3aed;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">Proceed to School</h3>
-                        <p class="text-sm text-gray-600 leading-relaxed mb-4">
-                            Please proceed to the school's Registrar Office on-site to complete your payment and finalize your full enrollment. Bring all original copies of your requirements for verification.
-                        </p>
-                        <p class="text-xs text-gray-400">Redirecting to dashboard in <span id="proceed-timer-count" class="font-bold text-gray-700">5</span> seconds...</p>
-                        <div class="mt-3 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div id="proceed-timer-bar" class="h-full rounded-full" style="background: var(--navy); width: 100%; animation: proceedShrink 5s linear forwards;"></div>
-                        </div>
-                    </div>
-                </div>
-                <style>
-                    @keyframes proceedShrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-                    #proceed-timer-bar { transform-origin: left; }
-                </style>
-                <script>
-                function startProceedTimer() {
-                    var count = 5, el = document.getElementById('proceed-timer-count');
-                    var interval = setInterval(function() {
-                        count--;
-                        el.textContent = count;
-                        if (count <= 0) {
-                            clearInterval(interval);
-                            var modal = document.getElementById('proceed-timer-modal');
-                            modal.style.transition = 'opacity 0.5s ease';
-                            modal.style.opacity = '0';
-                            setTimeout(function() { window.location.href = '{{ route("student.dashboard") }}'; }, 500);
-                        }
-                    }, 1000);
-                }
-                </script>
+            @if($admission->status === 'Pending' && !empty($admission->downpayment_receipt))
+            <div class="p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm flex items-start gap-2">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span><strong>Downpayment received ({{ $admission->downpayment_receipt }}).</strong> Your file is with the Registrar for section assignment and full approval — no further action needed.</span>
             </div>
+            @endif
+
+            @if($admission->status === 'Approved By Registrar')
+            <div class="p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm flex items-start gap-2">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span><strong>Account Ready.</strong> Sign in with your school account email{{ $admission->student?->user?->email ? ' (' . $admission->student->user->email . ')' : '' }} — the notice was sent to the student's email on file.</span>
+            </div>
+            @endif
+
+            @if($admission->status === 'Returned' && $admission->review_note)
+            <div class="p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm flex items-start gap-2">
+                <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span><strong>{{ $admission->review_note }}</strong> — upload the missing document(s) below and your file goes back to review. Your other files are kept.</span>
+            </div>
+            @endif
+
+            @if(in_array($admission->status, ['Pending', 'Returned']))
+                <div x-data="{ docs: @js($admission->requirements->pluck('document_type')->all()), uploadMsg: '', uploadErr: '', uploading: false }">
+                    @include('portal.student.partials.admission-uploads', ['admission' => $admission])
+                </div>
             @endif
 
             @if($requirements->isNotEmpty())
@@ -223,6 +126,33 @@
                         </div>
                     </li>
                     @endif
+                    @if($admission->status === 'Pending')
+                    <li class="flex items-start gap-2">
+                        <div class="w-2 h-2 rounded-full bg-yellow-400 mt-1.5 flex-shrink-0"></div>
+                        <div>
+                            <p class="font-medium text-gray-900">Under Review</p>
+                            <p class="text-gray-500 text-xs">Awaiting registrar verification</p>
+                        </div>
+                    </li>
+                    @endif
+                    @if($admission->status === 'Awaiting Downpayment' && $admission->updated_at)
+                    <li class="flex items-start gap-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                        <div>
+                            <p class="font-medium text-gray-900">Forwarded to Cashier</p>
+                            <p class="text-gray-500 text-xs">{{ $admission->updated_at->format('M d, Y h:i A') }}</p>
+                        </div>
+                    </li>
+                    @endif
+                    @if($admission->status === 'Returned' && $admission->updated_at)
+                    <li class="flex items-start gap-2">
+                        <div class="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0"></div>
+                        <div>
+                            <p class="font-medium text-red-700">Returned — documents needed</p>
+                            <p class="text-gray-500 text-xs">{{ $admission->updated_at->format('M d, Y h:i A') }}</p>
+                        </div>
+                    </li>
+                    @endif
                     @if($admission->status === 'Approved By Registrar' && $admission->updated_at)
                     <li class="flex items-start gap-2">
                         <div class="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
@@ -238,15 +168,6 @@
                         <div>
                             <p class="font-medium text-red-700">Rejected</p>
                             <p class="text-gray-500 text-xs">{{ $admission->updated_at->format('M d, Y h:i A') }}</p>
-                        </div>
-                    </li>
-                    @endif
-                    @if($admission->status === 'Pending')
-                    <li class="flex items-start gap-2">
-                        <div class="w-2 h-2 rounded-full bg-yellow-400 mt-1.5 flex-shrink-0"></div>
-                        <div>
-                            <p class="font-medium text-gray-900">Under Review</p>
-                            <p class="text-gray-500 text-xs">Awaiting registrar verification</p>
                         </div>
                     </li>
                     @endif

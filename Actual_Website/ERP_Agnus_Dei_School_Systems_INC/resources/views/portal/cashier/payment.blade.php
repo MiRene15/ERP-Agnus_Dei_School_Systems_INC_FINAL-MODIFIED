@@ -65,7 +65,7 @@
                 </div>
                 <div>
                     <dt class="text-gray-500">Grade Level</dt>
-                    <dd class="font-medium text-gray-900">{{ $enrollment?->section?->grade_level ?? 'N/A' }}</dd>
+                    <dd class="font-medium text-gray-900">{{ $displayGrade ?? $enrollment?->section?->grade_level ?? 'N/A' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Section</dt>
@@ -73,7 +73,7 @@
                 </div>
                 <div>
                     <dt class="text-gray-500">School Year</dt>
-                    <dd class="font-medium text-gray-900">{{ $enrollment?->school_year ?? 'N/A' }}</dd>
+                    <dd class="font-medium text-gray-900">{{ $displayYear ?? $enrollment?->school_year ?? 'N/A' }}</dd>
                 </div>
                 <div>
                     <dt class="text-gray-500">Clearance Status</dt>

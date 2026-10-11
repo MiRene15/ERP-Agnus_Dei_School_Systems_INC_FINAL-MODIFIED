@@ -60,6 +60,7 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-[#2A2F58]">
+                            <th class="py-3 px-2"></th>
                             <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Student</th>
                             <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Student No.</th>
                             <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">LRN</th>
@@ -72,11 +73,16 @@
                         <template x-for="s in students" :key="s.id">
                             <tr class="border-b border-gray-100 dark:border-[#2A2F58] hover:bg-gray-50 dark:hover:bg-[#23274C]">
                                 <td class="py-3 px-2">
+                                    <template x-if="s.status === 'Awaiting Downpayment'">
+                                        <input type="checkbox" :value="downpaymentAdmissionId(s)" x-model="selected" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    </template>
+                                </td>
+                                <td class="py-3 px-2">
                                     <span class="font-medium text-gray-900 dark:text-[#E8EAF6]" x-text="s.first_name + ' ' + s.last_name"></span>
                                 </td>
                                 <td class="py-3 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="s.student_number"></td>
                                 <td class="py-3 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="s.legacy_lrn || '—'"></td>
-                                <td class="py-3 px-2 text-gray-700 dark:text-[#C1C4DC]" x-text="s.enrollments?.[0]?.section?.grade_level || 'N/A'"></td>
+                                <td class="py-3 px-2 text-gray-700 dark:text-[#C1C4DC]" x-text="s.display_grade || s.enrollments?.[0]?.section?.grade_level || 'N/A'"></td>
                                 <td class="py-3 px-2">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="(s.payment_status || 'Has Balance') === 'Fully Paid' ? 'bg-green-100 text-green-700' : ((s.payment_status || '') === 'Overdue Installment' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700')" x-text="s.payment_status || 'Has Balance'"></span>
                                 </td>
@@ -97,6 +103,23 @@
                         </template>
                     </tbody>
                 </table>
+                {{-- Bulk downpayment confirm (spec: payment-access.md §4.1): one plan + amount for the ticked forwarded files, one confirmation. --}}
+                <div x-show="selected.length > 0" x-cloak class="mt-3 p-3 bg-blue-50 dark:bg-[rgba(59,130,246,0.12)] border border-blue-200 rounded-lg flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-semibold text-blue-800 dark:text-blue-200" x-text="selected.length + ' forwarded file(s) selected'"></span>
+                    <select x-model="bulkPlan" class="rounded-lg border border-gray-300 px-2 py-1.5 text-xs">
+                        <option value="installment">Installment</option>
+                        <option value="full">Full Payment</option>
+                    </select>
+                    <input type="number" x-model="bulkAmount" min="1" step="0.01" placeholder="Amount each (₱)"
+                           class="rounded-lg border border-gray-300 px-2 py-1.5 text-xs w-36">
+                    <button type="button" @click="bulkConfirm()" :disabled="bulkBusy"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-60"
+                            style="background: var(--navy);">Confirm Downpayments</button>
+                    <button type="button" @click="selected = []; bulkMsg = ''; bulkErr = ''"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-700 bg-white border border-gray-200">Clear</button>
+                    <span class="text-xs text-green-700 w-full" x-show="bulkMsg" x-text="bulkMsg"></span>
+                    <span class="text-xs text-red-600 w-full" x-show="bulkErr" x-text="bulkErr"></span>
+                </div>
             </div>
         </template>
         <template x-if="students.length === 0 && !loading && !error">
@@ -120,6 +143,44 @@ function searchPayments() {
         loading: false,
         error: '',
         retryAfter: 0,
+        selected: [],
+        bulkPlan: 'installment',
+        bulkAmount: '1500',
+        bulkMsg: '',
+        bulkErr: '',
+        bulkBusy: false,
+        downpaymentAdmissionId(s) {
+            const list = Array.isArray(s.admissions) ? s.admissions : [];
+            const found = list.find(a => a.status === 'Awaiting Downpayment');
+            return found ? found.id : null;
+        },
+        async bulkConfirm() {
+            if (this.bulkBusy || this.selected.length === 0) return;
+            const amount = parseFloat(this.bulkAmount);
+            if (!(amount > 0)) { this.bulkErr = 'Enter the amount collected per application.'; return; }
+            if (!confirm('Confirm downpayment of ₱' + amount.toFixed(2) + ' (' + this.bulkPlan + ') for ' + this.selected.length + ' file(s)? Files below their floor stay behind.')) return;
+            this.bulkBusy = true;
+            this.bulkMsg = '';
+            this.bulkErr = '';
+            try {
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                const csrf = meta ? meta.getAttribute('content') : '';
+                const response = await fetch('/cashier/payment/bulk-downpayment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ admission_ids: this.selected, payment_plan: this.bulkPlan, amount_each: amount })
+                });
+                const body = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error((body && body.message) || ('HTTP ' + response.status));
+                this.bulkMsg = (body && body.message) || 'Confirmed.';
+                this.selected = [];
+                this.searchNow();
+            } catch (e) {
+                this.bulkErr = (e && e.message) || 'Bulk confirm failed — try again.';
+            } finally {
+                this.bulkBusy = false;
+            }
+        },
         _controller: null,
         _seq: 0,
         _countdown: null,
@@ -144,6 +205,7 @@ function searchPayments() {
             this.searchQuery = '';
             this.displayedQuery = '';
             this.students = [];
+            this.selected = [];
             this.error = '';
             this.retryAfter = 0;
             this.loading = false;
@@ -154,6 +216,7 @@ function searchPayments() {
                 if (this._controller) { try { this._controller.abort(); } catch (e) {} }
                 this._seq++;
                 this.students = [];
+                this.selected = [];
                 this.displayedQuery = '';
                 this.error = '';
                 this.loading = false;

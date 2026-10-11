@@ -192,6 +192,11 @@ Route::middleware('auth')->group(function () {
         // Approval-email resend (spec: applicant-email-reliability.md).
         Route::post('/registrar/admissions/{admission}/resend-approval-email', [RegistrarAdmissionController::class, 'resendApprovalEmail'])->name('registrar.admissions.resend-approval-email');
         Route::post('/registrar/requirements/{requirement}/verify', [RegistrarAdmissionController::class, 'verifyRequirement'])->name('registrar.admissions.verify-requirement');
+        // Review-forward (spec: enrollment-payment-gating-review-forward.md):
+        // complete files go to the Cashier, incomplete ones back to the family.
+        Route::post('/registrar/admissions/{admission}/forward', [RegistrarAdmissionController::class, 'forwardToCashier'])->name('registrar.admissions.forward');
+        Route::post('/registrar/admissions/{admission}/return', [RegistrarAdmissionController::class, 'returnWithNote'])->name('registrar.admissions.return');
+        Route::post('/registrar/admissions/bulk-forward', [RegistrarAdmissionController::class, 'bulkForward'])->name('registrar.admissions.bulk-forward');
         Route::get('/registrar/withdrawals', [WithdrawalController::class, 'index'])->name('registrar.withdrawals.index')->middleware('throttle:search');
         Route::post('/registrar/withdrawals/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('registrar.withdrawals.approve');
         Route::post('/registrar/withdrawals/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('registrar.withdrawals.reject');
@@ -215,6 +220,9 @@ Route::middleware('auth')->group(function () {
          Route::get('/cashier/search', [CashierController::class, 'searchStudents'])->name('cashier.search')->middleware(['throttle:search', 'search.metrics']);
         Route::get('/cashier/payment/{student}', [CashierController::class, 'showPayment'])->name('cashier.payment');
         Route::post('/cashier/payment/{student}/process', [CashierController::class, 'processPayment'])->name('cashier.payment.process');
+        // Downpayment confirm for forwarded files (spec: enrollment-payment-gating-payment-access.md).
+        Route::post('/cashier/payment/{student}/downpayment', [CashierController::class, 'confirmDownpayment'])->name('cashier.payment.downpayment');
+        Route::post('/cashier/payment/bulk-downpayment', [CashierController::class, 'bulkConfirmDownpayments'])->name('cashier.payment.bulk-downpayment');
         Route::get('/cashier/financial/{student}', [CashierController::class, 'studentFinancial'])->name('cashier.student-financial');
         Route::get('/cashier/receipt/{payment}', [CashierController::class, 'printReceipt'])->name('cashier.receipt.print');
         Route::get('/cashier/collections', [CashierController::class, 'collectionsReport'])->name('cashier.collections-report');
