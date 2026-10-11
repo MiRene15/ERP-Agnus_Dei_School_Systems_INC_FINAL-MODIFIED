@@ -97,12 +97,9 @@ class CashierProjectionService
      */
     public function monthRangeForSchoolYear(string $schoolYear): array
     {
-        [$startYear, $endYear] = array_map('intval', explode('-', $schoolYear));
-
-        return [
-            Carbon::create($startYear, 6, 1)->startOfMonth(),
-            Carbon::create($endYear, 5, 1)->endOfMonth(),
-        ];
+        // Spec enrollment-payment-gating-calendar-holds.md §6:
+        // school year period is July → March for all levels.
+        return \App\Services\SchoolYearService::monthRange($schoolYear);
     }
 
     public function monthlySeriesForRange(Carbon $from, Carbon $to): array

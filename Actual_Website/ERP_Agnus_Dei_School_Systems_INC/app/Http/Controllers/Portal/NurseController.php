@@ -127,15 +127,15 @@ class NurseController extends Controller
         $data['nurse_id'] = auth()->id();
         $data['symptoms'] = $data['complaint'] ?? '';
         $data['visit_date'] = $data['incident_date'];
-        // Open cases (pending follow-up / referral) raise a clearance Hold until closed.
+        // Open cases (pending follow-up / referral) raise an account hold until closed.
         $data['is_open'] = $request->boolean('is_open');
 
         $log = ClinicLog::create($data);
 
         $student = Student::find($data['student_id']);
-        log_activity($log, 'Clinic Log Created', auth()->user()->name . ' recorded a clinic visit for ' . $student->first_name . ' ' . $student->last_name . '. Complaint: ' . ($data['complaint'] ?? 'N/A') . ($data['is_open'] ? ' [OPEN CASE — clearance hold raised]' : ''));
+        log_activity($log, 'Clinic Log Created', auth()->user()->name . ' recorded a clinic visit for ' . $student->first_name . ' ' . $student->last_name . '. Complaint: ' . ($data['complaint'] ?? 'N/A') . ($data['is_open'] ? ' [OPEN CASE — account hold raised]' : ''));
 
-        return redirect()->route('nurse.logs')->with('success', 'Clinic log created successfully.' . ($data['is_open'] ? ' Case left open — it now blocks the student’s clearance until closed.' : ''));
+        return redirect()->route('nurse.logs')->with('success', 'Clinic log created successfully.' . ($data['is_open'] ? ' Case left open — it now raises an account hold until closed.' : ''));
     }
 
     /**
@@ -149,7 +149,7 @@ class NurseController extends Controller
 
         $log->update(['is_open' => false, 'closed_at' => now()]);
 
-        log_activity($log, 'Clinic Case Closed', auth()->user()->name . ' closed the open clinic case for student #' . $log->student_id . ' — clearance hold lifted.');
+        log_activity($log, 'Clinic Case Closed', auth()->user()->name . ' closed the open clinic case for student #' . $log->student_id . ' — account hold lifted.');
 
         return back()->with('success', 'Case closed — the student’s clinic hold is lifted.');
     }

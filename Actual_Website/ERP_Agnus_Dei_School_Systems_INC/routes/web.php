@@ -346,6 +346,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/directress/demographics', [DirectressController::class, 'demographics'])->name('directress.demographics');
         Route::get('/directress/school-years', [DirectressController::class, 'schoolYears'])->name('directress.school-years');
         Route::post('/directress/school-years', [DirectressController::class, 'storeSchoolYear'])->name('directress.school-years.store');
+        Route::post('/directress/school-years/announce', [DirectressController::class, 'announceSchoolYear'])->name('directress.school-years.announce');
+        Route::post('/directress/school-years/exam-end', [DirectressController::class, 'setExamEnd'])->name('directress.school-years.exam-end');
         Route::post('/directress/school-years/toggle-lock', [DirectressController::class, 'toggleLockSchoolYear'])->name('directress.school-years.toggle-lock');
         // Fee Schedule
         Route::get('/directress/fees', [DirectressController::class, 'fees'])->name('directress.fees');

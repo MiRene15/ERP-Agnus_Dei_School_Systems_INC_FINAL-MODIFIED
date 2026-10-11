@@ -77,7 +77,7 @@
                        class="mt-1 rounded border-gray-300 text-amber-600 focus:ring-amber-500">
                 <div>
                     <label for="is_open" class="block text-sm font-semibold text-amber-800 dark:text-[#FCD34D]">Keep case open (needs follow-up / pending referral)</label>
-                    <p class="text-xs text-amber-700 dark:text-[#FCD34D] mt-1">An open case raises a clearance <strong>Hold</strong> — it blocks the student’s report card, re-enrollment, and promotion until you close it.</p>
+                    <p class="text-xs text-amber-700 dark:text-[#FCD34D] mt-1">An open case raises an account <strong>Hold</strong> — it blocks the student’s report card, re-enrollment, and promotion until you close it.</p>
                 </div>
             </div>
 

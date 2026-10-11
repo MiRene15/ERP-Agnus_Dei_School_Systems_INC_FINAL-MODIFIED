@@ -39,12 +39,6 @@
                 <span class="text-gray-600 font-medium">Balance</span>
                 <span class="font-bold text-lg {{ $student->ledger->balance > 0 ? 'text-red-600' : 'text-green-600' }}">₱ {{ number_format($student->ledger->balance, 2) }}</span>
             </div>
-            <div class="flex justify-between items-center py-2">
-                <span class="text-gray-600">Clearance</span>
-                <span class="font-medium {{ $student->ledger->clearance_status === 'Cleared' ? 'text-green-600' : 'text-yellow-600' }}">
-                    {{ $student->ledger->clearance_status ?? 'Pending' }}
-                </span>
-            </div>
         </div>
         @else
         <p class="text-sm text-gray-500 text-center py-4">No payment records yet.</p>

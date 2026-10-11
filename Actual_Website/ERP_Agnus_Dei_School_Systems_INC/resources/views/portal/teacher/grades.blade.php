@@ -24,6 +24,17 @@
     <div class="mb-4 p-4 bg-green-50 dark:bg-[rgba(34,197,94,0.12)] border border-green-200 dark:border-[rgba(34,197,94,0.25)] rounded-lg text-green-800 dark:text-[#86EFAC] text-sm">{{ session('success') }}</div>
 @endif
 
+@if(session('error'))
+    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{{ session('error') }}</div>
+@endif
+
+@if(!empty($gradingClose))
+    <div class="mb-4 p-3 rounded-lg text-sm {{ !empty($gradingClosed) ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-blue-50 border border-blue-200 text-blue-700' }}">
+        Grading {{ $gradingClose }} for {{ $selectedPeriod }}.
+        @if(!empty($gradingClosed)) Submit a Grade Edit Request to change grades. @endif
+    </div>
+@endif
+
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6">
     <form method="GET" class="mb-6">
         <div class="flex items-center gap-3">

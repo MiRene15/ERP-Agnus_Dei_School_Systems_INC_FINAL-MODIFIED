@@ -76,10 +76,11 @@
                     <dd class="font-medium text-gray-900">{{ $displayYear ?? $enrollment?->school_year ?? 'N/A' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-gray-500">Clearance Status</dt>
+                    <dt class="text-gray-500">Account Holds</dt>
                     <dd class="font-medium">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $student?->ledger?->clearance_status === 'Cleared' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
-                            {{ $student?->ledger?->clearance_status ?? 'Pending' }}
+                        @php $cashierHolds = $student ? \App\Services\HoldService::forStudent($student) : []; @endphp
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $cashierHolds === [] ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                            {{ $cashierHolds === [] ? 'No holds' : count($cashierHolds) . ' hold(s) on file' }}
                         </span>
                     </dd>
                 </div>

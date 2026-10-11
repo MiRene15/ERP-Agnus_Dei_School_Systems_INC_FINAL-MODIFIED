@@ -133,10 +133,11 @@
                     </dd>
                 </div>
                 <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-[#8A90B0]">Clearance</dt>
+                    <dt class="text-gray-500 dark:text-[#8A90B0]">Account Holds</dt>
                     <dd class="font-medium">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $student->ledger?->clearance_status === 'Cleared' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
-                            {{ $student->ledger?->clearance_status ?? 'Pending' }}
+                        @php $cashierHolds = \App\Services\HoldService::forStudent($student); @endphp
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $cashierHolds === [] ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
+                            {{ $cashierHolds === [] ? 'No holds' : count($cashierHolds) . ' hold(s) on file' }}
                         </span>
                     </dd>
                 </div>

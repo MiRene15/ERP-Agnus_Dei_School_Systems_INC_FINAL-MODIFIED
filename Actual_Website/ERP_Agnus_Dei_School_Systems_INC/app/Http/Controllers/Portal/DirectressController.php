@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Directress\AnnounceSchoolYearRequest;
 use App\Http\Requests\Directress\RollOverFeesRequest;
+use App\Http\Requests\Directress\SetExamEndRequest;
 use App\Http\Requests\Directress\StoreFeeScheduleRequest;
+use App\Http\Requests\Directress\StoreSchoolYearRequest;
 use App\Http\Requests\Directress\UpdateFeeScheduleRequest;
 use App\Models\Announcement;
 use App\Models\FeeSchedule;
@@ -323,28 +326,58 @@ class DirectressController extends Controller
     // ─── School Year ──────────────────────────────────────────────
     public function schoolYears()
     {
+        $active = active_school_year();
+        $announced = \App\Services\SchoolYearService::announcedYear();
         $years = collect(all_school_years())->map(fn($y) => [
             'year' => $y,
             'count' => FeeSchedule::where('school_year', $y)->count(),
             'locked' => in_array($y, $this->getLockedSchoolYears()),
+            'is_active' => $y === $active,
+            'is_announced' => $y === $announced,
+            'period_label' => \App\Services\SchoolYearService::periodLabel($y),
         ])->sortByDesc('year');
-        return view('portal.directress.school-years', compact('years'));
+        $examEnds = [];
+        foreach (\App\Services\GradingCloseService::PERIODS as $period) {
+            $examEnds[$period] = \App\Services\GradingCloseService::getExamEnd($period)?->format('Y-m-d') ?? '';
+        }
+        return view('portal.directress.school-years', compact('years', 'active', 'announced', 'examEnds'));
     }
 
-    public function storeSchoolYear(Request $request)
+    public function setExamEnd(SetExamEndRequest $request)
     {
-        $data = $request->validate(['school_year' => 'required|regex:/^\d{4}-\d{4}$/']);
+        $data = $request->validated();
+        \App\Services\GradingCloseService::setExamEnd($data['grading_period'], $data['exam_end_date']);
+        $close = \App\Services\GradingCloseService::getCloseDate($data['grading_period'])?->format('M d, Y') ?? '—';
+
+        log_activity('App\\Models\\Setting', 'Exam End Updated', auth()->user()->name . ' set exam end for ' . $data['grading_period'] . ' to ' . $data['exam_end_date'] . ' (grading closes ' . $close . ').');
+
+        return back()->with('success', 'Exam end saved for ' . $data['grading_period'] . '. Grading closes ' . $close . '.');
+    }
+
+    public function storeSchoolYear(StoreSchoolYearRequest $request)
+    {
+        $data = $request->validated();
         if (FeeSchedule::where('school_year', $data['school_year'])->exists() || \App\Models\Setting::getValue('active_school_year') === $data['school_year']) {
             return back()->with('error', 'School year '.$data['school_year'].' already exists.');
         }
-        FeeSchedule::create(['grade_level' => 'Grade 1', 'term' => '1st Term', 'school_year' => $data['school_year'], 'tuition_fee' => 0, 'misc_fee' => 0]);
-        \App\Models\Setting::setValue('active_school_year', $data['school_year']);
-        \Illuminate\Support\Facades\Cache::forget('active_school_year');
-        \Illuminate\Support\Facades\Cache::forget('all_school_years');
+        \App\Services\SchoolYearService::createAndActivate($data['school_year']);
 
-        log_activity('App\\Models\\Setting', 'School Year Created', auth()->user()->name . ' created and activated school year: ' . $data['school_year'] . '.');
+        log_activity('App\\Models\\Setting', 'School Year Created', auth()->user()->name . ' created and activated school year: ' . $data['school_year'] . ' (Jul–Mar).');
 
-        return back()->with('success', 'School year '.$data['school_year'].' added and set as active.');
+        return back()->with('success', 'School year '.$data['school_year'].' (Jul–Mar) added and set as active.');
+    }
+
+    public function announceSchoolYear(AnnounceSchoolYearRequest $request)
+    {
+        $data = $request->validated();
+        if (school_year_locked($data['school_year'])) {
+            return back()->with('error', 'School year '.$data['school_year'].' is locked and cannot be announced.');
+        }
+        \App\Services\SchoolYearService::announce($data['school_year']);
+
+        log_activity('App\\Models\\Setting', 'School Year Announced', auth()->user()->name . ' announced new school year: ' . $data['school_year'] . '. Holds now apply to returnees with dues.');
+
+        return back()->with('success', 'New school year '.$data['school_year'].' announced. Holds now appear for returnees with dues.');
     }
 
     public function toggleLockSchoolYear(Request $request)

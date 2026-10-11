@@ -51,6 +51,36 @@ if (!function_exists('locked_school_years')) {
     }
 }
 
+if (!function_exists('announced_school_year')) {
+    function announced_school_year(): ?string
+    {
+        return \App\Services\SchoolYearService::announcedYear();
+    }
+}
+
+if (!function_exists('is_new_school_year_announced')) {
+    // Spec enrollment-payment-gating-calendar-holds.md §6:
+    // holds show iff a new school year is announced AND returnee has dues.
+    function is_new_school_year_announced(?string $activeYear = null): bool
+    {
+        return \App\Services\SchoolYearService::isNewYearAnnounced($activeYear);
+    }
+}
+
+if (!function_exists('grading_close_date')) {
+    function grading_close_date(string $period): ?\Carbon\Carbon
+    {
+        return \App\Services\GradingCloseService::getCloseDate($period);
+    }
+}
+
+if (!function_exists('is_grading_closed')) {
+    function is_grading_closed(string $period): bool
+    {
+        return \App\Services\GradingCloseService::isClosed($period);
+    }
+}
+
 if (!function_exists('school_year_locked')) {
     // A locked year is frozen: no new enrollments, payments, grades,
     // schedules, fees, or promotions may touch it.

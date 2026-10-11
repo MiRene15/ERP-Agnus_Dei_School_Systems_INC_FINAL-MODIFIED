@@ -36,8 +36,9 @@ class StudentEnrollmentController extends Controller
 
         $nextGradeLevel = $activeEnrollment ? $this->nextGradeLevel($activeEnrollment->section->grade_level) : null;
 
-        // Holds block re-enrollment until cleared — show them on the apply page.
-        $holds = \App\Services\HoldService::forStudent($student);
+        // Holds block re-enrollment until cleared — gated: only when a new
+        // school year is announced (spec: calendar-holds §6).
+        $holds = \App\Services\HoldService::visibleForStudent($student);
 
         return view('portal.student.enrollment-apply', compact('student', 'activeEnrollment', 'pendingAdmission', 'nextGradeLevel', 'holds'));
     }
@@ -50,8 +51,9 @@ class StudentEnrollmentController extends Controller
             return back()->with('error', 'You must have a student number to enroll.');
         }
 
-        // Holds block re-enrollment until cleared (library / clinic / finance).
-        $holds = \App\Services\HoldService::forStudent($student);
+        // Holds block re-enrollment until cleared (library / clinic / finance) —
+        // gated on the announced new year so nothing blocks before announcement.
+        $holds = \App\Services\HoldService::visibleForStudent($student);
         if (!empty($holds)) {
             return back()->with('error', 'Enrollment request blocked. ' . \App\Services\HoldService::blockingMessage($holds));
         }

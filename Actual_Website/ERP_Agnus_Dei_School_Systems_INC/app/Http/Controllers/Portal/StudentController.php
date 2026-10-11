@@ -91,16 +91,19 @@ class StudentController extends Controller
 
         $student->load('ledger');
 
-        // Clearance holds (library / clinic / finance) — student sees why they are blocked.
-        $holds = \App\Services\HoldService::forStudent($student);
+        // Re-enrollment holds (spec: calendar-holds): visible only when a new
+        // school year is announced AND the returnee has dues. Raw dues truth
+        // stays in HoldService::forStudent for staff enforcement.
+        $holds = \App\Services\HoldService::visibleForStudent($student);
+        $holdBanner = \App\Services\HoldService::bannerForStudent($student, $schoolYear);
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'hasFeesPosted', 'enrolledSchoolYears'))->render(),
+                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'holdBanner', 'hasFeesPosted', 'enrolledSchoolYears'))->render(),
             ]);
         }
 
-        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'hasFeesPosted', 'enrolledSchoolYears'));
+        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'holdBanner', 'hasFeesPosted', 'enrolledSchoolYears'));
     }
 
     public function cor(Request $request)

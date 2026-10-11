@@ -1,6 +1,6 @@
 # Spec: Enrollment Payment Gating — Calendar Holds
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-11
 - **Approved by**: user on 2026-10-11
 - **Parent**: `enrollment-payment-gating.md` (child 3 of 3 — depends on child 2)
@@ -99,3 +99,5 @@ None — July–March, 1-week close, announce-gated holds, clearance removal all
 ## 11. Approval
 
 > Approved by user on 2026-10-11.
+
+> Implemented on 2026-10-11 — slices 1–5 (year/announce gate, grading close +7d, announce-gated status-only holds, clearance removal, CalendarHoldsTest). User acceptance run deferred by user; spec may be re-opened on bugs.

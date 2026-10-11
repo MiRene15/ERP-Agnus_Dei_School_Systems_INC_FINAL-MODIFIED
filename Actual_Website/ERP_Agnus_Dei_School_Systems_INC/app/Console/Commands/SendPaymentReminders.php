@@ -26,8 +26,8 @@ class SendPaymentReminders extends Command
 
         $students = Student::where('status', 'enrolled')
             ->whereHas('ledger', function ($q) {
+                // Holds carry the signal — dues truth is the balance alone.
                 $q->where('balance', '>', 0);
-                $q->where('clearance_status', '!=', 'Cleared');
             })
             ->with('user', 'ledger', 'enrollments.section')
             ->get();

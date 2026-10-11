@@ -27,9 +27,10 @@
         <p class="font-semibold">Re-enrollment is blocked by {{ count($holds) }} hold(s). Clear these first:</p>
         <ul class="list-disc ml-5 mt-2 space-y-1">
             @foreach($holds as $hold)
-            <li><strong>[{{ ucfirst($hold['source']) }}]</strong> {{ $hold['reason'] }} → {{ $hold['action'] }}</li>
+            <li>{{ $hold['action'] }}</li>
             @endforeach
         </ul>
+        <a href="{{ route('student.ledger') }}" class="inline-block mt-2 px-4 py-1.5 rounded-lg text-xs font-semibold text-white" style="background: var(--navy);">View What to Settle</a>
     </div>
 @endif
 

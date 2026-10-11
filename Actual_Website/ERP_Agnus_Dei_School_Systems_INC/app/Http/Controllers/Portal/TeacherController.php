@@ -137,7 +137,10 @@ class TeacherController extends Controller
             $computedMap[$enrollment->id] = round($weightedSum, 2);
         }
 
-        return view('portal.teacher.grades', compact('class', 'activeEnrollments', 'gradingPeriods', 'selectedPeriod', 'existingGrades', 'computedMap'));
+        $gradingClose = \App\Services\GradingCloseService::banner($selectedPeriod);
+        $gradingClosed = \App\Services\GradingCloseService::isClosed($selectedPeriod);
+
+        return view('portal.teacher.grades', compact('class', 'activeEnrollments', 'gradingPeriods', 'selectedPeriod', 'existingGrades', 'computedMap', 'gradingClose', 'gradingClosed'));
     }
 
     public function storeGrades(Request $request, Classes $class)
@@ -155,6 +158,18 @@ class TeacherController extends Controller
         // Locked school years are frozen — grades can no longer be changed.
         if (school_year_locked($class->school_year)) {
             return back()->with('error', 'School year ' . $class->school_year . ' is locked — grades can no longer be changed.');
+        }
+
+        // Spec enrollment-payment-gating-calendar-holds.md §4.2: after close,
+        // new saves need a Grade Edit Request (approved unlock reopens the term).
+        if (\App\Services\GradingCloseService::isClosed($data['grading_period'])) {
+            $hasUnlock = \App\Models\GradeUnlockRequest::where('class_id', $class->id)
+                ->where('grading_period', $data['grading_period'])
+                ->where('status', \App\Models\GradeUnlockRequest::STATUS_APPROVED)
+                ->exists();
+            if (! $hasUnlock) {
+                return back()->with('error', 'Grading is closed for ' . $data['grading_period'] . ' — request an edit to change grades.');
+            }
         }
 
         // Submitted grades are locked — only an approved unlock reopens them.
@@ -210,6 +225,16 @@ class TeacherController extends Controller
         // Locked school years are frozen — grades can no longer be changed.
         if (school_year_locked($class->school_year)) {
             return back()->with('error', 'School year ' . $class->school_year . ' is locked — grades can no longer be changed.');
+        }
+
+        if (\App\Services\GradingCloseService::isClosed($data['grading_period'])) {
+            $hasUnlock = \App\Models\GradeUnlockRequest::where('class_id', $class->id)
+                ->where('grading_period', $data['grading_period'])
+                ->where('status', \App\Models\GradeUnlockRequest::STATUS_APPROVED)
+                ->exists();
+            if (! $hasUnlock) {
+                return back()->with('error', 'Grading is closed for ' . $data['grading_period'] . ' — request an edit to change grades.');
+            }
         }
 
         $gradeCount = Grade::where('class_id', $class->id)

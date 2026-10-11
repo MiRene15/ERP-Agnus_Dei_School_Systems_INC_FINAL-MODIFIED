@@ -45,7 +45,7 @@
     <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-4">
         <h4 class="text-sm font-semibold text-gray-700 dark:text-[#E8EAF6] mb-3">Open Cases</h4>
         <p class="text-2xl font-bold {{ ($openCases ?? 0) > 0 ? 'text-red-600' : 'text-green-600' }}">{{ $openCases ?? 0 }}</p>
-        <p class="text-xs text-gray-400 dark:text-[#8A90B0] mt-1">Cases needing follow-up hold the student’s clearance. Details stay with the clinic.</p>
+        <p class="text-xs text-gray-400 dark:text-[#8A90B0] mt-1">Cases needing follow-up raise an account hold. Details stay with the clinic.</p>
     </div>
 </div>
 

@@ -26,7 +26,7 @@
                 <td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $log->referred_to ?? '—' }}</td>
                 <td class="py-2 px-2">
                     @if($log->is_open)
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Open — holds clearance</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Open — account hold</span>
                         <form method="POST" action="{{ route('nurse.logs.close', $log) }}" class="inline ml-1">
                             @csrf @method('PATCH')
                             <button type="submit" class="px-2 py-0.5 text-xs font-medium text-green-600 hover:text-green-800">Close case</button>

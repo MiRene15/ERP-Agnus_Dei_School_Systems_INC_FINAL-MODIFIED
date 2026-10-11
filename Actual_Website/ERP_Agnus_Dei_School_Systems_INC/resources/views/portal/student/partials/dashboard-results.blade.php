@@ -1,27 +1,26 @@
-﻿@if($activeEnrollment && $student->ledger && $student->ledger->balance > 0 && $student->ledger->clearance_status !== 'Cleared')
-<div class="mb-4 p-4 bg-amber-50 dark:bg-[rgba(251,191,36,0.12)] border border-amber-200 dark:border-[rgba(251,191,36,0.25)] rounded-lg text-amber-800 dark:text-[#FCD34D] text-sm flex items-start gap-3">
-    <svg class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-    <div>
-        <p class="font-semibold">Gentle Reminder</p>
-        <p class="mt-1">You have an outstanding balance of <strong>₱{{ number_format($student->ledger->balance, 2) }}</strong>. Please visit the Cashier's Office to settle your payment.</p>
-    </div>
-</div>
-@endif
-
-@if(!empty($holds ?? []))
+﻿@if(!empty($holds ?? []))
 <div class="mb-4 p-4 bg-red-50 dark:bg-[rgba(248,113,113,0.12)] border border-red-200 dark:border-[rgba(248,113,113,0.25)] rounded-lg text-red-800 dark:text-[#FCA5A5] text-sm">
     <div class="flex items-start gap-3">
         <svg class="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         <div class="flex-1">
             <p class="font-semibold">Account Hold — action needed ({{ count($holds) }})</p>
-            <p class="mt-1">These holds block your report card, re-enrollment, and promotion until cleared:</p>
+            <p class="mt-1">{{ $holdBanner['label'] ?? 'Settle what is due to re-enroll' }}.</p>
             <ul class="list-disc ml-5 mt-2 space-y-1">
                 @foreach($holds as $hold)
-                <li><strong>[{{ ucfirst($hold['source']) }}]</strong> {{ $hold['reason'] }}<br><span class="text-red-600 dark:text-[#FCA5A5]">→ {{ $hold['action'] }}</span></li>
+                <li>{{ $hold['action'] }}</li>
                 @endforeach
             </ul>
+            <a href="{{ route('student.ledger') }}" class="inline-block mt-2 px-4 py-1.5 rounded-lg text-xs font-semibold text-white" style="background: var(--navy);">View What to Settle</a>
         </div>
     </div>
+</div>
+@elseif(($holdBanner['state'] ?? null) === 'clear')
+<div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+    {{ $holdBanner['label'] }}.
+</div>
+@elseif(($holdBanner['state'] ?? null) === 'complete')
+<div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
+    {{ $holdBanner['label'] }}
 </div>
 @endif
 
