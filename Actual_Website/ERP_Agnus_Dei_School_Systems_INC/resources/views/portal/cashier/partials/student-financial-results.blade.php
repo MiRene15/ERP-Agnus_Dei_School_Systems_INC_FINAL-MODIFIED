@@ -195,10 +195,6 @@
                                 <div class="flex items-center gap-2">
                                     <a href="{{ route('cashier.receipt.print', $p) }}" target="_blank"
                                        class="text-xs font-semibold px-2 py-1 rounded transition" style="background: var(--navy); color: white;">Print</a>
-                                    @if($p->receipt_file_path)
-                                    <a href="{{ asset('storage/' . $p->receipt_file_path) }}" target="_blank"
-                                       class="text-xs text-blue-600 hover:text-blue-800 font-medium">View</a>
-                                    @endif
                                     @if($p->amount_paid > 0 && str_starts_with((string) $p->receipt_number, 'RCP-'))
                                     <details class="inline">
                                         <summary class="text-xs text-red-600 hover:text-red-800 font-medium cursor-pointer list-none">Void</summary>

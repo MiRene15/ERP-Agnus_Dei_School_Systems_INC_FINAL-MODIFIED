@@ -78,12 +78,18 @@ class DownpaymentService
 
         if (($student->scholarship ?? false) && $isSHS) {
             $totalTuition = 0.0;
-            $totalAssessed = (float) $schedules->sum('misc_fee');
+            $split = $fees->splitSchedules($schedules);
+            $totalMisc = $split['misc'];
+            $miscItems = $split['items'];
+            $totalAssessed = $totalMisc;
             $autoDiscountType = 'esc';
             $autoDiscountAmount = (float) $schedules->sum('tuition_fee');
         } else {
-            $totalTuition = (float) $schedules->sum('tuition_fee');
-            $totalAssessed = $totalTuition + (float) $schedules->sum('misc_fee');
+            $split = $fees->splitSchedules($schedules);
+            $totalTuition = $split['tuition'];
+            $totalMisc = $split['misc'];
+            $miscItems = $split['items'];
+            $totalAssessed = $totalTuition + $totalMisc;
             $autoDiscountType = $admissionType === 'Honor' ? 'honor' : ($admissionType === 'Sibling' ? 'sibling' : null);
             $autoDiscountAmount = 0.0;
             if ($autoDiscountType === 'honor') {
@@ -109,7 +115,7 @@ class DownpaymentService
         $receiptNumber = '';
 
         try {
-            DB::transaction(function () use ($student, $admission, $data, $path, $amount, $discountAmount, $autoDiscountType, $totalAssessed, $year, $cashierId, $cashierName, $fees, $holdsNote, &$payment, &$creditedExcess, &$receiptNumber): void {
+            DB::transaction(function () use ($student, $admission, $data, $path, $amount, $discountAmount, $autoDiscountType, $totalAssessed, $totalTuition, $totalMisc, $miscItems, $year, $cashierId, $cashierName, $fees, $holdsNote, &$payment, &$creditedExcess, &$receiptNumber): void {
                 $syStart = (int) explode('-', $year)[0];
                 $elapsed = Carbon::create($syStart, 6, 1)->startOfMonth()->diffInMonths(Carbon::now()->startOfMonth(), false);
                 $remainingMonths = max(1, FeeAssessmentService::INSTALLMENTS - max(0, (int) $elapsed));
@@ -127,8 +133,8 @@ class DownpaymentService
                         'school_year' => $year,
                         'payment_plan' => $path,
                         'assessment_path' => $path,
-                        'enrollment_fee' => FeeAssessmentService::ENROLLMENT_FEE,
-                        'tuition_assessed' => $totalAssessed,
+                        'enrollment_fee' => $path === FeeAssessmentService::PATH_FULL ? 0 : FeeAssessmentService::ENROLLMENT_FEE,
+                        'tuition_assessed' => $totalTuition,
                         'installment_count' => $path === FeeAssessmentService::PATH_INSTALLMENT ? $remainingMonths : 0,
                         'total_assessed' => $totalAssessed,
                         'discount_type' => ($discountAmount <= 0 && $autoDiscountType) ? $autoDiscountType : ($data['discount_type'] ?? null),
@@ -138,7 +144,7 @@ class DownpaymentService
                         'clearance_status' => 'Pending',
                     ]);
 
-                    $fees->assessLedger($ledger->refresh(), $totalAssessed, $year, $path, $remainingMonths, $assessStart);
+                    $fees->assessLedger($ledger->refresh(), (float) $totalTuition, $year, $path, $remainingMonths, $assessStart, (float) $totalMisc, $miscItems ?? []);
                     $ledger = $ledger->refresh();
                 } elseif ($ledger->ledgerLines()->exists() && $ledger->assessment_path && $ledger->assessment_path !== $path) {
                     $fees->switchPath($ledger, $path);
@@ -147,7 +153,7 @@ class DownpaymentService
                     $historicPaid = round((float) $ledger->total_paid, 2);
                     $ledger->school_year = $ledger->school_year ?? $year;
                     $ledger->save();
-                    $fees->assessLedger($ledger->refresh(), $totalAssessed, $year, $ledger->assessment_path ?? $path, $remainingMonths, $assessStart);
+                    $fees->assessLedger($ledger->refresh(), (float) $totalTuition, $year, $ledger->assessment_path ?? $path, $remainingMonths, $assessStart, (float) $totalMisc, $miscItems ?? []);
                     $ledger = $ledger->refresh();
                     if ($historicPaid > 0) {
                         $fees->allocatePayment($ledger, $historicPaid);
@@ -162,9 +168,9 @@ class DownpaymentService
                 } else {
                     $isFullPreview = $path === FeeAssessmentService::PATH_FULL;
                     $floorAmount = $isFullPreview
-                        ? round(FeeAssessmentService::ENROLLMENT_FEE + $totalAssessed * (1 - FeeAssessmentService::FULL_DISCOUNT_RATE), 2)
+                        ? $fees->fullTotalFor((float) $totalTuition, (float) $totalMisc)
                         : FeeAssessmentService::ENROLLMENT_FEE;
-                    $floorLabel = $isFullPreview ? 'Full payment' : 'Enrollment Fee';
+                    $floorLabel = $isFullPreview ? 'Full total' : 'Enrollment Fee';
                 }
 
                 if ($floorAmount <= 0) {

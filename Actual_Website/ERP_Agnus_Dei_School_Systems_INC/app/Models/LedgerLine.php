@@ -9,10 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Spec: cashier-fee-rules.md — one assessed line per ledger.
+ * Spec: cashier-full-payment-label.md — one assessed line per ledger.
  *
- * kind = enrollment (fixed ₱1.5k, never discounted) | tuition (term/month slice).
- * Posted lines are immutable: later fee edits only affect new assessments.
+ * kind = enrollment (installment-only ₱1.5k downpayment, never discounted)
+ *      | tuition (tuition slices AND misc add-on lines — books, uniform, ID,
+ *        miscellaneous — each at 100%, named with its amount).
+ * The tuition 10% lives INSIDE the tuition line (reduced assessment), never
+ * in ledger.discount_applied. Misc lines reuse the tuition kind (no migration)
+ * and are told apart by label. Posted lines are immutable: later fee edits
+ * only affect new assessments.
  */
 class LedgerLine extends Model
 {

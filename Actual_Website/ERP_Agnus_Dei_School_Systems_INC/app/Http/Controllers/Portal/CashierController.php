@@ -317,6 +317,13 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
 
         $totalTuition = $feeSchedules->sum('tuition_fee');
         $totalMisc = $feeSchedules->sum('misc_fee');
+        // Spec cashier-full-payment-label.md: tuition-only 10%, add-ons at
+        // 100% — split the bundle once here so previews, floors, and the
+        // assessment all read the same bases.
+        $split = $fees->splitSchedules($feeSchedules);
+        $totalTuition = $split['tuition'];
+        $totalMisc = $split['misc'];
+        $miscItems = $split['items'];
         $totalAssessed = $totalTuition + $totalMisc;
 
         if ($autoDiscountType === 'honor' && $totalAssessed > 0) {
@@ -353,7 +360,10 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
         if ($student->ledger && $ledgerLines->isNotEmpty()) {
             $termFloor = $fees->floorFor($student->ledger);
         } else {
-            $previewFull = round(FeeAssessmentService::ENROLLMENT_FEE + $totalAssessed * (1 - FeeAssessmentService::FULL_DISCOUNT_RATE), 2);
+            // Spec cashier-full-payment-label.md: pre-assessment hint binds to
+            // the picked plan — installment floors at the ₱1.5k downpayment,
+            // full floors at 90% tuition + 100% misc with no ₱1.5k line.
+            $previewFull = $fees->fullTotalFor((float) $totalTuition, (float) $totalMisc);
             $termFloor = ['floor' => FeeAssessmentService::ENROLLMENT_FEE, 'fullFloor' => $previewFull, 'label' => 'Enrollment Fee', 'line_ids' => []];
         }
         $libraryDues = LibraryTransaction::with('book')
@@ -368,11 +378,11 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admission', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines', 'displayGrade', 'displayYear'))->render(),
+                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'miscItems', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admission', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines', 'displayGrade', 'displayYear'))->render(),
             ]);
         }
 
-        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admission', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines', 'displayGrade', 'displayYear'));
+        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'miscItems', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admission', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines', 'displayGrade', 'displayYear'));
     }
 
     public function processPayment(ProcessCashierPaymentRequest $request, Student $student, FeeAssessmentService $fees)
@@ -401,12 +411,18 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
 
         if ($hasScholarship && $isSHS) {
             $totalTuition = 0;
-            $totalAssessed = $feeSchedules->sum('misc_fee');
+            $split = $fees->splitSchedules($feeSchedules);
+            $totalMisc = $split['misc'];
+            $miscItems = $split['items'];
+            $totalAssessed = $totalMisc;
             $autoDiscountType = 'esc';
             $autoDiscountAmount = $feeSchedules->sum('tuition_fee');
         } else {
-            $totalTuition = $feeSchedules->sum('tuition_fee');
-            $totalAssessed = $totalTuition + $feeSchedules->sum('misc_fee');
+            $split = $fees->splitSchedules($feeSchedules);
+            $totalTuition = $split['tuition'];
+            $totalMisc = $split['misc'];
+            $miscItems = $split['items'];
+            $totalAssessed = $totalTuition + $totalMisc;
             $autoDiscountType = $admissionType === 'Honor' ? 'honor' : ($admissionType === 'Sibling' ? 'sibling' : null);
             $autoDiscountAmount = 0;
             if ($autoDiscountType === 'honor') {
@@ -427,8 +443,9 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
             $receiptFilePath = $request->file('receipt_file')->store('receipts/' . $student->id, 'public');
         }
 
-        // Spec cashier-fee-rules.md: per-term floor guard (never below the
-        // term total, naming the floor) + shared tuition+library receipt.
+        // Spec cashier-full-payment-label.md: per-plan floor guard (never
+        // below the total, naming the figure) + shared tuition+library receipt.
+        // Full floors at 90% tuition + 100% misc with no ₱1.5k line.
         $libraryDueIds = collect($data['library_transaction_ids'] ?? [])->map(fn ($id) => (int) $id)->filter()->unique()->values();
         $libraryDues = $libraryDueIds->isEmpty()
             ? collect()
@@ -446,9 +463,9 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
         } else {
             $isFullPreview = $data['payment_plan'] === FeeAssessmentService::PATH_FULL;
             $floorAmount = $isFullPreview
-                ? round(FeeAssessmentService::ENROLLMENT_FEE + $totalAssessed * (1 - FeeAssessmentService::FULL_DISCOUNT_RATE), 2)
+                ? $fees->fullTotalFor((float) $totalTuition, (float) $totalMisc)
                 : FeeAssessmentService::ENROLLMENT_FEE;
-            $floorLabel = $isFullPreview ? 'Full payment' : 'Enrollment Fee';
+            $floorLabel = $isFullPreview ? 'Full total' : 'Enrollment Fee';
         }
         $required = round($floorAmount + $librarySum, 2);
         if ($required > 0 && (float) $data['amount_paid'] < $required) {
@@ -481,7 +498,7 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
         }
 
         try {
-            DB::transaction(function () use ($student, $data, $totalAssessed, $totalTuition, $discountAmount, $receiptFilePath, $hasScholarship, $isSHS, $autoDiscountType, $enrollment, $fees, $libraryDues, $librarySum, &$creditedExcess) {
+            DB::transaction(function () use ($student, $data, $totalAssessed, $totalTuition, $totalMisc, $miscItems, $discountAmount, $receiptFilePath, $hasScholarship, $isSHS, $autoDiscountType, $enrollment, $fees, $libraryDues, $librarySum, &$creditedExcess) {
                 $ledger = $student->ledger;
                 $path = $data['payment_plan'];
 
@@ -506,8 +523,8 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                         'school_year' => $enrollment->school_year,
                         'payment_plan' => $path,
                         'assessment_path' => $path,
-                        'enrollment_fee' => FeeAssessmentService::ENROLLMENT_FEE,
-                        'tuition_assessed' => $totalAssessed,
+                        'enrollment_fee' => $path === FeeAssessmentService::PATH_FULL ? 0 : FeeAssessmentService::ENROLLMENT_FEE,
+                        'tuition_assessed' => $totalTuition,
                         'installment_count' => $path === FeeAssessmentService::PATH_INSTALLMENT ? $remainingMonths : 0,
                         'total_assessed' => $totalAssessed,
                         'discount_type' => $discountType,
@@ -517,7 +534,7 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                         'clearance_status' => 'Pending',
                     ]);
 
-                    $fees->assessLedger($ledger->refresh(), (float) $totalAssessed, (string) $enrollment->school_year, $path, $remainingMonths, $assessStart);
+                    $fees->assessLedger($ledger->refresh(), (float) $totalTuition, (string) $enrollment->school_year, $path, $remainingMonths, $assessStart, (float) $totalMisc, $miscItems ?? []);
                     $ledger = $ledger->refresh();
                 } else {
                     if ($ledger->ledgerLines()->exists() && $ledger->assessment_path && $ledger->assessment_path !== $path) {
@@ -527,7 +544,7 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                         $historicPaid = round((float) $ledger->total_paid, 2);
                         $ledger->school_year = $ledger->school_year ?? $enrollment->school_year;
                         $ledger->save();
-                        $fees->assessLedger($ledger->refresh(), (float) $totalAssessed, (string) $enrollment->school_year, $ledger->assessment_path ?? $path, $remainingMonths, $assessStart);
+                        $fees->assessLedger($ledger->refresh(), (float) $totalTuition, (string) $enrollment->school_year, $ledger->assessment_path ?? $path, $remainingMonths, $assessStart, (float) $totalMisc, $miscItems ?? []);
                         $ledger = $ledger->refresh();
                         if ($historicPaid > 0) {
                             $fees->allocatePayment($ledger, $historicPaid);

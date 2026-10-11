@@ -28,8 +28,19 @@
 @else
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-semibold text-gray-900 mb-4">{{ $isDownpayment ? 'Confirm Downpayment' : 'Process Payment' }}</h3>
+@php
+    // Spec cashier-full-payment-label.md: pre-assessment hint data — the full
+    // total (90% tuition + 100% misc, no ₱1.5k) with each line named. The
+    // server-side floor in CashierController enforces the same figures.
+    $hasFullPreview = isset($termFloor['fullFloor']) && ($termFloor['fullFloor'] ?? 0) > 0;
+    $fullTotalPreview = $hasFullPreview ? (float) $termFloor['fullFloor'] : 0.0;
+    $fullTuitionPreview = round((float) ($totalTuition ?? 0) * 0.9, 2);
+    $hintMiscItems = $miscItems ?? [];
+    if (!is_array($hintMiscItems)) { $hintMiscItems = []; }
+    $planValue = $student?->ledger?->payment_plan ?? '';
+@endphp
             <form method="POST" action="{{ $isDownpayment ? route('cashier.payment.downpayment', $student) : route('cashier.payment.process', $student) }}" enctype="multipart/form-data"
-                  x-data="{ discountType: '{{ $discountAlreadyApplied ? ($student->ledger->discount_type ?? 'other') : ($autoDiscountType ?? '') }}', totalAssessed: {{ $totalAssessed }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountAlreadyApplied ? $student->ledger->discount_applied : $autoDiscountAmount }}, discountPercent: {{ $discountAlreadyApplied ? round($student->ledger->discount_applied / max($totalAssessed, 1) * 100) : (($autoDiscountType === 'honor') ? 10 : (($autoDiscountType === 'sibling') ? 5 : 0)) }}, isAutoDiscount: {{ ($autoDiscountType && !$discountAlreadyApplied) ? 'true' : 'false' }}, autoDiscountLabel: '{{ $autoDiscountType === 'esc' ? 'ESC Grant (Tuition Waived)' : ($autoDiscountType === 'honor' ? 'Honor Discount (10%)' : ($autoDiscountType === 'sibling' ? 'Sibling Discount (5%)' : '')) }}' }">
+                  x-data="{ plan: '{{ $planValue }}', discountType: '{{ $discountAlreadyApplied ? ($student->ledger->discount_type ?? 'other') : ($autoDiscountType ?? '') }}', totalAssessed: {{ $totalAssessed }}, totalPaid: {{ $student->ledger ? $student->ledger->total_paid : 0 }}, discountAmount: {{ $discountAlreadyApplied ? $student->ledger->discount_applied : $autoDiscountAmount }}, discountPercent: {{ $discountAlreadyApplied ? round($student->ledger->discount_applied / max($totalAssessed, 1) * 100) : (($autoDiscountType === 'honor') ? 10 : (($autoDiscountType === 'sibling') ? 5 : 0)) }}, isAutoDiscount: {{ ($autoDiscountType && !$discountAlreadyApplied) ? 'true' : 'false' }}, autoDiscountLabel: '{{ $autoDiscountType === 'esc' ? 'ESC Grant (Tuition Waived)' : ($autoDiscountType === 'honor' ? 'Honor Discount (10%)' : ($autoDiscountType === 'sibling' ? 'Sibling Discount (5%)' : '')) }}' }">
                 @csrf
                 <div class="space-y-4">
                     <div>
@@ -41,7 +52,7 @@
                             </div>
                             <input type="hidden" name="payment_plan" value="{{ $student->ledger->payment_plan }}">
                         @else
-                            <select name="payment_plan" required
+                            <select name="payment_plan" required x-model="plan"
                                     class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                                 <option value="">Select plan...</option>
                                 <option value="full" {{ $student?->ledger?->payment_plan === 'full' ? 'selected' : '' }}>Full Payment</option>
@@ -54,7 +65,21 @@
                         <input type="number" name="amount_paid" required step="0.01" min="1"
                                placeholder="0.00"
                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                        @if(!empty($termFloor['floor']))
+                        @if($hasFullPreview)
+                        {{-- Spec cashier-full-payment-label.md: the hint always matches the picked plan. --}}
+                        <div x-show="plan !== 'full'" class="mt-1">
+                            <p class="text-xs text-gray-500">Minimum ₱{{ number_format($termFloor['floor'], 2) }} — Downpayment ₱{{ number_format($termFloor['floor'], 2) }}</p>
+                        </div>
+                        <div x-show="plan === 'full'" x-cloak class="mt-1 rounded-lg bg-blue-50 border border-blue-100 p-2.5">
+                            <p class="text-xs font-semibold text-blue-900">Full total ₱{{ number_format($fullTotalPreview, 2) }}</p>
+                            <ul class="mt-1 space-y-0.5 text-xs text-blue-800">
+                                <li class="flex justify-between gap-2"><span>Tuition (90%)</span><span class="font-medium">₱{{ number_format($fullTuitionPreview, 2) }}</span></li>
+                                @foreach($hintMiscItems as $itemKey => $itemVal)
+                                <li class="flex justify-between gap-2"><span>{{ strtolower((string) $itemKey) === 'id' ? 'ID' : ucfirst(strtolower((string) $itemKey)) }}</span><span class="font-medium">₱{{ number_format((float) $itemVal, 2) }}</span></li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @elseif(!empty($termFloor['floor']))
                         <p class="text-xs text-gray-500 mt-1">Minimum ₱{{ number_format($termFloor['floor'], 2) }}{{ !empty($termFloor['label']) ? ' — ' . $termFloor['label'] : '' }}</p>
                         @endif
                         @error('amount_paid') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
