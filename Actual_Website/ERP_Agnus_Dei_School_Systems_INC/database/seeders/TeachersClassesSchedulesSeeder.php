@@ -39,7 +39,20 @@ class TeachersClassesSchedulesSeeder extends Seeder
 
     public function run(): void
     {
-        $schoolYear = active_school_year();
+        $activeYear = active_school_year();
+
+        // Spec seed-data-foundations.md §4: history first, then current,
+        // then ready-next. Clash-freedom is inside each year, so the
+        // availability maps reset at the top of each year iteration.
+        // NOTE: the whole body from normalize through the schedule
+        // backfill below repeats per school year (single loop opened
+        // here, closed after the backfill).
+        $schoolYears = array_values(array_unique([
+            '2024-2025',
+            '2025-2026',
+            $activeYear,
+            '2027-2028',
+        ]));
 
         $teacherEmailsByDept = [
             'Elementary' => [
@@ -140,19 +153,25 @@ class TeachersClassesSchedulesSeeder extends Seeder
             }
         }
 
-        // Normalize blank terms ('' vs NULL would break updateOrCreate keys and duplicate classes)
-        Classes::where('school_year', $schoolYear)->where('term', '')->update(['term' => null]);
-
-        // Remove current-year classes whose (grade, section) no longer exists among active
-        // sections (rename-drift orphans). DELETE (not deactivate) so the FK cascade clears
-        // their grades, assessments, schedules and enrollment links — otherwise students would
-        // see duplicate subject grades from both the dead and the replacement class.
         $activePairs = [];
         foreach ($sectionsByGrade as $gl => $secs) {
             foreach ($secs as $sec) {
                 $activePairs[$gl . '|' . $sec->section_name] = true;
             }
         }
+
+        foreach ($schoolYears as $schoolYear) {
+        $this->teacherAvailability = [];
+        $this->sectionAvailability = [];
+        $this->roomAvailability = [];
+
+        // Normalize blank terms ('' vs NULL would break updateOrCreate keys and duplicate classes)
+        Classes::where('school_year', $schoolYear)->where('term', '')->update(['term' => null]);
+
+        // Remove this year's classes whose (grade, section) no longer exists among active
+        // sections (rename-drift orphans). DELETE (not deactivate) so the FK cascade clears
+        // their grades, assessments, schedules and enrollment links — otherwise students would
+        // see duplicate subject grades from both the dead and the replacement class.
         $orphans = Classes::where('school_year', $schoolYear)->where('status', 'active')->get()
             ->filter(fn($c) => !isset($activePairs[$c->grade_level . '|' . $c->section]));
         foreach ($orphans as $orphan) {
@@ -161,7 +180,7 @@ class TeachersClassesSchedulesSeeder extends Seeder
             $orphan->delete();
         }
         if ($orphans->isNotEmpty()) {
-            $this->warn("Removed {$orphans->count()} orphaned class(es) whose sections are no longer active.");
+            $this->warn("Removed {$orphans->count()} orphaned class(es) for {$schoolYear} whose sections are no longer active.");
         }
 
         // SHS subject codes by strand and grade (used to build plans from the DB sections table)
@@ -313,17 +332,11 @@ class TeachersClassesSchedulesSeeder extends Seeder
             }
         }
 
-        // Post-repair: ensure every active Section has an adviser and every active Class has a teacher
+        // Post-repair per year: every active class of this year has a valid teacher.
+        // (Section advisers are global — sections carry no school_year — so they
+        // are fixed once after the year loop below.)
         $allTeacherIds = User::where('role_id', 4)->where('status', 'active')->pluck('id')->toArray();
         if (!empty($allTeacherIds)) {
-            $orphanSections = Section::where('is_active', true)->whereNull('adviser_id')->get();
-            foreach ($orphanSections as $idx => $sec) {
-                $sec->update(['adviser_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
-            }
-            $invalidAdviserSections = Section::where('is_active', true)->whereNotIn('adviser_id', $allTeacherIds)->whereNotNull('adviser_id')->get();
-            foreach ($invalidAdviserSections as $idx => $sec) {
-                $sec->update(['adviser_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
-            }
             $orphanClasses = Classes::where('status', 'active')->where('school_year', $schoolYear)->whereNull('teacher_id')->get();
             foreach ($orphanClasses as $idx => $cls) {
                 $cls->update(['teacher_id' => $allTeacherIds[$idx % count($allTeacherIds)]]);
@@ -334,7 +347,7 @@ class TeachersClassesSchedulesSeeder extends Seeder
             }
         }
 
-        // Ensure every active class has at least one schedule — search a DB-verified free slot
+        // Ensure every active class of this year has at least one schedule — search a DB-verified free slot
         // (the old fallback forced Monday 07:00 with no conflict check)
         $classesWithoutSchedule = Classes::where('status', 'active')
             ->where('school_year', $schoolYear)
@@ -355,6 +368,20 @@ class TeachersClassesSchedulesSeeder extends Seeder
             ]);
             $this->reserveFor($cls, $free['day'], $free['slot'][0], $free['slot'][1], $cls->room);
             $this->info("Scheduled class #{$cls->id} ({$cls->grade_level} {$cls->section}) on {$free['day']} {$free['slot'][0]}.");
+        }
+        } // end per-school-year loop (foundations: 2024-2025 → 2025-2026 → current → 2027-2028)
+
+        // Section advisers are global (sections carry no school_year) — fix once.
+        $allAdviserIds = User::where('role_id', 4)->where('status', 'active')->pluck('id')->toArray();
+        if (!empty($allAdviserIds)) {
+            $orphanSections = Section::where('is_active', true)->whereNull('adviser_id')->get();
+            foreach ($orphanSections as $idx => $sec) {
+                $sec->update(['adviser_id' => $allAdviserIds[$idx % count($allAdviserIds)]]);
+            }
+            $invalidAdviserSections = Section::where('is_active', true)->whereNotIn('adviser_id', $allAdviserIds)->whereNotNull('adviser_id')->get();
+            foreach ($invalidAdviserSections as $idx => $sec) {
+                $sec->update(['adviser_id' => $allAdviserIds[$idx % count($allAdviserIds)]]);
+            }
         }
     }
 
