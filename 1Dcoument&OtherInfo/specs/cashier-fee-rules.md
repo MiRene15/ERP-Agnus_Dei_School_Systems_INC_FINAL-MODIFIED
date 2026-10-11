@@ -112,3 +112,5 @@ None — 1.5k fixed inside assessment and excluded from discount, uniform 10 mon
 ## 11. Approval
 
 > Approved by user on 2026-10-11.
+
+> Amendment noted 2026-10-11 (pending re-approval of the changed rules): `cashier-full-payment-label.md` (Approved 2026-10-11) supersedes §6 rule 1 — the ₱1.5k line is installment-downpayment-only, not posted on full payment — and narrows "−10% on non-enrollment lines" to tuition lines only (misc/books/uniform/ID at 100%). Body above unchanged until re-approved.

@@ -1,9 +1,10 @@
 # Spec: Enrollment Payment Gating (Parent)
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-11
 - **Revision**: 2026-10-11 — per user: skip the inquiry email/button; use the current admission flow; keep the Registrar→Cashier→Registrar double gate + student's-own-email field.
 - **Approved by**: user on 2026-10-11 (revised scope)
+- **Implemented**: 2026-10-12 — parent verify-and-close: all 3 children Implemented; 7 success checks verified in code (review-forward, payment-access, calendar-holds); no new code, no changed files.
 
 ## 1. Why We Need This
 
