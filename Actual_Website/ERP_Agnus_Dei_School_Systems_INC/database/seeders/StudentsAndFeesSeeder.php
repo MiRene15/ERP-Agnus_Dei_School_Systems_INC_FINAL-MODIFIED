@@ -417,9 +417,12 @@ class StudentsAndFeesSeeder extends Seeder
                 $clearanceStatus = 'Cleared';
             }
 
+            // Spec seed-data-students-promotions.md §6: ledger shell is per
+            // (student, year) so multi-year promotions never clobber each other.
             $ledger = StudentLedger::updateOrCreate(
-                ['student_id' => $student->id],
+                ['student_id' => $student->id, 'school_year' => $schoolYear],
                 [
+                    'school_year' => $schoolYear,
                     'payment_plan' => $index % 5 === 0 ? 'full' : 'installment',
                     'total_assessed' => $totalAssessed,
                     'discount_type' => $discountType,
