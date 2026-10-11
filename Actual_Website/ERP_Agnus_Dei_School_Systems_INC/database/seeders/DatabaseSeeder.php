@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             FeeSchedulesSeeder::class,
             StudentsAndFeesSeeder::class,
             StudentScatterSeeder::class,
+            PaymentsHistorySeeder::class,
             GradesAssessmentsSeeder::class,
             LibraryAndClinicSeeder::class,
             AnnouncementsTableSeeder::class,
