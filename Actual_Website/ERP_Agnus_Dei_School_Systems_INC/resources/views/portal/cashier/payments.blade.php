@@ -64,7 +64,7 @@
                             <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Student No.</th>
                             <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">LRN</th>
                             <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Grade Level</th>
-                            <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Balance</th>
+                            <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Status</th>
                             <th class="text-left py-3 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Actions</th>
                         </tr>
                     </thead>
@@ -78,12 +78,17 @@
                                 <td class="py-3 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="s.legacy_lrn || '—'"></td>
                                 <td class="py-3 px-2 text-gray-700 dark:text-[#C1C4DC]" x-text="s.enrollments?.[0]?.section?.grade_level || 'N/A'"></td>
                                 <td class="py-3 px-2">
-                                    <span class="font-medium" :class="s.computed_balance > 0 ? 'text-red-600' : 'text-green-600'" x-text="'₱ ' + s.computed_balance.toFixed(2)"></span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="(s.payment_status || 'Has Balance') === 'Fully Paid' ? 'bg-green-100 text-green-700' : ((s.payment_status || '') === 'Overdue Installment' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700')" x-text="s.payment_status || 'Has Balance'"></span>
                                 </td>
                                 <td class="py-3 px-2 flex gap-2">
-                                    <button type="button" @click="openPaymentModal(s.id, s.first_name + ' ' + s.last_name)" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                                        Process Payment
-                                    </button>
+                                    <template x-if="s.payment_status !== 'Fully Paid'">
+                                        <button type="button" @click="openPaymentModal(s.id, s.first_name + ' ' + s.last_name)" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                            Take Payment
+                                        </button>
+                                    </template>
+                                    <template x-if="s.payment_status === 'Fully Paid'">
+                                        <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium text-green-700 bg-green-50">Fully Paid — no further payments</span>
+                                    </template>
                                     <button type="button" @click="openFinancialModal(s.id, s.first_name + ' ' + s.last_name)" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
                                         Financial View
                                     </button>

@@ -53,6 +53,17 @@
         </div>
     @endif
 </div>
+<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mt-6">
+    <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6]">Collections by Plan — Full vs Installment</h3>
+    <p class="text-xs text-gray-500 dark:text-[#8A90B0] mt-1 mb-4">Yearly stacked collections for the selected period.</p>
+    @if(count(array_filter(array_merge($stackFull ?? [], $stackInstallment ?? []))) === 0)
+        <p class="text-center text-gray-500 dark:text-[#8A90B0] py-12">No Collections Yet</p>
+    @else
+        <div style="height: 320px; position: relative;">
+            <canvas id="planStackChart"></canvas>
+        </div>
+    @endif
+</div>
 @if(count(array_filter($collected)) > 0)
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
@@ -79,6 +90,30 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     });
+    @if(count(array_filter(array_merge($stackFull ?? [], $stackInstallment ?? []))) > 0)
+    new Chart(document.getElementById('planStackChart'), {
+        type: 'bar',
+        data: {
+            labels: @json($stackLabels ?? $labels),
+            datasets: [
+                { label: 'Full payments', data: @json($stackFull ?? []), backgroundColor: '#10B981' },
+                { label: 'Installments', data: @json($stackInstallment ?? []), backgroundColor: '#3B82F6' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 }, padding: 12 } },
+                tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.dataset.label + ': ₱' + Number(ctx.raw).toLocaleString(); } } }
+            },
+            scales: {
+                x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
+                y: { stacked: true, beginAtZero: true, ticks: { font: { size: 11 }, callback: function (v) { return '₱' + v.toLocaleString(); } }, grid: { color: '#f1f5f9' } }
+            }
+        }
+    });
+    @endif
 });
 </script>
 @endif

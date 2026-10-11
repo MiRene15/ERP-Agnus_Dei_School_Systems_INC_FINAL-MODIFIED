@@ -1,6 +1,6 @@
 <div class="overflow-x-auto">
 <table class="w-full text-sm">
-<thead><tr class="border-b border-gray-200"><th class="text-left py-3 px-2 font-medium text-gray-600">Date</th><th class="text-left py-3 px-2 font-medium text-gray-600">Student</th><th class="text-left py-3 px-2 font-medium text-gray-600">Book</th><th class="text-left py-3 px-2 font-medium text-gray-600">Status</th><th class="text-left py-3 px-2 font-medium text-gray-600">Condition</th><th class="text-left py-3 px-2 font-medium text-gray-600">Fees</th></tr></thead>
+<thead><tr class="border-b border-gray-200"><th class="text-left py-3 px-2 font-medium text-gray-600">Date</th><th class="text-left py-3 px-2 font-medium text-gray-600">Student</th><th class="text-left py-3 px-2 font-medium text-gray-600">Book</th><th class="text-left py-3 px-2 font-medium text-gray-600">Status</th><th class="text-left py-3 px-2 font-medium text-gray-600">Condition</th><th class="text-left py-3 px-2 font-medium text-gray-600">Fees</th><th class="text-left py-3 px-2 font-medium text-gray-600">Receipt</th></tr></thead>
 <tbody>
 @forelse($transactions as $txn)
 <tr class="border-b border-gray-100">
@@ -10,9 +10,10 @@
 <td class="py-2 px-2"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium {{ $txn->status === 'Returned' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ $txn->status }}</span></td>
 <td class="py-2 px-2 text-xs">{{ $txn->condition_at_return ?? $txn->condition_at_borrow ?? '—' }}</td>
 <td class="py-2 px-2 text-xs">₱{{ number_format($txn->total_fees ?? 0, 2) }}</td>
+<td class="py-2 px-2 text-xs">@if($txn->paid_payment_id)<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Paid{{ $txn->paid_at ? ' ' . \Carbon\Carbon::parse($txn->paid_at)->format('M d, Y') : '' }}</span>@elseif(($txn->total_fees ?? 0) > 0)<span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Unpaid — payable at Cashier</span>@else<span class="text-gray-400">—</span>@endif</td>
 </tr>
 @empty
-<tr><td colspan="6" class="py-6 text-center text-gray-400">No history yet.</td></tr>
+<tr><td colspan="7" class="py-6 text-center text-gray-400">No history yet.</td></tr>
 @endforelse
 </tbody>
 </table>

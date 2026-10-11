@@ -9,6 +9,21 @@
     </div>
 </div>
 
+<style>
+@keyframes payment-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+.payment-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top-color: var(--navy, #1e2a5a);
+    border-radius: 50%;
+    animation: payment-spin 0.8s linear infinite;
+}
+</style>
+
 <script>
 var paymentModalAbort = null;
 
@@ -52,8 +67,20 @@ document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         var modal = document.getElementById('payment-modal');
         if (modal && !modal.classList.contains('hidden')) closePaymentModal();
+        var psModal = document.getElementById('payment-success-modal');
+        if (psModal && !psModal.classList.contains('hidden')) closePaymentSuccessModal();
     }
 });
+
+// (removed duplicate openPaymentSuccessModal — see the active definition below)
+
+function closePaymentSuccessModal() {
+    var modal = document.getElementById('payment-success-modal');
+    if (!modal) return;
+    if (paymentSuccessModalAbort) { try { paymentSuccessModalAbort.abort(); } catch (e) {} }
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
 
 document.addEventListener('submit', function (event) {
     var modal = document.getElementById('payment-modal');
@@ -67,6 +94,18 @@ document.addEventListener('submit', function (event) {
         submitter.disabled = true;
         submitter.setAttribute('aria-disabled', 'true');
         submitter.classList.add('is-busy');
+    }
+    // Show Loading Modal on top of every other modal
+    var loadingModal = document.getElementById('loading-payment-modal');
+    if (loadingModal) {
+        loadingModal.classList.remove('hidden');
+        loadingModal.classList.add('flex');
+    }
+    // Hide the payment modal body while processing
+    var paymentModal = document.getElementById('payment-modal');
+    if (paymentModal) {
+        paymentModal.classList.add('hidden');
+        paymentModal.classList.remove('flex');
     }
     var release = function () {
         if (submitter) {
@@ -99,25 +138,61 @@ document.addEventListener('submit', function (event) {
     }).then(function (res) {
         return res.json().then(function (data) { return { res: res, data: data }; }).catch(function () { return { res: res, data: {} }; });
     }).then(function (out) {
+        // Hide loading modal and payment modal
+        var loadingModal = document.getElementById('loading-payment-modal');
+        if (loadingModal) {
+            loadingModal.classList.add('hidden');
+            loadingModal.classList.remove('flex');
+        }
+        var paymentModal = document.getElementById('payment-modal');
+        if (paymentModal) {
+            paymentModal.classList.add('hidden');
+            paymentModal.classList.remove('flex');
+        }
         var ok = out.res.ok && out.data && out.data.success;
         var message = (out.data && (out.data.message || (out.data.errors && Object.values(out.data.errors)[0] && Object.values(out.data.errors)[0][0]))) || (ok ? 'Saved.' : 'Action failed.');
         release();
         if (!ok) {
+            // Re-show the payment modal so the user can see the error
+            var paymentModal = document.getElementById('payment-modal');
+            if (paymentModal) {
+                paymentModal.classList.remove('hidden');
+                paymentModal.classList.add('flex');
+            }
+            var pmBody = document.getElementById('pm-body');
             var errBox = document.createElement('div');
             errBox.className = 'mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm';
             errBox.textContent = message;
-            var pmBody = document.getElementById('pm-body');
             pmBody.prepend(errBox);
             errBox.scrollIntoView({ block: 'nearest' });
             return;
         }
-        closePaymentModal();
-        try { window.dispatchEvent(new CustomEvent('payment-recorded')); } catch (e) { /* noop */ }
+        // Show Payment Success Modal
+        openPaymentSuccessModal(
+            out.data.receipt_number ?? '',
+            out.data.amount ?? 0,
+            out.data.library_amount ?? 0,
+            out.data.credited ?? 0,
+            out.data.student_name ?? '',
+            out.data.print_url ?? ''
+        );
         var finModal = document.getElementById('financial-modal');
         if (finModal && !finModal.classList.contains('hidden')) {
             openFinancialModal(finModal.dataset.studentId, finModal.dataset.studentName, finModal.dataset.year, { type: 'ok', text: message, link: out.data.print_url || null, linkLabel: 'Print Receipt' });
         }
     }).catch(function () {
+        // Hide loading modal
+        var loadingModal = document.getElementById('loading-payment-modal');
+        if (loadingModal) {
+            loadingModal.classList.add('hidden');
+            loadingModal.classList.remove('flex');
+        }
+        // Re-show the payment modal so the user can see the error
+        var paymentModal = document.getElementById('payment-modal');
+        if (paymentModal) {
+            paymentModal.classList.remove('hidden');
+            paymentModal.classList.add('flex');
+        }
         var pmBody = document.getElementById('pm-body');
         var box = document.createElement('div');
         box.className = 'mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm';
@@ -126,4 +201,95 @@ document.addEventListener('submit', function (event) {
         release();
     });
 });
+
+// Payment Success Modal
+var paymentSuccessModalAbort = null;
+function formatDate(date) {
+    var d = new Date(date);
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function openPaymentSuccessModal(receiptNumber, amountPaid, libraryAmount, creditedExcess, studentName, printUrl) {
+    var modal = document.getElementById('payment-success-modal');
+    if (!modal) return;
+    // Populate the modal content
+    document.getElementById('ps-amount').textContent = '₱' + parseFloat(amountPaid).toFixed(2);
+    var receiptNum = receiptNumber || 'RCP-' + formatDate(new Date()) + '-' + ('0000' + (Math.random()*10000|0)).slice(-4);
+    document.getElementById('ps-receipt').textContent = 'Receipt Number: ' + receiptNum;
+    document.getElementById('ps-progress').style.width = parseFloat(amountPaid) > 0 ? '100%' : '0%';
+    document.getElementById('ps-percent').textContent = parseFloat(amountPaid) > 0 ? '100% paid' : '0% paid';
+    // Set the print receipt button URL from the server response
+    var printBtn = document.getElementById('ps-print');
+    if (printBtn) {
+        printBtn.onclick = function () { window.open(printUrl || '', '_blank'); };
+    }
+    modal.dataset.receiptNumber = receiptNumber;
+    modal.dataset.amountPaid = amountPaid;
+    modal.dataset.libraryAmount = libraryAmount;
+    modal.dataset.creditedExcess = creditedExcess;
+    modal.dataset.studentName = studentName || '';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+        try { window.Alpine.initTree(modal); } catch (e) { /* noop */ }
+    }
+}
+
+// Close Loading Payment Modal
+function closeLoadingPaymentModal() {
+    var modal = document.getElementById('loading-payment-modal');
+    if (!modal) return;
+    if (loadingModalAbort) { try { loadingModalAbort.abort(); } catch (e) {} }
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Ensure the modal is hidden until opened
+var psModal = document.getElementById('payment-success-modal');
+if (psModal) psModal.classList.add('hidden');
+
+// Payment Success Modal HTML skeleton (inserted body-first so it exists in the DOM)
+var psModalHTML = document.createElement('div');
+psModalHTML.id = 'payment-success-modal';
+psModalHTML.className = 'fixed inset-0 hidden items-center justify-center p-4';
+psModalHTML.style.zIndex = '120';
+psModalHTML.innerHTML = '<div class="absolute inset-0 bg-black/80" style="backdrop-filter: blur(4px);" onclick="closePaymentSuccessModal()"></div>' +
+    '<div class="relative bg-white dark:bg-[#1A1E3B] rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] my-auto border border-gray-100 dark:border-[#2A2F58] flex flex-col overflow-hidden">' +
+    '    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-[#2A2F58] flex-shrink-0">' +
+    '        <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Payment Successful</h3>' +
+    '        <button onclick="closePaymentSuccessModal()" class="text-2xl text-gray-400 hover:text-gray-700 leading-none">&times;</button>' +
+    '    </div>' +
+    '    <div class="p-6 flex flex-col items-center gap-4">' +
+    '        <div class="text-3xl font-bold text-green-600" id="ps-amount">₱0.00</div>' +
+    '        <p class="text-gray-600 text-sm" id="ps-receipt">Receipt Number: --</p>' +
+    '        <p class="text-gray-500 text-xs">Tuition + Library Dues</p>' +
+    '        <div class="w-full bg-gray-100 dark:bg-[#2A2F58] rounded-full h-2">' +
+    '            <div class="bg-green-600 rounded-full h-2 transition-width" style="width: 100%" id="ps-progress"></div>' +
+    '        </div>' +
+    '        <p class="text-gray-500 text-xs" id="ps-percent">100% paid</p>' +
+    '        <div class="w-full space-y-3 mt-4">' +
+    '            <button onclick="window.open(\'\', \'_blank\')" id="ps-print" class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">Print Receipt</button>' +
+    '            <button onclick="closePaymentSuccessModal()" class="w-full bg-gray-200 dark:bg-[#2A2F58] text-gray-800 dark:text-gray-200 py-2 rounded-lg text-sm hover:bg-gray-300 transition-colors">Close</button>' +
+    '        </div>' +
+    '    </div>' +
+    '</div>';
+document.body.insertBefore(psModalHTML, document.body.firstChild);
+
+// Loading Modal HTML skeleton (inserted body-first so it exists in the DOM, high z-index)
+var loadingModalHTML = document.createElement('div');
+loadingModalHTML.id = 'loading-payment-modal';
+loadingModalHTML.className = 'fixed inset-0 hidden items-center justify-center p-4';
+loadingModalHTML.style.zIndex = '130';
+loadingModalHTML.innerHTML = '<div class="absolute inset-0 bg-black/80" style="backdrop-filter: blur(4px);"></div>' +
+    '<div class="relative bg-white dark:bg-[#1A1E3B] rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] my-auto border border-gray-100 dark:border-[#2A2F58] flex flex-col overflow-hidden">' +
+    '    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-[#2A2F58] flex-shrink-0">' +
+    '        <h3 class="text-lg font-bold text-gray-900 dark:text-[#E8EAF6]">Processing Payment</h3>' +
+    '        <button onclick="closeLoadingPaymentModal()" class="text-2xl text-gray-400 hover:text-gray-700 leading-none">&times;</button>' +
+    '    </div>' +
+    '    <div class="p-8 flex flex-col items-center gap-4">' +
+    '        <div class="payment-spinner mb-4"></div>' +
+    '        <span class="text-gray-700 text-xl font-medium">Processing Payment…</span>' +
+    '        <p class="text-gray-500 text-sm">Your payment is being processed. This may take a few seconds.</p>' +
+    '    </div>' +
+    '</div>';
+document.body.insertBefore(loadingModalHTML, document.body.firstChild);
 </script>

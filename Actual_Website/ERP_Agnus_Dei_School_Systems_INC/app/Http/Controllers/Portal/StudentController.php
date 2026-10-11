@@ -206,10 +206,24 @@ class StudentController extends Controller
             return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
         }
 
-        $student->load('ledger.payments');
+        $student->load('ledger.payments', 'ledger.ledgerLines');
         $feeSchedules = \App\Models\FeeSchedule::where('grade_level', $activeEnrollment->section->grade_level)
             ->where('school_year', $activeEnrollment->school_year)
             ->orderBy('term')->get();
+
+        // Spec cashier-fee-rules.md: family sees status + named breakdown,
+        // never raw ledgers. Status-first data for the ledger view.
+        $ledgerLines = $student->ledger?->ledgerLines ?? collect();
+        $feeStatus = ($student->ledger && $ledgerLines->isNotEmpty())
+            ? app(\App\Services\FeeAssessmentService::class)->statusFor($student->ledger)
+            : null;
+        $libraryDues = \App\Models\LibraryTransaction::with('book')
+            ->where('student_id', $student->id)
+            ->where(function ($q) {
+                $q->where('fees_assessed', true)->orWhere('total_fees', '>', 0);
+            })
+            ->orderBy('borrow_date', 'desc')
+            ->get();
 
         // Latest approved/applied discount request, so the student sees the full breakdown.
         $discountRequest = $student->ledger
@@ -220,10 +234,10 @@ class StudentController extends Controller
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears', 'discountRequest'))->render(),
+                'html' => view('portal.student.partials.ledger-results', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears', 'discountRequest', 'ledgerLines', 'feeStatus', 'libraryDues'))->render(),
             ]);
         }
 
-        return view('portal.student.ledger', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears', 'discountRequest'));
+        return view('portal.student.ledger', compact('student', 'activeEnrollment', 'feeSchedules', 'schoolYear', 'schoolYears', 'discountRequest', 'ledgerLines', 'feeStatus', 'libraryDues'));
     }
 }

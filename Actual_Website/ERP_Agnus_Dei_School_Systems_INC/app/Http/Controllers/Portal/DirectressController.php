@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Directress\RollOverFeesRequest;
+use App\Http\Requests\Directress\StoreFeeScheduleRequest;
+use App\Http\Requests\Directress\UpdateFeeScheduleRequest;
 use App\Models\Announcement;
 use App\Models\FeeSchedule;
 use App\Models\GraduationFee;
 use App\Models\StudentGraduationFee;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Services\FeeAssessmentService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -75,15 +79,14 @@ class DirectressController extends Controller
     }
 
     // ─── Fee Schedule (moved from Admin) ────────────────────────
+    // Spec cashier-fee-rules.md: filterable by school year (current
+    // pre-filled), edits save under that year only, explicit Roll Over.
     public function fees(Request $request)
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
-        $query = FeeSchedule::query();
-
-        if (request('school_year')) {
-            $query->where('school_year', request('school_year'));
-        }
+        $selectedYear = $request->input('school_year', active_school_year());
+        $query = FeeSchedule::forSchoolYear($selectedYear);
 
         $fees = $query->orderBy('grade_level')->orderBy('term')->get()->groupBy('grade_level');
         $terms = ['1st Term', '2nd Term', '3rd Term'];
@@ -95,7 +98,7 @@ class DirectressController extends Controller
             ]);
         }
 
-        return view('portal.directress.fees.index', compact('fees', 'terms', 'schoolYears'));
+        return view('portal.directress.fees.index', compact('fees', 'terms', 'schoolYears', 'selectedYear'));
     }
 
     public function feesCreate()
@@ -106,15 +109,9 @@ class DirectressController extends Controller
         return view('portal.directress.fees.create', compact('gradeLevels', 'terms'));
     }
 
-    public function feesStore(Request $request)
+    public function feesStore(StoreFeeScheduleRequest $request)
     {
-        $data = $request->validate([
-            'grade_level' => 'required|string|max:20',
-            'term' => 'required|in:1st Term,2nd Term,3rd Term',
-            'tuition_fee' => 'required|numeric|min:0',
-            'misc_fee' => 'required|numeric|min:0',
-            'school_year' => 'required|string|max:20',
-        ]);
+        $data = $request->validated();
 
         $exists = FeeSchedule::where('grade_level', $data['grade_level'])
             ->where('term', $data['term'])
@@ -148,15 +145,9 @@ class DirectressController extends Controller
         return view('portal.directress.fees.edit', compact('fee', 'gradeLevels', 'terms'));
     }
 
-    public function feesUpdate(Request $request, FeeSchedule $fee)
+    public function feesUpdate(UpdateFeeScheduleRequest $request, FeeSchedule $fee)
     {
-        $data = $request->validate([
-            'grade_level' => 'required|string|max:20',
-            'term' => 'required|in:1st Term,2nd Term,3rd Term',
-            'tuition_fee' => 'required|numeric|min:0',
-            'misc_fee' => 'required|numeric|min:0',
-            'school_year' => 'required|string|max:20',
-        ]);
+        $data = $request->validated();
 
         // Locked school years are frozen — their settings can no longer be edited.
         if (school_year_locked($data['school_year']) || school_year_locked($fee->school_year)) {
@@ -188,6 +179,32 @@ class DirectressController extends Controller
         \Illuminate\Support\Facades\Cache::forget("fee_totals:{$feeSchoolYear}:{$gradeLevel}");
         log_activity('App\\Models\\FeeSchedule', 'Fee Schedule Deleted', auth()->user()->name . ' deleted fee schedule for ' . $gradeLevel . '.');
         return back()->with('success', 'Fee schedule deleted.');
+    }
+
+    /**
+     * Spec cashier-fee-rules.md: explicit Roll Over copies a year forward
+     * for review — new years start empty until this runs, never silently.
+     */
+    public function feesRollOver(RollOverFeesRequest $request, FeeAssessmentService $fees)
+    {
+        $data = $request->validated();
+
+        if (school_year_locked($data['to_year'])) {
+            return back()->with('error', 'School year ' . $data['to_year'] . ' is locked — its settings can no longer be edited.');
+        }
+
+        try {
+            $copied = $fees->rollOverFees($data['from_year'], $data['to_year']);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        \Illuminate\Support\Facades\Cache::forget('all_school_years');
+
+        log_activity('App\\Models\\FeeSchedule', 'Fees Rolled Over', auth()->user()->name . ' rolled ' . $copied . ' fee row(s) from ' . $data['from_year'] . ' to ' . $data['to_year'] . ' for review.');
+
+        return redirect()->route('directress.fees', ['school_year' => $data['to_year']])
+            ->with('success', 'Rolled ' . $copied . ' fee row(s) from ' . $data['from_year'] . ' to ' . $data['to_year'] . ' for review.');
     }
 
     // ─── Graduation Fees ────────────────────────────────────────

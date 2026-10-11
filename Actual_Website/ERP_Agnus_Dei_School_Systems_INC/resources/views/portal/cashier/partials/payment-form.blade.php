@@ -8,7 +8,14 @@
         $effectiveAutoType = $student->ledger->discount_type ?? '';
         $effectiveAutoAmount = $student->ledger->discount_applied;
     }
+    $formFullyPaid = ($feeStatus['status'] ?? '') === 'Fully Paid' && ($libraryDues ?? collect())->isEmpty();
 @endphp
+@if($formFullyPaid)
+<div class="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+    <p class="text-sm font-semibold text-green-800">Fully Paid</p>
+    <p class="text-xs text-green-600 mt-1">No further payments required for this account.</p>
+</div>
+@else
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="font-semibold text-gray-900 mb-4">Process Payment</h3>
             <form method="POST" action="{{ route('cashier.payment.process', $student) }}" enctype="multipart/form-data"
@@ -37,8 +44,25 @@
                         <input type="number" name="amount_paid" required step="0.01" min="1"
                                placeholder="0.00"
                                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        @if(!empty($termFloor['floor']))
+                        <p class="text-xs text-gray-500 mt-1">Minimum ₱{{ number_format($termFloor['floor'], 2) }}{{ !empty($termFloor['label']) ? ' — ' . $termFloor['label'] : '' }}</p>
+                        @endif
                         @error('amount_paid') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
+                    @if(!empty($libraryDues) && $libraryDues->isNotEmpty())
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Library Dues</label>
+                        <div class="space-y-2 rounded-lg border border-gray-200 p-3">
+                            @foreach($libraryDues as $due)
+                            <label class="flex items-start gap-2 text-sm">
+                                <input type="checkbox" name="library_transaction_ids[]" value="{{ $due->id }}" class="mt-1">
+                                <span class="text-gray-700">Overdue: {{ $due->book->title ?? $due->book_title }} — <span class="font-medium">₱{{ number_format($due->total_fees, 2) }}</span></span>
+                            </label>
+                            @endforeach
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Ticked dues share the single receipt with tuition.</p>
+                    </div>
+                    @endif
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">AR Number</label>
                         <input type="text" name="ar_number" value="{{ $nextArNumber }}"
@@ -117,8 +141,9 @@
                     <button type="submit"
                             class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition"
                             style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                        Process Payment
+                        Take Payment
                     </button>
                 </div>
             </form>
         </div>
+@endif

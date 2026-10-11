@@ -346,6 +346,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/directress/fees/{fee}/edit', [DirectressController::class, 'feesEdit'])->name('directress.fees.edit');
         Route::patch('/directress/fees/{fee}', [DirectressController::class, 'feesUpdate'])->name('directress.fees.update');
         Route::delete('/directress/fees/{fee}', [DirectressController::class, 'feesDestroy'])->name('directress.fees.destroy');
+        Route::post('/directress/fees/roll-over', [DirectressController::class, 'feesRollOver'])->name('directress.fees.roll-over');
         // Graduation Fees
         Route::get('/directress/graduation-fees', [DirectressController::class, 'graduationFees'])->name('directress.graduation-fees');
         Route::get('/directress/graduation-fees/create', [DirectressController::class, 'graduationFeesCreate'])->name('directress.graduation-fees.create');

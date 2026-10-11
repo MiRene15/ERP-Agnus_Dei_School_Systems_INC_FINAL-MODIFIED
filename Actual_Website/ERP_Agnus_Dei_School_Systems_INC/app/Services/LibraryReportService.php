@@ -14,6 +14,9 @@ class LibraryReportService
      * Shared library read for the directress tab and the librarian single.
      * Same live source both screens total, so the numbers always agree.
      *
+     * Spec cashier-fee-rules.md: the Librarian views read the same Cashier
+     * receipt — paid dues (paid_payment_id set) read paid; unpaid dues stay due.
+     *
      * @return array{
      *     totalBooks: int,
      *     totalCopies: int,
@@ -22,6 +25,8 @@ class LibraryReportService
      *     overdueCount: int,
      *     totalTransactions: int,
      *     totalFines: float,
+     *     unpaidFines: float,
+     *     libraryCollected: float,
      *     recentTransactions: Collection,
      *     popularBooks: Collection
      * }
@@ -39,8 +44,10 @@ class LibraryReportService
             ->count();
         $totalTransactions = LibraryTransaction::count();
         $totalFines = (float) LibraryTransaction::where('fees_assessed', true)->sum('total_fees');
+        $unpaidFines = (float) LibraryTransaction::where('fees_assessed', true)->whereNull('paid_payment_id')->sum('total_fees');
+        $libraryCollected = round($totalFines - $unpaidFines, 2);
 
-        $recentTransactions = LibraryTransaction::with('student', 'book')
+        $recentTransactions = LibraryTransaction::with(['student', 'book', 'paidPayment'])
             ->latest('borrow_date')
             ->take(10)
             ->get();
@@ -59,6 +66,8 @@ class LibraryReportService
             'overdueCount' => $overdueCount,
             'totalTransactions' => $totalTransactions,
             'totalFines' => $totalFines,
+            'unpaidFines' => $unpaidFines,
+            'libraryCollected' => $libraryCollected,
             'recentTransactions' => $recentTransactions,
             'popularBooks' => $popularBooks,
         ];

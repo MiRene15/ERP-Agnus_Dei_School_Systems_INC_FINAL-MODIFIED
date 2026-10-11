@@ -43,11 +43,14 @@ class HoldService
         foreach ($ids as $id) $out[$id] = [];
 
         // Library: overdue unreturned loans.
+        // Spec cashier-fee-rules.md: Cashier's receipt wins — a due settled
+        // at Cashier (paid_payment_id set) lifts the hold on confirmation.
         $overdue = LibraryTransaction::whereIn('student_id', $ids)
             ->where('status', 'Borrowed')
             ->whereNotNull('return_date')
             ->whereDate('return_date', '<', now()->toDateString())
             ->whereNull('returned_at')
+            ->whereNull('paid_payment_id')
             ->with('book')
             ->get();
         foreach ($overdue->groupBy('student_id') as $sid => $loans) {
@@ -86,7 +89,7 @@ class HoldService
         foreach ($ledgers as $ledger) {
             $out[$ledger->student_id][] = [
                 'source' => 'finance',
-                'reason' => 'Outstanding balance ₱' . number_format($ledger->balance, 2),
+                'reason' => 'Has Balance — outstanding ₱' . number_format($ledger->balance, 2),
                 'action' => 'Settle your account at the Cashier’s Office.',
             ];
         }

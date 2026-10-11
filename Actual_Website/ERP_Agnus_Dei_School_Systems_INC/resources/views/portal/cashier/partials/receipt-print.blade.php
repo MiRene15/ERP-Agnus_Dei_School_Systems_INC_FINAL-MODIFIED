@@ -96,6 +96,22 @@
                 <span>AMOUNT PAID</span>
                 <span>₱{{ number_format($payment->amount_paid, 2) }}</span>
             </div>
+            @if(($payment->tuition_amount ?? 0) > 0 || ($payment->library_amount ?? 0) > 0)
+            <div class="amount-row">
+                <span>Tuition</span>
+                <span>₱{{ number_format($payment->tuition_amount ?? $payment->amount_paid, 2) }}</span>
+            </div>
+            <div class="amount-row">
+                <span>Library dues</span>
+                <span>₱{{ number_format($payment->library_amount ?? 0, 2) }}</span>
+            </div>
+            @endif
+            @if($payment->relationLoaded('libraryTransactions') ? $payment->libraryTransactions->isNotEmpty() : (!empty($payment->library_amount) && $payment->library_amount > 0))
+            <div class="amount-row">
+                <span>{{ $payment->relationLoaded('libraryTransactions') ? $payment->libraryTransactions->pluck('book_title')->filter()->implode(', ') : 'Library dues on this receipt' }}</span>
+                <span></span>
+            </div>
+            @endif
             <div class="amount-row balance" style="color: {{ $balanceAfter > 0 ? '#dc2626' : '#059669' }};">
                 <span>Balance</span>
                 <span>₱{{ number_format($balanceAfter, 2) }}</span>

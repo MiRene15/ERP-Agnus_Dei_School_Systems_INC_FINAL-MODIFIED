@@ -399,7 +399,10 @@ class LibrarianController extends Controller
         );
         $transaction->save();
 
-        if ($transaction->total_fees > 0) {
+        // Spec cashier-fee-rules.md: Cashier's receipt wins — never double-post.
+        // A due already settled at Cashier keeps its receipt; the Library
+        // must not re-assess it onto the ledger a second time.
+        if ($transaction->total_fees > 0 && ! $transaction->isPaid()) {
             $student = $transaction->student;
             $ledger = $student->ledger;
             if ($ledger) {

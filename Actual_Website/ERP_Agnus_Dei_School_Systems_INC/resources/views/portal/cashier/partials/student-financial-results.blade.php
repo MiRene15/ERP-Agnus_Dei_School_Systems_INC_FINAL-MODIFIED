@@ -3,7 +3,19 @@
     <p class="text-gray-600 dark:text-[#C1C4DC] mt-1">{{ $student->first_name }} {{ $student->last_name }} &middot; {{ $student->student_number }}</p>
 </div>
 
-@if(($student->ledger?->balance ?? 0) <= 0 && $student->ledger?->payment_plan === 'full' && $student->ledger?->total_paid > 0)
+@if(!empty($feeStatus))
+@php
+    $fsStatus = $feeStatus['status'];
+    $fsNext = $feeStatus['next_due'] ?? '';
+@endphp
+<div class="mb-4 p-4 rounded-lg border flex items-center gap-3 {{ $fsStatus === 'Fully Paid' ? 'bg-green-50 border-green-200' : ($fsStatus === 'Overdue Installment' ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200') }}">
+    <svg class="w-6 h-6 flex-shrink-0 {{ $fsStatus === 'Fully Paid' ? 'text-green-600' : ($fsStatus === 'Overdue Installment' ? 'text-red-600' : 'text-amber-600') }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div>
+        <p class="text-sm font-semibold {{ $fsStatus === 'Fully Paid' ? 'text-green-800' : ($fsStatus === 'Overdue Installment' ? 'text-red-800' : 'text-amber-800') }}">{{ $fsStatus }}</p>
+        <p class="text-xs {{ $fsStatus === 'Fully Paid' ? 'text-green-600' : ($fsStatus === 'Overdue Installment' ? 'text-red-600' : 'text-amber-700') }}">@if($fsStatus === 'Fully Paid')All fees have been settled. No further payments required.@elseif($fsNext){{ $fsNext }}@else Remaining: ₱{{ number_format($feeStatus['remaining'] ?? 0, 2) }}@endif</p>
+    </div>
+</div>
+@elseif(($student->ledger?->balance ?? 0) <= 0 && $student->ledger?->payment_plan === 'full' && $student->ledger?->total_paid > 0)
 <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
     <svg class="w-6 h-6 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     <div>
@@ -20,15 +32,32 @@
 
 @if(isset($libraryFees) && $libraryFees->isNotEmpty())
 <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
-    <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">Library Fees</h3>
+    <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-1">Library Dues</h3>
+    <p class="text-xs text-gray-500 dark:text-[#8A90B0] mb-4">Payable here on one shared receipt with tuition.</p>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
-            <thead><tr class="border-b border-gray-200 dark:border-[#2A2F58]"><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Book</th><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Borrowed</th><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Returned</th><th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Fee</th></tr></thead>
+            <thead><tr class="border-b border-gray-200 dark:border-[#2A2F58]"><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Due</th><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">State</th><th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Fee</th></tr></thead>
             <tbody>
                 @foreach($libraryFees as $lf)
-                <tr class="border-b border-gray-50 dark:border-[#2A2F58]"><td class="py-2 px-2">{{ $lf->book->title ?? $lf->book_title }}</td><td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $lf->borrow_date ? \Carbon\Carbon::parse($lf->borrow_date)->format('M d, Y') : '-' }}</td><td class="py-2 px-2 text-gray-600 dark:text-[#C1C4DC]">{{ $lf->actual_return_date ?? $lf->returned_at ?? $lf->return_date ?? 'Not returned' }}</td><td class="py-2 px-2 text-right font-medium text-red-600">₱{{ number_format($lf->total_fees, 2) }}</td></tr>
+                <tr class="border-b border-gray-50 dark:border-[#2A2F58]"><td class="py-2 px-2">Overdue: {{ $lf->book->title ?? $lf->book_title }}</td><td class="py-2 px-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $lf->paid_payment_id ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ $lf->paid_payment_id ? 'Paid' . ($lf->paid_at ? ' ' . \Carbon\Carbon::parse($lf->paid_at)->format('M d, Y') : '') : 'Unpaid' }}</span></td><td class="py-2 px-2 text-right font-medium text-red-600">₱{{ number_format($lf->total_fees, 2) }}</td></tr>
                 @endforeach
-                <tr class="font-semibold border-t-2 border-gray-200 dark:border-[#2A2F58]"><td colspan="3" class="py-2 px-2 text-right">Total Library Fees:</td><td class="py-2 px-2 text-right text-red-600">₱{{ number_format($libraryTotal, 2) }}</td></tr>
+                <tr class="font-semibold border-t-2 border-gray-200 dark:border-[#2A2F58]"><td colspan="2" class="py-2 px-2 text-right">Total Library Dues:</td><td class="py-2 px-2 text-right text-red-600">₱{{ number_format($libraryTotal, 2) }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
+@if(!empty($ledgerLines) && $ledgerLines->isNotEmpty())
+<div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-6 mb-6">
+    <h3 class="font-semibold text-gray-900 dark:text-[#E8EAF6] mb-4">Assessment Breakdown</h3>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead><tr class="border-b border-gray-200 dark:border-[#2A2F58]"><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Line</th><th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Assessed</th><th class="text-right py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">Paid</th><th class="text-left py-2 px-2 font-medium text-gray-600 dark:text-[#8A90B0]">State</th></tr></thead>
+            <tbody>
+                @foreach($ledgerLines as $line)
+                <tr class="border-b border-gray-50 dark:border-[#2A2F58]"><td class="py-2 px-2">{{ $line->label }}</td><td class="py-2 px-2 text-right">₱{{ number_format($line->amount_assessed, 2) }}</td><td class="py-2 px-2 text-right text-green-600">₱{{ number_format($line->amount_paid, 2) }}</td><td class="py-2 px-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $line->status === 'paid' ? 'bg-green-100 text-green-700' : ($line->status === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600') }}">{{ ucfirst($line->status) }}</span></td></tr>
+                @endforeach
             </tbody>
         </table>
     </div>
@@ -128,8 +157,8 @@
                         @endforeach
                     </select>
                     @endif
-                    @if(!(($student->ledger?->balance ?? 0) <= 0 && $student->ledger?->payment_plan === 'full' && $student->ledger?->total_paid > 0))
-                    <button type="button" onclick="openPaymentModal({{ $student->id }}, @js($student->first_name . ' ' . $student->last_name))" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Process Payment</button>
+                    @if(!(($student->ledger?->balance ?? 0) <= 0 && $student->ledger?->payment_plan === 'full' && $student->ledger?->total_paid > 0) && !((($feeStatus['status'] ?? '') === 'Fully Paid') && ($libraryFees ?? collect())->whereNull('paid_payment_id')->isEmpty()))
+                    <button type="button" onclick="openPaymentModal({{ $student->id }}, @js($student->first_name . ' ' . $student->last_name))" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Take Payment</button>
                     @endif
                 </div>
             </div>

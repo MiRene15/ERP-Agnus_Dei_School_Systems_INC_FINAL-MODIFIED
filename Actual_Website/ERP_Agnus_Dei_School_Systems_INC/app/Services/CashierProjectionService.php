@@ -180,6 +180,65 @@ class CashierProjectionService
         return $byMonth;
     }
 
+    /**
+     * Yearly stacked collections: full vs installment per month.
+     * Driver-agnostic PHP bucketing like collectionsGroupedByMonth —
+     * one query, one code path, any driver. Single grouped pass.
+     *
+     * Spec cashier-fee-rules.md: Directress reads the yearly stacked
+     * chart of full vs installment collections.
+     *
+     * @return array{stackLabels: array<int, string>, stackFull: array<int, float>, stackInstallment: array<int, float>}
+     */
+    public function yearlyCollectionsStacked(Carbon $from, Carbon $to): array
+    {
+        [$from, $to] = $this->clampRange($from, $to);
+
+        $startMonth = $from->copy()->startOfMonth();
+        $endMonth = $to->copy()->endOfMonth();
+
+        $payments = Payment::with('ledger:id,payment_plan')
+            ->whereBetween('payment_date', [$startMonth, $endMonth])
+            ->get(['payment_date', 'amount_paid', 'ledger_id']);
+
+        $full = [];
+        $installment = [];
+
+        foreach ($payments as $payment) {
+            $date = $payment->payment_date;
+
+            if (! $date instanceof Carbon) {
+                continue;
+            }
+
+            $key = $date->format('Y-m');
+            $bucket = ($payment->ledger?->payment_plan ?? 'installment') === 'full' ? 'full' : 'installment';
+
+            if ($bucket === 'full') {
+                $full[$key] = ($full[$key] ?? 0.0) + (float) $payment->amount_paid;
+            } else {
+                $installment[$key] = ($installment[$key] ?? 0.0) + (float) $payment->amount_paid;
+            }
+        }
+
+        $labels = [];
+        $fullSeries = [];
+        $installmentSeries = [];
+
+        foreach (CarbonPeriod::create($startMonth, '1 month', $endMonth) as $month) {
+            $labels[] = $month->format('M');
+            $key = $month->format('Y-m');
+            $fullSeries[] = round($full[$key] ?? 0.0, 2);
+            $installmentSeries[] = round($installment[$key] ?? 0.0, 2);
+        }
+
+        return [
+            'stackLabels' => $labels,
+            'stackFull' => $fullSeries,
+            'stackInstallment' => $installmentSeries,
+        ];
+    }
+
     public function monthlySeries(string $schoolYear): array
     {
         [$from, $to] = $this->monthRangeForSchoolYear($schoolYear);

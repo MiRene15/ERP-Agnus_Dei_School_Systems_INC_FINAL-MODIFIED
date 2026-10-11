@@ -21,6 +21,23 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
+{{-- Spec cashier-fee-rules.md: status-first — Term Total + status first, then lines. --}}
+@php
+    $bannerStatus = $feeStatus['status'] ?? null;
+    $bannerNext = $feeStatus['next_due'] ?? '';
+    $bannerFloor = $termFloor['floor'] ?? 0;
+    $bannerFloorLabel = $termFloor['label'] ?? '';
+@endphp
+@if($bannerStatus)
+<div class="mb-6 p-4 rounded-xl border flex items-center gap-3 {{ $bannerStatus === 'Fully Paid' ? 'bg-green-50 border-green-200' : ($bannerStatus === 'Overdue Installment' ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200') }}">
+    <div class="flex-1">
+        <p class="text-sm font-semibold {{ $bannerStatus === 'Fully Paid' ? 'text-green-800' : ($bannerStatus === 'Overdue Installment' ? 'text-red-800' : 'text-amber-800') }}">{{ $bannerStatus }}@if($bannerNext) — {{ $bannerNext }}@endif</p>
+        <p class="text-xs mt-1 {{ $bannerStatus === 'Fully Paid' ? 'text-green-600' : ($bannerStatus === 'Overdue Installment' ? 'text-red-600' : 'text-amber-700') }}">Term Total: ₱{{ number_format($bannerFloor, 2) }}{{ $bannerFloorLabel ? ' (' . $bannerFloorLabel . ')' : '' }}@if(($libraryDuesTotal ?? 0) > 0) + Library Dues: ₱{{ number_format($libraryDuesTotal, 2) }}@endif</p>
+    </div>
+    <span class="text-xs font-medium px-2 py-1 rounded-full {{ $bannerStatus === 'Fully Paid' ? 'bg-green-100 text-green-700' : ($bannerStatus === 'Overdue Installment' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700') }}">Term Total ₱{{ number_format($bannerFloor, 2) }}</span>
+</div>
+@endif
+
 @php
     $isFirstPayment = !$student->ledger || $student->ledger->payments->isEmpty();
     $isPlanLocked = $student->ledger && $student->ledger->payments->isNotEmpty();
@@ -197,6 +214,12 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 mb-1">Payment Successful!</h3>
         <p class="text-sm text-gray-500 mb-1">₱{{ number_format($ps['amount'], 2) }} received from <strong>{{ $ps['student_name'] }}</strong></p>
+        @if(!empty($ps['library_amount']))
+        <p class="text-xs text-gray-500 mb-1">Library dues on this receipt: ₱{{ number_format($ps['library_amount'], 2) }}</p>
+        @endif
+        @if(!empty($ps['credited']))
+        <p class="text-xs text-green-600 mb-1">₱{{ number_format($ps['credited'], 2) }} credited to next term.</p>
+        @endif
         <p class="text-xs text-gray-400 mb-6">Receipt: {{ $ps['receipt_number'] }}</p>
         <div class="flex gap-3">
             <a href="{{ route('cashier.payments') }}"

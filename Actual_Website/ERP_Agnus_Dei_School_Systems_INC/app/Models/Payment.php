@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Payment extends Model
 {
@@ -13,6 +15,8 @@ class Payment extends Model
         'ledger_id',
         'cashier_id',
         'amount_paid',
+        'tuition_amount',
+        'library_amount',
         'receipt_number',
         'ar_number',
         'receipt_file_path',
@@ -23,14 +27,26 @@ class Payment extends Model
         'payment_date' => 'datetime',
     ];
 
-    public function ledger()
+    public function ledger(): BelongsTo
     {
         return $this->belongsTo(StudentLedger::class);
     }
 
-    public function cashier()
+    public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_id');
+    }
+
+    /**
+     * Spec: cashier-fee-rules.md — one shared receipt covering tuition +
+     * library lines. One due, one receipt: the pivot's unique on
+     * library_transaction_id blocks a second receipt for the same due.
+     */
+    public function libraryTransactions(): BelongsToMany
+    {
+        return $this->belongsToMany(LibraryTransaction::class, 'library_transaction_payment')
+            ->withPivot('amount')
+            ->withTimestamps();
     }
 
     public function generateArNumber(): string

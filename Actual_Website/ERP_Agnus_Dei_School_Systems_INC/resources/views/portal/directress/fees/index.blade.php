@@ -22,19 +22,25 @@
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">{{ session('error') }}</div>
 @endif
 
-<div x-data="ajaxTable('{{ route('directress.fees') }}', { school_year: '{{ request('school_year') }}' })">
+<div x-data="ajaxTable('{{ route('directress.fees') }}', { school_year: '{{ $selectedYear ?? request('school_year', active_school_year()) }}' })">
     <div class="mb-4 flex gap-2 flex-wrap items-center">
         <form method="GET" class="flex gap-2 flex-1 flex-wrap" @submit.prevent="reload()">
             <select x-model="filters.school_year" @change="reload()" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                <option value="">All School Years</option>
                 @foreach($schoolYears as $sy)
-                    <option value="{{ $sy }}">{{ $sy }}</option>
+                    <option value="{{ $sy }}" {{ ($selectedYear ?? '') === $sy ? 'selected' : '' }}>{{ $sy }}{{ $sy === active_school_year() ? ' (current)' : '' }}</option>
                 @endforeach
             </select>
             <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Filter</button>
             <button type="button" @click="reset()" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">Clear</button>
         </form>
+        <form method="POST" action="{{ route('directress.fees.roll-over') }}" class="flex gap-2 flex-wrap items-center" onsubmit="return confirm('Copy {{ $selectedYear ?? '' }} fees forward for review? New years start empty until rolled.')">
+            @csrf
+            <input type="hidden" name="from_year" value="{{ $selectedYear ?? request('school_year', active_school_year()) }}">
+            <input type="text" name="to_year" required pattern="\d{4}-\d{4}" placeholder="To year (e.g. 2027-2028)" class="rounded-lg border border-gray-300 dark:border-[#3B4172] dark:bg-[#23274C] dark:text-[#E8EAF6] px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Roll Over Fees</button>
+        </form>
     </div>
+    <p class="mb-4 text-xs text-gray-500 dark:text-[#8A90B0]">Showing fees for <span class="font-semibold">{{ $selectedYear ?? request('school_year', active_school_year()) }}</span>. Edits save under this school year only — new years start empty until rolled over.</p>
 
     <div x-show="loading" class="space-y-3">
         <template x-for="i in 5" :key="i">

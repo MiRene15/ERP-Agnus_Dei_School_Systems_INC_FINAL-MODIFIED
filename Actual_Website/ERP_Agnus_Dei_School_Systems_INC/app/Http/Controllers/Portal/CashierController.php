@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Portal\ProcessCashierPaymentRequest;
 use App\Http\Requests\Portal\ProjectionFilterRequest;
 use App\Mail\PaymentConfirmationMail;
 use App\Models\Enrollment;
 use App\Models\FeeSchedule;
+use App\Models\LibraryTransaction;
 use App\Models\Payment;
 use App\Models\Student;
 use App\Models\StudentLedger;
 use App\Models\Withdrawal;
 use App\Services\CashierProjectionService;
+use App\Services\FeeAssessmentService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -57,13 +60,14 @@ class CashierController extends Controller
         }
 
         $summary = $projectionService->summaryForPeriod($periodFrom, $periodTo);
+        $stacked = $projectionService->yearlyCollectionsStacked($periodFrom, $periodTo);
 
         // Receivables are a real position to date, so the card never advertises a day
         // that has not happened yet. A school year runs to May, so the default period
         // ends in the future for most of the year while the figure is already "now".
         $receivablesAsOfLabel = $periodTo->copy()->min(Carbon::today())->format('M j, Y');
 
-        return view('portal.cashier.projections', array_merge($series, [
+        return view('portal.cashier.projections', array_merge($series, $stacked, [
             'schoolYear' => $schoolYear,
             'schoolYears' => $schoolYears,
             'summary' => $summary,
@@ -133,25 +137,28 @@ class CashierController extends Controller
             ->limit(10)
             ->get();
 
-            $gradeLevelByStudent = [];
+        $gradeLevelByStudent = [];
 
-            foreach ($students as $student) {
-                $active = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
-                $gradeLevelByStudent[$student->getKey()] = $active?->section?->grade_level;
-            }
+        foreach ($students as $student) {
+            $active = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
+            $gradeLevelByStudent[$student->getKey()] = $active?->section?->grade_level;
+        }
 
-            $assessedByGradeLevel = $this->assessedTotalsByGradeLevel(
-                array_values(array_unique(array_filter($gradeLevelByStudent))),
-                $schoolYear
-            );
+        $assessedByGradeLevel = $this->assessedTotalsByGradeLevel(
+            array_values(array_unique(array_filter($gradeLevelByStudent))),
+            $schoolYear
+        );
 
-            foreach ($students as $student) {
-                $totalAssessed = $assessedByGradeLevel[$gradeLevelByStudent[$student->getKey()] ?? ''] ?? 0;
+        $students->loadMissing('ledger.ledgerLines');
 
-                $totalPaid = $student->ledger?->total_paid ?? 0;
-                $discountApplied = $student->ledger?->discount_applied ?? 0;
-                $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
-            }
+        foreach ($students as $student) {
+            $totalAssessed = $assessedByGradeLevel[$gradeLevelByStudent[$student->getKey()] ?? ''] ?? 0;
+
+            $totalPaid = $student->ledger?->total_paid ?? 0;
+            $discountApplied = $student->ledger?->discount_applied ?? 0;
+            $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
+            $student->payment_status = $this->paymentStatusFor($student, $totalAssessed);
+        }
         }
 
         return view('portal.cashier.payments', compact('students', 'search', 'schoolYear', 'schoolYears'));
@@ -190,6 +197,8 @@ class CashierController extends Controller
             $schoolYear
         );
 
+        $students->loadMissing('ledger.ledgerLines');
+
         foreach ($students as $student) {
             $totalAssessed = $assessedByGradeLevel[$gradeLevelByStudent[$student->getKey()] ?? ''] ?? 0;
 
@@ -197,6 +206,7 @@ class CashierController extends Controller
             $discountApplied = $student->ledger?->discount_applied ?? 0;
 
             $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
+            $student->payment_status = $this->paymentStatusFor($student, $totalAssessed);
         }
 
         return response()->json($students);
@@ -229,12 +239,30 @@ class CashierController extends Controller
         return $totals;
     }
 
-    public function showPayment(Request $request, Student $student)
+    /**
+     * Spec cashier-fee-rules.md: the payments list leads with status
+     * (Fully Paid / Has Balance), never a raw balance. Assessed ledgers
+     * read their line states; unassessed rows fall back to balance math.
+     */
+    private function paymentStatusFor(Student $student, float $totalAssessed): string
+    {
+        $ledger = $student->ledger;
+
+        if ($ledger && $ledger->relationLoaded('ledgerLines') && $ledger->ledgerLines->isNotEmpty()) {
+            return app(FeeAssessmentService::class)->statusFor($ledger)['status'];
+        }
+
+        $balance = max(0, $totalAssessed - (float) ($ledger?->total_paid ?? 0) - (float) ($ledger?->discount_applied ?? 0));
+
+        return ($totalAssessed > 0 && $balance <= 0) ? 'Fully Paid' : 'Has Balance';
+    }
+
+    public function showPayment(Request $request, Student $student, FeeAssessmentService $fees)
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
 
-        $student->load('user', 'enrollments.section', 'ledger', 'admissions');
+        $student->load('user', 'enrollments.section', 'ledger.ledgerLines', 'ledger.payments', 'admissions');
         $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
         $feeSchedules = $enrollment ? FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
@@ -294,25 +322,40 @@ class CashierController extends Controller
 
         $nextArNumber = (new Payment())->generateArNumber();
 
+        // Spec cashier-fee-rules.md: status-first screen — term total +
+        // status first, then lines; library dues as named lines.
+        $ledgerLines = $student->ledger?->ledgerLines ?? collect();
+        $feeStatus = ($student->ledger && $ledgerLines->isNotEmpty())
+            ? $fees->statusFor($student->ledger)
+            : null;
+        if ($student->ledger && $ledgerLines->isNotEmpty()) {
+            $termFloor = $fees->floorFor($student->ledger);
+        } else {
+            $previewFull = round(FeeAssessmentService::ENROLLMENT_FEE + $totalAssessed * (1 - FeeAssessmentService::FULL_DISCOUNT_RATE), 2);
+            $termFloor = ['floor' => FeeAssessmentService::ENROLLMENT_FEE, 'fullFloor' => $previewFull, 'label' => 'Enrollment Fee', 'line_ids' => []];
+        }
+        $libraryDues = LibraryTransaction::with('book')
+            ->where('student_id', $student->id)
+            ->whereNull('paid_payment_id')
+            ->where(function ($q) {
+                $q->where('fees_assessed', true)->orWhere('total_fees', '>', 0);
+            })
+            ->orderBy('borrow_date', 'desc')
+            ->get();
+        $libraryDuesTotal = round((float) $libraryDues->sum('total_fees'), 2);
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType', 'hasPendingDiscount'))->render(),
+                'html' => view('portal.cashier.partials.payment-form', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines'))->render(),
             ]);
         }
 
-        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType', 'hasPendingDiscount'));
+        return view('portal.cashier.payment', compact('student', 'enrollment', 'feeSchedules', 'totalTuition', 'totalMisc', 'totalAssessed', 'discountTypes', 'discountApplied', 'hasScholarship', 'isSHS', 'nextArNumber', 'autoDiscountType', 'autoDiscountAmount', 'admissionType', 'hasPendingDiscount', 'feeStatus', 'termFloor', 'libraryDues', 'libraryDuesTotal', 'ledgerLines'));
     }
 
-    public function processPayment(Request $request, Student $student)
+    public function processPayment(ProcessCashierPaymentRequest $request, Student $student, FeeAssessmentService $fees)
     {
-        $data = $request->validate([
-            'payment_plan' => 'required|in:installment,full',
-            'amount_paid' => 'required|numeric|min:1',
-            'discount_type' => 'nullable|in:honor,sibling,esc,other',
-            'discount_amount' => 'nullable|numeric|min:0',
-            'ar_number' => 'nullable|string|max:30',
-            'receipt_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
-        ]);
+        $data = $request->validated();
 
         $enrollment = $student->enrollments()->with('section')->where('status', 'Active')->latest()->firstOrFail();
 
@@ -362,34 +405,113 @@ class CashierController extends Controller
             $receiptFilePath = $request->file('receipt_file')->store('receipts/' . $student->id, 'public');
         }
 
+        // Spec cashier-fee-rules.md: per-term floor guard (never below the
+        // term total, naming the floor) + shared tuition+library receipt.
+        $libraryDueIds = collect($data['library_transaction_ids'] ?? [])->map(fn ($id) => (int) $id)->filter()->unique()->values();
+        $libraryDues = $libraryDueIds->isEmpty()
+            ? collect()
+            : LibraryTransaction::whereIn('id', $libraryDueIds)
+                ->where('student_id', $student->id)
+                ->whereNull('paid_payment_id')
+                ->get();
+        $librarySum = round((float) $libraryDues->sum('total_fees'), 2);
+
+        $preLedger = $student->ledger;
+        if ($preLedger && $preLedger->ledgerLines()->exists()) {
+            $floor = $fees->floorFor($preLedger);
+            $floorAmount = (float) $floor['floor'];
+            $floorLabel = (string) $floor['label'];
+        } else {
+            $isFullPreview = $data['payment_plan'] === FeeAssessmentService::PATH_FULL;
+            $floorAmount = $isFullPreview
+                ? round(FeeAssessmentService::ENROLLMENT_FEE + $totalAssessed * (1 - FeeAssessmentService::FULL_DISCOUNT_RATE), 2)
+                : FeeAssessmentService::ENROLLMENT_FEE;
+            $floorLabel = $isFullPreview ? 'Full payment' : 'Enrollment Fee';
+        }
+        $required = round($floorAmount + $librarySum, 2);
+        if ($required > 0 && (float) $data['amount_paid'] < $required) {
+            $message = 'Minimum ₱' . number_format($required, 2) . ' — ' . $floorLabel . ' ₱' . number_format($floorAmount, 2)
+                . ($librarySum > 0 ? ' + library dues ₱' . number_format($librarySum, 2) : '')
+                . '. Below-floor payments are never accepted.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            return redirect()->route('cashier.payment', $student)
+                ->with('error', $message)->withInput();
+        }
+
+        $creditedExcess = 0.0;
+
+        // Fully Paid ledgers take no further tuition payments. Library dues
+        // may still be settled on their own receipt when ticked above.
+        $tuitionFullyPaid = $preLedger
+            && $preLedger->ledgerLines()->exists()
+            && $fees->floorFor($preLedger)['floor'] <= 0;
+        if ($tuitionFullyPaid && $librarySum <= 0) {
+            $message = 'Fully Paid — no further payments required for this account.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            return redirect()->route('cashier.payment', $student)
+                ->with('error', $message)->withInput();
+        }
+
         try {
-            DB::transaction(function () use ($student, $data, $totalAssessed, $totalTuition, $discountAmount, $receiptFilePath, $hasScholarship, $isSHS, $autoDiscountType) {
+            DB::transaction(function () use ($student, $data, $totalAssessed, $totalTuition, $discountAmount, $receiptFilePath, $hasScholarship, $isSHS, $autoDiscountType, $enrollment, $fees, $libraryDues, $librarySum, &$creditedExcess) {
                 $ledger = $student->ledger;
+                $path = $data['payment_plan'];
+
+                $syStart = (int) explode('-', (string) $enrollment->school_year)[0];
+                $elapsed = Carbon::create($syStart, 6, 1)->startOfMonth()->diffInMonths(Carbon::now()->startOfMonth(), false);
+                $remainingMonths = max(1, FeeAssessmentService::INSTALLMENTS - max(0, (int) $elapsed));
+                // Calendar anchor: Month 1 is due from June of the SY start,
+                // or from the current month for mid-year enrollees — so each
+                // line names a real month ("pay this month" = earliest unpaid).
+                $juneStart = Carbon::create($syStart, 6, 1)->startOfMonth();
+                $assessStart = $juneStart->greaterThan(Carbon::now()->startOfMonth()) ? $juneStart : Carbon::now()->startOfMonth();
 
                 if (!$ledger) {
-                    $isFirstPayment = true;
-                    $paymentPlan = $data['payment_plan'];
-
                     if ($discountAmount <= 0 && $autoDiscountType) {
                         $discountType = $autoDiscountType;
                     } else {
                         $discountType = $data['discount_type'] ?? null;
                     }
 
-                    $newBalance = max(0, $totalAssessed - $data['amount_paid'] - $discountAmount);
-                    $totalPaid = $data['amount_paid'];
                     $ledger = StudentLedger::create([
                         'student_id' => $student->id,
-                        'payment_plan' => $paymentPlan,
+                        'school_year' => $enrollment->school_year,
+                        'payment_plan' => $path,
+                        'assessment_path' => $path,
+                        'enrollment_fee' => FeeAssessmentService::ENROLLMENT_FEE,
+                        'tuition_assessed' => $totalAssessed,
+                        'installment_count' => $path === FeeAssessmentService::PATH_INSTALLMENT ? $remainingMonths : 0,
                         'total_assessed' => $totalAssessed,
                         'discount_type' => $discountType,
                         'discount_applied' => $discountAmount,
-                        'total_paid' => $totalPaid,
-                        'balance' => $newBalance,
+                        'total_paid' => 0,
+                        'balance' => max(0, $totalAssessed - $discountAmount),
                         'clearance_status' => 'Pending',
                     ]);
+
+                    $fees->assessLedger($ledger->refresh(), (float) $totalAssessed, (string) $enrollment->school_year, $path, $remainingMonths, $assessStart);
+                    $ledger = $ledger->refresh();
                 } else {
-                    $ledger->total_assessed = $totalAssessed;
+                    if ($ledger->ledgerLines()->exists() && $ledger->assessment_path && $ledger->assessment_path !== $path) {
+                        $fees->switchPath($ledger, $path);
+                        $ledger = $ledger->refresh();
+                    } elseif (!$ledger->ledgerLines()->exists()) {
+                        $historicPaid = round((float) $ledger->total_paid, 2);
+                        $ledger->school_year = $ledger->school_year ?? $enrollment->school_year;
+                        $ledger->save();
+                        $fees->assessLedger($ledger->refresh(), (float) $totalAssessed, (string) $enrollment->school_year, $ledger->assessment_path ?? $path, $remainingMonths, $assessStart);
+                        $ledger = $ledger->refresh();
+                        if ($historicPaid > 0) {
+                            $fees->allocatePayment($ledger, $historicPaid);
+                            $ledger = $ledger->refresh();
+                        }
+                    }
 
                     if ($ledger->discount_applied <= 0 && $discountAmount > 0) {
                         $ledger->discount_applied = $discountAmount;
@@ -398,18 +520,9 @@ class CashierController extends Controller
                         } elseif (isset($data['discount_type']) && $data['discount_type']) {
                             $ledger->discount_type = $data['discount_type'];
                         }
+                        $ledger->save();
                     }
                 }
-
-                // First payment on a just-created ledger is already recorded by
-                // create() above — adding it again would double total_paid.
-                if (empty($isFirstPayment)) {
-                    $ledger->total_paid += $data['amount_paid'];
-                }
-                $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
-
-                $ledger->save();
-                \App\Services\LedgerService::refreshClearance($ledger);
 
                 $receiptNumber = null;
                 for ($attempt = 0; $attempt < 5; $attempt++) {
@@ -426,17 +539,34 @@ class CashierController extends Controller
 
                 $arNumber = ($data['ar_number'] ?? null) ?: (new Payment())->generateArNumber();
 
-                Payment::create([
+                $tuitionPortion = round(max(0, (float) $data['amount_paid'] - $librarySum), 2);
+                $payment = Payment::create([
                     'ledger_id' => $ledger->id,
                     'cashier_id' => auth()->id(),
                     'amount_paid' => $data['amount_paid'],
+                    'tuition_amount' => $tuitionPortion,
+                    'library_amount' => $librarySum,
                     'receipt_number' => $receiptNumber,
                     'ar_number' => $arNumber,
                     'receipt_file_path' => $receiptFilePath,
                     'payment_date' => now(),
                 ]);
 
-                log_activity($student, 'Payment', "Payment of ₱" . number_format($data['amount_paid'], 2) . " processed (Receipt: {$receiptNumber}, AR: {$arNumber})");
+                if ($libraryDues->isNotEmpty()) {
+                    $fees->markLibraryDuesPaid($payment, $libraryDues);
+                }
+
+                $allocation = $fees->allocatePayment($ledger->refresh(), $tuitionPortion);
+                $creditedExcess = round((float) $allocation['excess'], 2);
+                $ledger = $ledger->refresh();
+                $ledger->total_paid = round((float) $ledger->ledgerLines()->sum('amount_paid'), 2);
+                $ledger->balance = max(0, $ledger->total_assessed - $ledger->total_paid - $ledger->discount_applied);
+                $ledger->save();
+                \App\Services\LedgerService::refreshClearance($ledger);
+
+                log_activity($student, 'Payment', 'Payment of ₱' . number_format($data['amount_paid'], 2) . ' processed (Receipt: ' . $receiptNumber . ', AR: ' . $arNumber
+                    . ($librarySum > 0 ? ', library ₱' . number_format($librarySum, 2) : '')
+                    . ($creditedExcess > 0 ? ', credited ₱' . number_format($creditedExcess, 2) . ' to next term' : '') . ')');
             });
         } catch (\Exception $e) {
             Log::error('Payment processing failed: ' . $e->getMessage(), [
@@ -474,8 +604,11 @@ class CashierController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => '₱' . number_format($data['amount_paid'], 2) . ' received from ' . $student->first_name . ' ' . $student->last_name . '.',
+                'message' => '₱' . number_format($data['amount_paid'], 2) . ' received from ' . $student->first_name . ' ' . $student->last_name . '.'
+                    . ($creditedExcess > 0 ? ' ₱' . number_format($creditedExcess, 2) . ' credited to next term.' : ''),
                 'amount' => $data['amount_paid'],
+                'credited' => $creditedExcess,
+                'library_amount' => $librarySum,
                 'student_name' => $student->first_name . ' ' . $student->last_name,
                 'receipt_number' => $lastPayment?->receipt_number ?? '',
                 'payment_id' => $lastPayment?->id ?? '',
@@ -486,6 +619,8 @@ class CashierController extends Controller
         return redirect()->route('cashier.payment', $student)
             ->with('payment_success', [
                 'amount' => $data['amount_paid'],
+                'credited' => $creditedExcess,
+                'library_amount' => $librarySum,
                 'student_name' => $student->first_name . ' ' . $student->last_name,
                 'receipt_number' => $lastPayment?->receipt_number ?? '',
                 'payment_id' => $lastPayment?->id ?? '',
@@ -496,6 +631,8 @@ class CashierController extends Controller
     {
         $payment->load([
             'ledger.student.enrollments.section',
+            'ledger.ledgerLines',
+            'libraryTransactions.book',
             'cashier',
         ]);
 
@@ -511,7 +648,7 @@ class CashierController extends Controller
         return view('portal.cashier.partials.receipt-print', compact('payment', 'student', 'enrollment', 'previousPayments', 'balanceAfter'));
     }
 
-    public function studentFinancial(Request $request, Student $student)
+    public function studentFinancial(Request $request, Student $student, FeeAssessmentService $fees)
     {
         $isAjax = $request->boolean('ajax');
         $request->query->remove('ajax');
@@ -521,6 +658,7 @@ class CashierController extends Controller
             'enrollments' => fn($q) => $q->latest(),
             'enrollments.section',
             'ledger.payments.cashier',
+            'ledger.ledgerLines',
         ]);
 
         $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
@@ -549,13 +687,19 @@ class CashierController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        // Spec cashier-fee-rules.md: status-first financial view.
+        $ledgerLines = $student->ledger?->ledgerLines ?? collect();
+        $feeStatus = ($student->ledger && $ledgerLines->isNotEmpty())
+            ? $fees->statusFor($student->ledger)
+            : null;
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments'))->render(),
+                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments', 'ledgerLines', 'feeStatus'))->render(),
             ]);
         }
 
-        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments'));
+        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments', 'ledgerLines', 'feeStatus'));
     }
 
     public function collectionsReport(Request $request)

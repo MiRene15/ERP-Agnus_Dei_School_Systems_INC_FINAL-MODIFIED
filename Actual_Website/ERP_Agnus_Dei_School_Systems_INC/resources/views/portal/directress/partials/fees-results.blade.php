@@ -50,6 +50,6 @@
 </div>
 @empty
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-    <p class="text-sm text-gray-500 text-center py-4">No fee schedules created yet. <a href="{{ route('directress.fees.create') }}" class="text-blue-600 hover:text-blue-800 font-medium">Add one</a>.</p>
+    <p class="text-sm text-gray-500 text-center py-4">No fees for this school year yet — new years start empty until rolled over. <a href="{{ route('directress.fees.create') }}" class="text-blue-600 hover:text-blue-800 font-medium">Add one</a> or use Roll Over Fees above.</p>
 </div>
 @endforelse

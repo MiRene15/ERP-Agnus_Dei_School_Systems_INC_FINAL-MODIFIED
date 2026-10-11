@@ -1,6 +1,6 @@
 # Spec: Cashier Fee Rules
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-11
 - **Approved by**: user on 2026-10-11
 

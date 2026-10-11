@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class LibraryTransaction extends Model
 {
@@ -26,27 +28,52 @@ class LibraryTransaction extends Model
         'total_fees',
         'damage_notes',
         'fees_assessed',
+        'paid_payment_id',
+        'paid_at',
     ];
 
     protected $casts = [
         'borrow_date' => 'date',
         'return_date' => 'date',
         'returned_at' => 'date',
+        'paid_at' => 'datetime',
     ];
 
-    public function student()
+    public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
     }
 
-    public function book()
+    public function book(): BelongsTo
     {
         return $this->belongsTo(Book::class);
     }
 
-    public function librarian()
+    public function librarian(): BelongsTo
     {
         return $this->belongsTo(User::class, 'librarian_id');
+    }
+
+    /**
+     * Spec: cashier-fee-rules.md — Cashier's receipt wins. When set, the
+     * Librarian views read paid and the hold lifts; the pivot unique
+     * prevents the same due being receipted twice.
+     */
+    public function paidPayment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class, 'paid_payment_id');
+    }
+
+    public function receiptPayments(): BelongsToMany
+    {
+        return $this->belongsToMany(Payment::class, 'library_transaction_payment')
+            ->withPivot('amount')
+            ->withTimestamps();
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->paid_payment_id !== null || $this->paid_at !== null;
     }
 
     public function isOverdue(): bool

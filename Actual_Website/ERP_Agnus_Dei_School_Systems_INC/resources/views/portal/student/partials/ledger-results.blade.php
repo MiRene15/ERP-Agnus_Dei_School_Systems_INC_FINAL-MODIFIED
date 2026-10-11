@@ -1,4 +1,13 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    @if(!empty($feeStatus))
+    @php $famStatus = $feeStatus['status']; $famNext = $feeStatus['next_due'] ?? ''; @endphp
+    <div class="lg:col-span-2 p-4 rounded-xl border flex items-center gap-3 {{ $famStatus === 'Fully Paid' ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200' }}">
+        <div>
+            <p class="text-sm font-semibold {{ $famStatus === 'Fully Paid' ? 'text-green-800' : 'text-amber-800' }}">{{ $famStatus }}</p>
+            <p class="text-xs {{ $famStatus === 'Fully Paid' ? 'text-green-600' : 'text-amber-700' }}">@if($famStatus === 'Fully Paid')All fees settled. Thank you!@elseif($famNext)Next: {{ $famNext }}@else Remaining: ₱{{ number_format($feeStatus['remaining'] ?? 0, 2) }}@endif</p>
+        </div>
+    </div>
+    @endif
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <h3 class="font-semibold text-gray-900 mb-4">Account Summary</h3>
         @if($student->ledger)
@@ -44,40 +53,67 @@
 
     @if(isset($feeSchedules) && $feeSchedules->isNotEmpty())
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:col-span-2">
-        <h3 class="font-semibold text-gray-900 mb-3">Fee Breakdown</h3>
+        <h3 class="font-semibold text-gray-900 mb-3">Breakdown</h3>
+        @php
+            $breakdownLibrary = $libraryDues ?? \App\Models\LibraryTransaction::with('book')->where('student_id', $student->id)->where(function($q){$q->where('fees_assessed', true)->orWhere('total_fees','>',0);})->orderBy('borrow_date','desc')->get();
+        @endphp
+        @php
+            $breakdownMisc = $feeSchedules->isNotEmpty() ? \App\Models\FeeSchedule::where('grade_level', $activeEnrollment->section->grade_level)->where('school_year', $activeEnrollment->school_year)->first() : null;
+            $breakdownMiscItems = $breakdownMisc ? ($breakdownMisc->misc_fee_items ? json_decode($breakdownMisc->misc_fee_items, true) ?? [] : []) : [];
+        @endphp
+        @if(!empty($ledgerLines) && $ledgerLines->isNotEmpty())
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead><tr class="border-b border-gray-200"><th class="text-left py-2 px-2 font-medium text-gray-600">Line</th><th class="text-right py-2 px-2 font-medium text-gray-600">Assessed</th><th class="text-right py-2 px-2 font-medium text-gray-600">Paid</th><th class="text-right py-2 px-2 font-medium text-gray-600">Remaining</th><th class="text-left py-2 px-2 font-medium text-gray-600">State</th></tr></thead>
+                <tbody>
+                    @foreach($ledgerLines as $line)
+                    <tr class="border-b border-gray-50"><td class="py-2 px-2 font-medium text-gray-900">{{ $line->label }}</td><td class="text-right py-2">₱{{ number_format($line->amount_assessed, 2) }}</td><td class="text-right py-2 text-green-600">₱{{ number_format($line->amount_paid, 2) }}</td><td class="text-right py-2 font-medium {{ ($line->amount_assessed - $line->amount_paid) > 0 ? 'text-red-600' : 'text-green-600' }}">₱{{ number_format(max(0, $line->amount_assessed - $line->amount_paid), 2) }}</td><td class="py-2 px-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $line->status === 'paid' ? 'bg-green-100 text-green-700' : ($line->status === 'partial' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600') }}">{{ ucfirst($line->status) }}</span></td></tr>
+                    @endforeach
+                    @foreach($breakdownLibrary as $lt)
+                    @php $ltPaid = $lt->paid_payment_id ? $lt->total_fees : 0; @endphp
+                    <tr class="border-b border-orange-100 bg-orange-50/50"><td class="py-2 px-2 font-medium text-gray-900">Library Due: Overdue {{ $lt->book->title ?? $lt->book_title }}</td><td class="text-right py-2">₱{{ number_format($lt->total_fees, 2) }}</td><td class="text-right py-2 text-green-600">₱{{ number_format($ltPaid, 2) }}</td><td class="text-right py-2 font-medium {{ ($lt->total_fees - $ltPaid) > 0 ? 'text-red-600' : 'text-green-600' }}">₱{{ number_format(max(0, $lt->total_fees - $ltPaid), 2) }}</td><td class="py-2 px-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $lt->paid_payment_id ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ $lt->paid_payment_id ? 'Paid' : 'Unpaid' }}</span></td></tr>
+                    @endforeach
+                    @foreach($breakdownMiscItems as $itemKey => $itemVal)
+                    <tr class="border-b border-gray-50 dark:border-[#2A2F58]"><td class="py-2 px-2 font-medium text-gray-900">{{ ucfirst($itemKey) }}</td><td class="text-right py-2">₱{{ number_format($itemVal, 2) }}</td><td class="text-right py-2 text-green-600">₱0.00</td><td class="text-right py-2 font-medium text-red-600">₱{{ number_format($itemVal, 2) }}</td><td class="py-2 px-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Unapplied</span></td></tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @else
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead><tr class="border-b border-gray-200"><th class="text-left py-2 px-2 font-medium text-gray-600">Term</th><th class="text-right py-2 px-2 font-medium text-gray-600">Tuition</th><th class="text-right py-2 px-2 font-medium text-gray-600">Misc</th><th class="text-right py-2 px-2 font-medium text-gray-600">Total</th></tr></thead>
                 <tbody>
                     @foreach($feeSchedules as $fs)
                     <tr class="border-b border-gray-50"><td class="py-2 px-2">{{ $fs->term ?: $fs->school_year }}</td><td class="text-right py-2">₱{{ number_format($fs->tuition_fee,2) }}</td><td class="text-right py-2">₱{{ number_format($fs->misc_fee,2) }}</td><td class="text-right py-2 font-semibold">₱{{ number_format($fs->tuition_fee + $fs->misc_fee,2) }}</td></tr>
-                    @if(!empty($fs->misc_fee_items))
-                        <tr><td colspan="4" class="py-1 px-2 text-xs text-gray-500 bg-gray-50">Misc breakdown: @foreach((is_string($fs->misc_fee_items) ? json_decode($fs->misc_fee_items, true) : $fs->misc_fee_items) as $k => $v) {{ ucfirst($k) }} ₱{{ number_format($v,2) }}@if(!$loop->last), @endif @endforeach</td></tr>
-                    @endif
+                    @foreach((is_string($fs->misc_fee_items) ? json_decode($fs->misc_fee_items, true) : $fs->misc_fee_items) as $itemKey => $itemVal)
+                    <tr class="border-b border-gray-50 bg-gray-50/60"><td class="py-1 px-2 text-gray-600 pl-6">{{ ucfirst($itemKey) }}</td><td class="text-right py-1 px-2 text-gray-500">—</td><td class="text-right py-1 px-2">₱{{ number_format($itemVal,2) }}</td><td class="text-right py-1 px-2 font-medium">₱{{ number_format($itemVal,2) }}</td></tr>
+                    @endforeach
                     @endforeach
                 </tbody>
                 <tfoot><tr class="border-t-2 border-gray-200 font-bold"><td class="py-2 px-2">Total Assessed</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('tuition_fee'),2) }}</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('misc_fee'),2) }}</td><td class="text-right py-2">₱{{ number_format($feeSchedules->sum('tuition_fee') + $feeSchedules->sum('misc_fee'),2) }}</td></tr></tfoot>
             </table>
         </div>
         @php
-            $libraryTxns = \App\Models\LibraryTransaction::with('book')->where('student_id', $student->id)->where(function($q){$q->where('fees_assessed', true)->orWhere('total_fees','>',0);})->orderBy('borrow_date','desc')->get();
+            $libraryTxns = $breakdownLibrary;
             $libraryFees = $libraryTxns->sum('total_fees');
         @endphp
         @if($libraryFees > 0)
         <div class="mt-4 p-3 bg-orange-50 dark:bg-[rgba(251,146,60,0.12)] border border-orange-200 dark:border-[rgba(251,146,60,0.25)] rounded-lg">
-            <p class="text-sm font-semibold text-orange-700 dark:text-[#FB923C]">Library Fees: ₱{{ number_format($libraryFees,2) }}</p>
+            <p class="text-sm font-semibold text-orange-700 dark:text-[#FB923C]">Library Dues: ₱{{ number_format($libraryFees,2) }}</p>
             <div class="mt-2 overflow-x-auto">
                 <table class="w-full text-xs">
-                    <thead><tr class="border-b border-orange-200 dark:border-[rgba(251,146,60,0.25)]"><th class="text-left py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">Book</th><th class="text-left py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">Dates</th><th class="text-right py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">Fee</th></tr></thead>
+                    <thead><tr class="border-b border-orange-200 dark:border-[rgba(251,146,60,0.25)]"><th class="text-left py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">Due</th><th class="text-left py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">State</th><th class="text-right py-1 px-1 font-medium text-orange-700 dark:text-[#FB923C]">Fee</th></tr></thead>
                     <tbody>
                         @foreach($libraryTxns as $lt)
-                        <tr class="border-b border-orange-100 dark:border-[rgba(251,146,60,0.15)]"><td class="py-1 px-1 text-gray-700 dark:text-[#C1C4DC]">{{ $lt->book->title ?? $lt->book_title }}</td><td class="py-1 px-1 text-gray-500 dark:text-[#8A90B0]">{{ $lt->borrow_date }} → {{ $lt->actual_return_date ?? $lt->return_date ?? 'Not returned' }}</td><td class="py-1 px-1 text-right font-medium text-orange-600">₱{{ number_format($lt->total_fees,2) }}</td></tr>
+                        <tr class="border-b border-orange-100 dark:border-[rgba(251,146,60,0.15)]"><td class="py-1 px-1 text-gray-700 dark:text-[#C1C4DC]">Overdue: {{ $lt->book->title ?? $lt->book_title }}</td><td class="py-1 px-1"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $lt->paid_payment_id ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ $lt->paid_payment_id ? 'Paid' : 'Unpaid' }}</span></td><td class="py-1 px-1 text-right font-medium text-orange-600">₱{{ number_format($lt->total_fees,2) }}</td></tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
-            <p class="text-xs text-orange-600 dark:text-[#FB923C] mt-2">Included in Balance</p>
+            <p class="text-xs text-orange-600 dark:text-[#FB923C] mt-2">Payable at the Cashier on one shared receipt.</p>
         </div>
+        @endif
         @endif
         @if($student->ledger && $student->ledger->discount_applied > 0)
             <p class="text-sm text-green-600 mt-2 text-right">Discount ({{ ucfirst($student->ledger->discount_type) }}): -₱{{ number_format($student->ledger->discount_applied,2) }}</p>
