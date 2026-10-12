@@ -421,32 +421,33 @@ class TeacherController extends Controller
 
         $enrollmentYears = Enrollment::whereIn('id', array_keys($activeIds))->pluck('school_year', 'id')->toArray();
 
-        // Row-level semantic checks with row numbers — failed saves re-render
-        // every entered row from the submitted input (never wiped).
-        $rowErrors = [];
-        $kept = [];
-        foreach ($data['rows'] as $idx => $row) {
-            $rowNo = $idx + 1;
-            $hasContent = !empty($row['enrollment_id']) || !empty($row['raw_score']) || !empty($row['max_score']) || !empty($row['remarks']) || !empty($row['title']);
-            if (!$hasContent) {
-                continue;
-            }
-            if (empty($row['enrollment_id']) || !isset($activeIds[$row['enrollment_id']])) {
-                $rowErrors[] = "Row {$rowNo}: pick a student from this class.";
-                continue;
-            }
-            $studentYear = $enrollmentYears[$row['enrollment_id']] ?? null;
-            if (!empty($studentYear) && !empty($class->school_year) && $studentYear !== $class->school_year) {
-                $rowErrors[] = "Row {$rowNo}: wrong year — this student belongs to S.Y. {$studentYear}. Go back to the list.";
-                continue;
-            }
-            if (($row['raw_score'] === null || $row['raw_score'] === '') && ($row['max_score'] === null || $row['max_score'] === '') && empty($row['remarks']) && empty($row['title'])) {
-                continue;
-            }
-            if ($row['raw_score'] !== null && $row['raw_score'] !== '' && ($row['max_score'] === null || $row['max_score'] === '' || (float) $row['raw_score'] > (float) $row['max_score'])) {
-                $rowErrors[] = "Row {$rowNo}: raw score exceeds its max score.";
-                continue;
-            }
+// Row-level semantic checks with row numbers — failed saves re-render
+// every entered row from the submitted input (never wiped).
+$rowErrors = [];
+$kept = [];
+foreach ($data['rows'] as $idx => $row) {
+    $rowNo = $idx + 1;
+    $hasContent = !empty($row['enrollment_id']) || !empty($row['raw_score']) || !empty($row['max_score']) || !empty($row['remarks']) || !empty($row['title']);
+    if (!$hasContent) {
+        continue;
+    }
+    if (empty($row['enrollment_id']) || !isset($activeIds[$row['enrollment_id']])) {
+        $rowErrors[] = "Row {$rowNo}: pick a student from this class.";
+        continue;
+    }
+    $studentYear = $enrollmentYears[$row['enrollment_id']] ?? $class->school_year;
+    $classYear = $class->school_year;
+    if ($studentYear !== $classYear) {
+        $rowErrors[] = "Row {$rowNo}: wrong year — this student belongs to S.Y. {$studentYear}. Go back to the list.";
+        continue;
+    }
+    if (($row['raw_score'] === null || $row['raw_score'] === '') && ($row['max_score'] === null || $row['max_score'] === '') && empty($row['remarks']) && empty($row['title'])) {
+        continue;
+    }
+    if ($row['raw_score'] !== null && $row['raw_score'] !== '' && ($row['max_score'] === null || $row['max_score'] === '' || (float) $row['raw_score'] > (float) $row['max_score'])) {
+        $rowErrors[] = "Row {$rowNo}: raw score exceeds its max score.";
+        continue;
+    }
             $kept[] = $row;
         }
 
@@ -755,8 +756,31 @@ class TeacherController extends Controller
         if (!$belongsToClass) {
             return back()->withInput()->with('error', 'Could not save — this student is no longer in this class. Please refresh and try again.');
         }
-        if (!empty($enrollment->school_year) && !empty($class->school_year) && $enrollment->school_year !== $class->school_year) {
-            return back()->withInput()->with('error', 'Wrong year — this student belongs to S.Y. ' . $enrollment->school_year . '. Go back to the list.');
+        // Year check: always compare, using class year as default if either side is missing from DB
+        $enrollmentYear = $enrollment->school_year ?? $class->school_year;
+        $classYear = $class->school_year;
+        if ($enrollmentYear !== $classYear) {
+            return back()->withInput()->with('error', 'Wrong year — this student belongs to S.Y. ' . ($enrollmentYear ?? $classYear) . '. Go back to the list.');
+        }
+
+        // Check for duplicate assessment types per enrollment — the DB unique
+        // constraint (enrollment_id, class_id, type, grading_period) will block
+        // the INSERT if two rows have the same type for the same student.
+        $typesByEnrollment = collect($data['assessments'])
+            ->groupBy('enrollment_id')
+            ->map(fn ($items) => $items->pluck('type')->toArray());
+        $dupErrors = [];
+        foreach ($typesByEnrollment as $eId => $types) {
+            foreach (array_count_values($types) as $type => $count) {
+                if ($count > 1) {
+                    $dupErrors[] = "Row for enrollment {$eId}: duplicate assessment type '{$type}' — only one assessment per type per grading period is allowed.";
+                }
+            }
+        }
+        if (!empty($dupErrors)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'assessments' => $dupErrors
+            ]);
         }
 
         // A submitted final grade locks this student's assessments too.
