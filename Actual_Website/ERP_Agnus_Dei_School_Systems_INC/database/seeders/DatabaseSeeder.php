@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             StudentScatterSeeder::class,
             PaymentsHistorySeeder::class,
             GradesAssessmentsSeeder::class,
+            AttendanceHistorySeeder::class,
             LibraryAndClinicSeeder::class,
             AnnouncementsTableSeeder::class,
             FixArNumbersSeeder::class,
