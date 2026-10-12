@@ -129,6 +129,10 @@ class CashierController extends Controller
 
         if ($search && strlen($search) >= 2) {
 $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
+                ->where(function ($q) use ($schoolYear) {
+                    $q->whereHas('enrollments', fn ($qe) => $qe->where('status', 'Active')->where('school_year', $schoolYear))
+                        ->orWhereHas('admissions', fn ($qa) => $qa->where('status', 'Awaiting Downpayment')->where('school_year', $schoolYear));
+                })
                 ->where(function ($q) use ($search) {
                     $q->where('first_name', 'ilike', "%{$search}%")
                         ->orWhere('last_name', 'ilike', "%{$search}%")
@@ -143,12 +147,13 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
         $gradeLevelByStudent = [];
 
         foreach ($students as $student) {
-            $active = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
+            $active = $student->enrollments->where('status', 'Active')->where('school_year', $schoolYear)->sortByDesc('id')->first();
+            $pickedAdmission = $student->admissions->where('school_year', $schoolYear)->sortByDesc('id')->first();
             $gradeLevelByStudent[$student->getKey()] = $active?->section?->grade_level;
             // Forwarded files have no enrollment yet: show the grade picked
             // on the admission so the row never reads N/A.
             $student->display_grade = $active?->section?->grade_level
-                ?? $student->admissions->sortByDesc('id')->first()?->grade_level;
+                ?? $pickedAdmission?->grade_level;
         }
 
         $assessedByGradeLevel = $this->assessedTotalsByGradeLevel(
@@ -189,6 +194,10 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                 $q->whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                     ->orWhereHas('admissions', fn ($qa) => $qa->where('status', 'Awaiting Downpayment'));
             })
+            ->where(function ($q) use ($schoolYear) {
+                $q->whereHas('enrollments', fn ($qe) => $qe->where('status', 'Active')->where('school_year', $schoolYear))
+                    ->orWhereHas('admissions', fn ($qa) => $qa->where('status', 'Awaiting Downpayment')->where('school_year', $schoolYear));
+            })
             ->where(function ($q) use ($search) {
                 $q->where('first_name', 'ilike', "%{$search}%")
                     ->orWhere('last_name', 'ilike', "%{$search}%")
@@ -203,12 +212,12 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
         $gradeLevelByStudent = [];
 
         foreach ($students as $student) {
-            $active = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
+            $active = $student->enrollments->where('status', 'Active')->where('school_year', $schoolYear)->sortByDesc('id')->first();
             // Same fallback as payments(): forwarded files have no
-            // enrollment yet, so read the grade from the latest admission
+            // enrollment yet, so read the grade from the picked-year admission
             // and expose it as display_grade for the queue row.
             $grade = $active?->section?->grade_level
-                ?? $student->admissions->sortByDesc('id')->first()?->grade_level;
+                ?? $student->admissions->where('school_year', $schoolYear)->sortByDesc('id')->first()?->grade_level;
             $gradeLevelByStudent[$student->getKey()] = $grade;
             $student->display_grade = $grade;
         }

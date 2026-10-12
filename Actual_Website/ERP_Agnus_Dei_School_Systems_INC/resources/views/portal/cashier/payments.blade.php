@@ -125,8 +125,8 @@
         <template x-if="students.length === 0 && !loading && !error">
             <div class="py-12 text-center">
                 <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <p class="text-sm font-medium text-gray-500" x-text="'No students found matching &quot;' + searchQuery + '&quot;.'"></p>
-                <p class="text-xs text-gray-400 mt-1">Try searching by student name, number, or LRN.</p>
+                <p class="text-sm font-medium text-gray-500" x-text="'No students in ' + selectedYear + '.'"></p>
+                <p class="text-xs text-gray-400 mt-1">Try another year or check enrollment.</p>
             </div>
         </template>
     </div>
