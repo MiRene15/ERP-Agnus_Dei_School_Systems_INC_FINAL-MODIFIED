@@ -245,11 +245,16 @@ class FeeAssessmentService
      *
      * @return array{floor: float, label: string, line_ids: array<int>}
      */
-    public function floorFor(StudentLedger $ledger): array
+    public function floorFor(StudentLedger $ledger, ?string $schoolYear = null): array
     {
-        $line = $ledger->ledgerLines()
-            ->where('status', '!=', LedgerLine::STATUS_PAID)
-            ->orderByRaw("CASE WHEN kind = 'enrollment' THEN 0 ELSE 1 END")
+        // Spec promoted-re-enrollment-direct-payment §6: floor reads the
+        // picked year's earliest unpaid line, never another year's.
+        $query = $ledger->ledgerLines()
+            ->where('status', '!=', LedgerLine::STATUS_PAID);
+        if ($schoolYear !== null && $schoolYear !== '') {
+            $query->where('school_year', $schoolYear);
+        }
+        $line = $query->orderByRaw("CASE WHEN kind = 'enrollment' THEN 0 ELSE 1 END")
             ->orderBy('due_month')
             ->orderBy('id')
             ->first();
@@ -313,16 +318,23 @@ class FeeAssessmentService
      *
      * @return array{status: string, next_due: string, remaining: float}
      */
-    public function statusFor(StudentLedger $ledger): array
+    public function statusFor(StudentLedger $ledger, ?string $schoolYear = null): array
     {
         $ledger->loadMissing('ledgerLines');
-        $remaining = round((float) $ledger->balance, 2);
+        // Spec promoted-re-enrollment-direct-payment §6: status reads the
+        // picked year's lines only, so last year's payments never mark this
+        // year Fully Paid (or vice versa).
+        $lines = $ledger->ledgerLines;
+        if ($schoolYear !== null && $schoolYear !== '') {
+            $lines = $lines->where('school_year', $schoolYear)->values();
+        }
+        $remaining = round((float) $lines->sum(fn (LedgerLine $l): float => $l->remaining()), 2);
 
-        if ($remaining <= 0 && $ledger->ledgerLines->every(fn (LedgerLine $l): bool => $l->isPaid())) {
+        if ($lines->isNotEmpty() && $remaining <= 0 && $lines->every(fn (LedgerLine $l): bool => $l->isPaid())) {
             return ['status' => 'Fully Paid', 'next_due' => '', 'remaining' => 0.0];
         }
 
-        $overdue = $ledger->ledgerLines
+        $overdue = $lines
             ->where('status', '!=', LedgerLine::STATUS_PAID)
             ->whereNotNull('due_date')
             ->filter(fn (LedgerLine $l): bool => $l->due_date && $l->due_date->isPast())
@@ -337,7 +349,7 @@ class FeeAssessmentService
             ];
         }
 
-        $next = $ledger->ledgerLines
+        $next = $lines
             ->where('status', '!=', LedgerLine::STATUS_PAID)
             ->sortBy(fn (LedgerLine $l): array => [$l->kind === LedgerLine::KIND_ENROLLMENT ? 0 : 1, $l->due_month ?? 99, $l->id])
             ->first();

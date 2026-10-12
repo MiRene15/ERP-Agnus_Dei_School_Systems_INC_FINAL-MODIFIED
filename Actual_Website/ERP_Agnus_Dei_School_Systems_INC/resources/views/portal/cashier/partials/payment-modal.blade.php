@@ -27,12 +27,13 @@
 <script>
 var paymentModalAbort = null;
 
-async function openPaymentModal(studentId, studentName) {
+async function openPaymentModal(studentId, studentName, schoolYear) {
     var modal = document.getElementById('payment-modal');
     if (!modal) return;
     document.body.appendChild(modal);
     modal.dataset.studentId = studentId;
     modal.dataset.studentName = studentName || '';
+    modal.dataset.schoolYear = schoolYear || '';
     document.getElementById('pm-title').textContent = 'Process Payment — ' + (studentName || '');
     document.getElementById('pm-body').innerHTML = '<div class="space-y-3"><div class="skelly sk-line-md"></div><div class="skelly sk-line-lg"></div><div class="skelly sk-line-md"></div><div class="skelly sk-line-sm"></div></div>';
     modal.classList.remove('hidden');
@@ -40,7 +41,9 @@ async function openPaymentModal(studentId, studentName) {
     if (paymentModalAbort) { try { paymentModalAbort.abort(); } catch (e) {} }
     paymentModalAbort = new AbortController();
     try {
-        const res = await fetch('/cashier/payment/' + studentId + '?ajax=1', { signal: paymentModalAbort.signal, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+        var yearParam = (schoolYear || modal.dataset.schoolYear || '');
+        var url = '/cashier/payment/' + studentId + '?ajax=1' + (yearParam ? '&school_year=' + encodeURIComponent(yearParam) : '');
+        const res = await fetch(url, { signal: paymentModalAbort.signal, headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         if (String(modal.dataset.studentId) !== String(studentId)) return;

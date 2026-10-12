@@ -159,7 +159,7 @@
                     </select>
                     @endif
                     @if(!(($student->ledger?->balance ?? 0) <= 0 && $student->ledger?->payment_plan === 'full' && $student->ledger?->total_paid > 0) && !((($feeStatus['status'] ?? '') === 'Fully Paid') && ($libraryFees ?? collect())->whereNull('paid_payment_id')->isEmpty()))
-                    <button type="button" onclick="openPaymentModal({{ $student->id }}, @js($student->first_name . ' ' . $student->last_name))" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Take Payment</button>
+                    <button type="button" onclick="openPaymentModal({{ $student->id }}, @js($student->first_name . ' ' . $student->last_name), @js($displayYear ?? $enrollment?->school_year ?? ($selectedYear !== 'all' ? $selectedYear : null)))" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition" style="background: var(--navy);">Take Payment</button>
                     @endif
                 </div>
             </div>

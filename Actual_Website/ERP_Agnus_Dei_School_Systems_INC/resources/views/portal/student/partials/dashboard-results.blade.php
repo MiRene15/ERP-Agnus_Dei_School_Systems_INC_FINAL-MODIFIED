@@ -81,6 +81,15 @@
     </div>
 
 @elseif($activeEnrollment)
+    @if(!empty($showReEnroll))
+    <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 text-sm flex items-center gap-3 flex-wrap">
+        <div class="flex-1 min-w-[220px]">
+            <p class="font-semibold">Promoted to {{ $activeEnrollment->section->grade_level }} for {{ $activeEnrollment->school_year }}</p>
+            <p class="mt-0.5 text-blue-800">Skip re-applying — review your new-year statement, then pay at the Cashier to confirm.</p>
+        </div>
+        <a href="{{ route('student.ledger', ['school_year' => $activeEnrollment->school_year]) }}" class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition flex-shrink-0" style="background: var(--navy);">Re-enroll for {{ $activeEnrollment->school_year }} → Pay</a>
+    </div>
+    @endif
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white dark:bg-[#1A1E3B] rounded-xl shadow-sm border border-gray-100 dark:border-[#2A2F58] p-5">
             <div class="flex items-center gap-3 mb-3">

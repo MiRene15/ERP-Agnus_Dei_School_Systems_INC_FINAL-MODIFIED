@@ -89,7 +89,7 @@ class StudentController extends Controller
                 ->exists()
             : false;
 
-        $student->load('ledger');
+        $student->load('ledger.ledgerLines');
 
         // Re-enrollment holds (spec: calendar-holds): visible only when a new
         // school year is announced AND the returnee has dues. Raw dues truth
@@ -97,13 +97,27 @@ class StudentController extends Controller
         $holds = \App\Services\HoldService::visibleForStudent($student);
         $holdBanner = \App\Services\HoldService::bannerForStudent($student, $schoolYear);
 
+        // Spec promoted-re-enrollment-direct-payment §4.2: a freshly promoted
+        // student sees one Re-enroll shortcut to their next-year statement
+        // (skips re-applying; payment happens at the Cashier window).
+        $wasPromoted = ($activeEnrollment !== null)
+            ? $student->enrollments()->where('promoted_to_enrollment_id', $activeEnrollment->id)->where('status', 'Promoted')->exists()
+            : false;
+        $reEnrollUnpaid = false;
+        if ($activeEnrollment !== null && $student->ledger && $student->ledger->relationLoaded('ledgerLines')) {
+            $reEnrollUnpaid = $student->ledger->ledgerLines
+                ->where('school_year', $activeEnrollment->school_year)
+                ->contains(fn ($l): bool => ! $l->isPaid());
+        }
+        $showReEnroll = $wasPromoted && ($reEnrollUnpaid || ! $hasFeesPosted);
+
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'holdBanner', 'hasFeesPosted', 'enrolledSchoolYears'))->render(),
+                'html' => view('portal.student.partials.dashboard-results', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'holdBanner', 'hasFeesPosted', 'enrolledSchoolYears', 'showReEnroll'))->render(),
             ]);
         }
 
-        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'holdBanner', 'hasFeesPosted', 'enrolledSchoolYears'));
+        return view('portal.student.dashboard', compact('student', 'activeEnrollment', 'pendingAdmission', 'schoolYear', 'schoolYears', 'holds', 'holdBanner', 'hasFeesPosted', 'enrolledSchoolYears', 'showReEnroll'));
     }
 
     public function cor(Request $request)
@@ -242,9 +256,14 @@ class StudentController extends Controller
 
         // Spec cashier-fee-rules.md: family sees status + named breakdown,
         // never raw ledgers. Status-first data for the ledger view.
+        // Spec promoted-re-enrollment-direct-payment §4.7: the picker shows
+        // each year's own lines + status, never a merged bill.
         $ledgerLines = $student->ledger?->ledgerLines ?? collect();
+        if ($ledgerLines->isNotEmpty()) {
+            $ledgerLines = $ledgerLines->where('school_year', $schoolYear)->values();
+        }
         $feeStatus = ($student->ledger && $ledgerLines->isNotEmpty())
-            ? app(\App\Services\FeeAssessmentService::class)->statusFor($student->ledger)
+            ? app(\App\Services\FeeAssessmentService::class)->statusFor($student->ledger, $schoolYear)
             : null;
         $libraryDues = \App\Models\LibraryTransaction::with('book')
             ->where('student_id', $student->id)
