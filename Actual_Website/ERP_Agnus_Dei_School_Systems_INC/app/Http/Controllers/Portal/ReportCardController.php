@@ -196,18 +196,52 @@ class ReportCardController extends Controller
 
         $student = auth()->user()->student;
 
+        // Spec: student-report-card-year-parity — default to the student's own
+        // latest Active enrollment year (same rule as dashboard / cor / schedule /
+        // ledger) so a 2027-2028-only student lands on 2027-2028 instead of
+        // bouncing. An explicit ?school_year= wins only when it belongs to the
+        // student's own Active years. Own years only — never merge every system
+        // year — so a first-time future-year student never sees an empty row.
+        $schoolYears = $student->enrollments()
+            ->where('status', 'Active')
+            ->distinct()
+            ->pluck('school_year')
+            ->sortDesc()
+            ->values();
+        $defaultYear = $student->enrollments()->where('status', 'Active')->max('school_year') ?? active_school_year();
+        $requestedYear = $request->input('school_year');
+        $schoolYear = ($requestedYear && $schoolYears->contains($requestedYear))
+            ? $requestedYear
+            : $defaultYear;
+
         $enrollment = $student->enrollments()
             ->with('section.adviser', 'subjects.subject', 'subjects.teacher')
             ->where('status', 'Active')
-            ->where('school_year', active_school_year())
+            ->where('school_year', $schoolYear)
             ->latest()
             ->first();
 
         if (!$enrollment) {
-            if ($isAjax) {
-                return response()->json(['html' => '<div class="p-8 text-center text-sm text-gray-500">No active enrollment found.</div>']);
+            $pendingAdmission = $student->admissions()->whereIn('status', ['Pending', 'Awaiting Downpayment', 'Returned'])->latest()->first();
+            if (!$isAjax && $pendingAdmission) {
+                $nextStep = match (true) {
+                    $pendingAdmission->status === 'Awaiting Downpayment' => 'Pay the downpayment at the Cashier to continue.',
+                    $pendingAdmission->status === 'Returned' => 'Upload the missing documents named on your checklist.',
+                    ! empty($pendingAdmission->downpayment_receipt) => 'Downpayment received — awaiting full approval and section assignment.',
+                    default => 'Your application is under review.',
+                };
+
+                return redirect()->route('student.admission.status')
+                    ->with('info', 'Finish your application first — ' . $nextStep);
             }
-            return redirect()->route('student.dashboard')->with('error', 'No active enrollment found.');
+            if ($isAjax) {
+                return response()->json(['html' => '<div class="p-8 text-center text-sm text-gray-500">No approved enrollment yet. Please check your admission checklist for the next step.</div>']);
+            }
+            if ($pendingAdmission) {
+                return redirect()->route('student.admission.status')
+                    ->with('info', 'Finish your application first — check your admission checklist for the next step.');
+            }
+            return redirect()->route('student.dashboard')->with('info', 'No approved enrollment yet. Please check your admission checklist for the next step.');
         }
 
         // Holds block report cards until cleared (library / clinic / finance).
@@ -262,6 +296,6 @@ class ReportCardController extends Controller
             ]);
         }
 
-        return view('portal.student.report-card', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage'));
+        return view('portal.student.report-card', compact('enrollment', 'subjects', 'gradingPeriods', 'overallAverage', 'schoolYear', 'schoolYears'));
     }
 }
