@@ -142,6 +142,15 @@
                     <span class="text-gray-800">Total Miscellaneous</span>
                     <span class="text-gray-900">₱ {{ number_format($totalMisc, 2) }}</span>
                 </div>
+                {{-- Spec fee-itemized-manager.md: Cashier sees floor/total + lines — named add-ons, never one lump. --}}
+                @if(!empty($miscItems))
+                @foreach($miscItems as $itemKey => $itemVal)
+                <div class="flex justify-between items-center py-1 pl-4 text-sm">
+                    <span class="text-gray-500">{{ strtolower((string) $itemKey) === 'id' ? 'ID' : ucfirst(strtolower((string) $itemKey)) }}</span>
+                    <span class="text-gray-700">₱ {{ number_format((float) $itemVal, 2) }}</span>
+                </div>
+                @endforeach
+                @endif
                 <div class="flex justify-between items-center py-2 text-base font-bold">
                     <span class="text-gray-900">Total Assessed</span>
                     <span class="text-gray-900">₱ {{ number_format($totalAssessed, 2) }}</span>
@@ -215,6 +224,15 @@
         </div>
         <h3 class="text-xl font-bold text-gray-900 mb-1">Payment Successful!</h3>
         <p class="text-sm text-gray-500 mb-1">₱{{ number_format($ps['amount'], 2) }} received from <strong>{{ $ps['student_name'] }}</strong></p>
+        @if(isset($ps['balance_after']))
+        <p class="text-sm text-gray-700 mb-1">Remaining balance: ₱{{ number_format($ps['balance_after'], 2) }}</p>
+        @endif
+        @if(isset($ps['percent_paid']))
+        <p class="text-xs text-gray-500 mb-1">{{ $ps['percent_paid'] }}% paid</p>
+        @endif
+        @if(isset($ps['balance_after']) && $ps['balance_after'] <= 0)
+        <p class="mb-1"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Fully Paid</span></p>
+        @endif
         @if(!empty($ps['library_amount']))
         <p class="text-xs text-gray-500 mb-1">Library dues on this receipt: ₱{{ number_format($ps['library_amount'], 2) }}</p>
         @endif

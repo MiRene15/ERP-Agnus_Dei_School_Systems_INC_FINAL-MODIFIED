@@ -659,6 +659,15 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
             }
         }
 
+        $freshLedger = $student->ledger ? $student->ledger->fresh() : null;
+        $totalAssessedAfter = $freshLedger ? round((float) $freshLedger->total_assessed, 2) : 0.0;
+        $totalPaidAfter = $freshLedger ? round((float) $freshLedger->total_paid, 2) : round((float) $data['amount_paid'], 2);
+        $discountAfter = $freshLedger ? round((float) $freshLedger->discount_applied, 2) : 0.0;
+        $balanceAfter = max(0.0, round($totalAssessedAfter - $totalPaidAfter - $discountAfter, 2));
+        $percentPaid = $totalAssessedAfter > 0
+            ? (int) min(100, round(($totalPaidAfter / $totalAssessedAfter) * 100))
+            : 100;
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
@@ -671,6 +680,10 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                 'receipt_number' => $lastPayment?->receipt_number ?? '',
                 'payment_id' => $lastPayment?->id ?? '',
                 'print_url' => $lastPayment ? route('cashier.receipt.print', $lastPayment) : null,
+                'balance_after' => $balanceAfter,
+                'percent_paid' => $percentPaid,
+                'total_paid' => $totalPaidAfter,
+                'total_assessed' => $totalAssessedAfter,
             ]);
         }
 
@@ -682,6 +695,10 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                 'student_name' => $student->first_name . ' ' . $student->last_name,
                 'receipt_number' => $lastPayment?->receipt_number ?? '',
                 'payment_id' => $lastPayment?->id ?? '',
+                'balance_after' => $balanceAfter,
+                'percent_paid' => $percentPaid,
+                'total_paid' => $totalPaidAfter,
+                'total_assessed' => $totalAssessedAfter,
             ]);
     }
 

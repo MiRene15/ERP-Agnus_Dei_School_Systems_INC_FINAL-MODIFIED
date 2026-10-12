@@ -174,7 +174,9 @@ document.addEventListener('submit', function (event) {
             out.data.library_amount ?? 0,
             out.data.credited ?? 0,
             out.data.student_name ?? '',
-            out.data.print_url ?? ''
+            out.data.print_url ?? '',
+            out.data.balance_after,
+            out.data.percent_paid
         );
         var finModal = document.getElementById('financial-modal');
         if (finModal && !finModal.classList.contains('hidden')) {
@@ -208,15 +210,63 @@ function formatDate(date) {
     var d = new Date(date);
     return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
 }
-function openPaymentSuccessModal(receiptNumber, amountPaid, libraryAmount, creditedExcess, studentName, printUrl) {
+function formatPeso(n) {
+    var v = parseFloat(n);
+    if (isNaN(v)) v = 0;
+    return '₱' + v.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function openPaymentSuccessModal(receiptNumber, amountPaid, libraryAmount, creditedExcess, studentName, printUrl, balanceAfter, percentPaid) {
     var modal = document.getElementById('payment-success-modal');
     if (!modal) return;
-    // Populate the modal content
-    document.getElementById('ps-amount').textContent = '₱' + parseFloat(amountPaid).toFixed(2);
+    // Populate the modal content (spec: payment-success-modal-fix.md — true ledger numbers, never fixed 100%/0%)
+    var amt = parseFloat(amountPaid);
+    if (isNaN(amt)) amt = 0;
+    var lib = parseFloat(libraryAmount);
+    if (isNaN(lib)) lib = 0;
+    var cred = parseFloat(creditedExcess);
+    if (isNaN(cred)) cred = 0;
+    var bal = (balanceAfter !== undefined && balanceAfter !== null && balanceAfter !== '') ? parseFloat(balanceAfter) : null;
+    if (bal !== null && isNaN(bal)) bal = null;
+    var pct = (percentPaid !== undefined && percentPaid !== null && percentPaid !== '') ? parseInt(percentPaid, 10) : NaN;
+    if (isNaN(pct)) pct = (bal !== null) ? (bal <= 0 ? 100 : 0) : (amt > 0 ? 100 : 0);
+    pct = Math.max(0, Math.min(100, pct));
+    if (bal !== null && bal <= 0) pct = 100;
+    document.getElementById('ps-amount').textContent = formatPeso(amt);
     var receiptNum = receiptNumber || 'RCP-' + formatDate(new Date()) + '-' + ('0000' + (Math.random()*10000|0)).slice(-4);
     document.getElementById('ps-receipt').textContent = 'Receipt Number: ' + receiptNum;
-    document.getElementById('ps-progress').style.width = parseFloat(amountPaid) > 0 ? '100%' : '0%';
-    document.getElementById('ps-percent').textContent = parseFloat(amountPaid) > 0 ? '100% paid' : '0% paid';
+    var balEl = document.getElementById('ps-balance');
+    if (balEl) {
+        if (bal !== null) {
+            balEl.textContent = 'Remaining balance: ' + formatPeso(bal);
+            balEl.style.display = '';
+        } else {
+            balEl.style.display = 'none';
+        }
+    }
+    document.getElementById('ps-progress').style.width = pct + '%';
+    document.getElementById('ps-percent').textContent = pct + '% paid';
+    var badge = document.getElementById('ps-badge');
+    if (badge) badge.style.display = (bal !== null && bal <= 0) ? '' : 'none';
+    var libEl = document.getElementById('ps-library');
+    if (libEl) {
+        if (lib > 0) {
+            libEl.textContent = 'Library dues on this receipt: ' + formatPeso(lib);
+            libEl.style.display = '';
+        } else {
+            libEl.style.display = 'none';
+        }
+    }
+    var subLabel = document.getElementById('ps-sublabel');
+    if (subLabel) subLabel.style.display = lib > 0 ? '' : 'none';
+    var credEl = document.getElementById('ps-credited');
+    if (credEl) {
+        if (cred > 0) {
+            credEl.textContent = formatPeso(cred) + ' credited to next term.';
+            credEl.style.display = '';
+        } else {
+            credEl.style.display = 'none';
+        }
+    }
     // Set the print receipt button URL from the server response
     var printBtn = document.getElementById('ps-print');
     if (printBtn) {
@@ -261,7 +311,11 @@ psModalHTML.innerHTML = '<div class="absolute inset-0 bg-black/80" style="backdr
     '    <div class="p-6 flex flex-col items-center gap-4">' +
     '        <div class="text-3xl font-bold text-green-600" id="ps-amount">₱0.00</div>' +
     '        <p class="text-gray-600 text-sm" id="ps-receipt">Receipt Number: --</p>' +
-    '        <p class="text-gray-500 text-xs">Tuition + Library Dues</p>' +
+    '        <p class="text-gray-700 text-sm font-medium" id="ps-balance">Remaining balance: ₱0.00</p>' +
+    '        <span id="ps-badge" class="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700" style="display: none;">Fully Paid</span>' +
+    '        <p class="text-gray-500 text-xs" id="ps-sublabel">Tuition + Library Dues</p>' +
+    '        <p class="text-gray-500 text-xs" id="ps-library" style="display: none;"></p>' +
+    '        <p class="text-green-600 text-xs" id="ps-credited" style="display: none;"></p>' +
     '        <div class="w-full bg-gray-100 dark:bg-[#2A2F58] rounded-full h-2">' +
     '            <div class="bg-green-600 rounded-full h-2 transition-width" style="width: 100%" id="ps-progress"></div>' +
     '        </div>' +
