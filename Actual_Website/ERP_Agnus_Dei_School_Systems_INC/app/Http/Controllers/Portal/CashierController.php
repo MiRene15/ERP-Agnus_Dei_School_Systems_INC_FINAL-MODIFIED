@@ -782,6 +782,8 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                 'receipt_number' => $result['receipt'] ?? '',
                 'payment_id' => $payment?->id ?? '',
                 'print_url' => $payment ? route('cashier.receipt.print', $payment) : null,
+                'amount' => (float) $data['amount_paid'],
+                'student_name' => $student->first_name . ' ' . $student->last_name,
             ]);
         }
 
