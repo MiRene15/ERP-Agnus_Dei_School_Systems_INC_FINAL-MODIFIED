@@ -1,6 +1,6 @@
 # Spec: Grade Assessment Save Post 500 Fix
 
-- **Status**: Approved
+- **Status**: Implemented
 - **Created**: 2026-10-11
 - **Approved by**: user on 2026-10-12
 - **Amendment**: 2026-10-11 — computed-table restyle + posted/on-hold notices + batch edit/view toggle + alphabetical class lists (approved by user on 2026-10-11). Amendment B 2026-10-12 — year badge + year picker on both save pages, cross-year block, both-saves crash-safe, subject-missing safe display (approved by user on 2026-10-12).
