@@ -823,7 +823,7 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
             $message .= ' ' . $already . ' already had receipts (no new charge).';
         }
         if ($blocked !== []) {
-            $message .= ' ' . count($blocked) . ' stayed behind (not forwarded or below floor).';
+            $message .= ' ' . count($blocked) . ' stayed behind. First blocker: ' . reset($blocked);
         }
 
         return redirect()->route('cashier.payments')->with('success', $message);

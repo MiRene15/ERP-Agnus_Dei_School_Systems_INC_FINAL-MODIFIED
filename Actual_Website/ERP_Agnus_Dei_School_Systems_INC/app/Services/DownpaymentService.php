@@ -230,17 +230,26 @@ class DownpaymentService
         } catch (\Throwable $e) {
             Log::error('Downpayment confirmation failed: ' . $e->getMessage(), [
                 'student_id' => $student->id,
+                'admission_id' => $admission->id ?? null,
+                'grade' => $grade,
+                'school_year' => $year,
+                'payment_plan' => $path,
                 'amount' => $data['amount_paid'] ?? null,
+                'cashier_id' => $cashierId,
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             $gates = ['not awaiting downpayment', 'locked', 'No fee schedule', 'Fully Paid', 'Minimum ₱'];
             foreach ($gates as $gate) {
                 if (str_contains($e->getMessage(), $gate)) {
-                    return ['confirmed' => false, 'already' => false, 'error' => $e->getMessage()];
+                    return ['confirmed' => false, 'already' => false, 'error' => $e->getMessage() . ' No charge made — safe to retry.'];
                 }
             }
 
-            return ['confirmed' => false, 'already' => false, 'error' => 'Downpayment processing failed. Please try again.'];
+            $detail = trim($e->getMessage()) !== '' ? $e->getMessage() : get_class($e);
+
+            return ['confirmed' => false, 'already' => false, 'error' => 'Downpayment processing failed (' . $detail . '). No charge made — safe to retry. File stayed as Awaiting Downpayment.'];
         }
 
         return [
