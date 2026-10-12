@@ -14,19 +14,19 @@
     </div>
     <div class="flex gap-3 text-sm">
         <div class="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-            <span class="font-bold text-yellow-800">{{ $pendingCount }}</span>
+            <span class="font-bold text-yellow-800" data-count-key="pending">{{ $pendingCount }}</span>
             <span class="text-yellow-700">Pending</span>
         </div>
         <div class="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-            <span class="font-bold text-blue-800">{{ $awaitingDownpaymentCount }}</span>
+            <span class="font-bold text-blue-800" data-count-key="awaitingDownpayment">{{ $awaitingDownpaymentCount }}</span>
             <span class="text-blue-700">Awaiting Downpayment</span>
         </div>
         <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-            <span class="font-bold text-green-800">{{ $paidCount ?? 0 }}</span>
+            <span class="font-bold text-green-800" data-count-key="paid">{{ $paidCount ?? 0 }}</span>
             <span class="text-green-700">Paid — ready</span>
         </div>
         <div class="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-            <span class="font-bold text-green-800">{{ $approvedCount }}</span>
+            <span class="font-bold text-green-800" data-count-key="approved">{{ $approvedCount }}</span>
             <span class="text-green-700">Approved</span>
         </div>
     </div>

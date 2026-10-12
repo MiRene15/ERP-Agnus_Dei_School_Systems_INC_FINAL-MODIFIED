@@ -53,12 +53,13 @@ class RegistrarAdmissionController extends Controller
             $query->where('grade_level', request('grade_level'));
         }
 
-        // Counts read the full filtered query — never the paginated page —
-        // so the queue badges stay honest at enrollment-season volume.
-        $pendingCount = (clone $query)->where('status', 'Pending')->count();
-        $approvedCount = (clone $query)->where('status', 'Approved By Registrar')->count();
-        $awaitingDownpaymentCount = (clone $query)->where('status', 'Awaiting Downpayment')->count();
-        $paidCount = (clone $query)->where('status', 'Pending')->whereNotNull('downpayment_receipt')->count();
+        // Counts read the year-only scope — never search/status/grade —
+        // so the four cards stay honest for the picked school year.
+        $baseCounts = Admission::where('school_year', $schoolYear);
+        $pendingCount = (clone $baseCounts)->where('status', 'Pending')->whereNull('downpayment_receipt')->count();
+        $approvedCount = (clone $baseCounts)->where('status', 'Approved By Registrar')->count();
+        $awaitingDownpaymentCount = (clone $baseCounts)->where('status', 'Awaiting Downpayment')->count();
+        $paidCount = (clone $baseCounts)->where('status', 'Pending')->whereNotNull('downpayment_receipt')->count();
 
         $admissions = $query->orderByRaw("CASE WHEN status = 'Pending' THEN 0 ELSE 1 END")
             ->latest()
@@ -70,6 +71,12 @@ class RegistrarAdmissionController extends Controller
         if ($isAjax) {
             return response()->json([
                 'html' => view('portal.registrar.partials.admissions-results', compact('admissions'))->render(),
+                'counts' => [
+                    'pending' => $pendingCount,
+                    'awaitingDownpayment' => $awaitingDownpaymentCount,
+                    'paid' => $paidCount,
+                    'approved' => $approvedCount,
+                ],
             ]);
         }
 

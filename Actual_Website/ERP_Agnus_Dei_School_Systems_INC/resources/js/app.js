@@ -224,6 +224,17 @@ Alpine.data('ajaxTable', (url, initialFilters = {}, opts = {}) => ({
             if (signal.aborted || mySeq !== this._seq) return;
             if (this._countdown) { try { clearInterval(this._countdown); } catch (e) {} this._countdown = null; }
             this.html = data.html || '';
+            // Queue-counts pattern (e.g. registrar admissions): when the
+            // server returns { counts: { key: number } }, paint any matching
+            // [data-count-key] badge in place. Missing on other pages = no-op.
+            // Errors never touch badges, so cards keep last good numbers.
+            if (data.counts && typeof data.counts === 'object') {
+                Object.entries(data.counts).forEach(([key, value]) => {
+                    document.querySelectorAll(`[data-count-key="${key}"]`).forEach((el) => {
+                        el.textContent = value;
+                    });
+                });
+            }
             this.displayedSearch = this.filters.search || '';
             this.error = '';
             this.isRateLimited = false;
