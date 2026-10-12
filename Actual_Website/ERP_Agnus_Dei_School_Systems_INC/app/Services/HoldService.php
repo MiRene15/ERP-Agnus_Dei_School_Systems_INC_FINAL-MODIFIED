@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Admission;
 use App\Models\ClinicLog;
 use App\Models\LibraryTransaction;
 use App\Models\Student;
@@ -106,6 +107,72 @@ class HoldService
         }
 
         return $out;
+    }
+
+    /**
+     * Spec fee-itemized-manager.md: staff approval path. New applicants
+     * enroll on downpayment receipt — the normal current-year installment
+     * remainder (months + 4 named lines still unpaid) must not block
+     * Grant Full Approval. Prior-year dues, library overdue, and open
+     * clinic cases still block everyone, and returnees with last-year
+     * dues still need clearance plus downpayment.
+     *
+     * @return array<int, array{source: string, reason: string, action: string}>
+     */
+    public static function forApproval(Student $student, ?Admission $admission = null): array
+    {
+        $holds = self::forStudent($student);
+
+        if ($admission === null || empty($admission->downpayment_receipt)) {
+            return $holds;
+        }
+
+        // Returnees carry last-year dues into approval — clearance enforced.
+        if (self::isReturnee($student)) {
+            return $holds;
+        }
+
+        $year = (string) ($admission->school_year ?? '');
+        if ($year === '') {
+            return $holds;
+        }
+
+        $current = StudentLedger::where('student_id', $student->id)
+            ->where('school_year', $year)
+            ->where('balance', '>', 0)
+            ->get();
+
+        if ($current->isEmpty()) {
+            return $holds;
+        }
+
+        $isInstallment = $current->contains(
+            fn (StudentLedger $ledger): bool => ($ledger->assessment_path ?? $ledger->payment_plan) === 'installment'
+        );
+
+        if (! $isInstallment) {
+            return $holds;
+        }
+
+        $hasOtherYearDues = StudentLedger::where('student_id', $student->id)
+            ->where('school_year', '!=', $year)
+            ->where('balance', '>', 0)
+            ->exists();
+
+        $kept = array_values(array_filter(
+            $holds,
+            fn (array $hold): bool => ($hold['source'] ?? '') !== 'finance'
+        ));
+
+        if ($hasOtherYearDues) {
+            $kept[] = [
+                'source' => 'finance',
+                'reason' => 'Unsettled account balance',
+                'action' => 'Settle your balance with the Cashier\'s Office to re-enroll.',
+            ];
+        }
+
+        return $kept;
     }
 
     /**

@@ -130,6 +130,10 @@ class DirectressController extends Controller
             return back()->withInput()->with('error', 'School year ' . $data['school_year'] . ' is locked — its settings can no longer be edited.');
         }
 
+        // Spec fee-itemized-manager.md: save keeps the 4-way split —
+        // never wipe it back to one lump line.
+        $data['misc_fee_items'] = self::normaliseMiscSplit($data['misc_fee_items'] ?? []);
+
         $feeSchedule = FeeSchedule::create($data);
 
         \Illuminate\Support\Facades\Cache::forget("fee_totals:{$data['school_year']}:{$data['grade_level']}");
@@ -159,6 +163,9 @@ class DirectressController extends Controller
 
         $oldSchoolYear = $fee->school_year;
         $oldGradeLevel = $fee->grade_level;
+        // Spec fee-itemized-manager.md: save keeps the 4-way split —
+        // edits affect new assessments only; posted lines stand.
+        $data['misc_fee_items'] = self::normaliseMiscSplit($data['misc_fee_items'] ?? []);
         $fee->update($data);
 
         \Illuminate\Support\Facades\Cache::forget("fee_totals:{$oldSchoolYear}:{$oldGradeLevel}");
@@ -208,6 +215,24 @@ class DirectressController extends Controller
 
         return redirect()->route('directress.fees', ['school_year' => $data['to_year']])
             ->with('success', 'Rolled ' . $copied . ' fee row(s) from ' . $data['from_year'] . ' to ' . $data['to_year'] . ' for review.');
+    }
+
+    /**
+     * Spec fee-itemized-manager.md: canonical 4-way split shape
+     * (books / uniform / id / miscellaneous), matching the seeder.
+     *
+     * @param  mixed  $raw
+     * @return array<string, float>
+     */
+    private static function normaliseMiscSplit(mixed $raw): array
+    {
+        $items = is_array($raw) ? $raw : [];
+        $out = [];
+        foreach (['books', 'uniform', 'id', 'miscellaneous'] as $key) {
+            $out[$key] = round(max(0, (float) ($items[$key] ?? 0)), 2);
+        }
+
+        return $out;
     }
 
     // ─── Graduation Fees ────────────────────────────────────────

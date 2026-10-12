@@ -51,10 +51,6 @@
         @php
             $breakdownLibrary = $libraryDues ?? \App\Models\LibraryTransaction::with('book')->where('student_id', $student->id)->where(function($q){$q->where('fees_assessed', true)->orWhere('total_fees','>',0);})->orderBy('borrow_date','desc')->get();
         @endphp
-        @php
-            $breakdownMisc = $feeSchedules->isNotEmpty() ? \App\Models\FeeSchedule::where('grade_level', $activeEnrollment->section->grade_level)->where('school_year', $activeEnrollment->school_year)->first() : null;
-            $breakdownMiscItems = $breakdownMisc ? ($breakdownMisc->misc_fee_items ? json_decode($breakdownMisc->misc_fee_items, true) ?? [] : []) : [];
-        @endphp
         @if(!empty($ledgerLines) && $ledgerLines->isNotEmpty())
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -66,9 +62,6 @@
                     @foreach($breakdownLibrary as $lt)
                     @php $ltPaid = $lt->paid_payment_id ? $lt->total_fees : 0; @endphp
                     <tr class="border-b border-orange-100 bg-orange-50/50"><td class="py-2 px-2 font-medium text-gray-900">Library Due: Overdue {{ $lt->book->title ?? $lt->book_title }}</td><td class="text-right py-2">₱{{ number_format($lt->total_fees, 2) }}</td><td class="text-right py-2 text-green-600">₱{{ number_format($ltPaid, 2) }}</td><td class="text-right py-2 font-medium {{ ($lt->total_fees - $ltPaid) > 0 ? 'text-red-600' : 'text-green-600' }}">₱{{ number_format(max(0, $lt->total_fees - $ltPaid), 2) }}</td><td class="py-2 px-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $lt->paid_payment_id ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">{{ $lt->paid_payment_id ? 'Paid' : 'Unpaid' }}</span></td></tr>
-                    @endforeach
-                    @foreach($breakdownMiscItems as $itemKey => $itemVal)
-                    <tr class="border-b border-gray-50 dark:border-[#2A2F58]"><td class="py-2 px-2 font-medium text-gray-900">{{ ucfirst($itemKey) }}</td><td class="text-right py-2">₱{{ number_format($itemVal, 2) }}</td><td class="text-right py-2 text-green-600">₱0.00</td><td class="text-right py-2 font-medium text-red-600">₱{{ number_format($itemVal, 2) }}</td><td class="py-2 px-2"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Unapplied</span></td></tr>
                     @endforeach
                 </tbody>
             </table>

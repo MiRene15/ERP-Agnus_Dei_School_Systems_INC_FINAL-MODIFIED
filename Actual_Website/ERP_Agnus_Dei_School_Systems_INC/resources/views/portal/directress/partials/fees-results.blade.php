@@ -19,7 +19,14 @@
                     <td class="py-3 px-2 font-medium text-gray-900">{{ $term }}</td>
                     @if($fee)
                     <td class="py-3 px-2 text-gray-700">₱ {{ number_format($fee->tuition_fee, 2) }}</td>
-                    <td class="py-3 px-2 text-gray-700">₱ {{ number_format($fee->misc_fee, 2) }}</td>
+                    <td class="py-3 px-2 text-gray-700">₱ {{ number_format($fee->misc_fee, 2) }}
+                        @php $items = is_array($fee->misc_fee_items) ? $fee->misc_fee_items : (json_decode((string) $fee->misc_fee_items, true) ?? []); @endphp
+                        @if(!empty($items))
+                        <div class="text-xs text-gray-500">Books ₱{{ number_format($items['books'] ?? 0, 2) }} · Uniform ₱{{ number_format($items['uniform'] ?? 0, 2) }} · ID ₱{{ number_format($items['id'] ?? 0, 2) }} · Misc ₱{{ number_format($items['miscellaneous'] ?? 0, 2) }}</div>
+                        @else
+                        <div class="text-xs text-amber-600">One Miscellaneous line — re-save the 4-way split.</div>
+                        @endif
+                    </td>
                     <td class="py-3 px-2 font-medium text-gray-900">₱ {{ number_format($fee->tuition_fee + $fee->misc_fee, 2) }}</td>
                     <td class="py-3 px-2">
                         <div class="flex gap-1">

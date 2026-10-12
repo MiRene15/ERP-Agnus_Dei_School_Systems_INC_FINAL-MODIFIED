@@ -61,10 +61,13 @@ class FullApprovalService
             return ['approved' => false, 'error' => $names . ($pendingDocs->count() === 1 ? ' is' : ' are') . ' still Under Review — ' . $verifiedDocs . '/' . $totalDocs . ' verified.'];
         }
 
-        // Holds block full approval until cleared (library / clinic / finance).
+        // Holds block full approval until cleared (library / clinic /
+        // finance). Spec fee-itemized-manager.md: a new installment file
+        // carrying a downpayment receipt is not blocked by its normal
+        // monthly remainder — returnees, library, and clinic still are.
         $studentForHolds = $admission->student;
         if ($studentForHolds) {
-            $holds = HoldService::forStudent($studentForHolds);
+            $holds = HoldService::forApproval($studentForHolds, $admission);
             if (! empty($holds)) {
                 return ['approved' => false, 'error' => 'Cannot enroll — holds must be cleared first. ' . HoldService::blockingMessage($holds)];
             }
