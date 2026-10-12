@@ -92,7 +92,7 @@
                                 </td>
                                 <td class="py-3 px-2 flex gap-2">
                                     <template x-if="s.payment_status !== 'Fully Paid'">
-                                        <button type="button" @click="openPaymentModal(s.id, s.first_name + ' ' + s.last_name)" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                                        <button type="button" @click="openPaymentModal(s.id, s.first_name + ' ' + s.last_name, selectedYear)" class="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                                             Take Payment
                                         </button>
                                     </template>

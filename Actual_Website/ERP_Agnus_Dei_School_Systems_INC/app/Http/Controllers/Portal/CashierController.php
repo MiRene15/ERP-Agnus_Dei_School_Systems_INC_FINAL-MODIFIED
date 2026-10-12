@@ -169,7 +169,7 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
             $totalPaid = $student->ledger?->total_paid ?? 0;
             $discountApplied = $student->ledger?->discount_applied ?? 0;
             $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
-            $student->payment_status = $this->paymentStatusFor($student, $totalAssessed);
+            $student->payment_status = $this->paymentStatusFor($student, $totalAssessed, $schoolYear);
         }
         }
 
@@ -236,7 +236,7 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
             $discountApplied = $student->ledger?->discount_applied ?? 0;
 
             $student->computed_balance = max(0, $totalAssessed - $totalPaid - $discountApplied);
-            $student->payment_status = $this->paymentStatusFor($student, $totalAssessed);
+            $student->payment_status = $this->paymentStatusFor($student, $totalAssessed, $schoolYear);
         }
 
         return response()->json($students);
@@ -274,12 +274,20 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
      * (Fully Paid / Has Balance), never a raw balance. Assessed ledgers
      * read their line states; unassessed rows fall back to balance math.
      */
-    private function paymentStatusFor(Student $student, float $totalAssessed): string
+    private function paymentStatusFor(Student $student, float $totalAssessed, ?string $schoolYear = null): string
     {
         $ledger = $student->ledger;
 
+        // Spec promoted-re-enrollment-direct-payment §6: assessed rows read
+        // the picked year's lines only; unassessed rows never claim Fully
+        // Paid from another year's payments.
         if ($ledger && $ledger->relationLoaded('ledgerLines') && $ledger->ledgerLines->isNotEmpty()) {
-            return app(FeeAssessmentService::class)->statusFor($ledger)['status'];
+            $yearLines = ($schoolYear !== null && $schoolYear !== '')
+                ? $ledger->ledgerLines->where('school_year', $schoolYear)->values()
+                : $ledger->ledgerLines;
+            if ($yearLines->isNotEmpty()) {
+                return app(FeeAssessmentService::class)->statusFor($ledger, $schoolYear)['status'];
+            }
         }
 
         // Spec cashier-forwarded-new-account-display.md §4.4: a new
@@ -290,14 +298,15 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
         $admissions = $student->relationLoaded('admissions')
             ? $student->admissions
             : $student->admissions()->latest()->limit(1)->get();
-        $awaiting = $admissions->where('status', 'Awaiting Downpayment')->sortByDesc('id')->first();
+        $awaiting = ($schoolYear !== null && $schoolYear !== '')
+            ? $admissions->where('status', 'Awaiting Downpayment')->where('school_year', $schoolYear)->sortByDesc('id')->first()
+                ?? $admissions->where('status', 'Awaiting Downpayment')->sortByDesc('id')->first()
+            : $admissions->where('status', 'Awaiting Downpayment')->sortByDesc('id')->first();
         if ($awaiting && empty($awaiting->downpayment_receipt)) {
             return 'Awaiting Downpayment';
         }
 
-        $balance = max(0, $totalAssessed - (float) ($ledger?->total_paid ?? 0) - (float) ($ledger?->discount_applied ?? 0));
-
-        return ($totalAssessed > 0 && $balance <= 0) ? 'Fully Paid' : 'Has Balance';
+        return 'Has Balance';
     }
 
     public function showPayment(Request $request, Student $student, FeeAssessmentService $fees)
@@ -306,14 +315,26 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
         $request->query->remove('ajax');
 
         $student->load('user', 'enrollments.section', 'ledger.ledgerLines', 'ledger.payments', 'admissions');
-        $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
+        // Spec promoted-re-enrollment-direct-payment §4.3/§6: Take Payment
+        // honors the picked school year so a both-years student bills the
+        // opened year's grade + schedule, never the latest year's.
+        $requestedYear = trim((string) $request->input('school_year', ''));
+        $enrollment = ($requestedYear !== '')
+            ? $student->enrollments->where('status', 'Active')->where('school_year', $requestedYear)->sortByDesc('id')->first()
+            : null;
+        if ($enrollment === null) {
+            $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
+        }
         // Forwarded files have no enrollment yet (review-forward): read the
-        // grade and year from the latest admission so Cashier sees the real
-        // fee basis instead of N/A. Section stays N/A until the Registrar
-        // assigns it at full approval (child 2).
+        // grade and year from the picked-year admission first so Cashier sees
+        // the real fee basis instead of N/A. Section stays N/A until the
+        // Registrar assigns it at full approval (child 2).
         $latestAdmission = $student->admissions->sortByDesc('id')->first();
-        $displayGrade = $enrollment?->section?->grade_level ?? $latestAdmission?->grade_level;
-        $displayYear = $enrollment?->school_year ?? $latestAdmission?->school_year ?? active_school_year();
+        $pickedAdmission = ($requestedYear !== '')
+            ? $student->admissions->where('school_year', $requestedYear)->sortByDesc('id')->first()
+            : null;
+        $displayGrade = $enrollment?->section?->grade_level ?? $pickedAdmission?->grade_level ?? $latestAdmission?->grade_level;
+        $displayYear = $enrollment?->school_year ?? $pickedAdmission?->school_year ?? $latestAdmission?->school_year ?? active_school_year();
         $feeSchedules = $displayGrade ? FeeSchedule::where('grade_level', $displayGrade)
             ->where('school_year', $displayYear)
             ->orderBy('term')
@@ -383,10 +404,10 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
         // status first, then lines; library dues as named lines.
         $ledgerLines = $student->ledger?->ledgerLines ?? collect();
         $feeStatus = ($student->ledger && $ledgerLines->isNotEmpty())
-            ? $fees->statusFor($student->ledger)
+            ? $fees->statusFor($student->ledger, $displayYear)
             : null;
         if ($student->ledger && $ledgerLines->isNotEmpty()) {
-            $termFloor = $fees->floorFor($student->ledger);
+            $termFloor = $fees->floorFor($student->ledger, $displayYear);
         } else {
             // Spec cashier-full-payment-label.md: pre-assessment hint binds to
             // the picked plan — installment floors at the ₱1.5k downpayment,
