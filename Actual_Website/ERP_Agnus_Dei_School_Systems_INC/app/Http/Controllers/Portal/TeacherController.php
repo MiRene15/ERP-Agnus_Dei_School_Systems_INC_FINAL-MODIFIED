@@ -377,11 +377,11 @@ class TeacherController extends Controller
         }
         $schoolYearLocked = school_year_locked($class->school_year);
 
-        // Stale bookmark or picker context from another year — leave to the
-        // year-filtered list with a plain note instead of opening silently.
+        // Stale bookmark or picker context from another year — demo mode
+        // (Amendment D): warn and stay on the sheet instead of leaving.
         $requestedYear = request('school_year');
         if (!empty($requestedYear) && !empty($schoolYear) && $requestedYear !== $schoolYear) {
-            return redirect()->route('teacher.grade-assessment', ['school_year' => $requestedYear, 'grading_period' => $selectedPeriod])->with('error', 'Wrong year — this class belongs to S.Y. ' . $schoolYear . '. Showing S.Y. ' . $requestedYear . ' list.');
+            session()->flash('error', 'Year note — this class belongs to S.Y. ' . $schoolYear . ' but the page asked for S.Y. ' . $requestedYear . '. Demo mode: staying on this sheet.');
         }
 
         return view('portal.teacher.assessments', compact('class', 'activeEnrollments', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments', 'resolvedWeights', 'schoolYear', 'schoolYears', 'schoolYearLocked'));
@@ -412,10 +412,12 @@ class TeacherController extends Controller
             return back()->with('error', 'School year ' . $class->school_year . ' is locked — assessments can no longer be changed.');
         }
 
-        // Year-picker context must never re-point a save into another year.
+        // Year-picker context: demo mode (Amendment D) — a mismatch warns
+        // but never blocks the save.
+        $yearWarnings = [];
         $expectedYear = $request->input('school_year', $class->school_year);
         if (!empty($expectedYear) && $expectedYear !== $class->school_year) {
-            return back()->withInput()->with('error', 'Wrong year — this class belongs to S.Y. ' . $class->school_year . '. Go back to the list and pick S.Y. ' . $expectedYear . ' there.');
+            $yearWarnings[] = 'this class belongs to S.Y. ' . $class->school_year . ' but the page sent S.Y. ' . $expectedYear . ' — saved anyway for demo.';
         }
 
         // Submitted finals lock their assessments too — only an approved
@@ -448,8 +450,7 @@ foreach ($data['rows'] as $idx => $row) {
     $studentYear = $enrollmentYears[$row['enrollment_id']] ?? $class->school_year;
     $classYear = $class->school_year;
     if ($studentYear !== $classYear) {
-        $rowErrors[] = "Row {$rowNo}: wrong year — this student belongs to S.Y. {$studentYear}. Go back to the list.";
-        continue;
+        $yearWarnings[] = "Row {$rowNo}: student belongs to S.Y. {$studentYear} (class S.Y. {$classYear}) — saved anyway for demo.";
     }
     if (($row['raw_score'] === null || $row['raw_score'] === '') && ($row['max_score'] === null || $row['max_score'] === '') && empty($row['remarks']) && empty($row['title'])) {
         continue;
@@ -504,7 +505,7 @@ foreach ($data['rows'] as $idx => $row) {
             });
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Assessments save failed: ' . $e->getMessage(), ['class_id' => $class->id]);
-            return back()->withInput()->with('error', 'Could not save — please refresh and try again.');
+            return back()->withInput()->with('error', 'Could not save — please refresh and try again. (Demo detail: ' . \Illuminate\Support\Str::limit($e->getMessage(), 160) . ')');
         }
 
         try {
@@ -519,6 +520,9 @@ foreach ($data['rows'] as $idx => $row) {
             : 'Assessments saved for ' . $data['grading_period'] . '. Review Computed & Post to lock.';
         if ($skipped) {
             $message .= " {$skipped} submitted student(s) were skipped (locked) — request a correction unlock to change them.";
+        }
+        if (!empty($yearWarnings)) {
+            $message .= ' Year note (demo): ' . implode(' ', array_slice($yearWarnings, 0, 3)) . (count($yearWarnings) > 3 ? ' and ' . (count($yearWarnings) - 3) . ' more.' : '');
         }
 
         return back()->with('success', $message);
@@ -717,7 +721,7 @@ foreach ($data['rows'] as $idx => $row) {
             return redirect()->route('teacher.grade-assessment', ['class_id' => $class->id])->with('error', 'Could not open — this student is no longer in this class. Please refresh.');
         }
         if (!empty($enrollment->school_year) && !empty($class->school_year) && $enrollment->school_year !== $class->school_year) {
-            return redirect()->route('teacher.grade-assessment', ['class_id' => $class->id])->with('error', 'Wrong year — this student belongs to S.Y. ' . $enrollment->school_year . '. Go back to the list.');
+            session()->flash('error', 'Year note — this student belongs to S.Y. ' . $enrollment->school_year . ' (class S.Y. ' . $class->school_year . '). Demo mode: saving is allowed.');
         }
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $selectedPeriod = request('grading_period', '1st Term');
@@ -736,11 +740,11 @@ foreach ($data['rows'] as $idx => $row) {
         }
         $schoolYearLocked = school_year_locked($class->school_year);
 
-        // Stale bookmark or picker context from another year — leave to the
-        // year-filtered list with a plain note instead of opening silently.
+        // Stale bookmark or picker context from another year — demo mode
+        // (Amendment D): warn and stay on the sheet instead of leaving.
         $requestedYear = request('school_year');
         if (!empty($requestedYear) && !empty($schoolYear) && $requestedYear !== $schoolYear) {
-            return redirect()->route('teacher.grade-assessment', ['school_year' => $requestedYear, 'grading_period' => $selectedPeriod])->with('error', 'Wrong year — this class belongs to S.Y. ' . $schoolYear . '. Showing S.Y. ' . $requestedYear . ' list.');
+            session()->flash('error', 'Year note — this class belongs to S.Y. ' . $schoolYear . ' but the page asked for S.Y. ' . $requestedYear . '. Demo mode: staying on this sheet.');
         }
 
         return view('portal.teacher.grade-assessment-student', compact(
@@ -759,10 +763,12 @@ foreach ($data['rows'] as $idx => $row) {
             return back()->withInput()->with('error', 'School year ' . $class->school_year . ' is locked — assessments can no longer be changed.');
         }
 
-        // Year-picker context must never re-point a save into another year.
+        // Year-picker context: demo mode (Amendment D) — a mismatch warns
+        // but never blocks the save.
+        $yearWarnings = [];
         $expectedYear = $request->input('school_year', $class->school_year);
         if (!empty($expectedYear) && !empty($class->school_year) && $expectedYear !== $class->school_year) {
-            return back()->withInput()->with('error', 'Wrong year — this class belongs to S.Y. ' . $class->school_year . '. Go back to the list and pick S.Y. ' . $expectedYear . ' there.');
+            $yearWarnings[] = 'this class belongs to S.Y. ' . $class->school_year . ' but the page sent S.Y. ' . $expectedYear . ' — saved anyway for demo.';
         }
 
         $data = $request->validated();
@@ -776,11 +782,11 @@ foreach ($data['rows'] as $idx => $row) {
         if (!$belongsToClass) {
             return back()->withInput()->with('error', 'Could not save — this student is no longer in this class. Please refresh and try again.');
         }
-        // Year check: always compare, using class year as default if either side is missing from DB
+        // Year check (demo mode — Amendment D): compare and warn, never block.
         $enrollmentYear = $enrollment->school_year ?? $class->school_year;
         $classYear = $class->school_year;
         if ($enrollmentYear !== $classYear) {
-            return back()->withInput()->with('error', 'Wrong year — this student belongs to S.Y. ' . ($enrollmentYear ?? $classYear) . '. Go back to the list.');
+            $yearWarnings[] = 'this student belongs to S.Y. ' . ($enrollmentYear ?? $classYear) . ' (class S.Y. ' . $classYear . ') — saved anyway for demo.';
         }
 
         // Same-type repeats (Quiz 1 + Quiz 2) save as separate rows —
@@ -853,7 +859,7 @@ foreach ($data['rows'] as $idx => $row) {
             });
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Student assessments save failed: ' . $e->getMessage(), ['class_id' => $class->id, 'enrollment_id' => $enrollmentId]);
-            return back()->withInput()->with('error', 'Could not save — please refresh and try again.');
+            return back()->withInput()->with('error', 'Could not save — please refresh and try again. (Demo detail: ' . \Illuminate\Support\Str::limit($e->getMessage(), 160) . ')');
         }
 
         $subjectName = $class->subject?->name ?? 'class';
@@ -863,7 +869,12 @@ foreach ($data['rows'] as $idx => $row) {
             \Illuminate\Support\Facades\Log::warning('Student-assessments activity log failed: ' . $e->getMessage(), ['class_id' => $class->id]);
         }
 
-        return back()->with('success', 'Saved ' . count($inserts) . ' row(s) for this student.');
+        $soloMessage = 'Saved ' . count($inserts) . ' row(s) for this student.';
+        if (!empty($yearWarnings)) {
+            $soloMessage .= ' Year note (demo): ' . implode(' ', $yearWarnings);
+        }
+
+        return back()->with('success', $soloMessage);
     }
 
     // ─── NEW SUB-TAB: Computed Grades ───────────────────────────────────

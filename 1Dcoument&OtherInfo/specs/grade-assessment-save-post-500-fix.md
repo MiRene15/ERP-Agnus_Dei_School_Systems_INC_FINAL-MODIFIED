@@ -1,8 +1,8 @@
 # Spec: Grade Assessment Save Post 500 Fix
 
-- **Status**: Approved (re-approved by user on 2026-10-12 — duplicate-type rule: separate rows, unique widened to add title + assessment_date)
+- **Status**: Approved (re-approved by user on 2026-10-12 — duplicate-type rule: separate rows, unique widened to add title + assessment_date; Amendment D demo year-relaxation approved by user on 2026-10-12)
 - **Created**: 2026-10-11
-- **Approved by**: user on 2026-10-12 (base + Amendments A/B + Rev C + duplicate-type amendment 2026-10-12)
+- **Approved by**: user on 2026-10-12 (base + Amendments A/B + Rev C + duplicate-type amendment 2026-10-12 + Amendment D demo year-relaxation 2026-10-12)
 - **Amendment**: 2026-10-11 — computed-table restyle + posted/on-hold notices + batch edit/view toggle + alphabetical class lists (approved by user on 2026-10-11). Amendment B 2026-10-12 — year badge + year picker on both save pages, cross-year block, both-saves crash-safe, subject-missing safe display (approved by user on 2026-10-12). Revision C 2026-10-12 — 3rd Term 500 on both batch sheet and solo per-student page even when the period is open (approved by user on 2026-10-12).
 
 ## 1. Why We Need This
@@ -53,6 +53,11 @@ Teachers fill in scores on the batch class sheet and the solo per-student page a
 
 ### Revision C (approved 2026-10-12)
 - 3rd Term explicitly in scope: both saves must work in 3rd Term when that term is open and edited; any surprise failure stays on-sheet with input kept, never 500.
+
+### Amendment D — demo year-relaxation (approved 2026-10-12, demo only, revert after demo)
+- Year-mismatch checks (class-year vs student-year vs expected year) on both save pages and both displays become **warnings, not blocks**: the save proceeds whole-scope as usual and the success note names the cross-year rows ("saved anyway for demo").
+- Locked-year, posted-lock, ownership, and row-validity (number, max, future date) blocks stay in force — only the year rule is relaxed.
+- Risk accepted by user for the demo window: cross-year saves can land in the wrong year's records and surface on the wrong report cards. Revert this amendment immediately after the demo.
 
 ## 6. Business Rules
 ### Must always be true
