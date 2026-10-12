@@ -84,6 +84,20 @@
     <div>
         <h2 class="text-2xl font-bold" style="color: var(--navy);">Encode Grades – DepEd MATATAG K-12</h2>
         <p class="mt-1 text-sm" style="color: var(--muted);">{{ $class->subject->name ?? 'N/A' }} ({{ $class->subject->subject_code ?? '' }}) · {{ $class->grade_level }} – {{ $class->section }} · {{ $selectedPeriod }} · {{ $class->school_year }}</p>
+        <div class="mt-2 flex items-center gap-2 flex-wrap">
+            <span class="px-3 py-1 rounded-lg text-xs font-bold" style="background: var(--navy); color: #fff;">S.Y. {{ $schoolYear ?? $class->school_year }}</span>
+            @if(!empty($schoolYears) && count($schoolYears) > 1)
+            <label class="text-xs" style="color: var(--muted);" for="ea-year-picker">Year:</label>
+            <select id="ea-year-picker" onchange="window.location.href='{{ route('teacher.grade-assessment') }}?school_year='+this.value+'&grading_period={{ $selectedPeriod }}&class_id={{ $class->id }}'" class="rounded-lg border px-2 py-1 text-xs focus:ring-2 focus:ring-blue-500 outline-none" style="border-color: var(--lilac);">
+                @foreach($schoolYears as $yr)
+                <option value="{{ $yr }}" {{ ($schoolYear ?? $class->school_year) === $yr ? 'selected' : '' }}>{{ $yr }}</option>
+                @endforeach
+            </select>
+            @endif
+            @if(!empty($schoolYearLocked))
+            <span class="text-xs font-semibold" style="color: #991B1B;">Locked — read-only. Request a correction unlock to change.</span>
+            @endif
+        </div>
         <p class="mt-1 text-xs font-semibold" style="color: var(--navy);">We use MATATAG (DO 15, s. 2026) — weights auto-applied, teacher never picks weights.</p>
         @if(!empty($resolvedWeights['label']))
         <p class="mt-1 text-xs" style="color: var(--muted);">MATATAG · {{ $resolvedWeights['label'] }}</p>
@@ -260,6 +274,7 @@
     <form method="POST" action="{{ route('teacher.assessments.store', $class) }}" @submit="if (flattened.length === 0) { alert('Nothing to save — add an assessment and type at least one score.'); $event.preventDefault(); return; } let bad = []; students.forEach(s => { works.forEach(w => { if (overMax(s.id, w.key, w.max)) bad.push(s.name + ' — ' + w.title); }); }); if (bad.length) { alert('Raw score exceeds total: ' + bad.join('; ')); $event.preventDefault(); return; } if (this.dataset.submitted === '1') { $event.preventDefault(); return; } this.dataset.submitted = '1';">
         @csrf
         <input type="hidden" name="grading_period" value="{{ $selectedPeriod }}">
+        <input type="hidden" name="school_year" value="{{ $schoolYear ?? $class->school_year }}">
         <input type="hidden" name="save_action" :value="saveAction">
         <template x-for="(r, idx) in flattened" :key="idx">
             <span>

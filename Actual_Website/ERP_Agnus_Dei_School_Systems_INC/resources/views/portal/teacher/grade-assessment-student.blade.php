@@ -15,7 +15,21 @@
 
 <div class="mb-6">
     <h2 class="text-2xl font-bold text-gray-900">{{ $enrollment->student->first_name }} {{ $enrollment->student->last_name }}</h2>
-    <p class="text-gray-600 mt-1">{{ $class->subject->name ?? 'N/A' }} &middot; {{ $selectedPeriod }}</p>
+    <p class="text-gray-600 mt-1">{{ $class->subject->name ?? 'N/A' }} &middot; {{ $selectedPeriod }} &middot; S.Y. {{ $schoolYear ?? $class->school_year }}</p>
+    <div class="mt-2 flex items-center gap-2 flex-wrap">
+        <span class="px-3 py-1 rounded-lg text-xs font-bold text-white" style="background: var(--navy);">S.Y. {{ $schoolYear ?? $class->school_year }}</span>
+        @if(!empty($schoolYears) && count($schoolYears) > 1)
+        <label class="text-xs text-gray-500" for="ea-year-picker">Year:</label>
+        <select id="ea-year-picker" onchange="window.location.href='{{ route('teacher.grade-assessment') }}?school_year='+this.value+'&grading_period={{ $selectedPeriod }}&class_id={{ $class->id }}'" class="rounded-lg border border-gray-300 px-2 py-1 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+            @foreach($schoolYears as $yr)
+            <option value="{{ $yr }}" {{ ($schoolYear ?? $class->school_year) === $yr ? 'selected' : '' }}>{{ $yr }}</option>
+            @endforeach
+        </select>
+        @endif
+        @if(!empty($schoolYearLocked))
+        <span class="text-xs font-semibold" style="color: #991B1B;">Locked — read-only. Request a correction unlock to change.</span>
+        @endif
+    </div>
     <div class="mt-3 rounded-xl border bg-white p-3 flex items-center gap-2 flex-wrap" style="border-color: var(--lilac);">
         <span class="text-sm font-bold" style="color: var(--navy);" data-ea-label>View mode</span>
         <span class="text-xs text-gray-500" data-ea-hint>Scores are read-only — tap Edit to change.</span>
@@ -26,6 +40,7 @@
 <form id="ea-score-form" method="POST" action="{{ route('teacher.grade-assessment.student.store', [$class, $enrollment->id]) }}" onsubmit="if (this.dataset.submitted === '1') { return false; } this.dataset.submitted = '1'; const _btn = this.querySelector('[data-save-btn]'); if (_btn) { _btn.disabled = true; _btn.textContent = 'Saving…'; } return true;">
     @csrf
     <input type="hidden" name="grading_period" value="{{ $selectedPeriod }}">
+    <input type="hidden" name="school_year" value="{{ $schoolYear ?? $class->school_year }}">
 
     @if(session('success'))
         <div class="mb-4 p-4 rounded-lg text-sm" style="background: #EEF2FF; border: 1px solid var(--lilac); color: var(--navy);">{{ session('success') }}</div>

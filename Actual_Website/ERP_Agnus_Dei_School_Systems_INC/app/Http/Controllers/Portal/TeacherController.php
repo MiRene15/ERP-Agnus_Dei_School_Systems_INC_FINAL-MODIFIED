@@ -370,7 +370,11 @@ class TeacherController extends Controller
 
         $resolvedWeights = app(\App\Services\GradeWeightService::class)->forClass($class->subject, $class->grade_level);
 
-        return view('portal.teacher.assessments', compact('class', 'activeEnrollments', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments', 'resolvedWeights'));
+        $schoolYear = $class->school_year;
+        $schoolYears = all_school_years();
+        $schoolYearLocked = school_year_locked($class->school_year);
+
+        return view('portal.teacher.assessments', compact('class', 'activeEnrollments', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments', 'resolvedWeights', 'schoolYear', 'schoolYears', 'schoolYearLocked'));
     }
 
     public function storeAssessments(Request $request, Classes $class)
@@ -398,6 +402,12 @@ class TeacherController extends Controller
             return back()->with('error', 'School year ' . $class->school_year . ' is locked — assessments can no longer be changed.');
         }
 
+        // Year-picker context must never re-point a save into another year.
+        $expectedYear = $request->input('school_year', $class->school_year);
+        if (!empty($expectedYear) && $expectedYear !== $class->school_year) {
+            return back()->withInput()->with('error', 'Wrong year — this class belongs to S.Y. ' . $class->school_year . '. Go back to the list and pick S.Y. ' . $expectedYear . ' there.');
+        }
+
         // Submitted finals lock their assessments too — only an approved
         // unlock reopens them. Never wipe locked students' assessments.
         $lockedIds = Grade::where('class_id', $class->id)
@@ -408,6 +418,8 @@ class TeacherController extends Controller
             ->toArray();
 
         $activeIds = $class->enrollments->filter(fn($e) => $e->status === 'Active')->pluck('id')->flip()->toArray();
+
+        $enrollmentYears = Enrollment::whereIn('id', array_keys($activeIds))->pluck('school_year', 'id')->toArray();
 
         // Row-level semantic checks with row numbers — failed saves re-render
         // every entered row from the submitted input (never wiped).
@@ -421,6 +433,11 @@ class TeacherController extends Controller
             }
             if (empty($row['enrollment_id']) || !isset($activeIds[$row['enrollment_id']])) {
                 $rowErrors[] = "Row {$rowNo}: pick a student from this class.";
+                continue;
+            }
+            $studentYear = $enrollmentYears[$row['enrollment_id']] ?? null;
+            if (!empty($studentYear) && !empty($class->school_year) && $studentYear !== $class->school_year) {
+                $rowErrors[] = "Row {$rowNo}: wrong year — this student belongs to S.Y. {$studentYear}. Go back to the list.";
                 continue;
             }
             if (($row['raw_score'] === null || $row['raw_score'] === '') && ($row['max_score'] === null || $row['max_score'] === '') && empty($row['remarks']) && empty($row['title'])) {
@@ -688,6 +705,9 @@ class TeacherController extends Controller
         if (!$class->enrollments()->where('enrollments.id', $enrollmentId)->exists()) {
             return redirect()->route('teacher.grade-assessment', ['class_id' => $class->id])->with('error', 'Could not open — this student is no longer in this class. Please refresh.');
         }
+        if (!empty($enrollment->school_year) && !empty($class->school_year) && $enrollment->school_year !== $class->school_year) {
+            return redirect()->route('teacher.grade-assessment', ['class_id' => $class->id])->with('error', 'Wrong year — this student belongs to S.Y. ' . $enrollment->school_year . '. Go back to the list.');
+        }
         $gradingPeriods = ['1st Term', '2nd Term', '3rd Term'];
         $selectedPeriod = request('grading_period', '1st Term');
         $assessmentTypes = Assessment::ASSESSMENT_TYPES;
@@ -698,8 +718,12 @@ class TeacherController extends Controller
             ->get()
             ->groupBy('type');
 
+        $schoolYear = $class->school_year;
+        $schoolYears = all_school_years();
+        $schoolYearLocked = school_year_locked($class->school_year);
+
         return view('portal.teacher.grade-assessment-student', compact(
-            'class', 'enrollment', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments'
+            'class', 'enrollment', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments', 'schoolYear', 'schoolYears', 'schoolYearLocked'
         ));
     }
 
@@ -714,6 +738,12 @@ class TeacherController extends Controller
             return back()->withInput()->with('error', 'School year ' . $class->school_year . ' is locked — assessments can no longer be changed.');
         }
 
+        // Year-picker context must never re-point a save into another year.
+        $expectedYear = $request->input('school_year', $class->school_year);
+        if (!empty($expectedYear) && !empty($class->school_year) && $expectedYear !== $class->school_year) {
+            return back()->withInput()->with('error', 'Wrong year — this class belongs to S.Y. ' . $class->school_year . '. Go back to the list and pick S.Y. ' . $expectedYear . ' there.');
+        }
+
         $data = $request->validated();
 
         // Missing class/student records stay on the sheet — never a 500 page.
@@ -724,6 +754,9 @@ class TeacherController extends Controller
         $belongsToClass = $class->enrollments()->where('enrollments.id', $enrollmentId)->exists();
         if (!$belongsToClass) {
             return back()->withInput()->with('error', 'Could not save — this student is no longer in this class. Please refresh and try again.');
+        }
+        if (!empty($enrollment->school_year) && !empty($class->school_year) && $enrollment->school_year !== $class->school_year) {
+            return back()->withInput()->with('error', 'Wrong year — this student belongs to S.Y. ' . $enrollment->school_year . '. Go back to the list.');
         }
 
         // A submitted final grade locks this student's assessments too.
@@ -779,15 +812,21 @@ class TeacherController extends Controller
         }
 
         // Whole student or nothing — delete + insert stay in one transaction
-        // so a failure never leaves a half-saved student.
-        \Illuminate\Support\Facades\DB::transaction(function () use ($class, $enrollmentId, $data, $inserts) {
-            Assessment::where('class_id', $class->id)
-                ->where('enrollment_id', $enrollmentId)
-                ->where('grading_period', $data['grading_period'])
-                ->delete();
+        // so a failure never leaves a half-saved student. Any database
+        // hiccup stays on the sheet — never a 500 page.
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($class, $enrollmentId, $data, $inserts) {
+                Assessment::where('class_id', $class->id)
+                    ->where('enrollment_id', $enrollmentId)
+                    ->where('grading_period', $data['grading_period'])
+                    ->delete();
 
-            Assessment::insert($inserts);
-        });
+                Assessment::insert($inserts);
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Student assessments save failed: ' . $e->getMessage(), ['class_id' => $class->id, 'enrollment_id' => $enrollmentId]);
+            return back()->withInput()->with('error', 'Could not save — please refresh and try again.');
+        }
 
         $subjectName = $class->subject?->name ?? 'class';
         try {

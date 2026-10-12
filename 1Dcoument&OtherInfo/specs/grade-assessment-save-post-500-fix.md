@@ -1,73 +1,82 @@
 # Spec: Grade Assessment Save Post 500 Fix
 
-- **Status**: Implemented (2026-10-11 — lint clean on all touched PHP; browser checks waived by user direction, page fixes user-confirmed working)
+- **Status**: Approved
 - **Created**: 2026-10-11
-- **Approved by**: user on 2026-10-11
-- **Amendment**: 2026-10-11 — computed-table restyle + posted/on-hold notices + batch edit/view toggle + alphabetical class lists (user-confirmed 2026-10-11). Re-approval required before implementation.
+- **Approved by**: user on 2026-10-12
+- **Amendment**: 2026-10-11 — computed-table restyle + posted/on-hold notices + batch edit/view toggle + alphabetical class lists (approved by user on 2026-10-11). Amendment B 2026-10-12 — year badge + year picker on both save pages, cross-year block, both-saves crash-safe, subject-missing safe display (approved by user on 2026-10-12).
 
 ## 1. Why We Need This
-Teachers fill in scores on the Grade Assessment sheet and tap Save or Post, but get a white 500 error page instead. They don't know what saved, lose what they typed, and must re-type everything. At grading-deadline peak this means late nights, copy errors, and mistrust in the gradebook. This fix makes Save and Post never show a 500 — every problem stays on the sheet with a plain note and all input kept.
+Teachers fill in scores on the batch class sheet and the solo per-student page and tap Save or Post, but get a white 500 page instead — losing what they typed, unsure what saved. Separately, either page can be opened from a stale link into the wrong school year, so a current score can land in last year's records and pollute report cards. At grading-deadline peak this means late nights, copy errors, and mistrust. This fix makes both pages never show a 500, always carry and check the school year, and offer a year picker right on the page.
 
 ## 2. Who Is Affected
-* **Teachers** — the only ones who save and post. They get a sheet that never blows up and never eats input.
-* **Registrar / Principal** — read the posted finals through report cards and unlock reviews. They gain complete classes only, never half-posted.
-* **IT Admin** — sees the error log get quiet on these two buttons.
+* **Teachers** — the only ones who save and post. They get sheets that never blow up, never eat input, always show which year they're in, and can switch years from the page itself.
+* **Registrar / Principal** — read the posted finals through report cards and unlock reviews. They gain complete classes only, never half-posted, never mixed-year.
+* **IT Admin** — sees the error log get quiet on these buttons.
 
 ## 3. Business Flow: Today vs After
-- **As-is**: Open class → fill rows → tap Save Scores or Post → white 500 page → go back unsure what saved → re-type → risk of double grades.
+- **As-is**: Open batch (`/teacher/classes/{class}/assessments?grading_period=…`) or solo (`/teacher/grade-assessment/{class}/student/{enrollment}`) → fill rows → tap Save/Post → possible white 500 → go back unsure what saved → re-type → risk of double grades. Year lives only on the list page; the two save pages inherit it silently from the class record, so a bookmarked old-year ID opens without warning.
 - **To-be**:
-  1. Teacher opens the class sheet, fills rows, taps Save Scores or Post.
-  2. The sheet checks every row first.
-  3. Bad row? Stay on the sheet, flag that row number plainly, keep all input.
-  4. Good? Save the whole class at once, show "Saved 38 rows" or "Posted 38 rows."
-  5. Post still locks as today — changes need a correction unlock.
-- **Preserved**: Grading periods, school-year lock, posted lock + unlock-request flow, only-own-class rule, whole-class all-or-nothing save.
-- **Exceptions**: Locked or posted students mixed in are skipped with names noted, rest saves. Empty sheet writes nothing. Wrong class or locked year shows a plain not-allowed note.
+  1. Teacher opens either save page → sees a **year badge + year picker** (defaults to the class's year) at the top.
+  2. She fills rows, taps Save Scores or Post Grades.
+  3. The sheet checks every row first **plus class-year = student-year = expected year**.
+  4. Bad row or year mismatch? Stay on the sheet, flag plainly (row number or "wrong year — go back"), keep all input.
+  5. Good? Save the whole scope at once, show "Saved N rows" or "Posted N rows." Post still locks as today.
+  6. Changing the year picker navigates year context (back to the year-filtered list when the picked year is not this class's year) — never silently re-points the save.
+- **Preserved**: Grading periods (1st/2nd/3rd Term carried in URL + hidden field), school-year lock, posted lock + unlock-request flow, only-own-class rule, whole-scope all-or-nothing save.
+- **Exceptions**: Locked or posted students mixed in are skipped with names noted, rest saves. Empty sheet writes nothing. Wrong class, wrong year, or locked year shows a plain not-allowed note. Class with missing subject still opens with a plain weights fallback.
 
 ## 4. How It Should Work
-1. Teacher picks class + grading period and fills the sheet (batch sheet or per-student page).
-2. She taps Save Scores or Post Grades.
+1. Teacher picks class + grading period and fills the sheet (batch sheet or solo page). Year badge + picker show the class's year; grading period stays as today.
+2. She taps Save Scores or Post Grades (batch) or Save (solo).
 3. The button turns busy ("Saving…") and locks against a second tap until done — one tap means one save.
-4. The sheet checks: every score is a number, score never above its max, date not in the future, class and students still exist.
-5. If anything is off, the sheet stays put, names the row ("Row 12: score above max"), keeps every typed row, and releases the button.
-6. If all good, the whole class saves at once and confirms counts. Post adds "(Posted — locked; request a correction unlock to change)."
-7. Refresh shows the saved scores. Posted rows read-only with unlock hint.
+4. The sheet checks: every score is a number, score never above its max, date not in the future, class and students still exist, **class year = student year = expected year**, year not locked.
+5. If anything is off, the sheet stays put, names the problem ("Row 12: score above max" / "This class belongs to S.Y. 2024–2025 — you picked S.Y. 2025–2026. Go back to the list"), keeps every typed row, and releases the button.
+6. If all good, the scope saves at once and confirms counts. Post adds "(Posted — locked; request a correction unlock to change)."
+7. Changing the year picker to a year different from this class's year leaves the save page and returns to the year-filtered class list (no save attempted, no data moved).
+8. Refresh shows the saved scores. Posted/locked rows read-only with unlock hint.
 
 ## 5. Look & Feel (UX)
-- Where it lives: same Grade Assessment class sheet and per-student page. No new page, no new menu.
-- One primary action per spot: Save Scores / Post Grades.
+- Where it lives: same batch sheet and solo per-student page. No new page, no new menu. Year badge + picker sit above the sheet next to the grading-period label.
+- One primary action per spot: Save Scores / Post Grades (batch), Save (solo). Year picker is secondary, never the primary.
 - One-tap safe buttons: tap → busy + disabled ("Saving…") → done → released. Double-tap never double-saves.
-- Key states: default (sheet as today), saving-busy, row error (row number + plain reason), success confirmation with counts, empty sheet ("nothing to save"), locked read-only with unlock hint, permission-denied ("not your class").
-- Plain words only: `Save Scores`, `Post Grades`, `Row 12`, `Saving…`, `nothing to save`. Dates in school format.
-- Fewest clicks: no re-typing after any failure; tab order unchanged.
+- Key states: default (sheet as today + year badge/picker), saving-busy, row error (row number + plain reason), year-mismatch (plain "wrong year" + back-to-list link, nothing written), success confirmation with counts, empty sheet ("nothing to save"), locked read-only with unlock hint, permission-denied ("not your class"), subject-missing (sheet still opens, weights show plain "weights unavailable" fallback).
+- Plain words only: `Save Scores`, `Post Grades`, `S.Y. 2025–2026`, `Row 12`, `Saving…`, `nothing to save`, `wrong year — go back`. Dates in school format.
+- Fewest clicks: no re-typing after any failure; picker defaults to the class's year; tab order unchanged.
 
-### Amendment A (pending re-approval, 2026-10-11)
-- **Computed Grades mirrors the Encode grid**: same navy headers, sticky student-name column, bordered cells, and alternating row shading — one familiar table language across both screens.
-- **Posted / on-hold notice in two places**: a status banner above the table (e.g. "Posted — locked" or "On hold for verification") plus a per-row `Posted` / `On hold` pill in the Final Grade column.
-- **Batch-entry edit/view toggle**: the batch sheet opens in read-only View; tapping `Edit` enables all score inputs. Tapping `View` (or saving) returns to read-only. The toggle never discards typed input.
-- **Alphabetical class lists**: every batch-entry class picker sorts by subject name, then grade level, then section.
+### Amendment A (approved 2026-10-11, kept)
+- Computed Grades mirrors the Encode grid table style; posted/on-hold banner + per-row pills; batch edit/view toggle; alphabetical class pickers.
+
+### Amendment B (approved 2026-10-12)
+- Year badge + year picker on **both** save pages; cross-year block; both saves crash-safe (plain note, never 500); subject-missing safe display.
 
 ## 6. Business Rules
 ### Must always be true
-- One Save or Post writes the whole class or nothing — checked first, saved together.
+- One Save or Post writes its whole scope or nothing — checked first, saved together.
 - A failed save keeps every entered row on screen, including added rows.
-- A teacher never sees a 500 from these two buttons — every failure is a plain on-sheet note.
+- A teacher never sees a 500 from these pages — every failure is a plain on-sheet note.
+- The visible year (badge + picker) always matches the class's year on load.
+- Class-year versus student-year (or versus expected year) blocks the save with names noted; nothing is written.
 - Post still locks; locked rows need a correction unlock to change.
 - Only the owning teacher can save; locked school years stay frozen.
-- Double-tap, double-click, or impatient re-tap counts as one save.
+- Double-tap counts as one save.
+- A class with a missing subject still opens; weights fall back to a plain note, never a crash.
 
 ### Must never happen
-- A save must never wipe input, never half-save a class, never show a white error page.
+- A save must never wipe input, never half-save, never show a white error page.
 - A locked or posted student's rows must never be overwritten.
 - Another teacher's class must never open or save.
 - Old period or locked-year grades must never change through this sheet.
+- Changing the year picker must never re-point the save into another year — it navigates, never rewrites.
+- A current score must never land in the wrong year's records.
 
 ### Edge cases and what happens then
 - 40+ rows or slow connection → saves together, no timeout page; second tap ignored while busy.
 - Score above max or future date → hold the save, flag that row number, keep all input.
 - All rows empty → "nothing to save" note, no write, no error page.
 - Posted or locked student mixed in → skip just those, save the rest, name who was skipped.
-- Class, student, or subject record missing → plain "could not save — please refresh and try again" on the sheet, never a 500.
+- Stale bookmark to last year's class, or transferred student with enrollment year different from class year → "wrong year — go back" note, nothing written, never 500.
+- Year picker switched to another year → leave to the year-filtered list, no save attempted.
+- Class, student, or subject record missing → plain note on the sheet ("could not save/open — refresh and try again" / weights fallback), never a 500.
 - Wrong class address or locked year → plain not-allowed note, never a 500.
 
 ## 7. Out of Scope
@@ -78,28 +87,30 @@ Teachers fill in scores on the Grade Assessment sheet and tap Save or Post, but 
 - Any new audit screens.
 
 ## 8. Success Checks
-- [ ] Fill a good sheet → Save shows saved count, no 500, refresh still shows scores.
-- [ ] Post a good sheet → shows Posted + locks, no 500.
-- [ ] One bad row (score above max) → stays on sheet, flags that row, keeps all input, no 500.
+- [ ] Fill a good batch sheet → Save shows saved count, no 500, refresh still shows scores.
+- [ ] Post a good batch sheet → shows Posted + locks, no 500.
+- [ ] Fill a good solo page → Save shows saved rows, no 500, refresh still shows them.
+- [ ] One bad row (score above max) on either page → stays on sheet, flags that row, keeps all input, no 500.
 - [ ] Double-tap Save on slow net → one save only, button shows busy then releases.
 - [ ] All rows empty → "nothing to save," no 500.
 - [ ] Locked/posted student mixed in → rest saves, skipped names noted.
+- [ ] Stale link to last year's class, or mismatched student year → plain "wrong year" note, nothing written, no 500.
+- [ ] Locked/prior-year class → read-only with unlock hint; save attempt stays frozen with plain note.
 - [ ] Open another teacher's class address → plain denied, no 500.
-- [ ] (Amendment A) Computed Grades renders in the Encode-grid table style.
-- [ ] (Amendment A) Posted class shows a status banner plus per-row Posted pills; unposted shows On-hold pills.
-- [ ] (Amendment A) Batch sheet opens in View; Edit enables inputs without losing typed scores.
-- [ ] (Amendment A) Batch-entry class picker lists classes alphabetically (subject → grade → section).
+- [ ] Class with missing subject → sheet still opens (weights fallback), no 500.
+- [ ] Year badge + picker visible on both save pages, defaulting to the class's year; switching years navigates to the year-filtered list without saving.
+- [ ] (Amendment A) Computed Grades renders in the Encode-grid table style; posted/on-hold banner + pills; batch View/Edit toggle; alphabetical pickers.
 
 ## 9. Open Questions (if any)
-None.
+None — year picker placement defaults to above-sheet next to grading-period label.
 
 ## 10. Technical Notes (for developers)
 *Plain-language pointer only — the source of truth is the code and this appendix.*
-- Affected screens: teacher Grade Assessment class view + batch sheet, per-student page (`grade-assessment-student`), Computed Grades batch save (`computed-grades`).
-- Likely areas of the codebase (from code inspection): teacher grade-assessment + computed batch-save actions with existing `teacher.grade-assessment*` / `teacher.computed-grades.batch-submit` routes; per-student save with its row-indexed assessment payload and delete-then-insert per student/period; batch post with whole-class single-transaction and skipped-locked handling; shared assessment-type list; one-tap busy/disabled button behavior per the safe-actions pattern; activity log lines that assume related records exist.
-- Data/records touched: assessment rows (scores per student per period) and stored final grades (Draft/Save/Posted states). No new tables, no rewrites of other tables.
+- Affected screens: batch sheet (`portal/teacher/assessments`), solo page (`portal/teacher/grade-assessment-student`), class picker shell (`portal/teacher/grade-assessment`), Computed Grades batch save (`computed-grades`).
+- Likely areas (from read-only inspection 2026-10-12): batch display `assessments()` + `storeAssessments()` and solo display `gradeAssessmentStudent()` + `storeGradeAssessmentStudent()` with `teacher.grade-assessment*` / `teacher.assessments*` / `teacher.computed-grades.batch-submit` routes; solo FormRequest `StoreGradeAssessmentStudentRequest`; year helpers `active_school_year()`, `all_school_years()`, `school_year_locked()`; weight lookup `GradeWeightService::forClass($class->subject, …)` (guard null subject); solo write needs the same try/catch + `back()->withInput()` crash-catcher the batch write already has; log lines that assume related records exist stay wrapped; year badge/picker reads `Classes.school_year` with `Enrollment.school_year` cross-check on both reads and writes; picker change navigates via year-filtered list params (`school_year` + `grading_period` + `class_id`), never mutates the save target.
+- Data/records touched: assessment rows (scores per student per period) and stored final grades (Draft/Save/Posted states); year fields read-only in this fix. No new tables, no rewrites of other tables.
 - Roles/permissions involved: owning teacher only (same ownership + school-year-lock + posted-lock checks as today); registrar/principal read-only downstream.
 
 ## 11. Approval
-> Approved by user on 2026-10-11.
-> Amendment A (computed-table restyle + posted/on-hold notices + batch edit/view toggle + alphabetical class lists) approved by user on 2026-10-11.
+> Approved by user on 2026-10-11 (base + Amendment A).
+> Amendment B (year badge + year picker on both save pages, cross-year block, both-saves crash-safe, subject-missing safe display) approved by user on 2026-10-12.
