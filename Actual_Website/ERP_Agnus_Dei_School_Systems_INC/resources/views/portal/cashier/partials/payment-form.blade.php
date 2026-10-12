@@ -82,25 +82,20 @@
 @elseif(!empty($termFloor['floor']))
 <p class="text-xs text-gray-500 mt-1">Minimum ₱{{ number_format($termFloor['floor'], 2) }}{{ !empty($termFloor['label']) ? ' — ' . $termFloor['label'] : '' }}</p>
 @endif
-<!-- NEW: bundled month total + breakdown hint for installment -->
 @if($isPlanLocked && ($student?->ledger?->payment_plan ?? '') === 'installment')
+@php
+    $monthTotal = (float) ($termFloor['floor'] ?? 0);
+    $monthLabel = (string) ($termFloor['label'] ?? 'Month');
+    $monthLineId = $termFloor['line_ids'][0] ?? null;
+    $monthLine = isset($ledgerLines) ? $ledgerLines->firstWhere('id', $monthLineId) : null;
+    $monthBreakdown = $monthLine?->term_label ?? null;
+@endphp
 <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
+    <p class="text-sm font-medium text-blue-800 mb-1">Minimum ₱{{ number_format($monthTotal, 2) }} — {{ $monthLabel }}</p>
     <p class="text-sm font-medium text-blue-800 mb-2">What this month covers</p>
-    <ul class="text-xs text-blue-800 space-y-1">
-        <li>Tuition share: ₱{{ number_format($student?->ledger?->tuition_assessed ?? 0, 2) / 10, 2 }}</li>
-        @php
-        $miscTotal = $student?->ledger?->total_assessed ?? 0 - ($student?->ledger?->tuition_assessed ?? 0) ?? 0;
-        $booksShare = number_format(((float)($student?->ledger?->ledgerLines??collect())->whereNotNull('label')->first()?->amount_assessed ?? 0), 2);
-        // Simplified: display the 4-way split from fee schedule; in production this
-        // would pull the Directress-set 4-box values from FeeSchedule.misc_fee_items.
-        $uniformShare = '₱' . number_format(2080, 2);   // placeholder — pulled from fee schedule in production
-        $idShare = '₱' . number_format(520, 2);
-        $miscShare = '₱' . number_format(1560, 2);
-        @endphp>
-        <li>Uniform: {{ $uniformShare }}</li>
-        <li>ID: {{ $idShare }}</li>
-        <li>Miscellaneous: {{ $miscShare }}</li>
-    </ul>
+    @if(!empty($monthBreakdown))
+    <p class="text-xs text-blue-800">{{ $monthBreakdown }}</p>
+    @endif
     <p class="text-xs text-gray-500 mt-2">(Downpayment ₱1,500 was paid separately to unlock enrollment.)</p>
 </div>
 @endif
