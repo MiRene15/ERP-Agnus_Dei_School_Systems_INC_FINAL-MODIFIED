@@ -2,7 +2,7 @@
 
 - **Status**: Implemented
 - **Created**: 2026-10-11
-- **Approved by**: user on 2026-10-11
+- **Approved by**: user on 2026-10-12 (fix addendum confirmed — "confirm and do exec-spec")
 
 ## 1. Why We Need This
 Class lists and demographics look thin because students only exist for the current year with no promotion story. This fills believable students for 2024-2025, 2025-2026, and current year — with promotions carried forward — plus early birds for 2027-2028, so every class list and chart reads full.
@@ -30,6 +30,8 @@ Class lists and demographics look thin because students only exist for the curre
 3. Honors and scholars flagged every year for showcases.
 4. Registrar opens any class list or demographics view → switches year → sees full lists and mixed charts; 2027-2028 shows the small early-bird list.
 5. Re-run → nothing duplicates; corrected genders kept.
+6. Fix addendum 2026-10-12: when the seeder needs a new student number, it reads the highest number already used for that year and adds one — it never counts rows by date.
+7. Fix addendum 2026-10-12: if two runs race and pick the same number, the seeder retries with a fresh number (up to 5 tries) instead of aborting the whole run.
 
 ## 5. Look & Feel (UX)
 - Where it lives: no new screen. Class lists (primary check), demographics, honors badges where they already appear.
@@ -43,6 +45,8 @@ Class lists and demographics look thin because students only exist for the curre
 - Every enrollment sits in an active Child-1 section of the same year and joins its class list.
 - Registrar-corrected genders kept; blanks filled 47/47/3/3 (Male/Female/Non-binary/Prefer not to say).
 - Honors/scholars appear every historical year; 12-digit LRN; local addresses; weekday-scattered dates in window.
+- Fix addendum 2026-10-12: student numbers are never reused, even when dates are scattered into past years or rows are deleted.
+- Fix addendum 2026-10-12: a re-run never aborts the whole batch on a single number clash — it retries that one student.
 
 ### Must never happen
 - A student has two active enrollments the same year.
@@ -50,6 +54,8 @@ Class lists and demographics look thin because students only exist for the curre
 - A locked year accepts new admissions or enrollments.
 - 2027-2028 early birds carry payments or grades.
 - Virtue section names appear in any year.
+- Fix addendum 2026-10-12: the generator counts rows by creation date to pick the next number.
+- Fix addendum 2026-10-12: a partial crashed run blocks the next run (resume, don't wipe).
 
 ### Edge cases and what happens then
 - Double-enroll same year → keeps earliest, others ignored.
@@ -62,6 +68,7 @@ Class lists and demographics look thin because students only exist for the curre
 - Grades, attendance, library, clinic (Child 4).
 - Backbone sections/classes/fees (Child 1 — 2027-2028 fee tables already live there).
 - New enrollment screens; transferee-surge, sibling-showcase, honor-roll snapshots (noted follow-ups).
+- Fix addendum 2026-10-12 out of scope: changing the number format (`YYYY-XXXXX` stays); backfilling or renumbering old numbers; touching locked-year enforcement or `migrate:fresh`.
 
 ## 8. Success Checks
 - [ ] Every active section × 2024/2025/current opens a full class list (12/12/15).
@@ -70,6 +77,8 @@ Class lists and demographics look thin because students only exist for the curre
 - [ ] Honors/scholars visible every historical year.
 - [ ] 2027-2028 shows early-bird list only, nothing billed or graded.
 - [ ] Re-run duplicates nothing and keeps corrected genders.
+- [ ] Fix addendum 2026-10-12: re-running `StudentScatterSeeder` finishes with no duplicate-number error.
+- [ ] Fix addendum 2026-10-12: no duplicate value exists in the student-number column.
 
 ## 9. Open Questions (if any)
 None. (Parent volume question resolved here: 15/12/early-bird.)
@@ -83,11 +92,14 @@ None. (Parent volume question resolved here: 15/12/early-bird.)
   - `.../seeders/StudentLinkedInfoSeeder.php` — guardian/emergency/previous-school variety per year.
   - Depends on Child 1 sections/classes + fee shells; feeds Child 3 (ledgers→payments) and Child 4 (enrollment→grades).
 - Data/records touched: users (role 7), students, admissions, enrollments (+`enrollment_subject` pivots), ledger shells — each stamped to its school year.
+- Fix addendum 2026-10-12 cause: `Student::generateStudentNumber()` used `whereYear(created_at)->count()+1`, but the seeder backdates `created_at` into 2024/2025 windows, so the count undercounts and re-issues e.g. `2026-00480`.
+- Fix addendum 2026-10-12 pointers: `app/Models/Student.php:59-75` changes to `MAX(student_number)` suffix +1 per year (keep `pg_advisory_xact_lock` guard); `database/seeders/StudentScatterSeeder.php:647-649` wraps number pick + create in retry loop catching unique violation (max ~5); check same count pattern in `Admission` boot + `StudentsAndFeesSeeder.php:236` read-only.
 - Parent: `seed-data-connected-history.md` (Approved). Previous: `seed-data-foundations.md` (Approved). Next: `seed-data-payments-fulfilled.md`.
 - Roles/permissions involved: none changed.
 
 ## 11. Approval
-> Approved by user on 2026-10-11.
+> Approved by user on 2026-10-11 (original). Re-approved by user on 2026-10-12 for fix addendum ("confirm and do exec-spec").
 
 ## 12. Implementation Note
 - Implemented 2026-10-11: multi-year `StudentScatterSeeder` (12/12/15 + Kinder/Grade 11 early birds, +1-grade promotions chained via `promoted_to_enrollment_id`, per-year ledger shells) + `StudentsAndFeesSeeder` per-year ledger key. Marked Implemented per user request; seed + Success-Check verification commands provided but not yet run back — re-run checks before Child 3.
+- Fix addendum implemented 2026-10-12: `Student::generateStudentNumber()` MAX-suffix +1 (keeps `pg_advisory_xact_lock`); `StudentScatterSeeder::createFreshStudent()` retries single-student transaction up to 5x on `students_student_number_unique`/`23505`. Marked Implemented per user direction ("mark implemented"); seed re-run + duplicate-SQL + class-list checks NOT yet confirmed — run them before relying on this.

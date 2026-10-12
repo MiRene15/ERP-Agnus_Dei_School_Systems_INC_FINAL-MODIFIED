@@ -66,11 +66,13 @@ class Student extends Model
                     [intval(hash('crc32', 'student_number_' . $year))]
                 );
             }
-            $count = static::whereYear('created_at', $year)
-                            ->whereNotNull('student_number')
-                            ->when(\Illuminate\Support\Facades\DB::getDriverName() !== 'pgsql', fn ($q) => $q->lockForUpdate())
-                            ->count() + 1;
-            return $year . '-' . str_pad($count, 5, '0', STR_PAD_LEFT);
+            $max = 0;
+            foreach (static::where('student_number', 'like', "{$year}-%")->pluck('student_number') as $number) {
+                if (is_string($number) && preg_match('/-(\d+)$/', $number, $matches)) {
+                    $max = max($max, (int) $matches[1]);
+                }
+            }
+            return $year . '-' . str_pad((string) ($max + 1), 5, '0', STR_PAD_LEFT);
         });
     }
 

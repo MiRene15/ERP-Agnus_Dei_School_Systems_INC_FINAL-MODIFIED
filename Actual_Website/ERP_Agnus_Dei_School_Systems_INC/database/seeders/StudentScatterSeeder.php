@@ -14,6 +14,7 @@ use App\Models\Student;
 use App\Models\StudentLedger;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -606,8 +607,13 @@ class StudentScatterSeeder extends Seeder
         int $slot,
         array &$enrolledSet,
     ): void {
-        DB::transaction(function () use (
-            $section, $grade, $strand, $schoolYear,
+        // Retry one student on a student_number clash instead of aborting
+        // the whole batch (spec: seed-data-students-promotions.md fix addendum).
+        $attempts = 0;
+        while (true) {
+            try {
+                DB::transaction(function () use (
+                    $section, $grade, $strand, $schoolYear,
             $windowStart, $windowEnd, $applicationType, $admissionStatus,
             $isCurrentYear, $cashierIds, $password,
             $firstNames, $lastNames, $middlePool, $religions, $citizenships,
@@ -711,6 +717,16 @@ class StudentScatterSeeder extends Seeder
                 $student->id, (bool) $student->scholarship, $slot,
                 $grade, $schoolYear, $date, $isCurrentYear, $cashierIds
             );
-        });
+                });
+                break;
+            } catch (QueryException $e) {
+                $attempts++;
+                $isNumberCollision = $e->getCode() === '23505'
+                    || str_contains($e->getMessage(), 'students_student_number_unique');
+                if (! $isNumberCollision || $attempts >= 5) {
+                    throw $e;
+                }
+            }
+        }
     }
 }
