@@ -348,7 +348,7 @@ class TeacherController extends Controller
     public function assessments(Classes $class)
     {
         if ($class->teacher_id !== auth()->id()) {
-            abort(403);
+            return redirect()->route('teacher.grade-assessment')->with('error', 'Not your class — you can only open your own classes.');
         }
 
         $class->load('subject', 'schedules', 'enrollments.student');
@@ -372,7 +372,17 @@ class TeacherController extends Controller
 
         $schoolYear = $class->school_year;
         $schoolYears = all_school_years();
+        if (!empty($schoolYear) && !$schoolYears->contains($schoolYear)) {
+            $schoolYears = $schoolYears->push($schoolYear)->sortDesc()->values();
+        }
         $schoolYearLocked = school_year_locked($class->school_year);
+
+        // Stale bookmark or picker context from another year — leave to the
+        // year-filtered list with a plain note instead of opening silently.
+        $requestedYear = request('school_year');
+        if (!empty($requestedYear) && !empty($schoolYear) && $requestedYear !== $schoolYear) {
+            return redirect()->route('teacher.grade-assessment', ['school_year' => $requestedYear, 'grading_period' => $selectedPeriod])->with('error', 'Wrong year — this class belongs to S.Y. ' . $schoolYear . '. Showing S.Y. ' . $requestedYear . ' list.');
+        }
 
         return view('portal.teacher.assessments', compact('class', 'activeEnrollments', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments', 'resolvedWeights', 'schoolYear', 'schoolYears', 'schoolYearLocked'));
     }
@@ -380,7 +390,7 @@ class TeacherController extends Controller
     public function storeAssessments(Request $request, Classes $class)
     {
         if ($class->teacher_id !== auth()->id()) {
-            abort(403);
+            return redirect()->route('teacher.grade-assessment')->with('error', 'Not your class — you can only save your own classes.');
         }
 
         $data = $request->validate([
@@ -452,7 +462,7 @@ foreach ($data['rows'] as $idx => $row) {
         }
 
         if (!empty($rowErrors)) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['rows' => $rowErrors]);
+            return back()->withErrors(['rows' => $rowErrors])->withInput();
         }
 
         if (empty($kept)) {
@@ -480,7 +490,7 @@ foreach ($data['rows'] as $idx => $row) {
                         'title' => $row['title'] ?? '',
                         'raw_score' => $row['raw_score'] ?? 0,
                         'max_score' => $row['max_score'] ?? 0,
-                        'assessment_date' => $row['assessment_date'] ?? null,
+                        'assessment_date' => !empty($row['assessment_date']) ? $row['assessment_date'] : null,
                         'remarks' => $row['remarks'] ?? null,
                         'grading_period' => $data['grading_period'],
                         'created_at' => now(),
@@ -721,7 +731,17 @@ foreach ($data['rows'] as $idx => $row) {
 
         $schoolYear = $class->school_year;
         $schoolYears = all_school_years();
+        if (!empty($schoolYear) && !$schoolYears->contains($schoolYear)) {
+            $schoolYears = $schoolYears->push($schoolYear)->sortDesc()->values();
+        }
         $schoolYearLocked = school_year_locked($class->school_year);
+
+        // Stale bookmark or picker context from another year — leave to the
+        // year-filtered list with a plain note instead of opening silently.
+        $requestedYear = request('school_year');
+        if (!empty($requestedYear) && !empty($schoolYear) && $requestedYear !== $schoolYear) {
+            return redirect()->route('teacher.grade-assessment', ['school_year' => $requestedYear, 'grading_period' => $selectedPeriod])->with('error', 'Wrong year — this class belongs to S.Y. ' . $schoolYear . '. Showing S.Y. ' . $requestedYear . ' list.');
+        }
 
         return view('portal.teacher.grade-assessment-student', compact(
             'class', 'enrollment', 'gradingPeriods', 'selectedPeriod', 'assessmentTypes', 'existingAssessments', 'schoolYear', 'schoolYears', 'schoolYearLocked'
@@ -749,7 +769,7 @@ foreach ($data['rows'] as $idx => $row) {
 
         // Missing class/student records stay on the sheet — never a 500 page.
         $enrollment = Enrollment::find($enrollmentId);
-        if ($enrollment === null) {
+        if ($enrollment === null || $enrollment->student === null) {
             return back()->withInput()->with('error', 'Could not save — please refresh and try again.');
         }
         $belongsToClass = $class->enrollments()->where('enrollments.id', $enrollmentId)->exists();
@@ -763,25 +783,9 @@ foreach ($data['rows'] as $idx => $row) {
             return back()->withInput()->with('error', 'Wrong year — this student belongs to S.Y. ' . ($enrollmentYear ?? $classYear) . '. Go back to the list.');
         }
 
-        // Check for duplicate assessment types per enrollment — the DB unique
-        // constraint (enrollment_id, class_id, type, grading_period) will block
-        // the INSERT if two rows have the same type for the same student.
-        $typesByEnrollment = collect($data['assessments'])
-            ->groupBy('enrollment_id')
-            ->map(fn ($items) => $items->pluck('type')->toArray());
-        $dupErrors = [];
-        foreach ($typesByEnrollment as $eId => $types) {
-            foreach (array_count_values($types) as $type => $count) {
-                if ($count > 1) {
-                    $dupErrors[] = "Row for enrollment {$eId}: duplicate assessment type '{$type}' — only one assessment per type per grading period is allowed.";
-                }
-            }
-        }
-        if (!empty($dupErrors)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'assessments' => $dupErrors
-            ]);
-        }
+        // Same-type repeats (Quiz 1 + Quiz 2) save as separate rows —
+        // spec grade-assessment-save-post-500-fix.md §6 (approved 2026-10-12).
+        // The unique key is widened to include title + date (migration).
 
         // A submitted final grade locks this student's assessments too.
         $locked = Grade::where('class_id', $class->id)
@@ -819,7 +823,7 @@ foreach ($data['rows'] as $idx => $row) {
                 'title' => $item['title'] ?? '',
                 'raw_score' => ($raw === null || $raw === '') ? 0 : $raw,
                 'max_score' => ($max === null || $max === '') ? 0 : $max,
-                'assessment_date' => $item['assessment_date'] ?? null,
+                'assessment_date' => !empty($item['assessment_date']) ? $item['assessment_date'] : null,
                 'remarks' => $item['remarks'] ?? null,
                 'grading_period' => $data['grading_period'],
                 'created_at' => now(),
@@ -828,7 +832,7 @@ foreach ($data['rows'] as $idx => $row) {
         }
 
         if (!empty($rowErrors)) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['assessments' => $rowErrors]);
+            return back()->withErrors(['assessments' => $rowErrors])->withInput();
         }
 
         if (empty($inserts)) {

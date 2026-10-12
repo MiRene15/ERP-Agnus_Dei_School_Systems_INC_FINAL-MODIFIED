@@ -271,7 +271,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('teacher.assessments.store', $class) }}" @submit="if (flattened.length === 0) { alert('Nothing to save — add an assessment and type at least one score.'); $event.preventDefault(); return; } let bad = []; students.forEach(s => { works.forEach(w => { if (overMax(s.id, w.key, w.max)) bad.push(s.name + ' — ' + w.title); }); }); if (bad.length) { alert('Raw score exceeds total: ' + bad.join('; ')); $event.preventDefault(); return; } if (this.dataset.submitted === '1') { $event.preventDefault(); return; } this.dataset.submitted = '1';">
+    <form method="POST" action="{{ route('teacher.assessments.store', $class) }}" @submit="if (flattened.length === 0) { alert('Nothing to save — add an assessment and type at least one score.'); $event.preventDefault(); return; } let bad = []; students.forEach(s => { works.forEach(w => { if (overMax(s.id, w.key, w.max)) bad.push(s.name + ' — ' + w.title); }); }); if (bad.length) { alert('Raw score exceeds total: ' + bad.join('; ')); $event.preventDefault(); return; } if (this.dataset.submitted === '1') { $event.preventDefault(); return; } this.dataset.submitted = '1'; Array.from(this.querySelectorAll('[data-batch-save]')).forEach(function (b) { b.disabled = true; if (b.dataset.batchSave !== 'draft') { b.textContent = 'Saving…'; } });">
         @csrf
         <input type="hidden" name="grading_period" value="{{ $selectedPeriod }}">
         <input type="hidden" name="school_year" value="{{ $schoolYear ?? $class->school_year }}">
@@ -424,8 +424,8 @@
         </div>
 
         <div class="flex items-center gap-2 justify-end flex-wrap" x-show="!viewMode">
-            <button type="submit" @click="saveAction = 'draft'" class="px-5 py-2.5 text-sm font-bold transition hover:opacity-90" style="border: 1.5px solid var(--navy); color: var(--navy); border-radius: 10px; background: #fff;">Save as Draft</button>
-            <button type="submit" @click="saveAction = 'save'" class="btn-navy px-5 py-2.5 text-sm font-bold text-white" style="border-radius: 10px;">Save Grades</button>
+            <button type="submit" @click="saveAction = 'draft'" data-batch-save="draft" class="px-5 py-2.5 text-sm font-bold transition hover:opacity-90" style="border: 1.5px solid var(--navy); color: var(--navy); border-radius: 10px; background: #fff;">Save as Draft</button>
+            <button type="submit" @click="saveAction = 'save'" data-batch-save="save" class="btn-navy px-5 py-2.5 text-sm font-bold text-white" style="border-radius: 10px;">Save Grades</button>
         </div>
         <div class="flex items-center gap-2 justify-end flex-wrap" x-show="viewMode" x-cloak>
             <button type="button" @click="flipToEdit()" class="btn-navy px-5 py-2.5 text-sm font-bold text-white" style="border-radius: 10px;">Edit Scores</button>
