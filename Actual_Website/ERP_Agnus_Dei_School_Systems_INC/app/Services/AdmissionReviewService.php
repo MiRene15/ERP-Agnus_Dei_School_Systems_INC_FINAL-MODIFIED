@@ -78,6 +78,13 @@ class AdmissionReviewService
             return ['forwarded' => false, 'error' => 'Gender is still missing for this applicant. Set it above before forwarding.'];
         }
 
+        // Spec cashier-forwarded-new-account-display.md §6 edge: a file
+        // with no grade must never reach Cashier as N/A — block here and
+        // name the missing grade.
+        if (empty(trim((string) ($admission->grade_level ?? '')))) {
+            return ['forwarded' => false, 'error' => 'Grade level is still missing for this application. Set the grade level above before forwarding.'];
+        }
+
         $missing = self::missingRequiredDocuments($admission);
         if (! empty($missing)) {
             return ['forwarded' => false, 'error' => 'Required document(s) not uploaded: ' . implode(', ', $missing) . '. Ask the family to upload them first.'];
@@ -109,6 +116,16 @@ class AdmissionReviewService
             $student = $admission->student;
             if ($student !== null && $student->status !== 'Awaiting Downpayment') {
                 $student->status = 'Awaiting Downpayment';
+                $student->save();
+            }
+
+            // Spec cashier-forwarded-new-account-display.md §4.2: the
+            // student number travels with the file at forward time, so the
+            // Cashier row is never blank. New/Transferee files get a number
+            // here (same generator full approval uses); Old files keep
+            // their existing number.
+            if ($student !== null && empty($student->student_number) && ($admission->application_type ?? 'New') !== 'Old') {
+                $student->student_number = \App\Models\Student::generateStudentNumber();
                 $student->save();
             }
         });

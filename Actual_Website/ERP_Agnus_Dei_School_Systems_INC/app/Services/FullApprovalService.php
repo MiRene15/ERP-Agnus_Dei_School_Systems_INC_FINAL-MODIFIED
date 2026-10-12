@@ -119,7 +119,11 @@ class FullApprovalService
 
         try {
             $enrollment = DB::transaction(function () use ($admission, $student, $sectionId, $subjectIds, $registrarName, &$address) {
-                if ($admission->application_type !== 'Old') {
+                // Spec cashier-forwarded-new-account-display.md §4.2: the
+                // number provisioned at forward travels through to
+                // enrollment — only generate here when the row still has
+                // none (e.g. legacy forwards from before slice 1).
+                if ($admission->application_type !== 'Old' && empty($student->student_number)) {
                     $student->student_number = Student::generateStudentNumber();
                 }
 

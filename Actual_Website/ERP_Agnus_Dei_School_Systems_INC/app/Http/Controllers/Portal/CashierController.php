@@ -196,7 +196,7 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
                     ->orWhere('legacy_lrn', 'ilike', "%{$search}%")
                     ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$search}%"]);
             })
-            ->with(['enrollments.section', 'ledger'])
+            ->with(['enrollments.section', 'ledger', 'admissions'])
             ->limit(10)
             ->get();
 
@@ -204,7 +204,13 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
 
         foreach ($students as $student) {
             $active = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
-            $gradeLevelByStudent[$student->getKey()] = $active?->section?->grade_level;
+            // Same fallback as payments(): forwarded files have no
+            // enrollment yet, so read the grade from the latest admission
+            // and expose it as display_grade for the queue row.
+            $grade = $active?->section?->grade_level
+                ?? $student->admissions->sortByDesc('id')->first()?->grade_level;
+            $gradeLevelByStudent[$student->getKey()] = $grade;
+            $student->display_grade = $grade;
         }
 
         $assessedByGradeLevel = $this->assessedTotalsByGradeLevel(
@@ -265,6 +271,19 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
 
         if ($ledger && $ledger->relationLoaded('ledgerLines') && $ledger->ledgerLines->isNotEmpty()) {
             return app(FeeAssessmentService::class)->statusFor($ledger)['status'];
+        }
+
+        // Spec cashier-forwarded-new-account-display.md §4.4: a new
+        // account with an Awaiting-Downpayment admission and no receipt
+        // reads Awaiting Downpayment — never Has Balance. Assessed
+        // ledgers (including has-balance returnees) already returned
+        // above, so their clearance path is untouched.
+        $admissions = $student->relationLoaded('admissions')
+            ? $student->admissions
+            : $student->admissions()->latest()->limit(1)->get();
+        $awaiting = $admissions->where('status', 'Awaiting Downpayment')->sortByDesc('id')->first();
+        if ($awaiting && empty($awaiting->downpayment_receipt)) {
+            return 'Awaiting Downpayment';
         }
 
         $balance = max(0, $totalAssessed - (float) ($ledger?->total_paid ?? 0) - (float) ($ledger?->discount_applied ?? 0));
@@ -816,9 +835,16 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
             'enrollments.section',
             'ledger.payments.cashier',
             'ledger.ledgerLines',
+            'admissions',
         ]);
 
         $enrollment = $student->enrollments->where('status', 'Active')->sortByDesc('id')->first();
+        // Same admission fallback as showPayment: forwarded files have no
+        // enrollment yet, so the financial view shows the application
+        // grade/year instead of N/A (spec: forwarded-new-account-display).
+        $latestAdmission = $student->admissions->sortByDesc('id')->first();
+        $displayGrade = $enrollment?->section?->grade_level ?? $latestAdmission?->grade_level;
+        $displayYear = $enrollment?->school_year ?? $latestAdmission?->school_year ?? active_school_year();
         $feeSchedules = $enrollment ? FeeSchedule::where('grade_level', $enrollment->section->grade_level)
             ->where('school_year', $enrollment->school_year)
             ->orderBy('term')
@@ -852,11 +878,11 @@ $students = Student::whereIn('status', ['enrolled', 'Awaiting Downpayment'])
 
         if ($isAjax) {
             return response()->json([
-                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments', 'ledgerLines', 'feeStatus'))->render(),
+                'html' => view('portal.cashier.partials.student-financial-results', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments', 'ledgerLines', 'feeStatus', 'displayGrade', 'displayYear'))->render(),
             ]);
         }
 
-        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments', 'ledgerLines', 'feeStatus'));
+        return view('portal.cashier.student-financial', compact('student', 'enrollment', 'feeSchedules', 'payments', 'paymentYears', 'selectedYear', 'libraryFees', 'libraryTotal', 'gradFeeAssignments', 'ledgerLines', 'feeStatus', 'displayGrade', 'displayYear'));
     }
 
     public function collectionsReport(Request $request)

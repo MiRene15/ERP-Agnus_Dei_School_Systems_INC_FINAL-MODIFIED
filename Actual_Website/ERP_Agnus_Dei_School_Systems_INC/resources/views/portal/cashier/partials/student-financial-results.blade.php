@@ -106,7 +106,7 @@
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-gray-500 dark:text-[#8A90B0]">Grade Level</dt>
-                    <dd class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $enrollment?->section?->grade_level ?? 'N/A' }}</dd>
+                    <dd class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $displayGrade ?? $enrollment?->section?->grade_level ?? 'N/A' }}</dd>
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-gray-500 dark:text-[#8A90B0]">Section</dt>
@@ -114,7 +114,7 @@
                 </div>
                 <div class="flex justify-between">
                     <dt class="text-gray-500 dark:text-[#8A90B0]">School Year</dt>
-                    <dd class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $enrollment?->school_year ?? 'N/A' }}</dd>
+                    <dd class="font-medium text-gray-900 dark:text-[#E8EAF6]">{{ $displayYear ?? $enrollment?->school_year ?? 'N/A' }}</dd>
                 </div>
                 <div class="flex justify-between items-center">
                     <dt class="text-gray-500 dark:text-[#8A90B0]">Payment Plan</dt>

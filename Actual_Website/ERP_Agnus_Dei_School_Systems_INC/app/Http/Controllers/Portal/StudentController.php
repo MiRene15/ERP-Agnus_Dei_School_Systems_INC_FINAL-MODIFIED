@@ -111,7 +111,12 @@ class StudentController extends Controller
         $student = auth()->user()->student;
         if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found. Contact registrar.');
 
-        $schoolYear = $request->input('school_year', active_school_year());
+        // Default to the student's latest Active enrollment year (same rule
+        // as the dashboard) so a student approved for a non-active year
+        // lands on their enrollment instead of "No active enrollment found".
+        // An explicit ?school_year= selection still wins.
+        $defaultYear = $student->enrollments()->where('status', 'Active')->max('school_year') ?? active_school_year();
+        $schoolYear = $request->input('school_year', $defaultYear);
         $schoolYears = $student->enrollments()->distinct()->pluck('school_year')->merge(all_school_years())->unique()->sortDesc()->values();
         $currentTerm = Setting::getValue('current_term', '1st Term');
         $enrollment = $student->enrollments()
@@ -153,7 +158,9 @@ class StudentController extends Controller
         $student = auth()->user()->student;
         if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found.');
 
-        $schoolYear = $request->input('school_year', active_school_year());
+        // Same latest-Active-year default as the dashboard (see cor()).
+        $defaultYear = $student->enrollments()->where('status', 'Active')->max('school_year') ?? active_school_year();
+        $schoolYear = $request->input('school_year', $defaultYear);
         $schoolYears = $student->enrollments()->distinct()->pluck('school_year')->merge(all_school_years())->unique()->sortDesc()->values();
 
         $activeEnrollment = $student->enrollments()
@@ -210,7 +217,9 @@ class StudentController extends Controller
         $student = auth()->user()->student;
         if (!$student) return redirect()->route('student.dashboard')->with('error', 'No student profile found.');
 
-        $schoolYear = $request->input('school_year', active_school_year());
+        // Same latest-Active-year default as the dashboard (see cor()).
+        $defaultYear = $student->enrollments()->where('status', 'Active')->max('school_year') ?? active_school_year();
+        $schoolYear = $request->input('school_year', $defaultYear);
         $schoolYears = $student->enrollments()->distinct()->pluck('school_year')->merge(all_school_years())->unique()->sortDesc()->values();
 
         $activeEnrollment = $student->enrollments()

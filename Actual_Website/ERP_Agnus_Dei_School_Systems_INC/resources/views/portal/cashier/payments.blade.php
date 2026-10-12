@@ -84,7 +84,7 @@
                                 <td class="py-3 px-2 text-gray-600 dark:text-[#C1C4DC]" x-text="s.legacy_lrn || '—'"></td>
                                 <td class="py-3 px-2 text-gray-700 dark:text-[#C1C4DC]" x-text="s.display_grade || s.enrollments?.[0]?.section?.grade_level || 'N/A'"></td>
                                 <td class="py-3 px-2">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="(s.payment_status || 'Has Balance') === 'Fully Paid' ? 'bg-green-100 text-green-700' : ((s.payment_status || '') === 'Overdue Installment' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700')" x-text="s.payment_status || 'Has Balance'"></span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="(s.payment_status || 'Has Balance') === 'Fully Paid' ? 'bg-green-100 text-green-700' : ((s.payment_status || '') === 'Overdue Installment' ? 'bg-red-100 text-red-700' : ((s.payment_status || '') === 'Awaiting Downpayment' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'))" x-text="s.payment_status || 'Has Balance'"></span>
                                 </td>
                                 <td class="py-3 px-2 flex gap-2">
                                     <template x-if="s.payment_status !== 'Fully Paid'">
