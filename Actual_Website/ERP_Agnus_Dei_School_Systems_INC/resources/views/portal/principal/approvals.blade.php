@@ -37,10 +37,20 @@
             @if($proposals->isEmpty())
                 <p class="text-sm text-gray-500 py-4 text-center">No proposals waiting for approval.</p>
             @else
+            <form method="POST" action="{{ route('principal.promotion.bulk-approve') }}" onsubmit="return confirmPromotionAction(event, this);">
+                @csrf
+                <div class="mb-3 flex items-center gap-3 flex-wrap">
+                    <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                        <input type="checkbox" id="promotionSelectAll" onchange="toggleAllPromotions(this)" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"> Select all
+                    </label>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition">Approve Selected</button>
+                    <button type="submit" formaction="{{ route('principal.promotion.bulk-reject') }}" class="px-4 py-2 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition">Reject Selected</button>
+                </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[960px] text-sm">
                     <thead>
                         <tr class="border-b border-gray-200">
+                            <th class="py-2 px-2 w-10"><span class="sr-only">Select</span></th>
                             <th class="text-left py-2 px-2 font-medium text-gray-600">Student</th>
                             <th class="text-left py-2 px-2 font-medium text-gray-600">Section / Year</th>
                             <th class="text-left py-2 px-2 font-medium text-gray-600">Proposed</th>
@@ -56,6 +66,7 @@
                             $name = $proposal->enrollment->student->first_name . ' ' . $proposal->enrollment->student->last_name;
                         @endphp
                         <tr class="border-b border-gray-50">
+                            <td class="py-2 px-2"><input type="checkbox" name="selected[]" value="{{ $proposal->id }}" class="promotion-select rounded border-gray-300 text-blue-600 focus:ring-blue-500"></td>
                             <td class="py-2 px-2 font-medium text-gray-900">{{ $name }}<span class="block text-xs text-gray-400 font-normal">{{ $proposal->enrollment->student->student_number }}</span></td>
                             <td class="py-2 px-2 text-gray-600">{{ $proposal->enrollment->section->grade_level ?? '?' }} {{ $proposal->enrollment->section->section_name ?? '' }}<span class="block text-xs text-gray-400">→ {{ $proposal->school_year }}</span></td>
                             <td class="py-2 px-2">
@@ -72,20 +83,39 @@
                             </td>
                             <td class="py-2 px-2 text-xs text-gray-500">{{ $proposal->proposer?->name ?? '—' }}<br>{{ $proposal->created_at->format('M d, Y') }}</td>
                             <td class="py-2 px-2 text-center whitespace-nowrap">
-                                <form method="POST" action="{{ route('principal.promotion.approve', $proposal) }}" class="inline">
-                                    @csrf
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg">Approve</button>
-                                </form>
-                                <form method="POST" action="{{ route('principal.promotion.reject', $proposal) }}" onsubmit="return confirm('Reject this proposal?')" class="inline">
-                                    @csrf
-                                    <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg">Reject</button>
-                                </form>
+                                <button type="submit" formaction="{{ route('principal.promotion.approve', $proposal) }}" data-single="approve" class="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg">Approve</button>
+                                <button type="submit" formaction="{{ route('principal.promotion.reject', $proposal) }}" data-single="reject" class="px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg">Reject</button>
                             </td>
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+            </form>
+            <script>
+            function toggleAllPromotions(source) {
+                document.querySelectorAll('.promotion-select').forEach(function (box) { box.checked = source.checked; });
+            }
+            function confirmPromotionAction(e, form) {
+                var btn = (e && e.submitter) || document.activeElement;
+                if (btn && btn.getAttribute && btn.getAttribute('data-single') === 'approve') {
+                    return true;
+                }
+                if (btn && btn.getAttribute && btn.getAttribute('data-single') === 'reject') {
+                    return confirm('Reject this proposal?');
+                }
+                var count = form.querySelectorAll('.promotion-select:checked').length;
+                if (count === 0) {
+                    alert('Select at least one proposal first.');
+                    return false;
+                }
+                var action = (btn && btn.getAttribute && btn.getAttribute('formaction')) || form.getAttribute('action');
+                if (action && action.indexOf('reject') !== -1) {
+                    return confirm('Reject ' + count + ' selected proposal(s)? They return to the Registrar.');
+                }
+                return confirm('Approve ' + count + ' selected proposal(s)? They move to the Directress for sign-off.');
+            }
+            </script>
             @endif
         </div>
     </div>

@@ -31,11 +31,11 @@
     @if($proposals->isEmpty())
         <p class="text-sm text-gray-500 py-4 text-center">Nothing waiting for sign-off.</p>
     @else
-    <form method="POST" action="{{ route('directress.promotion.bulk-signoff') }}" onsubmit="return confirm('Sign off and EXECUTE all selected proposals? Each executes in its own transaction — already-moved students are skipped.')">
+    <form method="POST" action="{{ route('directress.promotion.bulk-signoff') }}" onsubmit="return confirmDirectressAction(event, this);">
         @csrf
         <div class="mb-3 flex items-center gap-3 flex-wrap">
             <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
-                <input type="checkbox" id="directressSelectAll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"> Select all
+                <input type="checkbox" id="directressSelectAll" onchange="toggleAllDirectress(this)" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"> Select all
             </label>
             <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold text-white transition" style="background: var(--navy);">Sign off Selected & Execute</button>
         </div>
@@ -63,10 +63,7 @@
                     </td>
                     <td class="py-2 px-2 text-xs text-gray-500">Registrar: {{ $proposal->proposer?->name ?? '—' }}<br>Principal: {{ $proposal->principal_at?->format('M d, Y') ?? '—' }}</td>
                     <td class="py-2 px-2 text-center">
-                        <form method="POST" action="{{ route('directress.promotion.signoff', $proposal) }}" onsubmit="return confirm('Sign off and EXECUTE {{ $proposal->action }} for {{ $proposal->enrollment->student->first_name }} {{ $proposal->enrollment->student->last_name }}? This creates enrollments and moves fees.')" class="inline">
-                            @csrf
-                            <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Sign off & Execute</button>
-                        </form>
+                        <button type="submit" formaction="{{ route('directress.promotion.signoff', $proposal) }}" data-single="signoff" data-action="{{ $proposal->action }}" data-name="{{ $proposal->enrollment->student->first_name }} {{ $proposal->enrollment->student->last_name }}" class="px-3 py-1.5 text-xs font-semibold text-white transition" style="background: var(--navy);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Sign off & Execute</button>
                     </td>
                 </tr>
                 @endforeach
@@ -75,12 +72,21 @@
     </div>
     </form>
     <script>
-    (function () {
-        var box = document.getElementById('directressSelectAll');
-        if (box) box.addEventListener('change', function () {
-            document.querySelectorAll('.directress-row').forEach(function (r) { r.checked = box.checked; });
-        });
-    })();
+    function toggleAllDirectress(source) {
+        document.querySelectorAll('.directress-row').forEach(function (r) { r.checked = source.checked; });
+    }
+    function confirmDirectressAction(e, form) {
+        var btn = (e && e.submitter) || document.activeElement;
+        if (btn && btn.getAttribute && btn.getAttribute('data-single') === 'signoff') {
+            return confirm('Sign off and EXECUTE ' + btn.getAttribute('data-action') + ' for ' + btn.getAttribute('data-name') + '? This creates enrollments and moves fees.');
+        }
+        var count = form.querySelectorAll('.directress-row:checked').length;
+        if (count === 0) {
+            alert('Select at least one proposal first.');
+            return false;
+        }
+        return confirm('Sign off and EXECUTE ' + count + ' selected proposal(s)? Each executes in its own transaction — already-moved students are skipped.');
+    }
     </script>
     @endif
 </div>
