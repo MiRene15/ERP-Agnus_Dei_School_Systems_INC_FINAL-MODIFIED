@@ -15,21 +15,25 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Spec: cashier-full-payment-label.md — Slice 1 (domain rules engine).
+ * Spec: fee-itemized-manager.md (Revision — Bundled Monthly Payments).
  * Amends cashier-fee-rules.md §6 rule 1: the ₱1.5k line is
  * installment-downpayment-only (never on full payment), and the 10%
  * touches tuition lines only (misc/books/uniform/ID at 100%).
  *
  * Single source for the written-down fee rules:
  * - Installment path: ₱1.5k downpayment (first, fixed, never discounted)
- *   + 100% tuition in N equal monthly lines + 100% misc as named lines.
+ *   + 100% tuition + 100% misc bundled into N equal monthly lines.
+ *   Books, Uniform, ID, Miscellaneous and the enrollment fee are never
+ *   collected separately — each month already contains its share.
  * - Full path: 90% of tuition lines + 100% of misc lines
  *   (books, uniform, ID, miscellaneous, each named), no ₱1.5k line anywhere.
- * - Mid-year: remaining full tuition over remaining months; misc at full price.
- * - Path switch: single re-computation, prior payments credited in order,
- *   history kept (paid lines stay; only unpaid lines are replaced).
- * - Floor: every term payment meets or exceeds that term's total.
+ * - Mid-year: remaining bundled total (tuition + misc) over remaining months.
+ * - Path switch: single re-computation, prior payments credited in order
+ *   (enrollment first, then bundled months), history kept (paid lines stay;
+ *   only unpaid lines are replaced).
+ * - Floor: every term payment meets or exceeds that term's total (bundled month).
  * - Library: Cashier's receipt wins; one due, one receipt, one lift (DB unique backs this).
+ *
  *
  * The full-payment −10% lives INSIDE the tuition line (reduced assessment),
  * never in ledger.discount_applied — the existing discount auto-post flow
@@ -62,9 +66,9 @@ class FeeAssessmentService
 
     /**
      * Fresh assessment: full path posts discounted tuition + full-price misc
-     * (no ₱1.5k line); installment posts the ₱1.5k line + full-price tuition
-     * months + full-price misc. Posted lines are immutable — later fee edits
-     * only affect new assessments.
+     * (no ₱1.5k line); installment posts the ₱1.5k line + N bundled months
+     * each holding its share of tuition + misc (no separate add-on lines).
+     * Posted lines are immutable — later fee edits only affect new assessments.
      *
      * @param  array<string, float>  $miscItems  itemised misc (books, uniform, id, miscellaneous)
      */
@@ -120,18 +124,25 @@ class FeeAssessmentService
                     'amount_assessed' => self::ENROLLMENT_FEE,
                 ]);
 
-                foreach ($this->equalSplits($tuitionTotal, $remainingMonths) as $i => $amount) {
+                $bundledTotal = round($tuitionTotal + $miscTotal, 2);
+                $tuitionSplits = $this->equalSplits($tuitionTotal, $remainingMonths);
+                $miscSplitsByItem = [];
+                foreach ($miscItems as $key => $amount) {
+                    $miscSplitsByItem[(string) $key] = $this->equalSplits(round((float) $amount, 2), $remainingMonths);
+                }
+                foreach ($this->equalSplits($bundledTotal, $remainingMonths) as $i => $amount) {
                     $month = $i + 1;
+                    $breakdown = $this->bundledBreakdown($tuitionSplits[$i] ?? 0.0, $miscSplitsByItem, $i);
                     $ledger->ledgerLines()->create([
                         'school_year' => $schoolYear,
                         'kind' => LedgerLine::KIND_TUITION,
                         'label' => 'Month ' . $month,
+                        'term_label' => $breakdown,
                         'due_month' => $month,
                         'due_date' => $startMonth ? $startMonth->copy()->addMonths($month - 1)->startOfMonth() : null,
                         'amount_assessed' => $amount,
                     ]);
                 }
-                $this->createMiscLines($ledger, $schoolYear, $miscItems, $remainingMonths);
             }
 
             $this->refreshTotals($ledger);
@@ -140,12 +151,12 @@ class FeeAssessmentService
 
     /**
      * Path switch after paying: single re-computation, prior payments
-     * credited in order (enrollment first, then months, then misc), history
+     * credited in order (enrollment first, then bundled months), history
      * kept (paid lines stay; only unpaid lines are replaced). The 10% is
      * granted or removed accordingly — never both. Tuition/misc bases are
-     * recovered from the posted lines (misc told apart by label); ledgers
-     * assessed under the old bundle math (no misc lines) fall back to the
-     * stored bundle as the tuition base so paid figures stand.
+     * recovered from the posted lines (misc told apart by label, bundled
+     * months fall back to tuition_assessed); ledgers assessed under the
+     * old bundle math keep paid figures standing.
      */
     public function switchPath(StudentLedger $ledger, string $newPath): void
     {
@@ -199,25 +210,29 @@ class FeeAssessmentService
                 $paidMisc = round((float) $paidLines->filter(fn (LedgerLine $l): bool => $this->isMiscLine($l))->sum('amount_paid'), 2);
                 $paidTuitionish = round(max(0, $credited - $paidMisc), 2);
                 // Enrollment credit applies first: anything paid up to ₱1.5k
-                // covered the downpayment, the rest covered tuition months.
-                $unpaidTuition = round($tuitionTotal - max(0, $paidTuitionish - self::ENROLLMENT_FEE), 2);
-                foreach ($this->equalSplits(max(0, $unpaidTuition), $monthsLeft) as $i => $amount) {
+                // covered the downpayment, the rest covered bundled months.
+                $bundledTotal = round($tuitionTotal + $miscTotal, 2);
+                $unpaidBundled = round($bundledTotal - max(0, $paidTuitionish - self::ENROLLMENT_FEE), 2);
+                $unpaidTuitionShare = $bundledTotal > 0 ? round($tuitionTotal * max(0, $unpaidBundled) / $bundledTotal, 2) : 0.0;
+                $unpaidMiscShare = round(max(0, $unpaidBundled) - $unpaidTuitionShare, 2);
+                $tuitionSplits = $this->equalSplits(max(0, $unpaidTuitionShare), $monthsLeft);
+                $miscSplitsByItem = [];
+                if ($miscTotal > 0 && $unpaidMiscShare > 0) {
+                    $ratio = $unpaidMiscShare / $miscTotal;
+                    foreach ($miscItems as $key => $amount) {
+                        $miscSplitsByItem[(string) $key] = $this->equalSplits(round((float) $amount * $ratio, 2), $monthsLeft);
+                    }
+                }
+                foreach ($this->equalSplits(max(0, $unpaidBundled), $monthsLeft) as $i => $amount) {
+                    $breakdown = $this->bundledBreakdown($tuitionSplits[$i] ?? 0.0, $miscSplitsByItem, $i);
                     $ledger->ledgerLines()->create([
                         'school_year' => $schoolYear,
                         'kind' => LedgerLine::KIND_TUITION,
                         'label' => 'Month ' . ($i + 1) . ' — re-assessed',
+                        'term_label' => $breakdown,
                         'due_month' => $i + 1,
                         'amount_assessed' => $amount,
                     ]);
-                }
-                $unpaidMiscTotal = round(max(0, $miscTotal - $paidMisc), 2);
-                if ($unpaidMiscTotal > 0) {
-                    $ratio = $miscTotal > 0 ? $unpaidMiscTotal / $miscTotal : 0;
-                    $scaled = [];
-                    foreach ($miscItems as $key => $amount) {
-                        $scaled[$key] = round($amount * $ratio, 2);
-                    }
-                    $this->createMiscLines($ledger, $schoolYear, $scaled, $monthsLeft, ' — re-assessed');
                 }
             }
 
@@ -403,9 +418,8 @@ class FeeAssessmentService
 
     /**
      * Post one full-price line per misc add-on (books, uniform, ID,
-     * miscellaneous), each named with its amount. Misc lines sit after the
-     * tuition months (due_month past the last month) so the term floor —
-     * earliest unpaid line — is met in order: downpayment, months, misc.
+     * miscellaneous), each named with its amount. Used by the full path
+     * only — the installment path bundles misc into the monthly lines.
      */
     private function createMiscLines(StudentLedger $ledger, string $schoolYear, array $miscItems, int $afterMonth = 0, string $suffix = ''): void
     {
@@ -464,6 +478,25 @@ class FeeAssessmentService
         };
     }
 
+    /**
+     * Human-readable share inside one bundled month for the View breakdown.
+     *
+     * @param  array<string, array<int, float>>  $miscSplitsByItem
+     */
+    private function bundledBreakdown(float $tuitionShare, array $miscSplitsByItem, int $index): string
+    {
+        $parts = ['Tuition ₱' . number_format(round((float) $tuitionShare, 2), 2)];
+        foreach ($miscSplitsByItem as $key => $splits) {
+            $share = round((float) ($splits[$index] ?? 0.0), 2);
+            if ($share <= 0) {
+                continue;
+            }
+            $parts[] = $this->miscLabel((string) $key) . ' ₱' . number_format($share, 2);
+        }
+
+        return 'Incl. ' . implode(' + ', $parts);
+    }
+
     private function isMiscLine(LedgerLine $line): bool
     {
         if ($line->kind === LedgerLine::KIND_ENROLLMENT) {
@@ -484,8 +517,10 @@ class FeeAssessmentService
 
     /**
      * Recover the tuition-only base and the misc breakdown from posted lines.
-     * Old bundle-math ledgers carry no misc lines — the stored bundle is
-     * returned as the tuition base so paid figures stand.
+     * Bundled installment months hold tuition + misc together with no
+     * separate misc lines — the stored tuition_assessed stays the tuition
+     * base and the remainder is the misc bucket so the 10% never touches
+     * add-ons. Old separate-lines ledgers keep their named misc split.
      *
      * @param  Collection<int, LedgerLine>  $lines
      * @return array{0: float, 1: array<string, float>}
@@ -515,11 +550,19 @@ class FeeAssessmentService
 
         $monthSum = round((float) $lines->filter(fn (LedgerLine $l): bool => str_starts_with(strtolower(trim((string) $l->label)), 'month '))->sum('amount_assessed'), 2);
         if ($monthSum > 0) {
-            // New-math ledgers split tuition into months and misc into named
-            // lines; old bundle-math ledgers split the bundle into months
-            // with no misc lines (miscTotal 0) — either way the month sum is
-            // the tuition-side base.
-            return [$monthSum, $miscItems];
+            if ($miscTotal > 0) {
+                // Old separate-lines math: months are tuition-only, misc sits in named lines.
+                return [$monthSum, $miscItems];
+            }
+            // Bundled math: months already contain tuition + misc.
+            if ($storedBase > 0 && $monthSum > $storedBase) {
+                return [$storedBase, ['miscellaneous' => round($monthSum - $storedBase, 2)]];
+            }
+            if ($storedBase <= 0) {
+                return [0.0, ['miscellaneous' => $monthSum]];
+            }
+
+            return [$monthSum, []];
         }
 
         if ($miscTotal > 0) {
